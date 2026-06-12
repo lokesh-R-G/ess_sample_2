@@ -1,0 +1,183 @@
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { NavLink, useLocation } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Calendar,
+  FileText,
+  Receipt,
+  User,
+  BarChart3,
+  Users,
+  Building2,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Shield,
+} from 'lucide-react';
+
+interface SidebarProps {
+  isCollapsed: boolean;
+  onToggle: () => void;
+  isAdmin?: boolean;
+}
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: React.ElementType;
+  adminOnly?: boolean;
+}
+
+const employeeNavItems: NavItem[] = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/attendance', label: 'Attendance', icon: Calendar },
+  { path: '/leave', label: 'Leave Management', icon: FileText },
+  { path: '/payslip', label: 'Payslip', icon: Receipt },
+  { path: '/profile', label: 'Profile', icon: User },
+  { path: '/reports', label: 'Reports', icon: BarChart3 },
+];
+
+const adminNavItems: NavItem[] = [
+  { path: '/admin', label: 'Admin Dashboard', icon: Shield },
+  { path: '/admin/employees', label: 'Employees', icon: Users, adminOnly: true },
+  { path: '/admin/payroll', label: 'Payroll', icon: Receipt, adminOnly: true },
+  { path: '/admin/branches', label: 'Branches', icon: Building2, adminOnly: true },
+  { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true },
+  { path: '/admin/approvals', label: 'Approvals', icon: FileText, adminOnly: true },
+  { path: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },
+];
+
+export const Sidebar: React.FC<SidebarProps> = ({
+  isCollapsed,
+  onToggle,
+  isAdmin = false,
+}) => {
+  const location = useLocation();
+  const navItems = isAdmin ? adminNavItems : employeeNavItems;
+
+  return (
+    <motion.aside
+      className="fixed left-0 top-0 h-screen bg-white border-r border-neutral-200 z-40 flex flex-col shadow-sm"
+      animate={{ width: isCollapsed ? 80 : 260 }}
+      transition={{ duration: 0.2, ease: 'easeInOut' }}
+    >
+      {/* Logo Area */}
+      <div className="relative h-16 flex items-center justify-center border-b border-neutral-200">
+        <motion.div
+          className="flex items-center gap-3"
+          initial={false}
+          animate={{ opacity: 1 }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shadow-md">
+            <span className="text-white font-bold text-sm">IDS</span>
+          </div>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                <h1 className="text-lg font-bold text-neutral-900">IDS Pvt Ltd</h1>
+                <p className="text-xs text-neutral-500">Enterprise HRMS</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Toggle Button */}
+        <motion.button
+          onClick={onToggle}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-primary-500 border-2 border-white text-white flex items-center justify-center shadow-md"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-3 h-3" />
+          ) : (
+            <ChevronLeft className="w-3 h-3" />
+          )}
+        </motion.button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 py-4 px-3 overflow-y-auto">
+        <div className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink key={item.path} to={item.path}>
+                <motion.div
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-600 border-l-3 border-primary-500'
+                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800'
+                  }`}
+                  whileHover={{ x: 4 }}
+                >
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary-500' : ''}`} />
+                  <AnimatePresence>
+                    {!isCollapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="text-sm font-medium overflow-hidden whitespace-nowrap"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </NavLink>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* User Profile */}
+      <div className="p-3 border-t border-neutral-200">
+        <motion.div
+          className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-100 cursor-pointer transition-colors"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-500">
+            <span className="text-primary-600 font-medium text-sm">JD</span>
+          </div>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="flex-1 overflow-hidden"
+              >
+                <p className="text-sm font-medium text-neutral-900 truncate">John Doe</p>
+                <p className="text-xs text-neutral-500 truncate">EMP-001</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        <AnimatePresence>
+          {!isCollapsed && (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 w-full px-3 py-2 mt-2 rounded-lg text-neutral-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm">Logout</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.aside>
+  );
+};
+
+export default Sidebar;
