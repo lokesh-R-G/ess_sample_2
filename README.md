@@ -1,57 +1,94 @@
-🚀 Employee Self Service (ESS) & Payroll Management System
+# 🚀 Employee Self Service (ESS) & Payroll Management System
 
-A full-stack Enterprise HRMS solution designed to manage employee attendance, leave, and payroll operations with real-time integration to biometric systems.
+A full-stack **Enterprise HRMS solution** designed to manage employee attendance, leave, and payroll operations with real-time integration to biometric systems.
 
-📌 Overview
+---
 
-The ESS & Payroll System is built for organizations to:
+## 📌 Overview
 
-Automate attendance tracking via biometric devices (eSSL)
-Provide employees with self-service access
-Enable admins to manage workforce operations
-Eliminate manual HR processes
-🏗️ Tech Stack
-🔹 Frontend
-React + TypeScript
-Vite
-Tailwind CSS
-Framer Motion
-ApexCharts
-🔹 Backend
-FastAPI (Python)
-MongoDB Atlas
-Motor (async MongoDB driver)
-JWT Authentication
-🔹 Integration
-eSSL Biometric System (SOAP API via Zeep)
-⚙️ Features
-👤 Authentication
-JWT-based login system
-Role-Based Access (Admin / Employee)
-First login password reset
-📊 Dashboard
-Attendance statistics (Present / Absent)
-Graphical insights
-Real-time data from backend
-📅 Attendance Management
-Calendar-based attendance view
-Daily IN / OUT tracking
-Auto-calculated status:
-Present
-Absent
-🛠️ Admin Module
-Create and manage users
-Trigger attendance sync
-View system-wide data
-🔄 eSSL Integration
-Fetch biometric logs from device/cloud
-Store raw logs (attendance_logs)
-Process into daily attendance (attendance)
-⏱️ Background Sync System
-First login → fetch last 90 days data
-Scheduled sync every 6 hours
-Incremental updates (based on lastSyncAt)
-🗂️ Project Structure
+The **ESS & Payroll System** enables organizations to automate HR operations by integrating biometric attendance systems with a centralized web platform. It eliminates manual processes and provides real-time access to employee data.
+
+---
+
+## 🏗️ Tech Stack
+
+### 🔹 Frontend
+
+* React + TypeScript
+* Vite
+* Tailwind CSS
+* Framer Motion
+* ApexCharts
+
+### 🔹 Backend
+
+* FastAPI (Python)
+* MongoDB Atlas
+* Motor (Async MongoDB)
+* JWT Authentication
+
+### 🔹 Integration
+
+* eSSL Biometric System (SOAP API via Zeep)
+
+---
+
+## ⚙️ Features
+
+### 👤 Authentication
+
+* JWT-based login system
+* Role-Based Access Control (Admin / Employee)
+* First login password reset
+
+---
+
+### 📊 Dashboard
+
+* Attendance statistics (Present / Absent)
+* Graphical insights
+* Real-time API-driven data
+
+---
+
+### 📅 Attendance Management
+
+* Calendar-based attendance tracking
+* Daily IN / OUT records
+* Auto-calculated attendance status:
+
+  * Present
+  * Absent
+
+---
+
+### 🛠️ Admin Module
+
+* Create and manage users
+* Trigger attendance sync
+* View system-wide statistics
+
+---
+
+### 🔄 eSSL Integration
+
+* Fetch biometric logs from eSSL system
+* Store raw logs in `attendance_logs`
+* Process into daily summaries in `attendance`
+
+---
+
+### ⏱️ Background Sync System
+
+* First login → fetch last 90 days attendance
+* Scheduled sync every 6 hours
+* Incremental sync using `lastSyncAt`
+
+---
+
+## 🗂️ Project Structure
+
+```
 ess_sample_2/
 │
 ├── backend/
@@ -59,7 +96,7 @@ ess_sample_2/
 │   │   ├── api/routes/        # API endpoints
 │   │   ├── services/          # Business logic
 │   │   ├── scheduler/         # Background jobs
-│   │   ├── db/                # MongoDB config
+│   │   ├── db/                # MongoDB configuration
 │   │   └── main.py            # FastAPI entrypoint
 │   │
 │   ├── scripts/               # Utility scripts
@@ -68,74 +105,128 @@ ess_sample_2/
 ├── src/
 │   ├── components/            # UI components
 │   ├── pages/                 # Application pages
-│   ├── services/              # API calls
+│   ├── services/              # API services
 │   ├── context/               # Auth & Theme
-│   └── App.tsx                # Routes
+│   └── App.tsx                # Routing
 │
 └── README.md
-🔐 Environment Setup
-Backend .env
+```
+
+---
+
+## 🔐 Environment Setup
+
+Create `.env` inside backend:
+
+```
 MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_secret_key
 
-# eSSL Config
 ESSL_URL=your_essl_wsdl_url
 ESSL_USERNAME=your_username
 ESSL_PASSWORD=your_password
 
 FRONTEND_ORIGINS=http://localhost:5173
-▶️ Running the Project
-1️⃣ Backend Setup
+```
+
+---
+
+## ▶️ Running the Project
+
+### 1️⃣ Backend
+
+```
 cd backend
 python -m venv .venv
-.venv\Scripts\activate   # Windows
+.venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-2️⃣ Frontend Setup
+```
+
+---
+
+### 2️⃣ Frontend
+
+```
 cd ess_sample_2
 npm install
 npm run dev
-🔗 API Endpoints
-Endpoint	Method	Description
-/auth/login	POST	Login
-/auth/me	GET	Get current user
-/dashboard/me	GET	Dashboard data
-/attendance/me	GET	Attendance records
-/admin/summary	GET	Admin stats
-/sync/my-data	POST	Trigger user sync
-🔄 Attendance Workflow
+```
+
+---
+
+## 🔗 API Endpoints
+
+| Endpoint       | Method | Description        |
+| -------------- | ------ | ------------------ |
+| /auth/login    | POST   | User login         |
+| /auth/me       | GET    | Get current user   |
+| /dashboard/me  | GET    | Dashboard data     |
+| /attendance/me | GET    | Attendance records |
+| /admin/summary | GET    | Admin overview     |
+| /sync/my-data  | POST   | Trigger user sync  |
+
+---
+
+## 🔄 Attendance Workflow
+
+```
 eSSL → Backend Sync → MongoDB → Frontend UI
-Fetch raw logs from eSSL
-Store in attendance_logs
-Process into daily records (attendance)
-Display in calendar UI
-🧪 Current Status
-✅ Completed
-Authentication system
-Attendance integration
-Admin control panel
-Frontend-backend integration
-Background sync (APScheduler)
-🔄 In Progress
-Leave management workflow
-Payroll calculations
-⏳ Pending
-Payslip generation
-Notifications (Email/SMS)
-Advanced analytics
-⚠️ Known Limitations
-eSSL integration requires valid device credentials
-Payroll module not fully implemented
-Some admin pages are placeholders
-🚀 Future Enhancements
-Full payroll engine
-Multi-branch support
-Real-time notifications
-AI-based attendance insights
-👨‍💻 Author
+```
 
-Lokesh Ramesh
+1. Fetch logs from eSSL
+2. Store raw data (`attendance_logs`)
+3. Process into daily attendance
+4. Display in UI
 
-⭐ If you like this project
+---
 
-Give it a ⭐ on GitHub and feel free to contribute!
+## 🧪 Current Status
+
+### ✅ Completed
+
+* Authentication system
+* Attendance integration
+* Admin module
+* Frontend-backend integration
+* Background sync system
+
+### 🔄 In Progress
+
+* Leave management workflow
+* Payroll calculation module
+
+### ⏳ Pending
+
+* Payslip generation
+* Notifications (Email/SMS)
+* Advanced analytics
+
+---
+
+## ⚠️ Known Limitations
+
+* eSSL integration requires valid credentials
+* Payroll module not fully implemented
+* Some admin pages are placeholders
+
+---
+
+## 🚀 Future Enhancements
+
+* Full payroll engine
+* Multi-branch support
+* Real-time notifications
+* AI-based attendance insights
+
+---
+
+## 👨‍💻 Author
+
+**Lokesh Ramesh**
+
+---
+
+## ⭐ Support
+
+If you found this project useful, consider giving it a ⭐ on GitHub!
