@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Coffee, Calendar as CalendarIcon, Briefcase, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Coffee, Calendar as CalendarIcon, Briefcase } from 'lucide-react';
 import { GlassCard, StatusBadge } from '../../components/ui';
 import { DashboardLayout } from '../../components/layout';
-import { monthlyAttendance } from '../../data/mockData';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
+import { AttendanceRecord, getMyAttendance } from '../../services/attendanceService';
 
 const statusConfig: Record<string, { bg: string; text: string; icon: React.ElementType; label: string }> = {
   present: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle2, label: 'Present' },
@@ -15,18 +15,38 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.Eleme
 };
 
 export const Attendance: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 0, 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadAttendance = async () => {
+      try {
+        setIsLoading(true);
+        const fromDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+        const toDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+        const response = await getMyAttendance(fromDate, toDate);
+        setRecords(response.records);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Unable to load attendance');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAttendance();
+  }, [currentDate]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startDay = getDay(monthStart);
 
-  const getAttendanceForDate = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return monthlyAttendance.find((a) => a.date === dateStr);
-  };
+  const attendanceMap = useMemo(() => new Map(records.map((record) => [record.date, record])), [records]);
+
+  const getAttendanceForDate = (date: Date) => attendanceMap.get(format(date, 'yyyy-MM-dd'));
 
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -35,10 +55,12 @@ export const Attendance: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {error ? <GlassCard className="p-4 border border-red-200 bg-red-50 text-red-700">{error}</GlassCard> : null}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {Object.entries(statusConfig).map(([key, config]) => {
-            const count = monthlyAttendance.filter((a) => a.status === key).length;
+            const count = records.filter((a) => a.status === key).length;
             return (
               <motion.div key={key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Object.keys(statusConfig).indexOf(key) * 0.05 }}>
                 <GlassCard className="p-4">
@@ -91,8 +113,7 @@ export const Attendance: React.FC = () => {
                 {[...Array(startDay)].map((_, i) => <div key={`empty-${i}`} className="aspect-square" />)}
                 {daysInMonth.map((day, index) => {
                   const attendance = getAttendanceForDate(day);
-                  const status = attendance?.status || 'present';
-                  const config = statusConfig[status];
+                  const status = attendance?.status || 'absent';
                   const isSelected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
                   return (
@@ -122,10 +143,12 @@ export const Attendance: React.FC = () => {
             <GlassCard className="p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Day Details</h3>
               <AnimatePresence mode="wait">
-                {selectedDate ? (
+                {isLoading ? (
+                  <div className="text-sm text-neutral-500">Loading attendance...</div>
+                ) : selectedDate ? (
                   (() => {
                     const attendance = getAttendanceForDate(selectedDate);
-                    if (!attendance) return null;
+                    if (!attendance) return <div className="text-sm text-neutral-500">No attendance found for this date.</div>;
                     return (
                       <motion.div key={selectedDate.toISOString()} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
                         <div className="text-center p-4 rounded-xl bg-primary-50 border border-primary-200">
@@ -135,20 +158,20 @@ export const Attendance: React.FC = () => {
                         <div className="flex justify-center">
                           <StatusBadge status={attendance.status === 'present' ? 'success' : attendance.status === 'absent' ? 'error' : attendance.status === 'leave' ? 'warning' : attendance.status === 'od' ? 'purple' : 'info'} label={attendance.status.toUpperCase()} />
                         </div>
-                        {(attendance.status === 'present' || attendance.status === 'od') && (
+                        {(attendance.status === 'present' || attendance.status === 'od' || attendance.status === 'partial') && (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                               <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-600" /><span className="text-sm text-neutral-600">Check In</span></div>
-                              <span className="text-sm font-medium text-neutral-900">{attendance.checkIn || '--:--'}</span>
+                              <span className="text-sm font-medium text-neutral-900">{attendance.firstIn ? format(new Date(attendance.firstIn), 'hh:mm a') : '--:--'}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                               <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-red-600" /><span className="text-sm text-neutral-600">Check Out</span></div>
-                              <span className="text-sm font-medium text-neutral-900">{attendance.checkOut || '--:--'}</span>
+                              <span className="text-sm font-medium text-neutral-900">{attendance.lastOut ? format(new Date(attendance.lastOut), 'hh:mm a') : '--:--'}</span>
                             </div>
-                            {attendance.hours && (
+                            {attendance.workedMinutes !== undefined && (
                               <div className="flex items-center justify-between p-3 rounded-lg bg-primary-50 border border-primary-200">
                                 <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary-600" /><span className="text-sm text-neutral-600">Working Hours</span></div>
-                                <span className="text-sm font-semibold text-primary-600">{attendance.hours} hrs</span>
+                                <span className="text-sm font-semibold text-primary-600">{(attendance.workedMinutes / 60).toFixed(2)} hrs</span>
                               </div>
                             )}
                           </div>

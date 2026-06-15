@@ -1,18 +1,41 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Building2, CheckCircle, DollarSign, TrendingUp, AlertCircle, Clock, BarChart3 } from 'lucide-react';
 import { GlassCard, KPICard, AnimatedButton, StatusBadge } from '../../components/ui';
 import { AreaChart, DonutChart } from '../../components/charts';
 import { DashboardLayout } from '../../components/layout';
-import { adminStats, branchData, employeeList, attendanceTrendData } from '../../data/mockData';
+import { AdminSummary, getAdminSummary } from '../../services/adminService';
 
 export const AdminDashboard: React.FC = () => {
-  const attendanceChartData = [{ name: 'Present', data: [200, 210, 190, 215, 225, 220] }, { name: 'Absent', data: [15, 10, 20, 12, 8, 10] }];
-  const recentEmployees = employeeList.slice(0, 5).map((emp) => ({ ...emp, status: emp.status as 'active' | 'inactive' }));
+  const [summary, setSummary] = useState<AdminSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      try {
+        setIsLoading(true);
+        setSummary(await getAdminSummary());
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Unable to load admin dashboard');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, []);
+
+  const attendanceChartData = useMemo(() => ([{ name: 'Present', data: summary?.attendanceTrend.present ?? [] }, { name: 'Absent', data: summary?.attendanceTrend.absent ?? [] }]), [summary]);
+  const recentEmployees = summary?.employeeList ?? [];
+  const branchData = summary?.branchData ?? [];
 
   return (
     <DashboardLayout isAdmin>
       <div className="space-y-6">
+        {error ? <GlassCard className="p-4 border border-red-200 bg-red-50 text-red-700">{error}</GlassCard> : null}
+        {isLoading ? <GlassCard className="p-4 text-sm text-neutral-500">Loading admin dashboard...</GlassCard> : null}
+
         {/* Welcome Section */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <GlassCard className="p-6">
@@ -28,12 +51,12 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Admin KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <KPICard title="Total Employees" value={adminStats.totalEmployees} icon={Users} trend={5} trendLabel="this month" color="green" />
-          <KPICard title="Active Employees" value={adminStats.activeEmployees} icon={CheckCircle} trend={2} trendLabel="this month" color="blue" />
-          <KPICard title="New Joinees" value={adminStats.newJoinees} icon={TrendingUp} trend={20} trendLabel="this month" color="purple" />
-          <KPICard title="Attrition" value={adminStats.attrition} trend={-10} trendLabel="this month" color="red" />
-          <KPICard title="Attendance Rate" value={adminStats.attendanceRate} suffix="%" icon={BarChart3} color="yellow" />
-          <KPICard title="Branches" value={adminStats.branches} icon={Building2} color="orange" />
+          <KPICard title="Total Employees" value={summary?.stats.totalEmployees ?? 0} icon={Users} color="green" />
+          <KPICard title="Active Employees" value={summary?.stats.activeEmployees ?? 0} icon={CheckCircle} color="blue" />
+          <KPICard title="New Joinees" value={summary?.stats.newJoinees ?? 0} icon={TrendingUp} color="purple" />
+          <KPICard title="Attrition" value={summary?.stats.attrition ?? 0} icon={TrendingUp} color="red" />
+          <KPICard title="Attendance Rate" value={summary?.stats.attendanceRate ?? 0} suffix="%" icon={BarChart3} color="yellow" />
+          <KPICard title="Branches" value={summary?.stats.branches ?? 0} icon={Building2} color="orange" />
         </div>
 
         {/* Quick Actions */}
@@ -71,13 +94,13 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500" />Absent</div>
                 </div>
               </div>
-              <AreaChart data={attendanceChartData} categories={['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan']} height={280} />
+              <AreaChart data={attendanceChartData} categories={summary?.attendanceTrend.months ?? []} height={280} />
             </GlassCard>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <GlassCard className="p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Department Distribution</h3>
-              <DonutChart labels={['Engineering', 'Sales', 'HR', 'Finance', 'Operations']} series={[80, 45, 15, 25, 35]} height={250} />
+              <DonutChart labels={branchData.map((branch) => branch.name)} series={branchData.map((branch) => branch.employees)} height={250} />
             </GlassCard>
           </motion.div>
         </div>
@@ -138,11 +161,11 @@ export const AdminDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center"><DollarSign className="w-6 h-6 text-emerald-600" /></div>
-                <div><h3 className="text-lg font-semibold text-neutral-900">January 2024 Payroll</h3><p className="text-sm text-neutral-600">Processed and Approved</p></div>
+                <div><h3 className="text-lg font-semibold text-neutral-900">Payroll Overview</h3><p className="text-sm text-neutral-600">Backend-driven summary</p></div>
               </div>
               <div className="flex items-center gap-3">
-                <StatusBadge status="success" label="Completed" />
-                <span className="text-sm text-neutral-500">Total: 245 employees</span>
+                <StatusBadge status="success" label="Connected" />
+                <span className="text-sm text-neutral-500">Total: {summary?.stats.totalEmployees ?? 0} employees</span>
               </div>
             </div>
           </GlassCard>

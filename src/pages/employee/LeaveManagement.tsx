@@ -1,16 +1,39 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarIcon, MapPin, Plus, Clock, CheckCircle, XCircle, AlertCircle, Send } from 'lucide-react';
 import { GlassCard, AnimatedButton, StatusBadge, Modal, Input, Select } from '../../components/ui';
 import { DashboardLayout } from '../../components/layout';
 import { DonutChart } from '../../components/charts';
-import { leaveBalance, leaveApplications, leaveAnalysisData } from '../../data/mockData';
+import { createLeaveRequest, getLeaveData, LeaveApplication, LeaveBalanceItem } from '../../services/leaveService';
 
 export const LeaveManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'leave' | 'od' | 'history'>('leave');
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyType, setApplyType] = useState<'leave' | 'od'>('leave');
   const [formData, setFormData] = useState({ leaveType: '', fromDate: '', toDate: '', reason: '', odLocation: '' });
+  const [leaveBalance, setLeaveBalance] = useState<Record<string, LeaveBalanceItem>>({});
+  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>([]);
+  const [leaveAnalysisData, setLeaveAnalysisData] = useState<number[]>([0, 0, 0]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadLeaveData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getLeaveData();
+        setLeaveBalance(response.leaveBalance ?? {});
+        setLeaveApplications(response.requests ?? []);
+        setLeaveAnalysisData(response.leaveAnalysisData ?? [0, 0, 0]);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Unable to load leave data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadLeaveData();
+  }, []);
 
   const leaveTypes = [
     { value: 'annual', label: 'Annual Leave' },
@@ -27,36 +50,48 @@ export const LeaveManagement: React.FC = () => {
   };
 
   const handleApply = (type: 'leave' | 'od') => { setApplyType(type); setShowApplyModal(true); };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowApplyModal(false);
-    setFormData({ leaveType: '', fromDate: '', toDate: '', reason: '', odLocation: '' });
+    try {
+      await createLeaveRequest({
+        requestType: applyType,
+        leaveType: formData.leaveType,
+        fromDate: formData.fromDate,
+        toDate: formData.toDate,
+        reason: formData.reason,
+        odLocation: formData.odLocation,
+      });
+      const response = await getLeaveData();
+      setLeaveBalance(response.leaveBalance ?? {});
+      setLeaveApplications(response.requests ?? []);
+      setLeaveAnalysisData(response.leaveAnalysisData ?? [0, 0, 0]);
+      setShowApplyModal(false);
+      setFormData({ leaveType: '', fromDate: '', toDate: '', reason: '', odLocation: '' });
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Unable to submit leave request');
+    }
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Leave Balance Cards */}
+        {error ? <GlassCard className="p-4 border border-red-200 bg-red-50 text-red-700">{error}</GlassCard> : null}
+        {isLoading ? <GlassCard className="p-4 text-sm text-neutral-500">Loading leave data...</GlassCard> : null}
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <GlassCard className="p-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {Object.entries(leaveBalance).map(([key, value], index) => (
                 <motion.div key={key} className="p-4 rounded-xl bg-neutral-50 border border-neutral-200" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.1 }} whileHover={{ scale: 1.02 }}>
                   <p className="text-xs text-neutral-500 capitalize mb-2">{key.replace(/([A-Z])/g, ' $1')}</p>
-                  <div className="flex items-end gap-1">
-                    <span className="text-2xl font-bold text-neutral-900">{value.balance}</span>
-                    <span className="text-sm text-neutral-500 mb-0.5">/ {value.total}</span>
-                  </div>
-                  <div className="mt-2 h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                    <motion.div className="h-full bg-primary-500 rounded-full" initial={{ width: 0 }} animate={{ width: `${(value.balance / value.total) * 100}%` }} transition={{ duration: 0.8, delay: 0.3 }} />
-                  </div>
+                  <div className="flex items-end gap-1"><span className="text-2xl font-bold text-neutral-900">{value.balance}</span><span className="text-sm text-neutral-500 mb-0.5">/ {value.total}</span></div>
+                  <div className="mt-2 h-1.5 rounded-full bg-neutral-200 overflow-hidden"><motion.div className="h-full bg-primary-500 rounded-full" initial={{ width: 0 }} animate={{ width: `${(value.balance / value.total) * 100}%` }} transition={{ duration: 0.8, delay: 0.3 }} /></div>
                 </motion.div>
               ))}
             </div>
           </GlassCard>
         </motion.div>
 
-        {/* Tabs & Action Buttons */}
         <motion.div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-2">
             {[
@@ -76,25 +111,21 @@ export const LeaveManagement: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Tab Content */}
         <AnimatePresence mode="wait">
           {activeTab === 'leave' && (
             <motion.div key="leave" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <GlassCard className="p-6">
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">Leave Applications</h3>
                 <div className="space-y-3">
-                  {leaveApplications.filter((app) => app.type !== 'OD').map((application, index) => (
-                    <motion.div key={application.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200 hover:border-primary-300 transition-colors gap-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
+                  {leaveApplications.filter((app) => app.requestType !== 'od').map((application, index) => (
+                    <motion.div key={application._id ?? application.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200 hover:border-primary-300 transition-colors gap-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
                       <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-xl ${application.status === 'approved' ? 'bg-emerald-100' : application.status === 'pending' ? 'bg-amber-100' : 'bg-red-100'}`}>
                           {application.status === 'approved' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : application.status === 'pending' ? <AlertCircle className="w-5 h-5 text-amber-600" /> : <XCircle className="w-5 h-5 text-red-600" />}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-neutral-900">{application.type}</p>
-                            <StatusBadge status={statusColors[application.status]} label={application.status} size="sm" />
-                          </div>
-                          <p className="text-xs text-neutral-500 mt-1">{application.fromDate} - {application.toDate} ({application.days} day{application.days > 1 ? 's' : ''})</p>
+                          <div className="flex items-center gap-2"><p className="text-sm font-medium text-neutral-900">{application.leaveType ?? 'Leave'}</p><StatusBadge status={statusColors[application.status]} label={application.status} size="sm" /></div>
+                          <p className="text-xs text-neutral-500 mt-1">{application.fromDate} - {application.toDate}</p>
                         </div>
                       </div>
                       <div className="text-sm text-neutral-600">{application.appliedOn}</div>
@@ -104,17 +135,18 @@ export const LeaveManagement: React.FC = () => {
               </GlassCard>
             </motion.div>
           )}
+
           {activeTab === 'od' && (
             <motion.div key="od" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <GlassCard className="p-6">
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">OD Applications</h3>
                 <div className="space-y-3">
-                  {leaveApplications.filter((app) => app.type === 'OD').map((application, index) => (
-                    <motion.div key={application.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200 gap-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
+                  {leaveApplications.filter((app) => app.requestType === 'od').map((application, index) => (
+                    <motion.div key={application._id ?? application.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200 gap-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
                       <div className="flex items-center gap-4">
                         <div className="p-3 rounded-xl bg-purple-100"><MapPin className="w-5 h-5 text-purple-600" /></div>
                         <div>
-                          <p className="text-sm font-medium text-neutral-900">{application.reason}</p>
+                          <p className="text-sm font-medium text-neutral-900">{application.odLocation ?? application.reason ?? 'OD Request'}</p>
                           <p className="text-xs text-neutral-500">{application.fromDate}</p>
                         </div>
                       </div>
@@ -125,19 +157,20 @@ export const LeaveManagement: React.FC = () => {
               </GlassCard>
             </motion.div>
           )}
+
           {activeTab === 'history' && (
             <motion.div key="history" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <GlassCard className="p-6">
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">Leave & OD History</h3>
                 <div className="space-y-3">
                   {leaveApplications.map((application, index) => (
-                    <motion.div key={application.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.05 }}>
+                    <motion.div key={application._id ?? application.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: index * 0.05 }}>
                       <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl ${application.type === 'OD' ? 'bg-purple-100' : 'bg-primary-100'}`}>
-                          {application.type === 'OD' ? <MapPin className="w-5 h-5 text-purple-600" /> : <CalendarIcon className="w-5 h-5 text-primary-600" />}
+                        <div className={`p-3 rounded-xl ${application.requestType === 'od' ? 'bg-purple-100' : 'bg-primary-100'}`}>
+                          {application.requestType === 'od' ? <MapPin className="w-5 h-5 text-purple-600" /> : <CalendarIcon className="w-5 h-5 text-primary-600" />}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-neutral-900">{application.type}</p>
+                          <p className="text-sm font-medium text-neutral-900">{application.requestType === 'od' ? 'OD' : application.leaveType || 'Leave'}</p>
                           <p className="text-xs text-neutral-500">{application.reason}</p>
                         </div>
                       </div>
@@ -152,9 +185,15 @@ export const LeaveManagement: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <GlassCard className="p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Leave Analysis</h3>
+            <DonutChart labels={['Leave', 'OD', 'Pending']} series={leaveAnalysisData} height={220} />
+          </GlassCard>
+        </motion.div>
       </div>
 
-      {/* Apply Leave/OD Modal */}
       <Modal isOpen={showApplyModal} onClose={() => setShowApplyModal(false)} title={`Apply ${applyType === 'leave' ? 'Leave' : 'OD'}`} size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
           {applyType === 'leave' && <Select label="Leave Type" options={leaveTypes} value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })} placeholder="Select leave type" />}

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 // Pages
 import LoginPage from './pages/auth/LoginPage';
+import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import Dashboard from './pages/employee/Dashboard';
 import Attendance from './pages/employee/Attendance';
 import LeaveManagement from './pages/employee/LeaveManagement';
@@ -11,168 +13,106 @@ import Payslip from './pages/employee/Payslip';
 import Profile from './pages/employee/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AppRoutes() {
+  const { isAuthenticated, user, tokenReady } = useAuth();
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
+  if (!tokenReady) {
+    return <div className="min-h-screen bg-white" />;
+  }
 
   return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to={user?.firstLogin ? '/change-password' : '/dashboard'} replace /> : <LoginPage />}
+        />
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePasswordPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute>
+              <Attendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leave"
+          element={
+            <ProtectedRoute>
+              <LeaveManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payslip"
+          element={
+            <ProtectedRoute>
+              <Payslip />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowRoles={['Admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/admin/employees" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/payroll" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/branches" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/attendance" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/approvals" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/settings" element={<Navigate to="/admin" replace />} />
+
+        <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function App() {
+  return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <LoginPage onLogin={handleLogin} />
-              )
-            }
-          />
-
-          {/* Employee Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              isAuthenticated ? (
-                <Dashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/attendance"
-            element={
-              isAuthenticated ? (
-                <Attendance />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/leave"
-            element={
-              isAuthenticated ? (
-                <LeaveManagement />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/payslip"
-            element={
-              isAuthenticated ? (
-                <Payslip />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              isAuthenticated ? (
-                <Profile />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              isAuthenticated ? (
-                <Dashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          {/* Admin Routes */}
-          <Route
-            path="/admin"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/employees"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/payroll"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/branches"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/attendance"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/approvals"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/admin/settings"
-            element={
-              isAuthenticated ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          {/* Default Routes */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

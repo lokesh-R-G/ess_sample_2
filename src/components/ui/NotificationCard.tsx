@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bell, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 
 interface NotificationCardProps {
   title: string;
