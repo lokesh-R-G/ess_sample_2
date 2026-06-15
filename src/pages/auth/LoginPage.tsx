@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { BackgroundParticles, AnimatedButton } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -26,6 +27,40 @@ export const LoginPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+=======
+import { User, Lock, Building2, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { BackgroundParticles, AnimatedButton, Select } from '../../components/ui';
+
+interface LoginPageProps {
+  onLogin?: () => void;
+}
+
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [formData, setFormData] = useState({
+    employeeId: '',
+    branch: '',
+    password: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const branches = [
+    { value: 'BR-001', label: 'Bangalore HQ' },
+    { value: 'BR-002', label: 'Mumbai Office' },
+    { value: 'BR-003', label: 'Delhi NCR' },
+    { value: 'BR-004', label: 'Chennai Branch' },
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setIsLoading(false);
+    onLogin?.();
+    navigate('/dashboard');
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
   };
 
   return (
@@ -90,13 +125,52 @@ export const LoginPage: React.FC = () => {
               </div>
             </motion.div>
 
+<<<<<<< HEAD
             {/* Password */}
+=======
+            {/* Branch Selection */}
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
             >
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+<<<<<<< HEAD
+=======
+                Branch
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400 z-10" />
+                <select
+                  value={formData.branch}
+                  onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                  className="w-full pl-12 pr-10 py-3.5 rounded-xl appearance-none bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all cursor-pointer"
+                  required
+                >
+                  <option value="" disabled className="bg-white">Select Branch</option>
+                  {branches.map((branch) => (
+                    <option key={branch.value} value={branch.value} className="bg-white">
+                      {branch.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Password */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
                 Password
               </label>
               <div className="relative">
@@ -124,21 +198,55 @@ export const LoginPage: React.FC = () => {
               className="flex items-center justify-between"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+<<<<<<< HEAD
               transition={{ delay: 0.6 }}
             >
               <span className="text-sm text-neutral-500">Use your Employee ID and default password on first login.</span>
+=======
+              transition={{ delay: 0.7 }}
+            >
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-md border-2 transition-all ${
+                    rememberMe
+                      ? 'bg-primary-500 border-primary-500'
+                      : 'border-neutral-300 group-hover:border-primary-400'
+                  }`}>
+                    {rememberMe && (
+                      <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm text-neutral-600 group-hover:text-neutral-800 transition-colors">Remember me</span>
+              </label>
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
               <button type="button" className="text-sm text-primary-500 hover:text-primary-600 transition-colors">
                 Forgot Password?
               </button>
             </motion.div>
 
+<<<<<<< HEAD
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
+=======
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
             {/* Login Button */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+<<<<<<< HEAD
               transition={{ delay: 0.7 }}
+=======
+              transition={{ delay: 0.8 }}
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
             >
               <AnimatedButton
                 type="submit"
@@ -153,6 +261,22 @@ export const LoginPage: React.FC = () => {
               </AnimatedButton>
             </motion.div>
 
+<<<<<<< HEAD
+=======
+            {/* Demo Credentials */}
+            <motion.div
+              className="text-center pt-4 border-t border-neutral-200"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <p className="text-xs text-neutral-500 mb-2">Demo Credentials</p>
+              <div className="text-xs text-neutral-600 space-y-0.5">
+                <p>Employee ID: <span className="text-primary-500 font-medium">EMP-001</span></p>
+                <p>Password: <span className="text-primary-500 font-medium">demo@123</span></p>
+              </div>
+            </motion.div>
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
           </form>
         </motion.div>
 

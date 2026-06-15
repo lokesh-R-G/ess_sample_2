@@ -14,7 +14,11 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
 }) => {
   const baseAnimation = {
     animate: { opacity: [0.5, 1, 0.5] },
+<<<<<<< HEAD
     transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' as const },
+=======
+    transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
+>>>>>>> d905dc76d127cb40376e7b8239e6f855343afc15
   };
 
   const skeletonVariants = {
