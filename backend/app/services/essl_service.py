@@ -85,7 +85,29 @@ def _parse_line(line: str) -> dict[str, Any] | None:
     }
 
 
+class SliceableResponse:
+    def __init__(self, obj: Any):
+        self._obj = obj
+
+    def __getitem__(self, item: Any) -> Any:
+        try:
+            return self._obj[item]
+        except Exception:
+            if isinstance(item, slice):
+                serialized = serialize_object(self._obj)
+                lines = _coerce_lines(serialized)
+                if lines:
+                    return lines[item]
+                return str(self._obj)[item]
+            raise
+
+    def __bool__(self) -> bool:
+        return bool(self._obj)
+
+
 def parse_essl_payload(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, SliceableResponse):
+        payload = payload._obj
     serialized = serialize_object(payload)
     lines = _coerce_lines(serialized)
     records: list[dict[str, Any]] = []
@@ -112,6 +134,9 @@ class EsslClient:
         service = self._client.service
         method = getattr(service, "GetTransactionsLog")
 
+        print("🚀 Connecting to eSSL server...")
+        print(f"   From: {from_date}, To: {to_date}")
+
         attempts = [
             {
                 "SerialNumber": self.serial_number,
@@ -136,16 +161,27 @@ class EsslClient:
         ]
 
         last_error: Exception | None = None
-        for attempt in attempts:
+        for attempt_idx, attempt in enumerate(attempts):
             try:
                 filtered = {key: value for key, value in attempt.items() if value is not None}
-                response = method(**filtered)
-                return parse_essl_payload(response)
-            except TypeError as exc:
-                last_error = exc
+                print(f"   Attempt {attempt_idx + 1}: Calling GetTransactionsLog with {list(filtered.keys())}")
+                raw_response = method(**filtered)
+                response = SliceableResponse(raw_response)
+                print("✅ eSSL Response Received")
+                print("📦 Sample Data:", response[:5] if response else "No Data")
+                parsed = parse_essl_payload(response)
+                print(f"   Total records fetched: {len(parsed)}")
+                return parsed
+            except Exception as e:
+                print("❌ eSSL ERROR:", str(e))
+                last_error = e
+                print(f"   Attempt {attempt_idx + 1} failed: {str(e)[:100]}")
                 continue
 
+        print(f"❌ eSSL ERROR: Unable to call GetTransactionsLog with the available parameter combinations")
+        print(f"   Last error: {str(last_error)}")
         raise RuntimeError("Unable to call GetTransactionsLog with the available parameter combinations") from last_error
+
 
 
 def build_essl_client() -> EsslClient:

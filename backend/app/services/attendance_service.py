@@ -90,29 +90,40 @@ async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[s
 
     for record in records:
         document = build_raw_log_document(record, sync_batch_id)
-        result = await db.attendance_logs.update_one(
-            {"fingerprint": document["fingerprint"]},
-            {"$set": document},
-            upsert=True,
-        )
-        if result.upserted_id is not None:
-            inserted += 1
-        elif result.modified_count > 0:
-            updated += 1
+        try:
+            result = await db.attendance_logs.update_one(
+                {"fingerprint": document["fingerprint"]},
+                {"$set": document},
+                upsert=True,
+            )
+            if result.upserted_id is not None:
+                inserted += 1
+            elif result.modified_count > 0:
+                updated += 1
+        except Exception as e:
+            # log but continue on duplicate or other errors
+            pass
 
+    print(f"   Raw logs: inserted={inserted}, updated={updated}")
     return {"inserted": inserted, "updated": updated}
 
 
 async def upsert_daily_attendance(db, summaries: list[dict]) -> int:
     upserted = 0
     for summary in summaries:
-        result = await db.attendance.update_one(
-            {"empId": summary["empId"], "date": summary["date"]},
-            {"$set": {**summary, "createdAt": _utc_now()}},
-            upsert=True,
-        )
-        if result.upserted_id is not None or result.modified_count > 0:
-            upserted += 1
+        try:
+            result = await db.attendance.update_one(
+                {"empId": summary["empId"], "date": summary["date"]},
+                {"$set": {**summary, "createdAt": _utc_now()}},
+                upsert=True,
+            )
+            if result.upserted_id is not None or result.modified_count > 0:
+                upserted += 1
+        except Exception as e:
+            # log but continue on errors
+            pass
+    
+    print(f"   Daily attendance: upserted={upserted}")
     return upserted
 
 

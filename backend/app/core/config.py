@@ -32,16 +32,31 @@ class Settings:
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings(
+    essl_wsdl_url = os.getenv("ESSL_URL") or os.getenv("ESSL_WSDL_URL", "")
+    essl_api_username = os.getenv("ESSL_USERNAME") or os.getenv("ESSL_API_USERNAME", "")
+    essl_api_password = os.getenv("ESSL_PASSWORD") or os.getenv("ESSL_API_PASSWORD", "")
+    essl_serial_number = os.getenv("ESSL_SERIAL_NUMBER", "")
+
+    settings = Settings(
         mongo_uri=os.getenv("MONGODB_URI", ""),
         mongo_db_name=os.getenv("MONGODB_DB_NAME", "ess_payroll"),
         jwt_secret_key=os.getenv("JWT_SECRET_KEY", "change-this-secret"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         jwt_expire_minutes=int(os.getenv("JWT_EXPIRE_MINUTES", "480")),
         default_password=os.getenv("DEFAULT_PASSWORD", "ChangeMe@123"),
-        essl_wsdl_url=os.getenv("ESSL_WSDL_URL", ""),
-        essl_api_username=os.getenv("ESSL_API_USERNAME", ""),
-        essl_api_password=os.getenv("ESSL_API_PASSWORD", ""),
-        essl_serial_number=os.getenv("ESSL_SERIAL_NUMBER", ""),
+        essl_wsdl_url=essl_wsdl_url,
+        essl_api_username=essl_api_username,
+        essl_api_password=essl_api_password,
+        essl_serial_number=essl_serial_number,
         frontend_origins=_csv_env("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
     )
+
+    print("[Settings] Loaded Configuration:")
+    print(f"   MONGODB_URI: {settings.mongo_uri[:30]}...")
+    print(f"   MONGODB_DB_NAME: {settings.mongo_db_name}")
+    print(f"   ESSL_WSDL_URL: {settings.essl_wsdl_url}")
+    print(f"   ESSL_API_USERNAME: {settings.essl_api_username}")
+    print(f"   ESSL_API_PASSWORD: {'*' * len(settings.essl_api_password) if settings.essl_api_password else 'Not Configured'}")
+    print(f"   ESSL_SERIAL_NUMBER: {settings.essl_serial_number}")
+    return settings
+
