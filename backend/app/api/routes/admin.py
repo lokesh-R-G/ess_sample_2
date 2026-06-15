@@ -39,6 +39,29 @@ async def summary(_admin=Depends(require_roles("Admin"))):
     present_series = [monthly_counts[month]["present"] for month in months]
     absent_series = [monthly_counts[month]["absent"] for month in months]
 
+    normalized_branches = []
+    for index, branch in enumerate(branches):
+        normalized_branches.append(
+            {
+                "id": branch.get("id") or branch.get("branchId") or branch.get("name") or f"branch-{index}",
+                "name": branch.get("name") or "Unknown Branch",
+                "city": branch.get("city") or branch.get("location") or "Unknown",
+                "employees": int(branch.get("employees") or branch.get("employeeCount") or 0),
+                "status": branch.get("status") or "active",
+            }
+        )
+
+    normalized_employees = []
+    for employee in recent_employees:
+        normalized_employees.append(
+            {
+                "id": employee.get("empId"),
+                "name": employee.get("name") or employee.get("empId") or "Unknown",
+                "designation": employee.get("designation") or "Unknown",
+                "status": "active" if employee.get("isActive", True) else "inactive",
+            }
+        )
+
     return {
         "stats": {
             "totalEmployees": total_employees,
@@ -48,8 +71,8 @@ async def summary(_admin=Depends(require_roles("Admin"))):
             "attendanceRate": 0,
             "branches": len(branches),
         },
-        "branchData": branches,
-        "employeeList": recent_employees,
+        "branchData": normalized_branches,
+        "employeeList": normalized_employees,
         "attendanceTrend": {
             "months": months,
             "present": present_series,

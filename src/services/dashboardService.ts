@@ -7,20 +7,30 @@ export interface DashboardSummary {
     designation?: string;
     branch?: string;
   };
-  attendance: {
+  stats: {
     presentDays: number;
     absentDays: number;
     leaveBalance: number;
     currentSalary: number;
     workingHours: number;
   };
+  attendance: Array<{
+    date: string;
+    firstIn?: string | null;
+    lastOut?: string | null;
+    punchCount?: number;
+    workedMinutes?: number;
+    status: 'present' | 'absent' | 'leave' | 'weekoff' | 'od' | 'partial';
+  }>;
+  distribution: number[];
   attendanceTrendData: {
     months: string[];
     present: number[];
   };
+  notifications: Array<{ id?: string; title?: string; message?: string; type?: string; time?: string }>;
+  holidays: Array<unknown>;
   leaveBalance: Record<string, { total: number; used: number; balance: number }>;
   upcomingHolidays: Array<{ date: string; name: string; type: string }>;
-  notifications: Array<{ id: string; title: string; message: string; type: string; time: string }>;
 }
 
 export async function getDashboardSummary() {

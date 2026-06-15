@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from ...db.mongo import get_database
 from ...dependencies import get_current_user
+from ...services.attendance_service import infer_attendance_status
 
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -14,13 +15,14 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/me")
 async def me(current_user=Depends(get_current_user)):
     db = get_database()
-    attendance_rows = await db.attendance.find({"empId": current_user["empId"]}).sort("date", 1).to_list(length=None)
+    # exclude internal MongoDB _id to keep payload JSON serializable
+    attendance_rows = await db.attendance.find({"empId": current_user["empId"]}, {"_id": 0}).sort("date", 1).to_list(length=None)
 
-    present = sum(1 for row in attendance_rows if row.get("status") == "present")
-    absent = sum(1 for row in attendance_rows if row.get("status") == "absent")
-    leave = sum(1 for row in attendance_rows if row.get("status") == "leave")
-    weekoff = sum(1 for row in attendance_rows if row.get("status") == "weekoff")
-    od = sum(1 for row in attendance_rows if row.get("status") == "od")
+    present = sum(1 for row in attendance_rows if infer_attendance_status(row) == "present")
+    absent = sum(1 for row in attendance_rows if infer_attendance_status(row) == "absent")
+    leave = sum(1 for row in attendance_rows if infer_attendance_status(row) == "leave")
+    weekoff = sum(1 for row in attendance_rows if infer_attendance_status(row) == "weekoff")
+    od = sum(1 for row in attendance_rows if infer_attendance_status(row) == "od")
 
     trend_by_month: dict[str, int] = Counter()
     for row in attendance_rows:
@@ -45,7 +47,7 @@ async def me(current_user=Depends(get_current_user)):
             "currentSalary": 0,
             "workingHours": round(sum((row.get("workedMinutes") or 0) for row in attendance_rows) / 60, 2),
         },
-        "attendance": attendance_rows,
+        "attendance": [ {**row, "status": infer_attendance_status(row)} for row in attendance_rows ],
         "distribution": [present, leave, absent, weekoff, od],
         "attendanceTrendData": {
             "months": months,

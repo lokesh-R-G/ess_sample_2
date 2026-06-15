@@ -32,9 +32,14 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="IDS ESS & Payroll API", version="1.0.0", lifespan=lifespan)
 
+# Configure CORS for local development. Do NOT use allow_origins=['*'] in production.
+origins = settings.frontend_origins or [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.frontend_origins or ["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

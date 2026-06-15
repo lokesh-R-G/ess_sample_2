@@ -64,7 +64,7 @@ export const Attendance: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {Object.entries(statusConfig).map(([key, config]) => {
-            const count = records.filter((a) => a.status === key).length;
+            const count = records.filter((a) => (a.status ?? 'absent') === key).length;
             return (
               <motion.div
                 key={key}
@@ -118,7 +118,6 @@ export const Attendance: React.FC = () => {
                 {daysInMonth.map((day, index) => {
                   const attendance = getAttendanceForDate(day);
                   const status = attendance?.status ?? 'absent';
-                  const config = statusConfig[status] ?? statusConfig.absent;
                   const isSelected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
                   return (
@@ -161,6 +160,8 @@ export const Attendance: React.FC = () => {
                     if (!attendance) {
                       return <div className="text-sm text-neutral-500">No attendance found for this date.</div>;
                     }
+                    const status = attendance.status ?? 'absent';
+
                     return (
                       <motion.div key={selectedDate.toISOString()} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
                         <div className="text-center p-4 rounded-xl bg-primary-50 border border-primary-200">
@@ -169,11 +170,25 @@ export const Attendance: React.FC = () => {
                         </div>
                         <div className="flex justify-center">
                           <StatusBadge
-                            status={attendance.status === 'present' ? 'success' : attendance.status === 'absent' ? 'error' : attendance.status === 'leave' ? 'warning' : attendance.status === 'od' ? 'purple' : 'info'}
-                            label={attendance.status.toUpperCase()}
+                            status={status === 'present' ? 'success' : status === 'absent' ? 'error' : status === 'leave' ? 'warning' : status === 'od' ? 'purple' : 'info'}
+                            label={status.toUpperCase()}
                           />
                         </div>
-                        {(attendance.status === 'present' || attendance.status === 'od' || attendance.status === 'partial') && (
+                        <div className="text-sm text-neutral-600 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span>Status</span>
+                            <span className="font-medium text-neutral-900 capitalize">{status}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>In Time</span>
+                            <span className="font-medium text-neutral-900">{attendance.firstIn ? format(new Date(attendance.firstIn), 'hh:mm a') : '--:--'}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Out Time</span>
+                            <span className="font-medium text-neutral-900">{attendance.lastOut ? format(new Date(attendance.lastOut), 'hh:mm a') : '--:--'}</span>
+                          </div>
+                        </div>
+                        {(status === 'present' || status === 'od' || status === 'partial') && (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                               <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-600" /><span className="text-sm text-neutral-600">Check In</span></div>

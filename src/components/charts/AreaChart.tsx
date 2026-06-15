@@ -13,6 +13,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   categories,
   height = 350,
 }) => {
+  if (!data || data.length === 0 || !categories || categories.length === 0) return null;
   const options = {
     chart: {
       type: 'area' as const,

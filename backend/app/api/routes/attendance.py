@@ -6,10 +6,22 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from ...db.mongo import get_database
 from ...dependencies import get_current_user
-from ...services.attendance_service import get_attendance_for_employee
+from ...services.attendance_service import get_attendance_for_employee, infer_attendance_status
 
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
+
+
+@router.get("/me")
+async def my_attendance(
+    fromDate: datetime | None = Query(default=None),
+    toDate: datetime | None = Query(default=None),
+    current_user=Depends(get_current_user),
+):
+    db = get_database()
+    records = await get_attendance_for_employee(db, current_user["empId"], fromDate, toDate)
+    records_with_status = [{**r, "status": infer_attendance_status(r)} for r in records]
+    return {"empId": current_user["empId"], "records": records_with_status}
 
 
 @router.get("/{emp_id}")
@@ -24,15 +36,5 @@ async def attendance_by_employee(
 
     db = get_database()
     records = await get_attendance_for_employee(db, emp_id, fromDate, toDate)
-    return {"empId": emp_id, "records": records}
-
-
-@router.get("/me")
-async def my_attendance(
-    fromDate: datetime | None = Query(default=None),
-    toDate: datetime | None = Query(default=None),
-    current_user=Depends(get_current_user),
-):
-    db = get_database()
-    records = await get_attendance_for_employee(db, current_user["empId"], fromDate, toDate)
-    return {"empId": current_user["empId"], "records": records}
+    records_with_status = [{**r, "status": infer_attendance_status(r)} for r in records]
+    return {"empId": emp_id, "records": records_with_status}

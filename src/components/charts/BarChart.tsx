@@ -16,6 +16,7 @@ export const BarChart: React.FC<BarChartProps> = ({
   height = 350,
   stacked = false,
 }) => {
+  if (!data || data.length === 0 || !categories || categories.length === 0) return null;
   const options = {
     chart: {
       type: 'bar' as const,

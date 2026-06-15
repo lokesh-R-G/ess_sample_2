@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarDays, Clock, Briefcase, IndianRupee, Users, PartyPopper, Bell } from 'lucide-react';
 import { GlassCard, KPICard, StatusBadge, NotificationCard } from '../../components/ui';
+import ErrorBoundary from '../../components/ui/ErrorBoundary';
 import { AreaChart, DonutChart } from '../../components/charts';
 import { DashboardLayout } from '../../components/layout';
 import { DashboardSummary, getDashboardSummary } from '../../services/dashboardService';
@@ -43,9 +44,7 @@ export const Dashboard: React.FC = () => {
     [summary],
   );
 
-  const leaveChartData = summary
-    ? [summary.attendance.presentDays, summary.attendance.leaveBalance, summary.attendance.absentDays, 0, 0]
-    : [0, 0, 0, 0, 0];
+  const leaveChartData = summary?.distribution ?? [0, 0, 0, 0, 0];
 
   return (
     <DashboardLayout>
@@ -73,11 +72,11 @@ export const Dashboard: React.FC = () => {
           </motion.div>
 
           <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" variants={itemVariants}>
-            <KPICard title="Present Days" value={summary?.attendance.presentDays ?? 0} icon={CalendarDays} color="green" delay={0} />
-            <KPICard title="Absent Days" value={summary?.attendance.absentDays ?? 0} icon={Users} color="red" delay={0.1} />
-            <KPICard title="Leave Balance" value={summary?.attendance.leaveBalance ?? 0} icon={Briefcase} color="blue" delay={0.2} />
-            <KPICard title="Current Salary" value={summary?.attendance.currentSalary ?? 0} prefix="₹" icon={IndianRupee} color="purple" delay={0.3} />
-            <KPICard title="Working Hours" value={summary?.attendance.workingHours ?? 0} suffix=" hrs" icon={Clock} color="yellow" delay={0.4} />
+            <KPICard title="Present Days" value={summary?.stats.presentDays ?? 0} icon={CalendarDays} color="green" delay={0} />
+            <KPICard title="Absent Days" value={summary?.stats.absentDays ?? 0} icon={Users} color="red" delay={0.1} />
+            <KPICard title="Leave Balance" value={summary?.stats.leaveBalance ?? 0} icon={Briefcase} color="blue" delay={0.2} />
+            <KPICard title="Current Salary" value={summary?.stats.currentSalary ?? 0} prefix="₹" icon={IndianRupee} color="purple" delay={0.3} />
+            <KPICard title="Working Hours" value={summary?.stats.workingHours ?? 0} suffix=" hrs" icon={Clock} color="yellow" delay={0.4} />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -89,7 +88,11 @@ export const Dashboard: React.FC = () => {
                     <p className="text-sm text-neutral-500">Backend-driven attendance summary</p>
                   </div>
                 </div>
-                <AreaChart data={attendanceChartData} categories={summary?.attendanceTrendData.months ?? []} height={280} />
+                {summary && (
+                  <ErrorBoundary fallback={<p className="text-sm text-neutral-500">Chart unavailable.</p>}>
+                    <AreaChart data={attendanceChartData} categories={summary.attendanceTrendData.months ?? []} height={280} />
+                  </ErrorBoundary>
+                )}
               </GlassCard>
             </motion.div>
 
@@ -99,7 +102,15 @@ export const Dashboard: React.FC = () => {
                   <h3 className="text-lg font-semibold text-neutral-900">Attendance Distribution</h3>
                   <p className="text-sm text-neutral-500">Current month snapshot</p>
                 </div>
-                <DonutChart labels={[ 'Present', 'Leave', 'Absent', 'Week Off', 'OD' ]} series={leaveChartData} colors={[ '#00924C', '#f59e0b', '#ef4444', '#3b82f6', '#9333ea' ]} height={250} />
+                {summary ? (
+                  leaveChartData.reduce((a, b) => a + b, 0) > 0 ? (
+                    <ErrorBoundary fallback={<p className="text-sm text-neutral-500">Chart unavailable.</p>}>
+                      <DonutChart labels={[ 'Present', 'Leave', 'Absent', 'Week Off', 'OD' ]} series={leaveChartData} colors={[ '#00924C', '#f59e0b', '#ef4444', '#3b82f6', '#9333ea' ]} height={250} />
+                    </ErrorBoundary>
+                  ) : (
+                    <p className="text-sm text-neutral-500">No distribution data available.</p>
+                  )
+                ) : null}
               </GlassCard>
             </motion.div>
           </div>
@@ -155,8 +166,14 @@ export const Dashboard: React.FC = () => {
                   <Bell className="w-5 h-5 text-primary-500" />
                 </div>
                 <div className="space-y-3">
-                  {summary?.notifications?.length ? summary.notifications.slice(0, 4).map((notification) => (
-                    <NotificationCard key={notification.id} title={notification.title} message={notification.message} type={notification.type as 'success' | 'warning' | 'error' | 'info'} time={notification.time} />
+                  {summary?.notifications?.length ? summary.notifications.slice(0, 4).map((notification, index) => (
+                    <NotificationCard
+                      key={notification.id ?? index}
+                      title={notification.title ?? 'Notification'}
+                      message={notification.message ?? 'No details available.'}
+                      type={(notification.type as 'success' | 'warning' | 'error' | 'info') ?? 'info'}
+                      time={notification.time ?? ''}
+                    />
                   )) : <p className="text-sm text-neutral-500">No notifications yet.</p>}
                 </div>
               </GlassCard>

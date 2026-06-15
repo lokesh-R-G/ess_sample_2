@@ -47,6 +47,8 @@ def build_daily_summaries(records: Iterable[dict]) -> list[dict]:
         if first_in and last_out and punch_count > 1:
             worked_minutes = max(0, int((last_out - first_in).total_seconds() // 60))
 
+        status = "present" if punch_count > 1 else "absent"
+
         summaries.append(
             {
                 "empId": emp_id,
@@ -55,13 +57,31 @@ def build_daily_summaries(records: Iterable[dict]) -> list[dict]:
                 "lastOut": last_out,
                 "punchCount": punch_count,
                 "workedMinutes": worked_minutes,
-                "status": "present" if punch_count > 0 else "absent",
+                "status": status,
                 "sourceLogFingerprints": [item["fingerprint"] for item in ordered],
                 "updatedAt": _utc_now(),
             }
         )
 
-    return summaries
+
+def infer_attendance_status(record: dict) -> str:
+    status = record.get("status")
+    if status in {"present", "absent", "leave", "weekoff", "od", "partial"}:
+        return status
+
+    # check common timestamp fields used by daily summaries
+    if record.get("firstIn") and record.get("lastOut"):
+        return "present"
+
+    # legacy/raw payload fields
+    if record.get("inTime") and record.get("outTime"):
+        return "present"
+
+    # fallback to punch count
+    if record.get("punchCount") and record.get("punchCount") > 1:
+        return "present"
+
+    return "absent"
 
 
 async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[str, int]:
@@ -105,5 +125,6 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         if to_date:
             query["date"]["$lte"] = to_date.date().isoformat()
 
-    cursor = db.attendance.find(query).sort([("date", 1)])
+    # exclude MongoDB internal ObjectId to keep response JSON-serializable
+    cursor = db.attendance.find(query, {"_id": 0}).sort([("date", 1)])
     return await cursor.to_list(length=None)

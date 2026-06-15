@@ -93,12 +93,12 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin/employees" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/payroll" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/branches" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/attendance" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/approvals" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/settings" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/employees"element={<Navigate to="/admin/employees" replace />} />
+        <Route path="/admin/payroll" element={<Navigate to="/admin/payroll" replace />} />
+        <Route path="/admin/branches" element={<Navigate to="/admin/branches" replace />} />
+        <Route path="/admin/attendance" element={<Navigate to="/admin/attendance" replace />} />
+        <Route path="/admin/approvals" element={<Navigate to="/admin/approvals" replace />} />
+        <Route path="/admin/settings" element={<Navigate to="/admin/settings" replace />} />
 
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />

@@ -14,6 +14,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   colors = ['#00924C', '#3b82f6', '#9333ea', '#f59e0b', '#ef4444'],
   height = 300,
 }) => {
+  if (!series || series.length === 0 || !labels || labels.length === 0) return null;
   const options = {
     chart: {
       type: 'donut' as const,

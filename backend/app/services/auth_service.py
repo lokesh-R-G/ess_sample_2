@@ -35,7 +35,11 @@ async def authenticate_user(db, emp_id: str, password: str) -> dict:
 
 
 async def validate_employee_with_essl(emp_id: str) -> bool:
-    client = build_essl_client()
+    try:
+        client = build_essl_client()
+    except RuntimeError:
+        return False
+
     to_date = datetime.now(timezone.utc)
     from_date = to_date - timedelta(days=365)
     records = await asyncio.to_thread(client.fetch_transactions, from_date, to_date)
