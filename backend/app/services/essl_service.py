@@ -4,10 +4,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
-
 from zeep import Client, Settings as ZeepSettings
 from zeep.helpers import serialize_object
-
 from ..core.config import get_settings
 from .attendance_service import create_fingerprint
 
