@@ -27,7 +27,7 @@ def init_scheduler():
         logger.info("Background full sync finished")
 
     # schedule every 6 hours
-    scheduler.add_job(job_all_users, IntervalTrigger(hours=6), next_run_time=datetime.now())
+    scheduler.add_job(job_all_users, IntervalTrigger(hours=0.1), next_run_time=datetime.now())
     scheduler.start()
     return scheduler
 

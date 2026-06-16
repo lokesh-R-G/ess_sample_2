@@ -188,7 +188,7 @@ class EsslClient:
         print(f"   From: {from_date}, To: {to_date}")
 
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             # Fix future date issue
             if not from_date or from_date > now:

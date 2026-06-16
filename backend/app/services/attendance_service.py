@@ -59,9 +59,8 @@ def build_raw_log_document(record: dict, sync_batch_id: str) -> dict:
                 "workedMinutes": worked_minutes,
                 "status": status,
                 "sourceLogFingerprints": [item["fingerprint"] for item in ordered],
-                "updatedAt": _utc_now(),
-            }
-        )'''
+                "updatedAt": _utc_now(),'''
+from datetime import date, datetime, timezone, timedelta
     
 def build_daily_summaries(logs):
     grouped = defaultdict(list)
@@ -72,18 +71,28 @@ def build_daily_summaries(logs):
 
     summaries = []
 
-    for (empId, date), timestamps in grouped.items():
+    for (empId, date_val), timestamps in grouped.items():
         timestamps.sort()
 
         in_time = timestamps[0]
         out_time = timestamps[-1]
 
+        work_hours = (out_time - in_time).total_seconds() / 3600 if len(timestamps) > 1 else 0
+
+        if len(timestamps) > 1:
+            status = "Present"
+        elif len(timestamps) == 1:
+            status = "Present (No Out)"
+        else:
+            status = "Absent"
+
         summaries.append({
             "empId": empId,
-            "date": date,
-            "inTime": in_time,
-            "outTime": out_time,
-            "status": "Present" if len(timestamps) > 0 else "Absent"
+            "date": date_val.isoformat(),
+            "inTime": in_time.isoformat(),
+            "outTime": out_time.isoformat() if len(timestamps) > 1 else None,
+            "workHours": work_hours,
+            "status": status
         })
 
     return summaries
@@ -162,4 +171,40 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
 
     # exclude MongoDB internal ObjectId to keep response JSON-serializable
     cursor = db.attendance.find(query, {"_id": 0}).sort([("date", 1)])
-    return await cursor.to_list(length=None)
+    records = await cursor.to_list(length=None)
+
+    if from_date and to_date:
+        record_dict = {r["date"]: r for r in records}
+        filled_records = []
+        
+        current_date = from_date.date()
+        end_date = to_date.date()
+        
+        holidays_cursor = db.holidays.find({}, {"_id": 0, "date": 1, "name": 1})
+        holidays_list = await holidays_cursor.to_list(length=None)
+        holiday_dates = {h.get("date"): h.get("name") for h in holidays_list if h.get("date")}
+
+        while current_date <= end_date:
+            date_str = current_date.isoformat()
+            if date_str in record_dict:
+                filled_records.append(record_dict[date_str])
+            else:
+                if current_date.weekday() == 6:
+                    status = "weekoff"
+                elif date_str in holiday_dates:
+                    status = "holiday"
+                else:
+                    status = "absent"
+                    
+                filled_records.append({
+                    "empId": emp_id,
+                    "date": date_str,
+                    "status": status,
+                    "inTime": None,
+                    "outTime": None,
+                    "workHours": 0
+                })
+            current_date += timedelta(days=1)
+        return filled_records
+        
+    return records

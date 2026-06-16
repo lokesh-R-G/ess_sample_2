@@ -94,7 +94,7 @@ async def sync_user(db, emp_id: str, from_date: Optional[datetime] = None, to_da
         attendance_upserted = await upsert_daily_attendance(db, summaries)
         raw_user = await db.users.find_one({"empId": emp_id})
         user = DictAttrWrapper(raw_user)
-        user.lastSyncAt = datetime.utcnow()
+        user.lastSyncAt = datetime.now(timezone.utc)
         await db.users.update_one({"empId": emp_id}, {"$set": {"dataSyncStatus": "completed", "lastSyncAt": user.lastSyncAt}})
         print(f"⏰ Updated lastSyncAt: {user.lastSyncAt}")
 
@@ -119,12 +119,12 @@ async def sync_user_incremental(db, emp_id: str) -> dict:
     user = DictAttrWrapper(raw_user)
 
     '''if not user.lastSyncAt:
-        from_date = datetime.utcnow() - timedelta(days=90)
+        from_date = datetime.now(timezone.utc) - timedelta(days=90)
     else:
         from_date = user.lastSyncAt - timedelta(minutes=5)
 
     return await sync_user(db, emp_id, from_date=from_date, to_date=None)'''
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if not user.lastSyncAt or user.lastSyncAt > now:
         print("⚠️ Invalid lastSyncAt detected, resetting to last 30 days")
         from_date = now - timedelta(days=30)

@@ -12,6 +12,10 @@ import LeaveManagement from './pages/employee/LeaveManagement';
 import Payslip from './pages/employee/Payslip';
 import Profile from './pages/employee/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminEmployees from './pages/admin/AdminEmployees';
+import AdminLeaveApprovals from './pages/admin/AdminLeaveApprovals';
+import AdminHolidays from './pages/admin/AdminHolidays';
+import AdminSync from './pages/admin/AdminSync';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -85,19 +89,15 @@ function AppRoutes() {
           }
         />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowRoles={['Admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/admin/employees" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminDashboard /> </ProtectedRoute> } />
+        <Route path="/admin/employees" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminEmployees /> </ProtectedRoute> } />
+        <Route path="/admin/leave-approvals" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminLeaveApprovals /> </ProtectedRoute> } />
+        <Route path="/admin/holidays" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminHolidays /> </ProtectedRoute> } />
+        <Route path="/admin/sync" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminSync /> </ProtectedRoute> } />
         <Route path="/admin/payroll" element={<Navigate to="/admin" replace />} />
         <Route path="/admin/branches" element={<Navigate to="/admin" replace />} />
         <Route path="/admin/attendance" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/approvals" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/approvals" element={<Navigate to="/admin/leave-approvals" replace />} />
         <Route path="/admin/settings" element={<Navigate to="/admin" replace />} />
 
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />

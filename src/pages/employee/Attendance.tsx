@@ -64,7 +64,7 @@ export const Attendance: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {Object.entries(statusConfig).map(([key, config]) => {
-            const count = records.filter((a) => (a.status ?? 'absent') === key).length;
+            const count = records.filter((a) => (a.status?.toLowerCase() ?? 'absent') === key).length;
             return (
               <motion.div
                 key={key}
@@ -117,7 +117,7 @@ export const Attendance: React.FC = () => {
                 {[...Array(startDay)].map((_, i) => <div key={`empty-${i}`} className="aspect-square" />)}
                 {daysInMonth.map((day, index) => {
                   const attendance = getAttendanceForDate(day);
-                  const status = attendance?.status ?? 'absent';
+                  const status = attendance?.status?.toLowerCase() ?? 'absent';
                   const isSelected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
                   return (
@@ -131,7 +131,7 @@ export const Attendance: React.FC = () => {
                       whileHover={{ scale: 1.05 }}
                     >
                       <span className={`text-sm font-medium ${isToday(day) ? 'text-primary-600' : 'text-neutral-900'}`}>{format(day, 'd')}</span>
-                      {attendance && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${status === 'present' ? 'bg-emerald-500' : status === 'absent' ? 'bg-red-500' : status === 'leave' ? 'bg-amber-500' : status === 'od' ? 'bg-purple-500' : 'bg-blue-500'}`} />}
+                      {attendance && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${status.includes('present') ? 'bg-emerald-500' : status === 'absent' ? 'bg-red-500' : status === 'leave' ? 'bg-amber-500' : status === 'od' ? 'bg-purple-500' : 'bg-blue-500'}`} />}
                     </motion.button>
                   );
                 })}
@@ -160,7 +160,17 @@ export const Attendance: React.FC = () => {
                     if (!attendance) {
                       return <div className="text-sm text-neutral-500">No attendance found for this date.</div>;
                     }
-                    const status = attendance.status ?? 'absent';
+                    const status = attendance.status?.toLowerCase() ?? 'absent';
+                    
+                    const inTimeStr = attendance.inTime || attendance.firstIn;
+                    const outTimeStr = attendance.outTime || attendance.lastOut;
+                    const inDate = inTimeStr ? new Date(inTimeStr) : null;
+                    const outDate = outTimeStr ? new Date(outTimeStr) : null;
+                    
+                    let computedHours = attendance.workHours;
+                    if (computedHours === undefined && inDate && outDate) {
+                      computedHours = (outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60);
+                    }
 
                     return (
                       <motion.div key={selectedDate.toISOString()} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
@@ -170,38 +180,38 @@ export const Attendance: React.FC = () => {
                         </div>
                         <div className="flex justify-center">
                           <StatusBadge
-                            status={status === 'present' ? 'success' : status === 'absent' ? 'error' : status === 'leave' ? 'warning' : status === 'od' ? 'purple' : 'info'}
-                            label={status.toUpperCase()}
+                            status={status.includes('present') ? 'success' : status === 'absent' ? 'error' : status === 'leave' ? 'warning' : status === 'od' ? 'purple' : 'info'}
+                            label={attendance.status || 'ABSENT'}
                           />
                         </div>
                         <div className="text-sm text-neutral-600 space-y-2">
                           <div className="flex items-center justify-between">
                             <span>Status</span>
-                            <span className="font-medium text-neutral-900 capitalize">{status}</span>
+                            <span className="font-medium text-neutral-900 capitalize">{attendance.status || 'Absent'}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span>In Time</span>
-                            <span className="font-medium text-neutral-900">{attendance.firstIn ? format(new Date(attendance.firstIn), 'hh:mm a') : '--:--'}</span>
+                            <span className="font-medium text-neutral-900">{inDate ? format(inDate, 'hh:mm a') : '--:--'}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span>Out Time</span>
-                            <span className="font-medium text-neutral-900">{attendance.lastOut ? format(new Date(attendance.lastOut), 'hh:mm a') : '--:--'}</span>
+                            <span className="font-medium text-neutral-900">{outDate ? format(outDate, 'hh:mm a') : '--:--'}</span>
                           </div>
                         </div>
-                        {(status === 'present' || status === 'od' || status === 'partial') && (
+                        {(status.includes('present') || status === 'od' || status === 'partial') && (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                               <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-600" /><span className="text-sm text-neutral-600">Check In</span></div>
-                              <span className="text-sm font-medium text-neutral-900">{attendance.firstIn ? format(new Date(attendance.firstIn), 'hh:mm a') : '--:--'}</span>
+                              <span className="text-sm font-medium text-neutral-900">{inDate ? format(inDate, 'hh:mm a') : '--:--'}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                               <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-red-600" /><span className="text-sm text-neutral-600">Check Out</span></div>
-                              <span className="text-sm font-medium text-neutral-900">{attendance.lastOut ? format(new Date(attendance.lastOut), 'hh:mm a') : '--:--'}</span>
+                              <span className="text-sm font-medium text-neutral-900">{outDate ? format(outDate, 'hh:mm a') : '--:--'}</span>
                             </div>
-                            {attendance.workedMinutes !== undefined && (
+                            {computedHours !== undefined && computedHours > 0 && (
                               <div className="flex items-center justify-between p-3 rounded-lg bg-primary-50 border border-primary-200">
                                 <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary-600" /><span className="text-sm text-neutral-600">Working Hours</span></div>
-                                <span className="text-sm font-semibold text-primary-600">{(attendance.workedMinutes / 60).toFixed(2)} hrs</span>
+                                <span className="text-sm font-semibold text-primary-600">{computedHours.toFixed(2)} hrs</span>
                               </div>
                             )}
                           </div>

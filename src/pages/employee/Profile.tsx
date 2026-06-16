@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Building2, Calendar, Briefcase, CreditCard, UserCheck, Heart, Edit2, Camera, Shield, Award } from 'lucide-react';
-import { GlassCard, AnimatedButton, StatusBadge } from '../../components/ui';
+import { GlassCard, AnimatedButton, StatusBadge, Modal, Input } from '../../components/ui';
 import { DashboardLayout } from '../../components/layout';
-import { getCurrentUser, UserProfile } from '../../services/authService';
+import { getCurrentUser, UserProfile, updateProfile } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 export const Profile: React.FC = () => {
+  const { refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'personal' | 'bank' | 'emergency'>('personal');
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -20,7 +26,31 @@ export const Profile: React.FC = () => {
     };
 
     loadProfile();
-  }, []);
+  }, [isEditModalOpen]); // reload after modal closes if it was saved
+
+  const handleEditClick = () => {
+    if (profile) {
+      setEditForm({
+        name: profile.name || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSaving(true);
+      await updateProfile(editForm);
+      await refreshUser();
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error('Failed to update profile', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const bankDetails = profile?.bankDetails ?? { bankName: '', accountNumber: '', ifscCode: '' };
   const emergencyContact = profile?.emergencyContact ?? { name: '', relationship: '', phone: '' };
@@ -48,7 +78,7 @@ export const Profile: React.FC = () => {
                   <p className="text-sm text-neutral-600">{profile?.designation ?? 'Designation not available'}</p>
                   <p className="text-xs text-neutral-500 mt-1">{profile?.department ?? 'Department not available'}{profile?.branch ? ` | ${profile.branch}` : ''}</p>
                 </div>
-                <AnimatedButton variant="secondary" size="sm" icon={Edit2}>Edit Profile</AnimatedButton>
+                <AnimatedButton variant="secondary" size="sm" icon={Edit2} onClick={handleEditClick}>Edit Profile</AnimatedButton>
               </div>
             </div>
           </GlassCard>
@@ -194,6 +224,35 @@ export const Profile: React.FC = () => {
           )}
         </motion.div>
       </div>
+
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Profile">
+        <div className="space-y-4">
+          <Input 
+            label="Full Name" 
+            value={editForm.name} 
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} 
+            placeholder="John Doe" 
+          />
+          <Input 
+            label="Phone Number" 
+            value={editForm.phone} 
+            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} 
+            placeholder="+91 9876543210" 
+          />
+          <Input 
+            label="Address" 
+            value={editForm.address} 
+            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} 
+            placeholder="123 Street Name, City, Country" 
+          />
+          
+          <div className="flex justify-end gap-3 pt-4">
+            <AnimatedButton variant="secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</AnimatedButton>
+            <AnimatedButton onClick={handleSaveProfile} isLoading={isSaving}>Save Changes</AnimatedButton>
+          </div>
+        </div>
+      </Modal>
+
     </DashboardLayout>
   );
 };

@@ -5,9 +5,12 @@ export interface AttendanceRecord {
   date: string;
   firstIn?: string | null;
   lastOut?: string | null;
+  inTime?: string | null;
+  outTime?: string | null;
   punchCount?: number;
   workedMinutes?: number;
-  status: 'present' | 'absent' | 'leave' | 'weekoff' | 'od' | 'partial';
+  workHours?: number;
+  status: 'present' | 'absent' | 'leave' | 'weekoff' | 'od' | 'partial' | string;
   sourceLogFingerprints?: string[];
 }
 

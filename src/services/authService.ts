@@ -49,6 +49,10 @@ export async function getCurrentUser() {
   return api.get<UserProfile>('/auth/me');
 }
 
+export async function updateProfile(data: { name?: string; phone?: string; address?: string }) {
+  return api.put<UserProfile>('/profile/me', data);
+}
+
 export function logout() {
   clearAuthStorage();
 }

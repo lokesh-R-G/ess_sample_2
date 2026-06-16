@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Search, Menu, User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -16,6 +18,15 @@ export const Header: React.FC<HeaderProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    localStorage.removeItem('ess_auth_token');
+    localStorage.removeItem('ess_auth_user');
+    logout();
+    navigate('/login');
+  };
 
   const notifications = [
     { id: 1, title: 'Leave Approved', message: 'Your leave request has been approved', time: '2m ago', unread: true },
@@ -148,6 +159,10 @@ export const Header: React.FC<HeaderProps> = ({
                     ].map((item) => (
                       <motion.button
                         key={item.label}
+                        onClick={() => {
+                          navigate(item.path);
+                          setShowProfile(false);
+                        }}
                         className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
                         whileHover={{ x: 4 }}
                       >
@@ -158,6 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                   <div className="p-2 border-t border-neutral-200">
                     <motion.button
+                      onClick={handleLogout}
                       className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-neutral-600 hover:bg-red-50 hover:text-red-600 transition-colors"
                       whileHover={{ x: 4 }}
                     >
