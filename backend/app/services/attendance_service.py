@@ -28,7 +28,7 @@ def build_raw_log_document(record: dict, sync_batch_id: str) -> dict:
     }
 
 
-def build_daily_summaries(records: Iterable[dict]) -> list[dict]:
+'''def build_daily_summaries(records: Iterable[dict]) -> list[dict]:
     grouped: dict[tuple[str, date], list[dict]] = defaultdict(list)
 
     for record in records:
@@ -61,8 +61,32 @@ def build_daily_summaries(records: Iterable[dict]) -> list[dict]:
                 "sourceLogFingerprints": [item["fingerprint"] for item in ordered],
                 "updatedAt": _utc_now(),
             }
-        )
+        )'''
+    
+def build_daily_summaries(logs):
+    grouped = defaultdict(list)
 
+    for log in logs:
+        date_key = log["timestamp"].date()
+        grouped[(log["empId"], date_key)].append(log["timestamp"])
+
+    summaries = []
+
+    for (empId, date), timestamps in grouped.items():
+        timestamps.sort()
+
+        in_time = timestamps[0]
+        out_time = timestamps[-1]
+
+        summaries.append({
+            "empId": empId,
+            "date": date,
+            "inTime": in_time,
+            "outTime": out_time,
+            "status": "Present" if len(timestamps) > 0 else "Absent"
+        })
+
+    return summaries
 
 def infer_attendance_status(record: dict) -> str:
     status = record.get("status")

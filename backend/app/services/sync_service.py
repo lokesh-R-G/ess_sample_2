@@ -87,8 +87,11 @@ async def sync_user(db, emp_id: str, from_date: Optional[datetime] = None, to_da
         print("✅ Records inserted into DB")
 
         summaries = build_daily_summaries(parsed_data)
-        attendance_upserted = await upsert_daily_attendance(db, summaries)
+        #attendance_upserted = await upsert_daily_attendance(db, summaries)
+        if not summaries:
+            summaries = []
 
+        attendance_upserted = await upsert_daily_attendance(db, summaries)
         raw_user = await db.users.find_one({"empId": emp_id})
         user = DictAttrWrapper(raw_user)
         user.lastSyncAt = datetime.utcnow()
@@ -115,15 +118,18 @@ async def sync_user_incremental(db, emp_id: str) -> dict:
     raw_user = await db.users.find_one({"empId": emp_id})
     user = DictAttrWrapper(raw_user)
 
-    from datetime import datetime, timedelta
-
-    if not user.lastSyncAt:
+    '''if not user.lastSyncAt:
         from_date = datetime.utcnow() - timedelta(days=90)
     else:
         from_date = user.lastSyncAt - timedelta(minutes=5)
 
-    return await sync_user(db, emp_id, from_date=from_date, to_date=None)
-
+    return await sync_user(db, emp_id, from_date=from_date, to_date=None)'''
+    now = datetime.utcnow()
+    if not user.lastSyncAt or user.lastSyncAt > now:
+        print("⚠️ Invalid lastSyncAt detected, resetting to last 30 days")
+        from_date = now - timedelta(days=30)
+    else:
+        from_date = user.lastSyncAt - timedelta(minutes=5)
 
 
 async def sync_all_users_incremental(db) -> list[dict]:

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CalendarDays, Clock, Briefcase, IndianRupee, Users, PartyPopper, Bell } from 'lucide-react';
 import { GlassCard, KPICard, StatusBadge, NotificationCard } from '../../components/ui';
@@ -18,6 +19,7 @@ const itemVariants = {
 };
 
 export const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -185,13 +187,14 @@ export const Dashboard: React.FC = () => {
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
-                  { label: 'Apply Leave', icon: CalendarDays, bgColor: 'bg-primary-100', iconColor: 'text-primary-600' },
-                  { label: 'View Payslip', icon: IndianRupee, bgColor: 'bg-purple-100', iconColor: 'text-purple-600' },
-                  { label: 'Apply OD', icon: Briefcase, bgColor: 'bg-blue-100', iconColor: 'text-blue-600' },
-                  { label: 'Update Profile', icon: Users, bgColor: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+                  { label: 'Apply Leave', icon: CalendarDays, bgColor: 'bg-primary-100', iconColor: 'text-primary-600', path: '/leave' },
+                  { label: 'View Payslip', icon: IndianRupee, bgColor: 'bg-purple-100', iconColor: 'text-purple-600', path: '/payslip' },
+                  { label: 'Apply OD', icon: Briefcase, bgColor: 'bg-blue-100', iconColor: 'text-blue-600', path: '/leave?type=OD' },
+                  { label: 'Update Profile', icon: Users, bgColor: 'bg-emerald-100', iconColor: 'text-emerald-600', path: '/profile' },
                 ].map((action, index) => (
                   <motion.button
                     key={action.label}
+                    onClick={() => navigate(action.path)}
                     className="p-4 rounded-xl bg-neutral-50 hover:bg-primary-50 border border-neutral-200 hover:border-primary-300 transition-all text-left"
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.98 }}

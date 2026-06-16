@@ -130,7 +130,7 @@ class EsslClient:
     def __post_init__(self) -> None:
         self._client = Client(self.wsdl_url, settings=ZeepSettings(strict=False, xml_huge_tree=True))
 
-    def fetch_transactions(self, from_date: datetime | None = None, to_date: datetime | None = None) -> list[dict[str, Any]]:
+    '''def fetch_transactions(self, from_date: datetime | None = None, to_date: datetime | None = None) -> list[dict[str, Any]]:
         service = self._client.service
         method = getattr(service, "GetTransactionsLog")
 
@@ -180,8 +180,43 @@ class EsslClient:
 
         print(f"❌ eSSL ERROR: Unable to call GetTransactionsLog with the available parameter combinations")
         print(f"   Last error: {str(last_error)}")
-        raise RuntimeError("Unable to call GetTransactionsLog with the available parameter combinations") from last_error
+        raise RuntimeError("Unable to call GetTransactionsLog with the available parameter combinations") from last_error'''
+    def fetch_transactions(self, from_date=None, to_date=None):
+    
 
+        print("🚀 Connecting to eSSL server...")
+        print(f"   From: {from_date}, To: {to_date}")
+
+        try:
+            now = datetime.utcnow()
+
+            # Fix future date issue
+            if not from_date or from_date > now:
+                from_date = now.replace(hour=0, minute=0, second=0)
+
+            if not to_date:
+                to_date = now
+
+            response = self._client.service.GetTransactionsLog(
+                FromDateTime=from_date.strftime("%Y-%m-%d %H:%M:%S"),
+                ToDateTime=to_date.strftime("%Y-%m-%d %H:%M:%S"),
+                SerialNumber=self.serial_number,
+                UserName=self.api_username,
+                UserPassword=self.api_password,
+                strDataList=""
+            )
+
+            print("✅ eSSL Response Received")
+
+            parsed = parse_essl_payload(response)
+
+            print(f"📦 Parsed records: {len(parsed)}")
+
+            return parsed
+
+        except Exception as e:
+            print("❌ eSSL ERROR:", str(e))
+            return []    
 
 
 def build_essl_client() -> EsslClient:
