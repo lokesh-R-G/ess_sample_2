@@ -16,6 +16,9 @@ import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminLeaveApprovals from './pages/admin/AdminLeaveApprovals';
 import AdminHolidays from './pages/admin/AdminHolidays';
 import AdminSync from './pages/admin/AdminSync';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminBranches from './pages/admin/AdminBranches';
+import AdminAttendance from './pages/admin/AdminAttendance';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -94,11 +97,11 @@ function AppRoutes() {
         <Route path="/admin/leave-approvals" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminLeaveApprovals /> </ProtectedRoute> } />
         <Route path="/admin/holidays" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminHolidays /> </ProtectedRoute> } />
         <Route path="/admin/sync" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminSync /> </ProtectedRoute> } />
-        <Route path="/admin/payroll" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/branches" element={<Navigate to="/admin" replace />} />
-        <Route path="/admin/attendance" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/payroll" element={<ProtectedRoute allowRoles={['Admin']}> <AdminDashboard /> </ProtectedRoute>} />
+        <Route path="/admin/branches" element={<ProtectedRoute allowRoles={['Admin']}> <AdminBranches /> </ProtectedRoute>} />
+        <Route path="/admin/attendance" element={<ProtectedRoute allowRoles={['Admin']}> <AdminAttendance /> </ProtectedRoute>} />
         <Route path="/admin/approvals" element={<Navigate to="/admin/leave-approvals" replace />} />
-        <Route path="/admin/settings" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/settings" element={<ProtectedRoute allowRoles={['Admin']}> <AdminSettings /> </ProtectedRoute>} />
 
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />

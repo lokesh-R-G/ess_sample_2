@@ -13,11 +13,15 @@ scheduler: AsyncIOScheduler | None = None
 
 def init_scheduler():
     global scheduler
-    if scheduler is not None:
-        return scheduler
-    scheduler = AsyncIOScheduler()
     import logging
     logger = logging.getLogger("scheduler")
+    logger.setLevel(logging.INFO)
+
+    if scheduler is not None and scheduler.running:
+        logger.info("Scheduler already running.")
+        return scheduler
+
+    scheduler = AsyncIOScheduler()
 
     async def job_all_users():
         db = get_database()
@@ -26,9 +30,10 @@ def init_scheduler():
         await sync_all_users_incremental(db)
         logger.info("Background full sync finished")
 
-    # schedule every 6 hours
-    scheduler.add_job(job_all_users, IntervalTrigger(hours=0.1), next_run_time=datetime.now())
+    # schedule every 1 hour
+    scheduler.add_job(job_all_users, IntervalTrigger(hours=1), next_run_time=datetime.now())
     scheduler.start()
+    logger.info("Scheduler started successfully.")
     return scheduler
 
 

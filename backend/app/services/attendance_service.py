@@ -179,6 +179,8 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         
         current_date = from_date.date()
         end_date = to_date.date()
+        today = datetime.now(timezone.utc).date()
+        end_date = min(end_date, today)
         
         holidays_cursor = db.holidays.find({}, {"_id": 0, "date": 1, "name": 1})
         holidays_list = await holidays_cursor.to_list(length=None)

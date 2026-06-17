@@ -35,7 +35,7 @@ export const AdminHolidays: React.FC = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout isAdmin>
       <div className="space-y-6">
         <GlassCard className="p-6">
           <h2 className="text-xl font-bold text-neutral-900 mb-4">Manage Holidays</h2>

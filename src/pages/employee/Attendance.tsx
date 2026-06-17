@@ -116,8 +116,9 @@ export const Attendance: React.FC = () => {
               <div className="grid grid-cols-7 gap-2">
                 {[...Array(startDay)].map((_, i) => <div key={`empty-${i}`} className="aspect-square" />)}
                 {daysInMonth.map((day, index) => {
+                  const isFuture = day > new Date();
                   const attendance = getAttendanceForDate(day);
-                  const status = attendance?.status?.toLowerCase() ?? 'absent';
+                  const status = isFuture ? 'future' : (attendance?.status?.toLowerCase() ?? 'absent');
                   const isSelected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
 
                   return (
@@ -131,7 +132,9 @@ export const Attendance: React.FC = () => {
                       whileHover={{ scale: 1.05 }}
                     >
                       <span className={`text-sm font-medium ${isToday(day) ? 'text-primary-600' : 'text-neutral-900'}`}>{format(day, 'd')}</span>
-                      {attendance && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${status.includes('present') ? 'bg-emerald-500' : status === 'absent' ? 'bg-red-500' : status === 'leave' ? 'bg-amber-500' : status === 'od' ? 'bg-purple-500' : 'bg-blue-500'}`} />}
+                      {!isFuture && (
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${status.includes('present') ? 'bg-emerald-500' : status === 'absent' ? 'bg-red-500' : status === 'leave' ? 'bg-amber-500' : status === 'od' ? 'bg-purple-500' : 'bg-blue-500'}`} />
+                      )}
                     </motion.button>
                   );
                 })}
@@ -156,6 +159,11 @@ export const Attendance: React.FC = () => {
                   <div className="text-sm text-neutral-500">Loading attendance...</div>
                 ) : selectedDate ? (
                   (() => {
+                    const isFuture = selectedDate > new Date();
+                    if (isFuture) {
+                      return <div className="text-sm text-neutral-500">No attendance data for future dates.</div>;
+                    }
+
                     const attendance = getAttendanceForDate(selectedDate);
                     if (!attendance) {
                       return <div className="text-sm text-neutral-500">No attendance found for this date.</div>;

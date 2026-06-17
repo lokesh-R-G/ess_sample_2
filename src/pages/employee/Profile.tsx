@@ -248,7 +248,7 @@ export const Profile: React.FC = () => {
           
           <div className="flex justify-end gap-3 pt-4">
             <AnimatedButton variant="secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</AnimatedButton>
-            <AnimatedButton onClick={handleSaveProfile} isLoading={isSaving}>Save Changes</AnimatedButton>
+            <AnimatedButton onClick={handleSaveProfile} loading={isSaving}>Save Changes</AnimatedButton>
           </div>
         </div>
       </Modal>

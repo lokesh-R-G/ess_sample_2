@@ -37,6 +37,8 @@ async def _fetch_transactions(client, from_date: datetime | None = None, to_date
 async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetime | None = None) -> SyncResponse:
     client = build_essl_client()
     raw_records = await _fetch_transactions(client, from_date=from_date, to_date=to_date)
+    if to_date is None:
+        to_date = datetime.now(timezone.utc)   
     sync_batch_id = str(uuid4())
 
     raw_result = await upsert_raw_logs(db, raw_records, sync_batch_id)
@@ -130,6 +132,7 @@ async def sync_user_incremental(db, emp_id: str) -> dict:
         from_date = now - timedelta(days=30)
     else:
         from_date = user.lastSyncAt - timedelta(minutes=5)
+    return await sync_user(db, emp_id, from_date=from_date, to_date=now)
 
 
 async def sync_all_users_incremental(db) -> list[dict]:

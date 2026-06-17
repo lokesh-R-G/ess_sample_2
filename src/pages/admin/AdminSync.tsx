@@ -21,14 +21,14 @@ export const AdminSync: React.FC = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout isAdmin>
       <div className="space-y-6">
         <GlassCard className="p-6 text-center">
           <h2 className="text-xl font-bold text-neutral-900 mb-4">Sync ESSL Data</h2>
           <p className="text-neutral-600 mb-6">
             Click the button below to manually trigger a sync of all users from the ESSL system.
           </p>
-          <AnimatedButton onClick={handleSync} isLoading={syncing} className="mx-auto">
+          <AnimatedButton onClick={handleSync} loading={syncing} className="mx-auto">
             Sync All Users
           </AnimatedButton>
           

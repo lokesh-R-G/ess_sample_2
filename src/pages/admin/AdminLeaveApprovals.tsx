@@ -10,7 +10,7 @@ export const AdminLeaveApprovals: React.FC = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const data = await api.get<any[]>('/admin/leave-requests');
+      const data = await api.get<any[]>('/leave/pending');
       setRequests(data);
     } catch (e) {
       console.error(e);
@@ -25,7 +25,7 @@ export const AdminLeaveApprovals: React.FC = () => {
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
     try {
-      await api.post(`/admin/leave-requests/${id}/${action}`);
+      await api.post(`/leave/${id}/${action}`);
       fetchRequests();
     } catch (e) {
       console.error(e);
@@ -33,7 +33,7 @@ export const AdminLeaveApprovals: React.FC = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout isAdmin>
       <div className="space-y-6">
         <GlassCard className="p-6">
           <h2 className="text-xl font-bold text-neutral-900 mb-4">Leave & OD Approvals</h2>
@@ -54,8 +54,8 @@ export const AdminLeaveApprovals: React.FC = () => {
                 {requests.map((req) => (
                   <tr key={req.id} className="border-b border-neutral-100">
                     <td className="py-3 px-4">{req.empId}</td>
-                    <td className="py-3 px-4">{req.type}</td>
-                    <td className="py-3 px-4">{req.startDate} to {req.endDate}</td>
+                    <td className="py-3 px-4 uppercase">{req.requestType} {req.leaveType ? `(${req.leaveType})` : ''}</td>
+                    <td className="py-3 px-4">{req.fromDate} to {req.toDate}</td>
                     <td className="py-3 px-4">
                       <StatusBadge 
                         status={req.status === 'approved' ? 'success' : req.status === 'rejected' ? 'error' : 'warning'} 

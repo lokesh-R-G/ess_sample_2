@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 
 from ...db.mongo import get_database
-from ...dependencies import get_current_user
+from ...db.mongo import get_database
+from ...dependencies import get_current_user, require_roles
 
 
 router = APIRouter(prefix="/leave", tags=["leave"])
@@ -45,4 +46,28 @@ async def create_leave_request(payload: dict, current_user=Depends(get_current_u
         "updatedAt": now,
     }
     await db.leave_requests.insert_one(document)
+    return {"success": True}
+
+from bson.objectid import ObjectId
+
+@router.get("/pending")
+async def pending_leaves(_admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    cursor = db.leave_requests.find({"status": "pending"})
+    requests = await cursor.to_list(length=None)
+    for r in requests:
+        r["id"] = str(r["_id"])
+        del r["_id"]
+    return requests
+
+@router.post("/{req_id}/approve")
+async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "approved", "updatedAt": datetime.now(timezone.utc)}})
+    return {"success": True}
+
+@router.post("/{req_id}/reject")
+async def reject_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "rejected", "updatedAt": datetime.now(timezone.utc)}})
     return {"success": True}

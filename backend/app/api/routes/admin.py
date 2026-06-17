@@ -109,3 +109,41 @@ async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("
         pass
 
     return {"user": {"empId": created.get("empId"), "role": created.get("role"), "firstLogin": created.get("firstLogin")}}
+
+@router.get("/users")
+async def get_users(_admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    users = await db.users.find({}, {"_id": 0}).to_list(length=None)
+    # add fallback for status field 
+    for u in users:
+        if "status" not in u:
+            u["status"] = "active" if u.get("isActive", True) else "inactive"
+    return users
+
+class StatusUpdatePayload(BaseModel):
+    status: str
+
+@router.put("/users/{emp_id}/status")
+async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    is_active = payload.status.lower() == "active"
+    await db.users.update_one({"empId": emp_id}, {"$set": {"isActive": is_active, "status": payload.status.lower()}})
+    return {"success": True}
+
+@router.get("/holidays")
+async def get_holidays(_admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    holidays = await db.holidays.find({}, {"_id": 0}).sort("date", 1).to_list(length=None)
+    return holidays
+
+class HolidayPayload(BaseModel):
+    name: str
+    date: str
+    type: str = "National"
+
+@router.post("/holidays")
+async def add_holiday(payload: HolidayPayload, _admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    document = payload.model_dump()
+    await db.holidays.insert_one(document)
+    return {"success": True}
