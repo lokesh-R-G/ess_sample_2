@@ -61,6 +61,13 @@ async def summary(_admin=Depends(require_roles("Admin"))):
                 "status": "active" if employee.get("isActive", True) else "inactive",
             }
         )
+        
+    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    current_month_present = monthly_counts.get(current_month, {}).get("present", 0)
+    current_month_absent = monthly_counts.get(current_month, {}).get("absent", 0)
+    
+    total_attendance = current_month_present + current_month_absent
+    attendance_rate = round((current_month_present / total_attendance) * 100) if total_attendance > 0 else 0
 
     return {
         "stats": {
@@ -68,7 +75,7 @@ async def summary(_admin=Depends(require_roles("Admin"))):
             "activeEmployees": active_employees,
             "newJoinees": 0,
             "attrition": 0,
-            "attendanceRate": 0,
+            "attendanceRate": attendance_rate,
             "branches": len(branches),
         },
         "branchData": normalized_branches,
@@ -147,3 +154,45 @@ async def add_holiday(payload: HolidayPayload, _admin=Depends(require_roles("Adm
     document = payload.model_dump()
     await db.holidays.insert_one(document)
     return {"success": True}
+
+class EsslConfigPayload(BaseModel):
+    serialNumber: str
+
+@router.put("/essl-config/{branch}")
+async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    await db.essl_configs.update_one(
+        {"branch": branch},
+        {"$set": {"branch": branch, "serialNumber": payload.serialNumber}},
+        upsert=True
+    )
+    return {"success": True}
+
+from datetime import datetime, timezone
+
+@router.get("/attendance-summary")
+async def get_attendance_summary(_admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    today_str = datetime.now(timezone.utc).date().isoformat()
+    
+    cursor = db.attendance.find({"date": today_str})
+    records = await cursor.to_list(length=None)
+    
+    present_count = 0
+    absent_count = 0
+    od_count = 0
+    
+    for r in records:
+        status = r.get("status", "").lower()
+        if status == "present":
+            present_count += 1
+        elif status == "absent":
+            absent_count += 1
+        elif status in ["od", "leave"]:
+            od_count += 1
+            
+    return {
+        "present": present_count,
+        "absent": absent_count,
+        "od": od_count
+    }

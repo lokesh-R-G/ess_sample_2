@@ -7,7 +7,6 @@ import {
   FileText,
   Receipt,
   User,
-  BarChart3,
   Users,
   Building2,
   Settings,
@@ -36,7 +35,6 @@ const employeeNavItems: NavItem[] = [
   { path: '/leave', label: 'Leave Management', icon: FileText },
   { path: '/payslip', label: 'Payslip', icon: Receipt },
   { path: '/profile', label: 'Profile', icon: User },
-  { path: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 
 const adminNavItems: NavItem[] = [
@@ -49,12 +47,15 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },
 ];
 
+import { useAuth } from '../../context/AuthContext';
+
 export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggle,
   isAdmin = false,
 }) => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
 
   return (
@@ -145,7 +146,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           whileHover={{ scale: 1.02 }}
         >
           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 border-2 border-primary-500">
-            <span className="text-primary-600 font-medium text-sm">JD</span>
+            <span className="text-primary-600 font-medium text-sm">
+              {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
+            </span>
           </div>
           <AnimatePresence>
             {!isCollapsed && (
@@ -155,8 +158,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 exit={{ opacity: 0, width: 0 }}
                 className="flex-1 overflow-hidden"
               >
-                <p className="text-sm font-medium text-neutral-900 truncate">John Doe</p>
-                <p className="text-xs text-neutral-500 truncate">EMP-001</p>
+                <p className="text-sm font-medium text-neutral-900 truncate">{user?.name || 'User'}</p>
+                <p className="text-xs text-neutral-500 truncate">{user?.empId || 'EMP-000'}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -165,6 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <AnimatePresence>
           {!isCollapsed && (
             <motion.button
+              onClick={() => logout()}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

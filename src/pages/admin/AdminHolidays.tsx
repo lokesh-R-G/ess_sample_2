@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, AnimatedButton, Input } from '../../components/ui';
-import { DashboardLayout } from '../../components/layout';
 import { api } from '../../lib/api';
 
 export const AdminHolidays: React.FC = () => {
@@ -35,7 +34,7 @@ export const AdminHolidays: React.FC = () => {
   };
 
   return (
-    <DashboardLayout isAdmin>
+    <>
       <div className="space-y-6">
         <GlassCard className="p-6">
           <h2 className="text-xl font-bold text-neutral-900 mb-4">Manage Holidays</h2>
@@ -79,8 +78,9 @@ export const AdminHolidays: React.FC = () => {
           )}
         </GlassCard>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
 export default AdminHolidays;
+

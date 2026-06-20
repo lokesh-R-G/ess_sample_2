@@ -19,6 +19,7 @@ import AdminSync from './pages/admin/AdminSync';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendance from './pages/admin/AdminAttendance';
+import AdminLayout from './components/layout/AdminLayout';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -83,25 +84,18 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route path="/admin" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminDashboard /> </ProtectedRoute> } />
-        <Route path="/admin/employees" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminEmployees /> </ProtectedRoute> } />
-        <Route path="/admin/leave-approvals" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminLeaveApprovals /> </ProtectedRoute> } />
-        <Route path="/admin/holidays" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminHolidays /> </ProtectedRoute> } />
-        <Route path="/admin/sync" element={ <ProtectedRoute allowRoles={['Admin']}> <AdminSync /> </ProtectedRoute> } />
-        <Route path="/admin/payroll" element={<ProtectedRoute allowRoles={['Admin']}> <AdminDashboard /> </ProtectedRoute>} />
-        <Route path="/admin/branches" element={<ProtectedRoute allowRoles={['Admin']}> <AdminBranches /> </ProtectedRoute>} />
-        <Route path="/admin/attendance" element={<ProtectedRoute allowRoles={['Admin']}> <AdminAttendance /> </ProtectedRoute>} />
-        <Route path="/admin/approvals" element={<Navigate to="/admin/leave-approvals" replace />} />
-        <Route path="/admin/settings" element={<ProtectedRoute allowRoles={['Admin']}> <AdminSettings /> </ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute allowRoles={['Admin']}><AdminLayout /></ProtectedRoute>}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="employees" element={<AdminEmployees />} />
+          <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
+          <Route path="holidays" element={<AdminHolidays />} />
+          <Route path="sync" element={<AdminSync />} />
+          <Route path="payroll" element={<AdminDashboard />} />
+          <Route path="branches" element={<AdminBranches />} />
+          <Route path="attendance" element={<AdminAttendance />} />
+          <Route path="approvals" element={<Navigate to="/admin/leave-approvals" replace />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
 
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />

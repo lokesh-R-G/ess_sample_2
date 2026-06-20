@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 RoleType = Literal["Employee", "Admin"]
@@ -29,6 +29,7 @@ class TokenResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
     empId: str
     role: RoleType
     firstLogin: bool

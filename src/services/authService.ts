@@ -49,7 +49,11 @@ export async function getCurrentUser() {
   return api.get<UserProfile>('/auth/me');
 }
 
-export async function updateProfile(data: { name?: string; phone?: string; address?: string }) {
+export async function getProfile() {
+  return api.get<UserProfile>('/profile/me');
+}
+
+export async function updateProfile(data: any) {
   return api.put<UserProfile>('/profile/me', data);
 }
 

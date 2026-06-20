@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, AnimatedButton, StatusBadge } from '../../components/ui';
-import { DashboardLayout } from '../../components/layout';
 import { api } from '../../lib/api';
 
 export const AdminLeaveApprovals: React.FC = () => {
@@ -33,7 +32,7 @@ export const AdminLeaveApprovals: React.FC = () => {
   };
 
   return (
-    <DashboardLayout isAdmin>
+    <>
       <div className="space-y-6">
         <GlassCard className="p-6">
           <h2 className="text-xl font-bold text-neutral-900 mb-4">Leave & OD Approvals</h2>
@@ -78,8 +77,9 @@ export const AdminLeaveApprovals: React.FC = () => {
           )}
         </GlassCard>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
 export default AdminLeaveApprovals;
+

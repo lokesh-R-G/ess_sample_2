@@ -12,44 +12,43 @@ router = APIRouter(prefix="/profile", tags=["profile"])
 
 @router.get("/me")
 async def me(current_user=Depends(get_current_user)):
-    return {
-        "empId": current_user.get("empId"),
-        "role": current_user.get("role", "Employee"),
-        "firstLogin": bool(current_user.get("firstLogin", True)),
-        "name": current_user.get("name"),
-        "email": current_user.get("email"),
-        "phone": current_user.get("phone"),
-        "designation": current_user.get("designation"),
-        "department": current_user.get("department"),
-        "branch": current_user.get("branch"),
-        "branchId": current_user.get("branchId"),
-        "joiningDate": current_user.get("joiningDate"),
-        "reportingTo": current_user.get("reportingTo"),
-        "employeeType": current_user.get("employeeType"),
-        "address": current_user.get("address"),
-        "bankDetails": current_user.get("bankDetails", {}),
-        "emergencyContact": current_user.get("emergencyContact", {}),
-    }
+    user_data = dict(current_user)
+    if "_id" in user_data:
+        del user_data["_id"]
+    return user_data
 
 class ProfileUpdatePayload(BaseModel):
-    name: str | None = None
-    phone: str | None = None
-    address: str | None = None
+    model_config = {"extra": "allow"}
 
 @router.put("/me")
-async def update_profile(payload: ProfileUpdatePayload, current_user=Depends(get_current_user)):
+async def update_profile(payload: dict, current_user=Depends(get_current_user)):
     db = get_database()
     update_data = {}
-    if payload.name is not None:
-        update_data["name"] = payload.name
-    if payload.phone is not None:
-        update_data["phone"] = payload.phone
-    if payload.address is not None:
-        update_data["address"] = payload.address
+    
+    # Restrict to only phone and address
+    if "phone" in payload and payload["phone"] is not None:
+        update_data["phone"] = payload["phone"]
+    if "address" in payload and payload["address"] is not None:
+        update_data["address"] = payload["address"]
 
     if update_data:
         await db.users.update_one({"empId": current_user["empId"]}, {"$set": update_data})
 
-    # return updated user
     updated_user = await db.users.find_one({"empId": current_user["empId"]}, {"_id": 0})
+    return updated_user or {}
+
+from ...dependencies import require_roles
+
+@router.put("/{emp_id}")
+async def admin_update_profile(emp_id: str, payload: dict, _admin=Depends(require_roles("Admin"))):
+    db = get_database()
+    update_data = {}
+    for key, value in payload.items():
+        if value is not None:
+            update_data[key] = value
+
+    if update_data:
+        await db.users.update_one({"empId": emp_id}, {"$set": update_data})
+
+    updated_user = await db.users.find_one({"empId": emp_id}, {"_id": 0})
     return updated_user or {}

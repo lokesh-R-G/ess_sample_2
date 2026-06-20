@@ -21,3 +21,13 @@ export async function getAdminSummary() {
 export async function createUser(empId: string, name?: string, force?: boolean) {
   return api.post('/admin/create-user', { empId, name, force });
 }
+
+export interface AttendanceSummary {
+  present: number;
+  absent: number;
+  od: number;
+}
+
+export async function getAttendanceSummary() {
+  return api.get<AttendanceSummary>('/admin/attendance-summary');
+}

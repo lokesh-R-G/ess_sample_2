@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Building2, Calendar, Briefcase, CreditCard, UserCheck, Heart, Edit2, Camera, Shield, Award } from 'lucide-react';
 import { GlassCard, AnimatedButton, StatusBadge, Modal, Input } from '../../components/ui';
 import { DashboardLayout } from '../../components/layout';
-import { getCurrentUser, UserProfile, updateProfile } from '../../services/authService';
+import { getProfile, UserProfile, updateProfile } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 
 export const Profile: React.FC = () => {
@@ -12,13 +12,22 @@ export const Profile: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '' });
+  const [editForm, setEditForm] = useState({ 
+    name: '', 
+    phone: '', 
+    address: '',
+    designation: '',
+    department: '',
+    branch: '',
+    emergencyContact: { name: '', relationship: '', phone: '' },
+    bankDetails: { bankName: '', accountNumber: '', ifscCode: '' }
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const user = await getCurrentUser();
+        const user = await getProfile();
         setProfile(user);
       } catch {
         setProfile(null);
@@ -34,6 +43,19 @@ export const Profile: React.FC = () => {
         name: profile.name || '',
         phone: profile.phone || '',
         address: profile.address || '',
+        designation: profile.designation || '',
+        department: profile.department || '',
+        branch: profile.branch || '',
+        emergencyContact: {
+          name: profile.emergencyContact?.name || '',
+          relationship: profile.emergencyContact?.relationship || '',
+          phone: profile.emergencyContact?.phone || ''
+        },
+        bankDetails: {
+          bankName: profile.bankDetails?.bankName || '',
+          accountNumber: profile.bankDetails?.accountNumber || '',
+          ifscCode: profile.bankDetails?.ifscCode || ''
+        }
       });
       setIsEditModalOpen(true);
     }
@@ -245,6 +267,70 @@ export const Profile: React.FC = () => {
             onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} 
             placeholder="123 Street Name, City, Country" 
           />
+          <Input 
+            label="Designation" 
+            value={editForm.designation} 
+            onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })} 
+            placeholder="Software Engineer" 
+          />
+          <Input 
+            label="Department" 
+            value={editForm.department} 
+            onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} 
+            placeholder="Engineering" 
+          />
+          <Input 
+            label="Branch" 
+            value={editForm.branch} 
+            onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })} 
+            placeholder="Main Branch" 
+          />
+          <div className="pt-2">
+            <h4 className="text-sm font-semibold text-neutral-900 mb-3">Bank Details</h4>
+            <div className="space-y-4">
+              <Input 
+                label="Bank Name" 
+                value={editForm.bankDetails.bankName} 
+                onChange={(e) => setEditForm({ ...editForm, bankDetails: { ...editForm.bankDetails, bankName: e.target.value } })} 
+                placeholder="Bank Name" 
+              />
+              <Input 
+                label="Account Number" 
+                value={editForm.bankDetails.accountNumber} 
+                onChange={(e) => setEditForm({ ...editForm, bankDetails: { ...editForm.bankDetails, accountNumber: e.target.value } })} 
+                placeholder="Account Number" 
+              />
+              <Input 
+                label="IFSC Code" 
+                value={editForm.bankDetails.ifscCode} 
+                onChange={(e) => setEditForm({ ...editForm, bankDetails: { ...editForm.bankDetails, ifscCode: e.target.value } })} 
+                placeholder="IFSC Code" 
+              />
+            </div>
+          </div>
+          <div className="pt-2">
+            <h4 className="text-sm font-semibold text-neutral-900 mb-3">Emergency Contact</h4>
+            <div className="space-y-4">
+              <Input 
+                label="Contact Name" 
+                value={editForm.emergencyContact.name} 
+                onChange={(e) => setEditForm({ ...editForm, emergencyContact: { ...editForm.emergencyContact, name: e.target.value } })} 
+                placeholder="Jane Doe" 
+              />
+              <Input 
+                label="Relationship" 
+                value={editForm.emergencyContact.relationship} 
+                onChange={(e) => setEditForm({ ...editForm, emergencyContact: { ...editForm.emergencyContact, relationship: e.target.value } })} 
+                placeholder="Spouse" 
+              />
+              <Input 
+                label="Contact Phone" 
+                value={editForm.emergencyContact.phone} 
+                onChange={(e) => setEditForm({ ...editForm, emergencyContact: { ...editForm.emergencyContact, phone: e.target.value } })} 
+                placeholder="+91 9876543210" 
+              />
+            </div>
+          </div>
           
           <div className="flex justify-end gap-3 pt-4">
             <AnimatedButton variant="secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</AnimatedButton>

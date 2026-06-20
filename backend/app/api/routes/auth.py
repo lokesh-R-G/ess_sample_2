@@ -55,8 +55,7 @@ async def update_password(payload: ChangePasswordRequest, current_user=Depends(g
 
 @router.get("/me", response_model=UserResponse)
 async def me(current_user=Depends(get_current_user)):
-    return UserResponse(
-        empId=current_user["empId"],
-        role=current_user.get("role", "Employee"),
-        firstLogin=bool(current_user.get("firstLogin", True)),
-    )
+    user_data = dict(current_user)
+    if "_id" in user_data:
+        del user_data["_id"]
+    return UserResponse(**user_data)

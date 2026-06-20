@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, Building2, CheckCircle, DollarSign, TrendingUp, AlertCircle, Clock, BarChart3 } from 'lucide-react';
 import { GlassCard, KPICard, AnimatedButton, StatusBadge } from '../../components/ui';
 import { AreaChart, DonutChart } from '../../components/charts';
-import { DashboardLayout } from '../../components/layout';
-import { AdminSummary, getAdminSummary } from '../../services/adminService';
+import { AdminSummary, getAdminSummary, AttendanceSummary, getAttendanceSummary } from '../../services/adminService';
 
 export const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<AdminSummary | null>(null);
+  const [attSummary, setAttSummary] = useState<AttendanceSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -15,7 +17,12 @@ export const AdminDashboard: React.FC = () => {
     const loadSummary = async () => {
       try {
         setIsLoading(true);
-        setSummary(await getAdminSummary());
+        const [sum, att] = await Promise.all([
+          getAdminSummary(),
+          getAttendanceSummary()
+        ]);
+        setSummary(sum);
+        setAttSummary(att);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Unable to load admin dashboard');
       } finally {
@@ -32,7 +39,7 @@ export const AdminDashboard: React.FC = () => {
 
 
   return (
-    <DashboardLayout isAdmin>
+    <>
       <div className="space-y-6">
 
         {error ? <GlassCard className="p-4 border border-red-200 bg-red-50 text-red-700">{error}</GlassCard> : null}
@@ -58,8 +65,19 @@ export const AdminDashboard: React.FC = () => {
           <KPICard title="Attrition" value={summary?.stats.attrition ?? 0} icon={TrendingUp} color="red" />
           <KPICard title="Attendance Rate" value={summary?.stats.attendanceRate ?? 0} suffix="%" icon={BarChart3} color="yellow" />
           <KPICard title="Branches" value={summary?.stats.branches ?? 0} icon={Building2} color="orange" />
-
         </div>
+
+        {/* Daily Attendance Monitor */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <GlassCard className="p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Today's Attendance Monitor</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <KPICard title="Present Today" value={attSummary?.present ?? 0} icon={CheckCircle} color="green" />
+              <KPICard title="Absent Today" value={attSummary?.absent ?? 0} icon={AlertCircle} color="red" />
+              <KPICard title="On Duty / Leave" value={attSummary?.od ?? 0} icon={Clock} color="purple" />
+            </div>
+          </GlassCard>
+        </motion.div>
 
         {/* Quick Actions */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -67,14 +85,14 @@ export const AdminDashboard: React.FC = () => {
             <h3 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
-                { label: 'Add Employee', icon: Users, colorScheme: { bg: 'bg-primary-100', icon: 'text-primary-600' } },
-                { label: 'Process Payroll', icon: DollarSign, colorScheme: { bg: 'bg-purple-100', icon: 'text-purple-600' } },
-                { label: 'Approve Leaves', icon: CheckCircle, colorScheme: { bg: 'bg-blue-100', icon: 'text-blue-600' } },
-                { label: 'Add Branch', icon: Building2, colorScheme: { bg: 'bg-amber-100', icon: 'text-amber-600' } },
-                { label: 'Run Reports', icon: BarChart3, colorScheme: { bg: 'bg-orange-100', icon: 'text-orange-600' } },
-                { label: 'View Alerts', icon: AlertCircle, colorScheme: { bg: 'bg-red-100', icon: 'text-red-600' } },
+                { label: 'Add Employee', icon: Users, colorScheme: { bg: 'bg-primary-100', icon: 'text-primary-600' }, path: '/admin/employees' },
+                { label: 'Process Payroll', icon: DollarSign, colorScheme: { bg: 'bg-purple-100', icon: 'text-purple-600' }, path: '/admin/payroll' },
+                { label: 'Approve Leaves', icon: CheckCircle, colorScheme: { bg: 'bg-blue-100', icon: 'text-blue-600' }, path: '/admin/leave-approvals' },
+                { label: 'Add Branch', icon: Building2, colorScheme: { bg: 'bg-amber-100', icon: 'text-amber-600' }, path: '/admin/branches' },
+                { label: 'Run Reports', icon: BarChart3, colorScheme: { bg: 'bg-orange-100', icon: 'text-orange-600' }, path: '/admin' },
+                { label: 'View Alerts', icon: AlertCircle, colorScheme: { bg: 'bg-red-100', icon: 'text-red-600' }, path: '/admin' },
               ].map((action, index) => (
-                <motion.button key={action.label} className="p-4 rounded-xl bg-neutral-50 hover:bg-primary-50 border border-neutral-200 hover:border-primary-300 transition-all text-center" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                <motion.button key={action.label} onClick={() => navigate(action.path)} className="p-4 rounded-xl bg-neutral-50 hover:bg-primary-50 border border-neutral-200 hover:border-primary-300 transition-all text-center" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                   <div className={`w-10 h-10 rounded-lg ${action.colorScheme.bg} flex items-center justify-center mx-auto mb-2`}>
                     <action.icon className={`w-5 h-5 ${action.colorScheme.icon}`} />
                   </div>
@@ -115,7 +133,7 @@ export const AdminDashboard: React.FC = () => {
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-neutral-900">Branches</h3>
-                <AnimatedButton variant="secondary" size="sm" icon={Building2}>Manage</AnimatedButton>
+                <AnimatedButton variant="secondary" size="sm" icon={Building2} onClick={() => navigate('/admin/branches')}>Manage</AnimatedButton>
               </div>
               <div className="space-y-3">
                 {branchData.map((branch, index) => (
@@ -137,7 +155,7 @@ export const AdminDashboard: React.FC = () => {
             <GlassCard className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-neutral-900">Recent Employees</h3>
-                <AnimatedButton variant="secondary" size="sm" icon={Users}>View All</AnimatedButton>
+                <AnimatedButton variant="secondary" size="sm" icon={Users} onClick={() => navigate('/admin/employees')}>View All</AnimatedButton>
               </div>
               <div className="space-y-3">
                 {recentEmployees.map((emp, index) => (
@@ -175,8 +193,9 @@ export const AdminDashboard: React.FC = () => {
           </GlassCard>
         </motion.div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
 export default AdminDashboard;
+

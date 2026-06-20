@@ -19,7 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [showProfile, setShowProfile] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
     localStorage.removeItem('ess_auth_token');
@@ -134,7 +134,9 @@ export const Header: React.FC<HeaderProps> = ({
               whileHover={{ scale: 1.02 }}
             >
               <div className="w-8 h-8 rounded-full bg-primary-100 border-2 border-primary-500 flex items-center justify-center">
-                <span className="text-primary-600 text-xs font-semibold">JD</span>
+                <span className="text-primary-600 text-xs font-semibold">
+                  {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
+                </span>
               </div>
               <ChevronDown className="w-4 h-4 text-neutral-400" />
             </motion.button>
@@ -148,9 +150,9 @@ export const Header: React.FC<HeaderProps> = ({
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 >
                   <div className="p-3 border-b border-neutral-200">
-                    <p className="text-sm font-medium text-neutral-900">John Doe</p>
-                    <p className="text-xs text-neutral-500">john.doe@idscompany.com</p>
-                    <p className="text-xs text-neutral-400 mt-1">Employee ID: EMP-001</p>
+                    <p className="text-sm font-medium text-neutral-900">{user?.name || 'User'}</p>
+                    <p className="text-xs text-neutral-500">{user?.email || 'email@notavailable.com'}</p>
+                    <p className="text-xs text-neutral-400 mt-1">Employee ID: {user?.empId || 'N/A'}</p>
                   </div>
                   <div className="p-2">
                     {[

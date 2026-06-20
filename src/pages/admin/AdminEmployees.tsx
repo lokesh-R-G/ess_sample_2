@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, AnimatedButton, Input, StatusBadge, Modal } from '../../components/ui';
-import { DashboardLayout } from '../../components/layout';
 import { api } from '../../lib/api';
 
 export const AdminEmployees: React.FC = () => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Create User State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ empId: '', name: '', force: false });
+  const [formData, setFormData] = useState({ 
+    empId: '', name: '', empType: '', joiningDate: '', 
+    reportingTo: '', address: '', phone: '', email: '', force: false 
+  });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+
+  // Update User State
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [updateData, setUpdateData] = useState({ 
+    empId: '', name: '', phone: '', address: '',
+    designation: '', branch: '', department: '',
+    bankName: '', accountNumber: '', ifscCode: ''
+  });
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+  const [updateSuccess, setUpdateSuccess] = useState('');
 
   const fetchEmployees = async () => {
     setLoading(true);
@@ -41,13 +56,20 @@ export const AdminEmployees: React.FC = () => {
     setFormLoading(true);
     setFormError('');
     setFormSuccess('');
+
+    if (!formData.empId || !formData.empType || !formData.joiningDate || !formData.reportingTo || !formData.address) {
+      setFormError('Required fields missing: empId, empType, joiningDate, reportingTo, address');
+      setFormLoading(false);
+      return;
+    }
+
     try {
       await api.post('/admin/create-user', formData);
       setFormSuccess('User created successfully!');
       fetchEmployees();
       setTimeout(() => {
         setIsModalOpen(false);
-        setFormData({ empId: '', name: '', force: false });
+        setFormData({ empId: '', name: '', empType: '', joiningDate: '', reportingTo: '', address: '', phone: '', email: '', force: false });
         setFormSuccess('');
       }, 1500);
     } catch (e: any) {
@@ -57,19 +79,69 @@ export const AdminEmployees: React.FC = () => {
     }
   };
 
+  const openUpdateModal = (emp: any) => {
+    setUpdateData({ 
+      empId: emp.empId, 
+      name: emp.name || '', 
+      phone: emp.phone || '', 
+      address: emp.address || '',
+      designation: emp.designation || '',
+      branch: emp.branch || '',
+      department: emp.department || '',
+      bankName: emp.bankDetails?.bankName || '',
+      accountNumber: emp.bankDetails?.accountNumber || '',
+      ifscCode: emp.bankDetails?.ifscCode || ''
+    });
+    setUpdateError('');
+    setUpdateSuccess('');
+    setIsUpdateModalOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    setUpdateLoading(true);
+    setUpdateError('');
+    setUpdateSuccess('');
+    try {
+      const payload = {
+        name: updateData.name,
+        phone: updateData.phone,
+        address: updateData.address,
+        designation: updateData.designation,
+        branch: updateData.branch,
+        department: updateData.department,
+        bankDetails: {
+          bankName: updateData.bankName,
+          accountNumber: updateData.accountNumber,
+          ifscCode: updateData.ifscCode
+        }
+      };
+      await api.put(`/profile/${updateData.empId}`, payload);
+      setUpdateSuccess('User updated successfully!');
+      fetchEmployees();
+      setTimeout(() => {
+        setIsUpdateModalOpen(false);
+        setUpdateSuccess('');
+      }, 1500);
+    } catch (e: any) {
+      setUpdateError(e.response?.data?.detail || e.message || 'Failed to update user');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   return (
-    <DashboardLayout isAdmin>
+    <>
       <div className="space-y-6">
         <GlassCard className="p-6 flex justify-between items-center">
           <h2 className="text-xl font-bold text-neutral-900">Manage Employees</h2>
           <AnimatedButton onClick={() => setIsModalOpen(true)}>Create User</AnimatedButton>
         </GlassCard>
 
-        <GlassCard className="p-6">
+        <GlassCard className="p-6 overflow-x-auto">
           {loading ? (
             <p>Loading employees...</p>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-neutral-200">
                   <th className="py-3 px-4">Emp ID</th>
@@ -93,7 +165,7 @@ export const AdminEmployees: React.FC = () => {
                       <AnimatedButton variant="secondary" size="sm" onClick={() => handleToggleStatus(emp.empId, emp.status)}>
                         {emp.status === 'active' ? 'Deactivate' : 'Activate'}
                       </AnimatedButton>
-                      <AnimatedButton variant="secondary" size="sm" onClick={() => alert('Update user modal')}>Update</AnimatedButton>
+                      <AnimatedButton variant="secondary" size="sm" onClick={() => openUpdateModal(emp)}>Update</AnimatedButton>
                     </td>
                   </tr>
                 ))}
@@ -108,23 +180,20 @@ export const AdminEmployees: React.FC = () => {
         </GlassCard>
       </div>
 
+      {/* Create User Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create User">
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
           {formError && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{formError}</div>}
           {formSuccess && <div className="p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm">{formSuccess}</div>}
           
-          <Input 
-            label="Employee ID *" 
-            value={formData.empId} 
-            onChange={(e) => setFormData({ ...formData, empId: e.target.value })} 
-            placeholder="e.g. EMP001" 
-          />
-          <Input 
-            label="Full Name" 
-            value={formData.name} 
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
-            placeholder="e.g. John Doe" 
-          />
+          <Input label="Employee ID *" value={formData.empId} onChange={(e) => setFormData({ ...formData, empId: e.target.value })} placeholder="e.g. EMP001" />
+          <Input label="Full Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. John Doe" />
+          <Input label="Employee Type *" value={formData.empType} onChange={(e) => setFormData({ ...formData, empType: e.target.value })} placeholder="e.g. Full Time" />
+          <Input label="Joining Date *" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} placeholder="YYYY-MM-DD" type="date" />
+          <Input label="Reporting To *" value={formData.reportingTo} onChange={(e) => setFormData({ ...formData, reportingTo: e.target.value })} placeholder="Manager ID" />
+          <Input label="Address *" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Full Address" />
+          <Input label="Phone (Optional)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone Number" />
+          <Input label="Email (Optional)" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email Address" type="email" />
           
           <label className="flex items-center gap-2 cursor-pointer mt-2">
             <input 
@@ -138,12 +207,37 @@ export const AdminEmployees: React.FC = () => {
           
           <div className="flex justify-end gap-3 pt-4">
             <AnimatedButton variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</AnimatedButton>
-            <AnimatedButton onClick={handleCreateUser} loading={formLoading} disabled={!formData.empId}>Create User</AnimatedButton>
+            <AnimatedButton onClick={handleCreateUser} loading={formLoading} disabled={!formData.empId}>Create</AnimatedButton>
           </div>
         </div>
       </Modal>
 
-    </DashboardLayout>
+      {/* Update User Modal */}
+      <Modal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} title={`Update User: ${updateData.empId}`}>
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+          {updateError && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{updateError}</div>}
+          {updateSuccess && <div className="p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm">{updateSuccess}</div>}
+          
+          <Input label="Full Name" value={updateData.name} onChange={(e) => setUpdateData({ ...updateData, name: e.target.value })} />
+          <Input label="Phone Number" value={updateData.phone} onChange={(e) => setUpdateData({ ...updateData, phone: e.target.value })} />
+          <Input label="Address" value={updateData.address} onChange={(e) => setUpdateData({ ...updateData, address: e.target.value })} />
+          <Input label="Designation" value={updateData.designation} onChange={(e) => setUpdateData({ ...updateData, designation: e.target.value })} />
+          <Input label="Department" value={updateData.department} onChange={(e) => setUpdateData({ ...updateData, department: e.target.value })} />
+          <Input label="Branch" value={updateData.branch} onChange={(e) => setUpdateData({ ...updateData, branch: e.target.value })} />
+          
+          <h4 className="text-sm font-semibold mt-4">Bank Details</h4>
+          <Input label="Bank Name" value={updateData.bankName} onChange={(e) => setUpdateData({ ...updateData, bankName: e.target.value })} />
+          <Input label="Account Number" value={updateData.accountNumber} onChange={(e) => setUpdateData({ ...updateData, accountNumber: e.target.value })} />
+          <Input label="IFSC Code" value={updateData.ifscCode} onChange={(e) => setUpdateData({ ...updateData, ifscCode: e.target.value })} />
+          
+          <div className="flex justify-end gap-3 pt-4">
+            <AnimatedButton variant="secondary" onClick={() => setIsUpdateModalOpen(false)}>Cancel</AnimatedButton>
+            <AnimatedButton onClick={handleUpdateUser} loading={updateLoading}>Update</AnimatedButton>
+          </div>
+        </div>
+      </Modal>
+
+    </>
   );
 };
 

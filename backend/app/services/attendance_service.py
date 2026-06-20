@@ -143,7 +143,19 @@ async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[s
 
 async def upsert_daily_attendance(db, summaries: list[dict]) -> int:
     upserted = 0
+    
+    # get existing overrides for the dates in summaries
+    dates = [s["date"] for s in summaries]
+    emp_ids = list(set([s["empId"] for s in summaries]))
+    
+    overrides_cursor = db.attendance.find({"empId": {"$in": emp_ids}, "date": {"$in": dates}, "source": "override"})
+    overrides = await overrides_cursor.to_list(length=None)
+    override_set = {(o["empId"], o["date"]) for o in overrides}
+
     for summary in summaries:
+        if (summary["empId"], summary["date"]) in override_set:
+            continue # skip overridden days
+            
         try:
             result = await db.attendance.update_one(
                 {"empId": summary["empId"], "date": summary["date"]},
@@ -189,7 +201,14 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         while current_date <= end_date:
             date_str = current_date.isoformat()
             if date_str in record_dict:
-                filled_records.append(record_dict[date_str])
+                rec = record_dict[date_str]
+                # Apply priority logic
+                if rec.get("source") != "override":
+                    if current_date.weekday() == 6:
+                        rec["status"] = "weekoff"
+                    elif date_str in holiday_dates:
+                        rec["status"] = "holiday"
+                filled_records.append(rec)
             else:
                 if current_date.weekday() == 6:
                     status = "weekoff"

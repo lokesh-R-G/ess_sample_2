@@ -60,10 +60,50 @@ async def pending_leaves(_admin=Depends(require_roles("Admin"))):
         del r["_id"]
     return requests
 
+from datetime import timedelta
+
 @router.post("/{req_id}/approve")
 async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
     db = get_database()
-    await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "approved", "updatedAt": datetime.now(timezone.utc)}})
+    now = datetime.now(timezone.utc)
+    
+    # fetch the request
+    req = await db.leave_requests.find_one({"_id": ObjectId(req_id)})
+    if not req:
+        return {"error": "Request not found"}
+
+    await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "approved", "updatedAt": now}})
+    
+    # implement override
+    emp_id = req.get("empId")
+    from_date_str = req.get("fromDate")
+    to_date_str = req.get("toDate")
+    req_type = req.get("requestType", "leave") # "leave" or "od"
+    
+    if emp_id and from_date_str and to_date_str:
+        try:
+            current_date = datetime.strptime(from_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(to_date_str, "%Y-%m-%d").date()
+            while current_date <= end_date:
+                date_str = current_date.isoformat()
+                await db.attendance.update_one(
+                    {"empId": emp_id, "date": date_str},
+                    {"$set": {
+                        "empId": emp_id,
+                        "date": date_str,
+                        "status": req_type,
+                        "source": "override",
+                        "workHours": 0,
+                        "inTime": None,
+                        "outTime": None,
+                        "updatedAt": now
+                    }},
+                    upsert=True
+                )
+                current_date += timedelta(days=1)
+        except Exception as e:
+            print("Error creating override records:", e)
+
     return {"success": True}
 
 @router.post("/{req_id}/reject")
