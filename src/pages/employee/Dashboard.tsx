@@ -73,6 +73,32 @@ export const Dashboard: React.FC = () => {
             </GlassCard>
           </motion.div>
 
+          {summary?.alerts && summary.alerts.length > 0 && (
+            <motion.div variants={itemVariants}>
+              <GlassCard className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-900">Enterprise Alert Center</h3>
+                  <Bell className="w-5 h-5 text-primary-500" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {summary.alerts.map((alert, index) => {
+                    const colors = {
+                      success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                      warning: 'bg-amber-50 text-amber-700 border-amber-200',
+                      error: 'bg-red-50 text-red-700 border-red-200',
+                      info: 'bg-blue-50 text-blue-700 border-blue-200'
+                    };
+                    return (
+                      <div key={index} className={`p-4 rounded-xl border ${colors[alert.type]} flex items-start gap-3`}>
+                        <div className="flex-1 font-medium">{alert.message}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+            </motion.div>
+          )}
+
           <motion.div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" variants={itemVariants}>
             <KPICard title="Present Days" value={summary?.stats.presentDays ?? 0} icon={CalendarDays} color="green" delay={0} />
             <KPICard title="Absent Days" value={summary?.stats.absentDays ?? 0} icon={Users} color="red" delay={0.1} />

@@ -5,14 +5,18 @@ import { GlassCard, StatusBadge } from '../../components/ui';
 import { DashboardLayout } from '../../components/layout';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns';
 import { AttendanceRecord, getMyAttendance } from '../../services/attendanceService';
+import { formatTimeIST } from '../../utils/datetime';
 
 const statusConfig: Record<string, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-  present: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle2, label: 'Present' },
-  absent: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Absent' },
-  leave: { bg: 'bg-amber-100', text: 'text-amber-700', icon: CalendarIcon, label: 'Leave' },
-  weekoff: { bg: 'bg-blue-100', text: 'text-blue-700', icon: Coffee, label: 'Week Off' },
-  od: { bg: 'bg-purple-100', text: 'text-purple-700', icon: Briefcase, label: 'OD' },
-  partial: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock, label: 'Partial' },
+  'present': { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle2, label: 'Present' },
+  'present (no out)': { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle2, label: 'Present (No Out)' },
+  'absent': { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Absent' },
+  'half day': { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock, label: 'Half Day' },
+  'leave': { bg: 'bg-amber-100', text: 'text-amber-700', icon: CalendarIcon, label: 'Leave' },
+  'weekoff': { bg: 'bg-blue-100', text: 'text-blue-700', icon: Coffee, label: 'Week Off' },
+  'holiday': { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: Coffee, label: 'Holiday' },
+  'od': { bg: 'bg-purple-100', text: 'text-purple-700', icon: Briefcase, label: 'OD' },
+  'partial': { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock, label: 'Partial' },
 };
 
 export const Attendance: React.FC = () => {
@@ -133,7 +137,7 @@ export const Attendance: React.FC = () => {
                     >
                       <span className={`text-sm font-medium ${isToday(day) ? 'text-primary-600' : 'text-neutral-900'}`}>{format(day, 'd')}</span>
                       {!isFuture && (
-                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${status.includes('present') ? 'bg-emerald-500' : status === 'absent' ? 'bg-red-500' : status === 'leave' ? 'bg-amber-500' : status === 'od' ? 'bg-purple-500' : 'bg-blue-500'}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full mt-1 ${status.includes('present') ? 'bg-emerald-500' : status === 'absent' ? 'bg-red-500' : status === 'half day' ? 'bg-yellow-500' : status === 'leave' ? 'bg-amber-500' : status === 'od' ? 'bg-purple-500' : 'bg-blue-500'}`} />
                       )}
                     </motion.button>
                   );
@@ -188,7 +192,7 @@ export const Attendance: React.FC = () => {
                         </div>
                         <div className="flex justify-center">
                           <StatusBadge
-                            status={status.includes('present') ? 'success' : status === 'absent' ? 'error' : status === 'leave' ? 'warning' : status === 'od' ? 'purple' : 'info'}
+                            status={status.includes('present') ? 'success' : status === 'absent' ? 'error' : (status === 'leave' || status === 'half day') ? 'warning' : status === 'od' ? 'purple' : 'info'}
                             label={attendance.status || 'ABSENT'}
                           />
                         </div>
@@ -199,29 +203,74 @@ export const Attendance: React.FC = () => {
                           </div>
                           <div className="flex items-center justify-between">
                             <span>In Time</span>
-                            <span className="font-medium text-neutral-900">{inDate ? format(inDate, 'hh:mm a') : '--:--'}</span>
+                            <span className="font-medium text-neutral-900">{formatTimeIST(inTimeStr)}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span>Out Time</span>
-                            <span className="font-medium text-neutral-900">{outDate ? format(outDate, 'hh:mm a') : '--:--'}</span>
+                            <span className="font-medium text-neutral-900">{formatTimeIST(outTimeStr)}</span>
                           </div>
                         </div>
-                        {(status.includes('present') || status === 'od' || status === 'partial') && (
+                        {(status.includes('present') || status === 'half day' || status === 'od' || status === 'partial') && (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
-                              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-600" /><span className="text-sm text-neutral-600">Check In</span></div>
-                              <span className="text-sm font-medium text-neutral-900">{inDate ? format(inDate, 'hh:mm a') : '--:--'}</span>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-emerald-600" />
+                                <span className="text-sm text-neutral-600">Check In</span>
+                              </div>
+                              <span className="text-sm font-medium text-neutral-900">
+                                {inTimeStr ? formatTimeIST(inTimeStr) : <span className="text-red-500 font-semibold">Missing</span>}
+                              </span>
                             </div>
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
-                              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-red-600" /><span className="text-sm text-neutral-600">Check Out</span></div>
-                              <span className="text-sm font-medium text-neutral-900">{outDate ? format(outDate, 'hh:mm a') : '--:--'}</span>
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-red-600" />
+                                <span className="text-sm text-neutral-600">Check Out</span>
+                              </div>
+                              <span className="text-sm font-medium text-neutral-900">
+                                {outTimeStr ? formatTimeIST(outTimeStr) : <span className="text-red-500 font-semibold">Missing</span>}
+                              </span>
                             </div>
+                            {(!inTimeStr || !outTimeStr) && (inTimeStr || outTimeStr) && (
+                              <div className="flex flex-col gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
+                                <div className="flex items-center gap-2 text-red-700">
+                                  <span className="text-sm font-bold">⚠ Missing Punch</span>
+                                </div>
+                                <a 
+                                  href={`/leave?tab=misspunch&date=${format(selectedDate, 'yyyy-MM-dd')}`}
+                                  className="text-sm text-center font-medium bg-red-600 hover:bg-red-700 text-white py-1.5 px-3 rounded transition-colors"
+                                >
+                                  Apply Miss Punch
+                                </a>
+                              </div>
+                            )}
+                            
                             {computedHours !== undefined && computedHours > 0 && (
                               <div className="flex items-center justify-between p-3 rounded-lg bg-primary-50 border border-primary-200">
                                 <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary-600" /><span className="text-sm text-neutral-600">Working Hours</span></div>
                                 <span className="text-sm font-semibold text-primary-600">{computedHours.toFixed(2)} hrs</span>
                               </div>
                             )}
+                            
+                            {attendance.lateMinutes ? (
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 border border-red-200">
+                                <span className="text-sm text-red-600">Late Duration</span>
+                                <span className="text-sm font-semibold text-red-700">{attendance.lateMinutes} mins</span>
+                              </div>
+                            ) : null}
+                            
+                            {attendance.permissionHoursUsed ? (
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                <span className="text-sm text-amber-700">Permission Used</span>
+                                <span className="text-sm font-semibold text-amber-800">{attendance.permissionHoursUsed.toFixed(2)} hrs</span>
+                              </div>
+                            ) : null}
+                            
+                            {attendance.lopHours ? (
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 border border-purple-200">
+                                <span className="text-sm text-purple-700">LOP Triggered</span>
+                                <span className="text-sm font-semibold text-purple-800">{attendance.lopHours.toFixed(2)} hrs</span>
+                              </div>
+                            ) : null}
                           </div>
                         )}
                       </motion.div>

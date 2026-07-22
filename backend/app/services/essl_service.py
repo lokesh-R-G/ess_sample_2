@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from ..core.datetime_utils import IST
 from typing import Any
 from zeep import Client, Settings as ZeepSettings
 from zeep.helpers import serialize_object
@@ -26,10 +27,10 @@ def _parse_datetime(value: str) -> datetime:
     ]
     for fmt in formats:
         try:
-            return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
+            return datetime.strptime(value, fmt).replace(tzinfo=IST)
         except ValueError:
             continue
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(IST)
 
 
 def _coerce_lines(payload: Any) -> list[str]:

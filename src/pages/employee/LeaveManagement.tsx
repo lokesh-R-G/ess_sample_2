@@ -5,14 +5,17 @@ import { GlassCard, AnimatedButton, StatusBadge, Modal, Input, Select } from '..
 import { DashboardLayout } from '../../components/layout';
 import { DonutChart } from '../../components/charts';
 import { createLeaveRequest, getLeaveData, LeaveApplication, LeaveBalanceItem } from '../../services/leaveService';
+import { missPunchApi } from '../../services/missPunch.api';
 
 export const LeaveManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'leave' | 'od' | 'history'>('leave');
+  const [activeTab, setActiveTab] = useState<'leave' | 'od' | 'history' | 'misspunch'>('leave');
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [applyType, setApplyType] = useState<'leave' | 'od'>('leave');
+  const [applyType, setApplyType] = useState<'leave' | 'od' | 'misspunch'>('leave');
   const [formData, setFormData] = useState({ leaveType: '', fromDate: '', toDate: '', reason: '', odLocation: '' });
+  const [mpFormData, setMpFormData] = useState({ date: '', type: 'MISSING_OUT', time: '', reason: '' });
   const [leaveBalance, setLeaveBalance] = useState<Record<string, LeaveBalanceItem>>({});
   const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>([]);
+  const [missPunchRequests, setMissPunchRequests] = useState<any[]>([]);
   const [leaveAnalysisData, setLeaveAnalysisData] = useState<number[]>([0, 0, 0]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,10 +24,14 @@ export const LeaveManagement: React.FC = () => {
     const loadLeaveData = async () => {
       try {
         setIsLoading(true);
-        const response = await getLeaveData();
+        const [response, mpResponse] = await Promise.all([
+          getLeaveData(),
+          missPunchApi.getMyRequests()
+        ]);
         setLeaveBalance(response.leaveBalance ?? {});
         setLeaveApplications(response.requests ?? []);
         setLeaveAnalysisData(response.leaveAnalysisData ?? [0, 0, 0]);
+        setMissPunchRequests(mpResponse ?? []);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Unable to load leave data');
       } finally {
@@ -33,6 +40,19 @@ export const LeaveManagement: React.FC = () => {
     };
 
     loadLeaveData();
+    
+    // Auto open Miss Punch if URL says so
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'misspunch') {
+      setActiveTab('misspunch');
+      const date = params.get('date');
+      if (date) {
+        setMpFormData(prev => ({ ...prev, date }));
+        setApplyType('misspunch');
+        setShowApplyModal(true);
+        window.history.replaceState({}, '', '/leave'); // remove params
+      }
+    }
   }, []);
 
 
@@ -50,29 +70,43 @@ export const LeaveManagement: React.FC = () => {
     rejected: 'error',
   };
 
-  const handleApply = (type: 'leave' | 'od') => { setApplyType(type); setShowApplyModal(true); };
+  const handleApply = (type: 'leave' | 'od' | 'misspunch') => { setApplyType(type); setShowApplyModal(true); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createLeaveRequest({
-        requestType: applyType,
-        leaveType: formData.leaveType,
-        fromDate: formData.fromDate,
-        toDate: formData.toDate,
-        reason: formData.reason,
-        odLocation: formData.odLocation,
-      });
-      const response = await getLeaveData();
-      setLeaveBalance(response.leaveBalance ?? {});
-      setLeaveApplications(response.requests ?? []);
-      setLeaveAnalysisData(response.leaveAnalysisData ?? [0, 0, 0]);
-      setShowApplyModal(false);
-      setFormData({ leaveType: '', fromDate: '', toDate: '', reason: '', odLocation: '' });
+      if (applyType === 'misspunch') {
+        const timeStr = `${mpFormData.date}T${mpFormData.time}:00+05:30`;
+        await missPunchApi.createRequest({
+          employeeId: '', // Taken from token by backend
+          attendanceDate: mpFormData.date,
+          requestType: mpFormData.type as any,
+          requestedTime: timeStr,
+          reason: mpFormData.reason
+        });
+        const mpResponse = await missPunchApi.getMyRequests();
+        setMissPunchRequests(mpResponse ?? []);
+        setShowApplyModal(false);
+        setMpFormData({ date: '', type: 'MISSING_OUT', time: '', reason: '' });
+      } else {
+        await createLeaveRequest({
+          requestType: applyType,
+          leaveType: formData.leaveType,
+          fromDate: formData.fromDate,
+          toDate: formData.toDate,
+          reason: formData.reason,
+          odLocation: formData.odLocation,
+        });
+        const response = await getLeaveData();
+        setLeaveBalance(response.leaveBalance ?? {});
+        setLeaveApplications(response.requests ?? []);
+        setLeaveAnalysisData(response.leaveAnalysisData ?? [0, 0, 0]);
+        setShowApplyModal(false);
+        setFormData({ leaveType: '', fromDate: '', toDate: '', reason: '', odLocation: '' });
+      }
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Unable to submit leave request');
+      setError(submitError instanceof Error ? submitError.message : 'Unable to submit request');
     }
-
   };
 
   return (
@@ -101,6 +135,7 @@ export const LeaveManagement: React.FC = () => {
             {[
               { id: 'leave', label: 'Leave Requests', icon: CalendarIcon },
               { id: 'od', label: 'OD Requests', icon: MapPin },
+              { id: 'misspunch', label: 'Miss Punch', icon: AlertCircle },
               { id: 'history', label: 'History', icon: Clock },
             ].map((tab) => (
               <motion.button key={tab.id} onClick={() => setActiveTab(tab.id as typeof activeTab)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-primary-50 text-primary-600 border border-primary-300' : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 border border-transparent'}`} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -112,6 +147,7 @@ export const LeaveManagement: React.FC = () => {
           <div className="flex items-center gap-2">
             <AnimatedButton variant="primary" size="sm" icon={Plus} onClick={() => handleApply('leave')}>Apply Leave</AnimatedButton>
             <AnimatedButton variant="secondary" size="sm" icon={Plus} onClick={() => handleApply('od')}>Apply OD</AnimatedButton>
+            <AnimatedButton variant="secondary" size="sm" className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 hover:border-red-300" icon={AlertCircle} onClick={() => handleApply('misspunch')}>Miss Punch</AnimatedButton>
           </div>
         </motion.div>
         <AnimatePresence mode="wait">
@@ -160,6 +196,35 @@ export const LeaveManagement: React.FC = () => {
               </GlassCard>
             </motion.div>
           )}
+          {activeTab === 'misspunch' && (
+            <motion.div key="misspunch" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <GlassCard className="p-6">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-4">Miss Punch Requests</h3>
+                <div className="space-y-3">
+                  {missPunchRequests.map((req, index) => {
+                    const status = req.workflow?.status?.toLowerCase() || 'pending';
+                    const wStatusColor = status === 'approved' ? 'success' : status === 'rejected' ? 'error' : 'warning';
+                    return (
+                      <motion.div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-neutral-50 border border-neutral-200 gap-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
+                        <div className="flex items-center gap-4">
+                          <div className={`p-3 rounded-xl ${status === 'approved' ? 'bg-emerald-100' : status === 'pending' ? 'bg-amber-100' : 'bg-red-100'}`}>
+                            {status === 'approved' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : status === 'pending' ? <AlertCircle className="w-5 h-5 text-amber-600" /> : <XCircle className="w-5 h-5 text-red-600" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">
+                              {req.requestType === 'MISSING_IN' ? 'Check-In Missing' : 'Check-Out Missing'} - {req.attendanceDate}
+                            </p>
+                            <p className="text-xs text-neutral-500">Requested Time: {new Date(req.requestedTime).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true})} | Reason: {req.reason}</p>
+                          </div>
+                        </div>
+                        <StatusBadge status={wStatusColor} label={status} size="sm" />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </GlassCard>
+            </motion.div>
+          )}
           {activeTab === 'history' && (
             <motion.div key="history" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <GlassCard className="p-6">
@@ -196,17 +261,31 @@ export const LeaveManagement: React.FC = () => {
         </motion.div>
       </div>
 
-      <Modal isOpen={showApplyModal} onClose={() => setShowApplyModal(false)} title={`Apply ${applyType === 'leave' ? 'Leave' : 'OD'}`} size="md">
+      <Modal isOpen={showApplyModal} onClose={() => setShowApplyModal(false)} title={`Apply ${applyType === 'leave' ? 'Leave' : applyType === 'od' ? 'OD' : 'Miss Punch'}`} size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
           {applyType === 'leave' && <Select label="Leave Type" options={leaveTypes} value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })} placeholder="Select leave type" />}
           {applyType === 'od' && <Input label="Location" placeholder="Enter OD location" value={formData.odLocation} onChange={(e) => setFormData({ ...formData, odLocation: e.target.value })} />}
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="From Date" type="date" value={formData.fromDate} onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })} />
-            <Input label="To Date" type="date" value={formData.toDate} onChange={(e) => setFormData({ ...formData, toDate: e.target.value })} />
-          </div>
+          
+          {(applyType === 'leave' || applyType === 'od') && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="From Date" type="date" value={formData.fromDate} onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })} />
+              <Input label="To Date" type="date" value={formData.toDate} onChange={(e) => setFormData({ ...formData, toDate: e.target.value })} />
+            </div>
+          )}
+
+          {applyType === 'misspunch' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Date" type="date" value={mpFormData.date} onChange={(e) => setMpFormData({ ...mpFormData, date: e.target.value })} />
+                <Select label="Type" options={[{value: 'MISSING_IN', label: 'Missing Check-In'}, {value: 'MISSING_OUT', label: 'Missing Check-Out'}]} value={mpFormData.type} onChange={(e) => setMpFormData({ ...mpFormData, type: e.target.value })} />
+              </div>
+              <Input label="Requested Time (HH:MM)" type="time" value={mpFormData.time} onChange={(e) => setMpFormData({ ...mpFormData, time: e.target.value })} />
+            </>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Reason</label>
-            <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all resize-none" rows={3} placeholder="Enter reason for leave/OD" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} />
+            <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 placeholder-neutral-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all resize-none" rows={3} placeholder="Enter reason" value={applyType === 'misspunch' ? mpFormData.reason : formData.reason} onChange={(e) => applyType === 'misspunch' ? setMpFormData({ ...mpFormData, reason: e.target.value }) : setFormData({ ...formData, reason: e.target.value })} required />
           </div>
           <div className="flex gap-3 pt-2">
             <AnimatedButton type="button" variant="ghost" fullWidth onClick={() => setShowApplyModal(false)}>Cancel</AnimatedButton>

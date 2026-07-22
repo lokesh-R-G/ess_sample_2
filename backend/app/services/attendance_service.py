@@ -61,39 +61,72 @@ def build_raw_log_document(record: dict, sync_batch_id: str) -> dict:
                 "sourceLogFingerprints": [item["fingerprint"] for item in ordered],
                 "updatedAt": _utc_now(),'''
 from datetime import date, datetime, timezone, timedelta
-    
-def build_daily_summaries(logs):
+from .policy_service import get_attendance_policy
+from .policy_engine import PolicyEngine
+from ..core.datetime_utils import to_utc, to_ist, get_current_ist
+
+async def build_daily_summaries(db, logs):
     grouped = defaultdict(list)
 
+    import pytz
+    ist = pytz.timezone("Asia/Kolkata")
+    
     for log in logs:
+        if isinstance(log["timestamp"], str):
+            log["timestamp"] = datetime.fromisoformat(log["timestamp"].replace("Z", "+00:00"))
+        elif getattr(log["timestamp"], "tzinfo", None) is None:
+            # Naive datetime from PyMongo is UTC
+            log["timestamp"] = log["timestamp"].replace(tzinfo=timezone.utc).astimezone(ist)
+        else:
+            # Ensure it is in IST
+            log["timestamp"] = log["timestamp"].astimezone(ist)
+            
         date_key = log["timestamp"].date()
-        grouped[(log["empId"], date_key)].append(log["timestamp"])
+        grouped[(log["empId"], date_key)].append(log)
 
     summaries = []
+    
+    # Load policy once
+    policy = await get_attendance_policy(db)
+    engine = PolicyEngine(db, policy)
 
-    for (empId, date_val), timestamps in grouped.items():
-        timestamps.sort()
+    for (empId, date_val), items in grouped.items():
+        items.sort(key=lambda x: x["timestamp"])
+        timestamps = [x["timestamp"] for x in items]
+        fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
 
         in_time = timestamps[0]
-        out_time = timestamps[-1]
+        out_time = timestamps[-1] if len(timestamps) > 1 else None
 
+        # Evaluate attendance using policy engine
+        # Note: date_val is currently a naive date from the log's timestamp (which is UTC or IST?).
+        # Wait, the logs' timestamps from eSSL are parsed as IST using datetime_utils if they came from essl_service.
+        # Let's ensure we just pass them as is, because they are timezone aware.
+        # Actually, in build_raw_log_document we might have naive datetimes if we aren't careful.
+        # Let's assume in_time and out_time are proper datetimes.
+        metrics = await engine.evaluate_attendance(empId, datetime.combine(date_val, datetime.min.time()), in_time, out_time)
+
+        # Work hours calculated strictly as diff
         work_hours = (out_time - in_time).total_seconds() / 3600 if len(timestamps) > 1 else 0
 
-        if len(timestamps) > 1:
-            status = "Present"
-        elif len(timestamps) == 1:
-            status = "Present (No Out)"
-        else:
-            status = "Absent"
-
-        summaries.append({
+        summary = {
             "empId": empId,
             "date": date_val.isoformat(),
             "inTime": in_time.isoformat(),
-            "outTime": out_time.isoformat() if len(timestamps) > 1 else None,
+            "outTime": out_time.isoformat() if out_time else None,
             "workHours": work_hours,
-            "status": status
-        })
+            "status": metrics["status"],
+            "lateMinutes": metrics.get("lateMinutes", 0),
+            "lateCount": metrics.get("lateCount", 0),
+            "permissionHoursUsed": metrics.get("permissionHoursUsed", 0.0),
+            "permissionHoursExceeded": metrics.get("permissionHoursExceeded", 0.0),
+            "lopHours": metrics.get("lopHours", 0.0),
+            "halfDayCount": metrics.get("halfDayCount", 0.0),
+            "sourceLogFingerprints": fingerprints,
+            "policyVersion": "v0.1",
+            "timezone": "Asia/Kolkata"
+        }
+        summaries.append(summary)
 
     return summaries
 
@@ -189,28 +222,28 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         record_dict = {r["date"]: r for r in records}
         filled_records = []
         
-        current_date = from_date.date()
-        end_date = to_date.date()
-        today = datetime.now(timezone.utc).date()
-        end_date = min(end_date, today)
+        current_date_ist = to_ist(from_date).date()
+        end_date_ist = to_ist(to_date).date()
+        today_ist = get_current_ist().date()
+        end_date_ist = min(end_date_ist, today_ist)
         
         holidays_cursor = db.holidays.find({}, {"_id": 0, "date": 1, "name": 1})
         holidays_list = await holidays_cursor.to_list(length=None)
         holiday_dates = {h.get("date"): h.get("name") for h in holidays_list if h.get("date")}
 
-        while current_date <= end_date:
-            date_str = current_date.isoformat()
+        while current_date_ist <= end_date_ist:
+            date_str = current_date_ist.isoformat()
             if date_str in record_dict:
                 rec = record_dict[date_str]
                 # Apply priority logic
                 if rec.get("source") != "override":
-                    if current_date.weekday() == 6:
+                    if current_date_ist.weekday() == 6:
                         rec["status"] = "weekoff"
                     elif date_str in holiday_dates:
                         rec["status"] = "holiday"
                 filled_records.append(rec)
             else:
-                if current_date.weekday() == 6:
+                if current_date_ist.weekday() == 6:
                     status = "weekoff"
                 elif date_str in holiday_dates:
                     status = "holiday"
@@ -223,9 +256,14 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
                     "status": status,
                     "inTime": None,
                     "outTime": None,
-                    "workHours": 0
+                    "workHours": 0,
+                    "lateMinutes": 0,
+                    "lateCount": 0,
+                    "permissionHoursUsed": 0.0,
+                    "lopHours": 0.0,
+                    "halfDayCount": 0.0
                 })
-            current_date += timedelta(days=1)
+            current_date_ist += timedelta(days=1)
         return filled_records
         
     return records

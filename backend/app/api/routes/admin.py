@@ -93,6 +93,11 @@ class CreateUserRequest(BaseModel):
     empId: str
     name: str | None = None
     force: bool = False
+    companyId: str | None = None
+    branchId: str | None = None
+    departmentId: str | None = None
+    designationId: str | None = None
+    managerId: str | None = None
 
 
 @router.post("/create-user")
@@ -103,9 +108,23 @@ async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="empId not found in eSSL records")
 
     created = await create_provisioned_user(db, payload.empId)
-    # Optionally set name if provided
+    
+    update_data = {}
     if payload.name:
-        await db.users.update_one({"empId": payload.empId}, {"$set": {"name": payload.name}})
+        update_data["name"] = payload.name
+    if payload.companyId:
+        update_data["companyId"] = payload.companyId
+    if payload.branchId:
+        update_data["branchId"] = payload.branchId
+    if payload.departmentId:
+        update_data["departmentId"] = payload.departmentId
+    if payload.designationId:
+        update_data["designationId"] = payload.designationId
+    if payload.managerId:
+        update_data["managerId"] = payload.managerId
+        
+    if update_data:
+        await db.users.update_one({"empId": payload.empId}, {"$set": update_data})
         created = await db.users.find_one({"empId": payload.empId})
 
     # Trigger a sync to fetch attendance for the new user (best-effort)

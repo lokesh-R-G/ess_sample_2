@@ -19,6 +19,8 @@ import AdminSync from './pages/admin/AdminSync';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendance from './pages/admin/AdminAttendance';
+import AdminAttendancePolicy from './pages/admin/AdminAttendancePolicy';
+import AdminOrganization from './pages/admin/AdminOrganization';
 import AdminLayout from './components/layout/AdminLayout';
 
 function AppRoutes() {
@@ -93,6 +95,8 @@ function AppRoutes() {
           <Route path="payroll" element={<AdminDashboard />} />
           <Route path="branches" element={<AdminBranches />} />
           <Route path="attendance" element={<AdminAttendance />} />
+          <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
+          <Route path="organization" element={<AdminOrganization />} />
           <Route path="approvals" element={<Navigate to="/admin/leave-approvals" replace />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

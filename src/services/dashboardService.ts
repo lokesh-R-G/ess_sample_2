@@ -31,6 +31,7 @@ export interface DashboardSummary {
   holidays: Array<unknown>;
   leaveBalance: Record<string, { total: number; used: number; balance: number }>;
   upcomingHolidays: Array<{ date: string; name: string; type: string }>;
+  alerts?: Array<{ type: 'success' | 'warning' | 'error' | 'info'; message: string }>;
 }
 
 export async function getDashboardSummary() {

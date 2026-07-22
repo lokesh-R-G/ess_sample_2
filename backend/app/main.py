@@ -14,6 +14,10 @@ from .api.routes.leave import router as leave_router
 from .api.routes.payslip import router as payslip_router
 from .api.routes.profile import router as profile_router
 from .api.routes.sync import router as sync_router
+from .api.routes.policy import router as policy_router
+from .api.routes.organization import router as organization_router
+from .api.routes.workflow import router as workflow_router
+from .api.routes.miss_punch import router as miss_punch_router
 from .core.config import get_settings
 from .db.mongo import init_indexes
 from .scheduler.scheduler import init_scheduler
@@ -54,3 +58,7 @@ app.include_router(leave_router, prefix="/api/v1")
 app.include_router(payslip_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(sync_router, prefix="/api/v1")
+app.include_router(policy_router, prefix="/api/v1")
+app.include_router(organization_router, prefix="/api/v1")
+app.include_router(workflow_router, prefix="/api/v1")
+app.include_router(miss_punch_router, prefix="/api/v1")

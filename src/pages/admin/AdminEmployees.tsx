@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { GlassCard, AnimatedButton, Input, StatusBadge, Modal } from '../../components/ui';
+import { GlassCard, AnimatedButton, Input, StatusBadge, Modal, Select } from '../../components/ui';
 import { api } from '../../lib/api';
+import { organizationApi } from '../../services/organization.api';
 
 export const AdminEmployees: React.FC = () => {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -10,7 +11,8 @@ export const AdminEmployees: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ 
     empId: '', name: '', empType: '', joiningDate: '', 
-    reportingTo: '', address: '', phone: '', email: '', force: false 
+    managerId: '', companyId: '', branchId: '', departmentId: '', designationId: '',
+    address: '', phone: '', email: '', force: false 
   });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -27,6 +29,10 @@ export const AdminEmployees: React.FC = () => {
   const [updateError, setUpdateError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState('');
 
+  const [orgData, setOrgData] = useState({
+    companies: [] as any[], branches: [] as any[], departments: [] as any[], designations: [] as any[]
+  });
+
   const fetchEmployees = async () => {
     setLoading(true);
     try {
@@ -39,8 +45,28 @@ export const AdminEmployees: React.FC = () => {
     }
   };
 
+  const fetchOrgData = async () => {
+    try {
+      const [companies, branches, departments, designations] = await Promise.all([
+        organizationApi.getCompanies(),
+        organizationApi.getBranches(),
+        organizationApi.getDepartments(),
+        organizationApi.getDesignations()
+      ]);
+      setOrgData({ 
+        companies: companies || [], 
+        branches: branches || [], 
+        departments: departments || [], 
+        designations: designations || [] 
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchEmployees();
+    fetchOrgData();
   }, []);
 
   const handleToggleStatus = async (empId: string, currentStatus: string) => {
@@ -57,8 +83,8 @@ export const AdminEmployees: React.FC = () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!formData.empId || !formData.empType || !formData.joiningDate || !formData.reportingTo || !formData.address) {
-      setFormError('Required fields missing: empId, empType, joiningDate, reportingTo, address');
+    if (!formData.empId) {
+      setFormError('Required field missing: empId');
       setFormLoading(false);
       return;
     }
@@ -69,7 +95,7 @@ export const AdminEmployees: React.FC = () => {
       fetchEmployees();
       setTimeout(() => {
         setIsModalOpen(false);
-        setFormData({ empId: '', name: '', empType: '', joiningDate: '', reportingTo: '', address: '', phone: '', email: '', force: false });
+        setFormData({ empId: '', name: '', empType: '', joiningDate: '', managerId: '', companyId: '', branchId: '', departmentId: '', designationId: '', address: '', phone: '', email: '', force: false });
         setFormSuccess('');
       }, 1500);
     } catch (e: any) {
@@ -188,12 +214,47 @@ export const AdminEmployees: React.FC = () => {
           
           <Input label="Employee ID *" value={formData.empId} onChange={(e) => setFormData({ ...formData, empId: e.target.value })} placeholder="e.g. EMP001" />
           <Input label="Full Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. John Doe" />
-          <Input label="Employee Type *" value={formData.empType} onChange={(e) => setFormData({ ...formData, empType: e.target.value })} placeholder="e.g. Full Time" />
-          <Input label="Joining Date *" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} placeholder="YYYY-MM-DD" type="date" />
-          <Input label="Reporting To *" value={formData.reportingTo} onChange={(e) => setFormData({ ...formData, reportingTo: e.target.value })} placeholder="Manager ID" />
-          <Input label="Address *" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Full Address" />
-          <Input label="Phone (Optional)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone Number" />
-          <Input label="Email (Optional)" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email Address" type="email" />
+          
+          <div className="grid grid-cols-2 gap-2">
+            <Select 
+              label="Company" 
+              options={(orgData.companies || []).map(c => ({value: c._id, label: c.name}))} 
+              value={formData.companyId} 
+              onChange={e => setFormData({...formData, companyId: e.target.value})} 
+            />
+            <Select 
+              label="Branch" 
+              options={(orgData.branches || []).map(b => ({value: b._id, label: b.name}))} 
+              value={formData.branchId} 
+              onChange={e => setFormData({...formData, branchId: e.target.value})} 
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Select 
+              label="Department" 
+              options={(orgData.departments || []).map(d => ({value: d._id, label: d.name}))} 
+              value={formData.departmentId} 
+              onChange={e => setFormData({...formData, departmentId: e.target.value})} 
+            />
+            <Select 
+              label="Designation" 
+              options={(orgData.designations || []).map(d => ({value: d._id, label: d.name}))} 
+              value={formData.designationId} 
+              onChange={e => setFormData({...formData, designationId: e.target.value})} 
+            />
+          </div>
+          
+          <Input label="Manager ID (Approver)" value={formData.managerId} onChange={(e) => setFormData({ ...formData, managerId: e.target.value })} placeholder="Manager Employee ID" />
+          
+          <Input label="Employee Type" value={formData.empType} onChange={(e) => setFormData({ ...formData, empType: e.target.value })} placeholder="e.g. Full Time" />
+          <Input label="Joining Date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} placeholder="YYYY-MM-DD" type="date" />
+          <Input label="Address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Full Address" />
+          
+          <div className="grid grid-cols-2 gap-2">
+            <Input label="Phone (Optional)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone Number" />
+            <Input label="Email (Optional)" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email Address" type="email" />
+          </div>
           
           <label className="flex items-center gap-2 cursor-pointer mt-2">
             <input 

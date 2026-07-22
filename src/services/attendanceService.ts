@@ -12,6 +12,12 @@ export interface AttendanceRecord {
   workHours?: number;
   status: 'present' | 'absent' | 'leave' | 'weekoff' | 'od' | 'partial' | string;
   sourceLogFingerprints?: string[];
+  lateMinutes?: number;
+  lateCount?: number;
+  permissionHoursUsed?: number;
+  permissionHoursExceeded?: number;
+  lopHours?: number;
+  halfDayCount?: number;
 }
 
 export interface AttendanceResponse {

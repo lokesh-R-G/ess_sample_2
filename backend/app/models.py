@@ -33,6 +33,91 @@ class UserResponse(BaseModel):
     empId: str
     role: RoleType
     firstLogin: bool
+    companyId: str | None = None
+    branchId: str | None = None
+    departmentId: str | None = None
+    designationId: str | None = None
+    managerId: str | None = None
+
+
+class Company(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    name: str
+    code: str | None = None
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+
+
+class Branch(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    companyId: str
+    name: str
+    code: str | None = None
+    location: str | None = None
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+
+
+class Department(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    companyId: str
+    name: str
+    code: str | None = None
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+
+
+class Designation(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    companyId: str
+    departmentId: str | None = None
+    name: str
+    code: str | None = None
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+
+
+class Workflow(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    workflowType: str
+    entityId: str
+    employeeId: str
+    currentApproverId: str | None = None
+    status: Literal["PENDING", "APPROVED", "REJECTED", "RETURNED"] = "PENDING"
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+
+
+class WorkflowAction(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    workflowId: str
+    action: Literal["APPROVED", "REJECTED", "RETURNED"]
+    actedBy: str
+    remarks: str | None = None
+    actedAt: datetime | None = None
+
+
+class MissPunchRequest(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    employeeId: str
+    attendanceDate: str
+    requestType: Literal["MISSING_IN", "MISSING_OUT"]
+    requestedTime: str
+    reason: str
+    workflowId: str | None = None
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+
+
+class AttendanceAuditLog(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    empId: str
+    date: str
+    oldAttendance: dict | None = None
+    newAttendance: dict | None = None
+    approverId: str
+    reason: str
+    timestamp: datetime | None = None
 
 
 class SyncRequest(BaseModel):
@@ -45,3 +130,21 @@ class SyncResponse(BaseModel):
     rawUpdated: int
     attendanceUpserted: int
     dateRange: dict[str, str | None]
+
+
+class AttendancePolicy(BaseModel):
+    shiftStartTime: str = "10:00:00"
+    shiftEndTime: str = "18:30:00"
+    saturdayShiftEndTime: str = "17:30:00"
+    graceMinutes: int = 3
+    lateStartMinute: int = 4
+    lateEndMinute: int = 15
+    latePermissionStartMinute: int = 16
+    latePermissionEndMinute: int = 30
+    halfDayCutoffTime: str = "10:30:00"
+    monthlyPermissionHours: float = 1.0
+    lateHalfDayThreshold: int = 4
+    lateFullDayThreshold: int = 6
+    lateIncrementThreshold: int = 4
+    lopHalfDayHours: float = 4.0
+    lopFullDayHours: float = 8.0
