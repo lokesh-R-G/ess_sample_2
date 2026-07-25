@@ -1,0 +1,37 @@
+from fastapi import APIRouter
+from .employee_routes import router as employee_router
+from .employee_personal_routes import router as employee_personal_router
+from .employee_contact_routes import router as employee_contact_router
+from .employee_address_routes import router as employee_address_router
+from .employee_bank_routes import router as employee_bank_router
+from .employee_emergency_contact_routes import router as employee_emergency_contact_router
+from .employee_family_routes import router as employee_family_router
+from .employee_education_routes import router as employee_education_router
+from .employee_experience_routes import router as employee_experience_router
+from .employee_document_routes import router as employee_document_router
+from .employment_history_routes import router as employment_history_router
+from .employee_shift_assignment_routes import router as employee_shift_assignment_router
+from .employee_role_assignment_routes import router as employee_role_assignment_router
+from .employee_reporting_routes import router as employee_reporting_router
+from .employee_probation_routes import router as employee_probation_router
+from .employee_confirmation_routes import router as employee_confirmation_router
+from .employee_exit_routes import router as employee_exit_router
+
+employee_router = APIRouter()
+employee_router.include_router(employee_router)
+employee_router.include_router(employee_personal_router)
+employee_router.include_router(employee_contact_router)
+employee_router.include_router(employee_address_router)
+employee_router.include_router(employee_bank_router)
+employee_router.include_router(employee_emergency_contact_router)
+employee_router.include_router(employee_family_router)
+employee_router.include_router(employee_education_router)
+employee_router.include_router(employee_experience_router)
+employee_router.include_router(employee_document_router)
+employee_router.include_router(employment_history_router)
+employee_router.include_router(employee_shift_assignment_router)
+employee_router.include_router(employee_role_assignment_router)
+employee_router.include_router(employee_reporting_router)
+employee_router.include_router(employee_probation_router)
+employee_router.include_router(employee_confirmation_router)
+employee_router.include_router(employee_exit_router)

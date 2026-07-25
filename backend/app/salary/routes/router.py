@@ -1,0 +1,29 @@
+from fastapi import APIRouter
+from .salary_component_routes import router as salary_component_router
+from .salary_structure_routes import router as salary_structure_router
+from .salary_structure_version_routes import router as salary_structure_version_router
+from .salary_structure_component_routes import router as salary_structure_component_router
+from .salary_rule_routes import router as salary_rule_router
+from .salary_policy_routes import router as salary_policy_router
+from .employee_salary_routes import router as employee_salary_router
+from .employee_salary_component_routes import router as employee_salary_component_router
+from .employee_salary_revision_routes import router as employee_salary_revision_router
+from .employee_salary_history_routes import router as employee_salary_history_router
+from .salary_grade_routes import router as salary_grade_router
+from .pay_group_routes import router as pay_group_router
+from .cost_center_routes import router as cost_center_router
+
+salary_router = APIRouter()
+salary_router.include_router(salary_component_router)
+salary_router.include_router(salary_structure_router)
+salary_router.include_router(salary_structure_version_router)
+salary_router.include_router(salary_structure_component_router)
+salary_router.include_router(salary_rule_router)
+salary_router.include_router(salary_policy_router)
+salary_router.include_router(employee_salary_router)
+salary_router.include_router(employee_salary_component_router)
+salary_router.include_router(employee_salary_revision_router)
+salary_router.include_router(employee_salary_history_router)
+salary_router.include_router(salary_grade_router)
+salary_router.include_router(pay_group_router)
+salary_router.include_router(cost_center_router)

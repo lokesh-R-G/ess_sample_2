@@ -1,0 +1,39 @@
+{
+  "info": {
+    "name": "Enterprise HRMS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payroll Suite",
+      "item": [
+        {
+          "name": "Process Payroll",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v2/payroll/process"
+          }
+        },
+        {
+          "name": "Publish Payslip",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v2/payslip/publish"
+          }
+        }
+      ]
+    }
+  ]
+}

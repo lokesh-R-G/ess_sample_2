@@ -1,5 +1,41 @@
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+## 1. Project Understanding
+You are currently working within the backend directory of an Employee Self-Service (ESS) web application. This backend is built with Python FastAPI and integrates with both a PostgreSQL database (via SQLAlchemy/Prisma) and MongoDB. The system manages employee data, HR workflows, and authentication.
 
-By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+## 2. Coding Standards & Practices
+- Adhere to PEP 8 guidelines for Python code.
+- Use type hints for all function parameters and return values.
+- Keep functions focused and modular. Avoid creating monolithic functions.
+- Handle potential errors using try-except blocks and return meaningful error messages.
+- Ensure all database queries are efficient and indexed where appropriate.
 
-Use icons from lucide-react for logos.
+## 3. Database & Schema
+- The primary database is PostgreSQL, managed via Prisma. Follow the existing schema defined in `prisma/schema.prisma`.
+- MongoDB is used for flexible data storage (e.g., audit logs). Access it via the `db.py` module.
+- Document any changes to the schema in `prisma/schema.prisma` and regenerate the Prisma client if necessary.
+
+## 4. Security & Authentication
+- Sensitive information (API keys, DB credentials) is stored in `.env` files. NEVER commit these to version control.
+- Use the `auth.py` middleware for JWT token verification and user authentication.
+- Ensure password hashing and secure credential management.
+- All API endpoints handling user data must be authenticated.
+
+## 5. Frontend Interaction
+- The frontend is built with React and communicates with this backend.
+- Follow the existing API endpoint structure defined in `api/routes/`.
+- Return JSON responses for all API calls, including success and error cases.
+- Use proper HTTP status codes (200, 201, 400, 401, 403, 404, 500).
+
+## 6. Testing & Validation
+- Validate all incoming request data using Pydantic models.
+- Use `pydantic.ValidationError` to catch and handle invalid data.
+- Test your code changes to ensure no existing functionality is broken.
+- Provide clear error messages that can be used by the frontend to display user-friendly notifications.
+
+## 7. Documentation
+- Keep function docstrings updated and descriptive.
+- Document any new API endpoints in `api/routes/`.
+- Update `prisma/schema.prisma` if the database schema changes.
+
+## 8. General Notes
+- The backend directory contains submodules for authentication, core utilities, specific HR modules (workflows, miss punches), and organization management.
+- Assume the frontend will handle UI/UX and data display; focus on the backend logic, data processing, and database interactions.

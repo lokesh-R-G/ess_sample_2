@@ -1,0 +1,22 @@
+from fastapi import APIRouter
+from .permission_request_routes import router as permission_request_router
+from .permission_approval_routes import router as permission_approval_router
+from .permission_balance_routes import router as permission_balance_router
+from .permission_usage_routes import router as permission_usage_router
+from .permission_overflow_routes import router as permission_overflow_router
+from .permission_history_routes import router as permission_history_router
+from .permission_attachment_routes import router as permission_attachment_router
+from .grace_request_routes import router as grace_request_router
+from .grace_approval_routes import router as grace_approval_router
+\npermission_router = APIRouter()
+permission_router.include_router(permission_request_router)
+permission_router.include_router(permission_approval_router)
+permission_router.include_router(permission_balance_router)
+permission_router.include_router(permission_usage_router)
+permission_router.include_router(permission_overflow_router)
+permission_router.include_router(permission_history_router)
+permission_router.include_router(permission_attachment_router)
+permission_router.include_router(grace_request_router)
+permission_router.include_router(grace_approval_router)
+from .grace_balance_routes import router as grace_balance_router
+permission_router.include_router(grace_balance_router)

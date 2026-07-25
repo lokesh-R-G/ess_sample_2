@@ -1,0 +1,36 @@
+from fastapi import APIRouter
+from .leave_balance_routes import router as leave_balance_router
+from .leave_ledger_routes import router as leave_ledger_router
+from .leave_application_routes import router as leave_application_router
+from .leave_approval_routes import router as leave_approval_router
+from .leave_history_routes import router as leave_history_router
+from .leave_adjustment_routes import router as leave_adjustment_router
+from .leave_cancellation_routes import router as leave_cancellation_router
+from .leave_attachment_routes import router as leave_attachment_router
+from .leave_encashment_routes import router as leave_encashment_router
+from .comp_off_balance_routes import router as comp_off_balance_router
+from .comp_off_ledger_routes import router as comp_off_ledger_router
+from .leave_calendar_routes import router as leave_calendar_router
+from .leave_summary_routes import router as leave_summary_router
+from .attendance_penalty_ledger_processing_routes import router as attendance_penalty_ledger_processing_router
+from .leave_reservation_routes import router as leave_reservation_router
+from .leave_closing_routes import router as leave_closing_router
+from .dashboard_routes import router as dashboard_router
+\nleave_router = APIRouter()
+leave_router.include_router(leave_balance_router)
+leave_router.include_router(leave_ledger_router)
+leave_router.include_router(leave_application_router)
+leave_router.include_router(leave_approval_router)
+leave_router.include_router(leave_history_router)
+leave_router.include_router(leave_adjustment_router)
+leave_router.include_router(leave_cancellation_router)
+leave_router.include_router(leave_attachment_router)
+leave_router.include_router(leave_encashment_router)
+leave_router.include_router(comp_off_balance_router)
+leave_router.include_router(comp_off_ledger_router)
+leave_router.include_router(leave_calendar_router)
+leave_router.include_router(leave_summary_router)
+leave_router.include_router(attendance_penalty_ledger_processing_router)
+leave_router.include_router(leave_reservation_router)
+leave_router.include_router(leave_closing_router)
+leave_router.include_router(dashboard_router)

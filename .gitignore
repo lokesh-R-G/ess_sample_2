@@ -24,3 +24,5 @@ dist-ssr
 .venv
 .vscode
 *.pyc
+__pycache__
+.bolt
