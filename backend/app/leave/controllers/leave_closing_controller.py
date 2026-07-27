@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_closing_service import LeaveClosingService
-from ..schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate, LeaveClosingResponse
-from ..models.leave_closing import LeaveClosingModel
+from app.leave.services.leave_closing_service import LeaveClosingService
+from app.leave.schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate, LeaveClosingResponse
+from app.leave.models.leave_closing import LeaveClosingModel
 
 class LeaveClosingController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Any, List
-from ..models import Company, Branch, Department, Designation
+from app.models import Company, Branch, Department, Designation
 
 def prepare_org_doc(doc: dict) -> dict:
     doc["_id"] = str(doc["_id"])

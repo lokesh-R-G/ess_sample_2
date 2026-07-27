@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.workforce_availability_threshold import WorkforceAvailabilityThresholdCreate, WorkforceAvailabilityThresholdUpdate
+from app.leave_policy.schemas.workforce_availability_threshold import WorkforceAvailabilityThresholdCreate, WorkforceAvailabilityThresholdUpdate
 
 class WorkforceAvailabilityThresholdValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_carry_forward_rule_service import LeaveCarryForwardRuleService
-from ..schemas.leave_carry_forward_rule import LeaveCarryForwardRuleCreate, LeaveCarryForwardRuleUpdate, LeaveCarryForwardRuleResponse
-from ..models.leave_carry_forward_rule import LeaveCarryForwardRuleModel
+from app.leave_policy.services.leave_carry_forward_rule_service import LeaveCarryForwardRuleService
+from app.leave_policy.schemas.leave_carry_forward_rule import LeaveCarryForwardRuleCreate, LeaveCarryForwardRuleUpdate, LeaveCarryForwardRuleResponse
+from app.leave_policy.models.leave_carry_forward_rule import LeaveCarryForwardRuleModel
 
 class LeaveCarryForwardRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

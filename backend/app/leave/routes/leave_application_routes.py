@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_application_controller import LeaveApplicationController
-from ..schemas.leave_application import LeaveApplicationCreate, LeaveApplicationUpdate, LeaveApplicationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_application_controller import LeaveApplicationController
+from app.leave.schemas.leave_application import LeaveApplicationCreate, LeaveApplicationUpdate, LeaveApplicationResponse
 
 router = APIRouter(prefix="/leaveApplication", tags=["LeaveApplication"])
 

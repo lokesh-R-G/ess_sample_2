@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate
+from app.leave.schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate
 
 class LeaveAdjustmentValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

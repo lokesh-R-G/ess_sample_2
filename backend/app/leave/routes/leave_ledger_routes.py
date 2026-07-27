@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_ledger_controller import LeaveLedgerController
-from ..schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate, LeaveLedgerResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_ledger_controller import LeaveLedgerController
+from app.leave.schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate, LeaveLedgerResponse
 
 router = APIRouter(prefix="/leaveLedger", tags=["LeaveLedger"])
 

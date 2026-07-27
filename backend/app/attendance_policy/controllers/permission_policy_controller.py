@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.permission_policy_service import PermissionPolicyService
-from ..schemas.permission_policy import PermissionPolicyCreate, PermissionPolicyUpdate, PermissionPolicyResponse
-from ..models.permission_policy import PermissionPolicyModel
+from app.attendance_policy.services.permission_policy_service import PermissionPolicyService
+from app.attendance_policy.schemas.permission_policy import PermissionPolicyCreate, PermissionPolicyUpdate, PermissionPolicyResponse
+from app.attendance_policy.models.permission_policy import PermissionPolicyModel
 
 class PermissionPolicyController:
     def __init__(self, db: AsyncIOMotorDatabase):

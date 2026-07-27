@@ -3,12 +3,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from ..core.datetime_utils import IST
+from app.core.datetime_utils import IST
 from typing import Any
 from zeep import Client, Settings as ZeepSettings
 from zeep.helpers import serialize_object
-from ..core.config import get_settings
-from .attendance_service import create_fingerprint
+from app.core.config import get_settings
+from app.services.attendance_service import create_fingerprint
 
 
 settings = get_settings()

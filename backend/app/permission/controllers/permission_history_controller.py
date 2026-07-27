@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.permission_history_service import PermissionHistoryService
-from ..schemas.permission_history import PermissionHistoryCreate, PermissionHistoryUpdate, PermissionHistoryResponse
-from ..models.permission_history import PermissionHistoryModel
+from app.permission.services.permission_history_service import PermissionHistoryService
+from app.permission.schemas.permission_history import PermissionHistoryCreate, PermissionHistoryUpdate, PermissionHistoryResponse
+from app.permission.models.permission_history import PermissionHistoryModel
 
 class PermissionHistoryController:
     def __init__(self, db: AsyncIOMotorDatabase):

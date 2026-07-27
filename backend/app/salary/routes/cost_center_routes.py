@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.cost_center_controller import CostCenterController
-from ..schemas.cost_center import CostCenterCreate, CostCenterUpdate, CostCenterResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.salary.controllers.cost_center_controller import CostCenterController
+from app.salary.schemas.cost_center import CostCenterCreate, CostCenterUpdate, CostCenterResponse
 
 router = APIRouter(prefix="/costCenters", tags=["CostCenter"])
 

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.grace_request import GraceRequestModel
+from app.permission.repositories.base_repository import BaseRepository
+from app.permission.models.grace_request import GraceRequestModel
 
 class GraceRequestRepository(BaseRepository[GraceRequestModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

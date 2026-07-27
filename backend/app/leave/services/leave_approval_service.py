@@ -1,16 +1,19 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_approval_repository import LeaveApprovalRepository
-from ..validators.leave_approval_validator import LeaveApprovalValidator
-from ..schemas.leave_approval import LeaveApprovalCreate, LeaveApprovalUpdate
-from ..models.leave_approval import LeaveApprovalModel
+from app.leave.repositories.leave_approval_repository import LeaveApprovalRepository
+from app.leave.validators.leave_approval_validator import LeaveApprovalValidator
+from app.leave.schemas.leave_approval import LeaveApprovalCreate, LeaveApprovalUpdate
+from app.leave.models.leave_approval import LeaveApprovalModel
+import asyncio
+from app.email_service.services.email_service import EmailService
 
 class LeaveApprovalService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.repo = LeaveApprovalRepository(db)
         self.validator = LeaveApprovalValidator(db)
+        self.email_service = EmailService(db)
         
     async def create(self, data: LeaveApprovalCreate, user_id: str = None) -> LeaveApprovalModel:
         await self.validator.validate_create(data)
@@ -24,7 +27,31 @@ class LeaveApprovalService:
         
     async def update(self, id: str, data: LeaveApprovalUpdate, user_id: str = None) -> Optional[LeaveApprovalModel]:
         await self.validator.validate_update(id, data)
-        return await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        updated_approval = await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        
+        # Email Integration
+        if updated_approval:
+            status = getattr(updated_approval, "status", None)
+            if status in ["Approved", "Rejected"]:
+                # In a real implementation, find employee email based on employee_id
+                emp_id = getattr(updated_approval, "employeeId", "unknown")
+                contact_email = f"{emp_id}@enterprise-hrms.com" 
+                context = {
+                    "leave_type": "Leave Request",
+                    "start_date": "N/A", # Needs real start_date from LeaveApplication
+                    "end_date": "N/A",
+                    "remarks": getattr(updated_approval, "remarks", "None"),
+                    "reason": getattr(updated_approval, "remarks", "Please contact your manager.")
+                }
+                asyncio.create_task(
+                    self.email_service.send_leave_status_email(
+                        recipient=contact_email, 
+                        status=status, 
+                        context=context
+                    )
+                )
+                
+        return updated_approval
         
     async def delete(self, id: str, user_id: str = None) -> bool:
         return await self.repo.soft_delete(id, user_id)

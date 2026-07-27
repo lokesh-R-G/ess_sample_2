@@ -5,50 +5,51 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.routes.attendance import router as attendance_router
-from .api.routes.admin import router as admin_router
-from .api.routes.dashboard import router as dashboard_router
-from .api.routes.auth import router as auth_router
-from .api.routes.health import router as health_router
-from .api.routes.leave import router as leave_router
-from .api.routes.payslip import router as payslip_router
-from .api.routes.profile import router as profile_router
-from .api.routes.sync import router as sync_router
-from .api.routes.policy import router as policy_router
-from .api.routes.organization import router as organization_router
-from .api.routes.workflow import router as workflow_router
-from .api.routes.miss_punch import router as miss_punch_router
-from .organization.routes.router import organization_router as v2_org_router
-from .employee.routes.router import employee_router as v2_emp_router
-from .salary.routes.router import salary_router as v2_salary_router
-from .attendance_policy.routes.router import attendance_policy_router as v2_policy_router
-from .permission.routes.router import permission_router as v2_permission_router
-from .attendance_v2.routes.router import attendance_v2_router as v2_attendance_router
-from .leave_policy.routes.router import leave_policy_router as v2_leave_policy_router
-from .leave.routes.router import leave_router as v2_leave_router
-from .payroll_policy.routes.router import payroll_policy_router as v2_payroll_policy_router
-from .deduction_policy.routes.router import deduction_policy_router as v2_deduction_policy_router
-from .reimbursement_policy.routes.router import reimbursement_policy_router as v2_reimbursement_policy_router
-from .payroll.routes.router import payroll_router as v2_payroll_router
-from .deduction.routes.router import deduction_router as v2_deduction_router
-from .reimbursement.routes.router import reimbursement_router as v2_reimbursement_router
-from .payslip.routes.router import router as v2_payslip_router
-from .holiday_calendar.routes.router import router as v2_holiday_router
-from .compliance.routes.router import router as v2_compliance_router
-from .notification.routes.router import router as v2_notification_router
-from .workflow.routes.router import router as v2_workflow_router
-from .audit.routes.router import router as v2_audit_router
-from .ess.routes.router import router as v2_ess_router
-from .mss.routes.router import router as v2_mss_router
-from .organization_policy.routes.router import router as v2_org_policy_router
-from .calendar.routes.router import router as v2_calendar_router
-from .scheduler.routes.router import router as v2_scheduler_router
-from .report_generator.routes.router import router as v2_report_router
-from .pdf_service.routes.router import router as v2_pdf_router
-from .email_service.routes.router import router as v2_email_router
-from .core.config import get_settings
-from .db.mongo import init_indexes
-from .scheduler.scheduler import init_scheduler
+from app.api.routes.attendance import router as attendance_router
+from app.api.routes.admin import router as admin_router
+from app.api.routes.dashboard import router as dashboard_router
+from app.api.routes.auth import router as auth_router
+from app.auth.forgot_password.routes.router import router as forgot_password_router
+from app.api.routes.health import router as health_router
+from app.api.routes.leave import router as leave_router
+from app.api.routes.payslip import router as payslip_router
+from app.api.routes.profile import router as profile_router
+from app.api.routes.sync import router as sync_router
+from app.api.routes.policy import router as policy_router
+from app.api.routes.organization import router as organization_router
+from app.api.routes.workflow import router as workflow_router
+from app.api.routes.miss_punch import router as miss_punch_router
+from app.organization.routes.router import organization_router as v2_org_router
+from app.employee.routes.router import employee_router as v2_emp_router
+from app.salary.routes.router import salary_router as v2_salary_router
+from app.attendance_policy.routes.router import attendance_policy_router as v2_policy_router
+from app.permission.routes.router import permission_router as v2_permission_router
+from app.attendance_v2.routes.router import attendance_v2_router as v2_attendance_router
+from app.leave_policy.routes.router import leave_policy_router as v2_leave_policy_router
+from app.leave.routes.router import leave_router as v2_leave_router
+from app.payroll_policy.routes.router import router as v2_payroll_policy_router
+from app.deduction_policy.routes.router import router as v2_deduction_policy_router
+from app.reimbursement_policy.routes.router import router as v2_reimbursement_policy_router
+from app.payroll.routes.router import router as v2_payroll_router
+from app.deduction.routes.router import router as v2_deduction_router
+from app.reimbursement.routes.router import router as v2_reimbursement_router
+from app.payslip.routes.router import router as v2_payslip_router
+from app.holiday_calendar.routes.router import router as v2_holiday_router
+from app.compliance.routes.router import router as v2_compliance_router
+from app.notification.routes.router import router as v2_notification_router
+from app.workflow.routes.router import router as v2_workflow_router
+from app.audit.routes.router import router as v2_audit_router
+from app.ess.routes.router import router as v2_ess_router
+from app.mss.routes.router import router as v2_mss_router
+from app.organization_policy.routes.router import router as v2_org_policy_router
+from app.calendar.routes.router import router as v2_calendar_router
+from app.scheduler.routes.router import router as v2_scheduler_router
+from app.report_generator.routes.router import router as v2_report_router
+from app.pdf_service.routes.router import router as v2_pdf_router
+from app.email_service.routes.router import router as v2_email_router
+from app.core.config import get_settings
+from app.db.mongo import init_indexes
+from app.scheduler.scheduler import init_scheduler
 
 
 settings = get_settings()
@@ -110,6 +111,7 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(forgot_password_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_ledger_service import LeaveLedgerService
-from ..schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate, LeaveLedgerResponse
-from ..models.leave_ledger import LeaveLedgerModel
+from app.leave.services.leave_ledger_service import LeaveLedgerService
+from app.leave.schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate, LeaveLedgerResponse
+from app.leave.models.leave_ledger import LeaveLedgerModel
 
 class LeaveLedgerController:
     def __init__(self, db: AsyncIOMotorDatabase):

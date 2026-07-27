@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.labour_welfare_fund_config import LabourWelfareFundConfigModel
+from app.deduction_policy.repositories.base_repository import BaseRepository
+from app.deduction_policy.models.labour_welfare_fund_config import LabourWelfareFundConfigModel
 
 class LabourWelfareFundConfigRepository(BaseRepository[LabourWelfareFundConfigModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_balance_controller import LeaveBalanceController
-from ..schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate, LeaveBalanceResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_balance_controller import LeaveBalanceController
+from app.leave.schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate, LeaveBalanceResponse
 
 router = APIRouter(prefix="/leaveBalance", tags=["LeaveBalance"])
 

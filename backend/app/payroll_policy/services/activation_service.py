@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
-from ..repositories.policy_repository import PolicyRepository
+from app.payroll_policy.repositories.policy_repository import PolicyRepository
 
 class PolicyActivationService:
     def __init__(self, db: AsyncIOMotorDatabase, collection_name: str):

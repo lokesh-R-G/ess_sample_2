@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_holiday_rule import LeaveHolidayRuleCreate, LeaveHolidayRuleUpdate
+from app.leave_policy.schemas.leave_holiday_rule import LeaveHolidayRuleCreate, LeaveHolidayRuleUpdate
 
 class LeaveHolidayRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

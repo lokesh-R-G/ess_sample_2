@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p>Your leave request for <strong>{{ leave_type }}</strong> from <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong> has been <strong>APPROVED</strong>.</p>
+<p>Remarks: {{ remarks | default("None") }}</p>
+{% endblock %}

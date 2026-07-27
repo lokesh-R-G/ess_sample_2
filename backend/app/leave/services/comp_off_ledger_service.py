@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.comp_off_ledger_repository import CompOffLedgerRepository
-from ..validators.comp_off_ledger_validator import CompOffLedgerValidator
-from ..schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate
-from ..models.comp_off_ledger import CompOffLedgerModel
+from app.leave.repositories.comp_off_ledger_repository import CompOffLedgerRepository
+from app.leave.validators.comp_off_ledger_validator import CompOffLedgerValidator
+from app.leave.schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate
+from app.leave.models.comp_off_ledger import CompOffLedgerModel
 
 class CompOffLedgerService:
     def __init__(self, db: AsyncIOMotorDatabase):

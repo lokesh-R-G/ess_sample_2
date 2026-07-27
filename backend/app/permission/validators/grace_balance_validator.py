@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.grace_balance import GraceBalanceCreate, GraceBalanceUpdate
+from app.permission.schemas.grace_balance import GraceBalanceCreate, GraceBalanceUpdate
 
 class GraceBalanceValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

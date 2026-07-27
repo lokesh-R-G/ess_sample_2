@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.grace_request_controller import GraceRequestController
-from ..schemas.grace_request import GraceRequestCreate, GraceRequestUpdate, GraceRequestResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.permission.controllers.grace_request_controller import GraceRequestController
+from app.permission.schemas.grace_request import GraceRequestCreate, GraceRequestUpdate, GraceRequestResponse
 
 router = APIRouter(prefix="/graceRequests", tags=["GraceRequest"])
 

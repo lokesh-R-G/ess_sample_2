@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_holiday_rule_controller import LeaveHolidayRuleController
-from ..schemas.leave_holiday_rule import LeaveHolidayRuleCreate, LeaveHolidayRuleUpdate, LeaveHolidayRuleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_holiday_rule_controller import LeaveHolidayRuleController
+from app.leave_policy.schemas.leave_holiday_rule import LeaveHolidayRuleCreate, LeaveHolidayRuleUpdate, LeaveHolidayRuleResponse
 
 router = APIRouter(prefix="/leaveHolidayRule", tags=["LeaveHolidayRule"])
 

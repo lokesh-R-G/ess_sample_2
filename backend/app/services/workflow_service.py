@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Any, List
-from ..models import Workflow, WorkflowAction
+from app.models import Workflow, WorkflowAction
 
 async def create_workflow(
     db: AsyncIOMotorDatabase,

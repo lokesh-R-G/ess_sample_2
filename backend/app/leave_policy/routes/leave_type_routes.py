@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_type_controller import LeaveTypeController
-from ..schemas.leave_type import LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_type_controller import LeaveTypeController
+from app.leave_policy.schemas.leave_type import LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse
 
 router = APIRouter(prefix="/leaveType", tags=["LeaveType"])
 

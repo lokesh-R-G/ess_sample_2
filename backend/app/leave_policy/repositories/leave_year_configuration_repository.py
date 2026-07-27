@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.leave_year_configuration import LeaveYearConfigurationModel
+from app.leave_policy.repositories.base_repository import BaseRepository
+from app.leave_policy.models.leave_year_configuration import LeaveYearConfigurationModel
 
 class LeaveYearConfigurationRepository(BaseRepository[LeaveYearConfigurationModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

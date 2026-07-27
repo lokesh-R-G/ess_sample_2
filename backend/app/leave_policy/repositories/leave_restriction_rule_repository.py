@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.leave_restriction_rule import LeaveRestrictionRuleModel
+from app.leave_policy.repositories.base_repository import BaseRepository
+from app.leave_policy.models.leave_restriction_rule import LeaveRestrictionRuleModel
 
 class LeaveRestrictionRuleRepository(BaseRepository[LeaveRestrictionRuleModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

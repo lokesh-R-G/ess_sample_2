@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.permission_balance_service import PermissionBalanceService
-from ..schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate, PermissionBalanceResponse
-from ..models.permission_balance import PermissionBalanceModel
+from app.permission.services.permission_balance_service import PermissionBalanceService
+from app.permission.schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate, PermissionBalanceResponse
+from app.permission.models.permission_balance import PermissionBalanceModel
 
 class PermissionBalanceController:
     def __init__(self, db: AsyncIOMotorDatabase):

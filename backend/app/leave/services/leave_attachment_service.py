@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_attachment_repository import LeaveAttachmentRepository
-from ..validators.leave_attachment_validator import LeaveAttachmentValidator
-from ..schemas.leave_attachment import LeaveAttachmentCreate, LeaveAttachmentUpdate
-from ..models.leave_attachment import LeaveAttachmentModel
+from app.leave.repositories.leave_attachment_repository import LeaveAttachmentRepository
+from app.leave.validators.leave_attachment_validator import LeaveAttachmentValidator
+from app.leave.schemas.leave_attachment import LeaveAttachmentCreate, LeaveAttachmentUpdate
+from app.leave.models.leave_attachment import LeaveAttachmentModel
 
 class LeaveAttachmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

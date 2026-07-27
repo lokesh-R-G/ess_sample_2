@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employment_history_service import EmploymentHistoryService
-from ..schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate, EmploymentHistoryResponse
-from ..models.employment_history import EmploymentHistoryModel
+from app.employee.services.employment_history_service import EmploymentHistoryService
+from app.employee.schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate, EmploymentHistoryResponse
+from app.employee.models.employment_history import EmploymentHistoryModel
 
 class EmploymentHistoryController:
     def __init__(self, db: AsyncIOMotorDatabase):

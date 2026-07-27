@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .core.security import decode_access_token
-from .db.mongo import get_database
+from app.core.security import decode_access_token
+from app.db.mongo import get_database
 from bson import ObjectId
 
 

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_conversion_policy_service import LeaveConversionPolicyService
-from ..schemas.leave_conversion_policy import LeaveConversionPolicyCreate, LeaveConversionPolicyUpdate, LeaveConversionPolicyResponse
-from ..models.leave_conversion_policy import LeaveConversionPolicyModel
+from app.leave_policy.services.leave_conversion_policy_service import LeaveConversionPolicyService
+from app.leave_policy.schemas.leave_conversion_policy import LeaveConversionPolicyCreate, LeaveConversionPolicyUpdate, LeaveConversionPolicyResponse
+from app.leave_policy.models.leave_conversion_policy import LeaveConversionPolicyModel
 
 class LeaveConversionPolicyController:
     def __init__(self, db: AsyncIOMotorDatabase):

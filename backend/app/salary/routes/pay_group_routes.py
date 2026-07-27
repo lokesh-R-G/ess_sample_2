@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.pay_group_controller import PayGroupController
-from ..schemas.pay_group import PayGroupCreate, PayGroupUpdate, PayGroupResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.salary.controllers.pay_group_controller import PayGroupController
+from app.salary.schemas.pay_group import PayGroupCreate, PayGroupUpdate, PayGroupResponse
 
 router = APIRouter(prefix="/payGroups", tags=["PayGroup"])
 

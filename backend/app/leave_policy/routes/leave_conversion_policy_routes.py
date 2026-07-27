@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_conversion_policy_controller import LeaveConversionPolicyController
-from ..schemas.leave_conversion_policy import LeaveConversionPolicyCreate, LeaveConversionPolicyUpdate, LeaveConversionPolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_conversion_policy_controller import LeaveConversionPolicyController
+from app.leave_policy.schemas.leave_conversion_policy import LeaveConversionPolicyCreate, LeaveConversionPolicyUpdate, LeaveConversionPolicyResponse
 
 router = APIRouter(prefix="/leaveConversionPolicy", tags=["LeaveConversionPolicy"])
 

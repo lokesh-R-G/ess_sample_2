@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_approval_service import LeaveApprovalService
-from ..schemas.leave_approval import LeaveApprovalCreate, LeaveApprovalUpdate, LeaveApprovalResponse
-from ..models.leave_approval import LeaveApprovalModel
+from app.leave.services.leave_approval_service import LeaveApprovalService
+from app.leave.schemas.leave_approval import LeaveApprovalCreate, LeaveApprovalUpdate, LeaveApprovalResponse
+from app.leave.models.leave_approval import LeaveApprovalModel
 
 class LeaveApprovalController:
     def __init__(self, db: AsyncIOMotorDatabase):

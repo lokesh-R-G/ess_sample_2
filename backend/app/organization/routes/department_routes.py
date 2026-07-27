@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.department_controller import DepartmentController
-from ..schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.department_controller import DepartmentController
+from app.organization.schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
 
 router = APIRouter(prefix="/departments", tags=["Department"])
 

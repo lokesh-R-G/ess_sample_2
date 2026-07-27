@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.role import RoleModel
+from app.organization.repositories.base_repository import BaseRepository
+from app.organization.models.role import RoleModel
 
 class RoleRepository(BaseRepository[RoleModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

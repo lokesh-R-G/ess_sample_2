@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_restriction_rule_service import LeaveRestrictionRuleService
-from ..schemas.leave_restriction_rule import LeaveRestrictionRuleCreate, LeaveRestrictionRuleUpdate, LeaveRestrictionRuleResponse
-from ..models.leave_restriction_rule import LeaveRestrictionRuleModel
+from app.leave_policy.services.leave_restriction_rule_service import LeaveRestrictionRuleService
+from app.leave_policy.schemas.leave_restriction_rule import LeaveRestrictionRuleCreate, LeaveRestrictionRuleUpdate, LeaveRestrictionRuleResponse
+from app.leave_policy.models.leave_restriction_rule import LeaveRestrictionRuleModel
 
 class LeaveRestrictionRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingModel
+from app.leave.repositories.base_repository import BaseRepository
+from app.leave.models.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingModel
 
 class AttendancePenaltyLedgerProcessingRepository(BaseRepository[AttendancePenaltyLedgerProcessingModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

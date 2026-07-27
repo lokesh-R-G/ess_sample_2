@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_experience_controller import EmployeeExperienceController
-from ..schemas.employee_experience import EmployeeExperienceCreate, EmployeeExperienceUpdate, EmployeeExperienceResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_experience_controller import EmployeeExperienceController
+from app.employee.schemas.employee_experience import EmployeeExperienceCreate, EmployeeExperienceUpdate, EmployeeExperienceResponse
 
 router = APIRouter(prefix="/employeeExperiences", tags=["EmployeeExperience"])
 

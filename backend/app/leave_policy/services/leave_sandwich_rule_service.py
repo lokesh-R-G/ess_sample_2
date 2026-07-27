@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_sandwich_rule_repository import LeaveSandwichRuleRepository
-from ..validators.leave_sandwich_rule_validator import LeaveSandwichRuleValidator
-from ..schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate
-from ..models.leave_sandwich_rule import LeaveSandwichRuleModel
+from app.leave_policy.repositories.leave_sandwich_rule_repository import LeaveSandwichRuleRepository
+from app.leave_policy.validators.leave_sandwich_rule_validator import LeaveSandwichRuleValidator
+from app.leave_policy.schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate
+from app.leave_policy.models.leave_sandwich_rule import LeaveSandwichRuleModel
 
 class LeaveSandwichRuleService:
     def __init__(self, db: AsyncIOMotorDatabase):

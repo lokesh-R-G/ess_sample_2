@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.employee_role_assignment import EmployeeRoleAssignmentModel
+from app.employee.repositories.base_repository import BaseRepository
+from app.employee.models.employee_role_assignment import EmployeeRoleAssignmentModel
 
 class EmployeeRoleAssignmentRepository(BaseRepository[EmployeeRoleAssignmentModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

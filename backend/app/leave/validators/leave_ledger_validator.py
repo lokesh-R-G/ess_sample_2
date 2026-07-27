@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate
+from app.leave.schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate
 
 class LeaveLedgerValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

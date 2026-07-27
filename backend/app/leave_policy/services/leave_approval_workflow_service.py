@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_approval_workflow_repository import LeaveApprovalWorkflowRepository
-from ..validators.leave_approval_workflow_validator import LeaveApprovalWorkflowValidator
-from ..schemas.leave_approval_workflow import LeaveApprovalWorkflowCreate, LeaveApprovalWorkflowUpdate
-from ..models.leave_approval_workflow import LeaveApprovalWorkflowModel
+from app.leave_policy.repositories.leave_approval_workflow_repository import LeaveApprovalWorkflowRepository
+from app.leave_policy.validators.leave_approval_workflow_validator import LeaveApprovalWorkflowValidator
+from app.leave_policy.schemas.leave_approval_workflow import LeaveApprovalWorkflowCreate, LeaveApprovalWorkflowUpdate
+from app.leave_policy.models.leave_approval_workflow import LeaveApprovalWorkflowModel
 
 class LeaveApprovalWorkflowService:
     def __init__(self, db: AsyncIOMotorDatabase):

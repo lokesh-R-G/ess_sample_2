@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.comp_off_balance_repository import CompOffBalanceRepository
-from ..validators.comp_off_balance_validator import CompOffBalanceValidator
-from ..schemas.comp_off_balance import CompOffBalanceCreate, CompOffBalanceUpdate
-from ..models.comp_off_balance import CompOffBalanceModel
+from app.leave.repositories.comp_off_balance_repository import CompOffBalanceRepository
+from app.leave.validators.comp_off_balance_validator import CompOffBalanceValidator
+from app.leave.schemas.comp_off_balance import CompOffBalanceCreate, CompOffBalanceUpdate
+from app.leave.models.comp_off_balance import CompOffBalanceModel
 
 class CompOffBalanceService:
     def __init__(self, db: AsyncIOMotorDatabase):

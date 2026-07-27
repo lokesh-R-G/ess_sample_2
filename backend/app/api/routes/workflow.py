@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
 from pydantic import BaseModel
-from ...db.mongo import get_database
-from ...dependencies import require_roles, get_current_user
-from ...models import Workflow, UserResponse
-from ...services import workflow_service
+from app.db.mongo import get_database
+from app.dependencies import require_roles, get_current_user
+from app.models import Workflow, UserResponse
+from app.services import workflow_service
 
 router = APIRouter(prefix="/workflows", tags=["workflow"])
 

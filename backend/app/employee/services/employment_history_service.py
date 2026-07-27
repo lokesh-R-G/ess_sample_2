@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employment_history_repository import EmploymentHistoryRepository
-from ..validators.employment_history_validator import EmploymentHistoryValidator
-from ..schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate
-from ..models.employment_history import EmploymentHistoryModel
+from app.employee.repositories.employment_history_repository import EmploymentHistoryRepository
+from app.employee.validators.employment_history_validator import EmploymentHistoryValidator
+from app.employee.schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate
+from app.employee.models.employment_history import EmploymentHistoryModel
 
 class EmploymentHistoryService:
     def __init__(self, db: AsyncIOMotorDatabase):

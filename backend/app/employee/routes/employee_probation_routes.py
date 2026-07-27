@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_probation_controller import EmployeeProbationController
-from ..schemas.employee_probation import EmployeeProbationCreate, EmployeeProbationUpdate, EmployeeProbationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_probation_controller import EmployeeProbationController
+from app.employee.schemas.employee_probation import EmployeeProbationCreate, EmployeeProbationUpdate, EmployeeProbationResponse
 
 router = APIRouter(prefix="/employeeProbations", tags=["EmployeeProbation"])
 

@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.salary_structure_version_repository import SalaryStructureVersionRepository
-from ..validators.salary_structure_version_validator import SalaryStructureVersionValidator
-from ..schemas.salary_structure_version import SalaryStructureVersionCreate, SalaryStructureVersionUpdate
-from ..models.salary_structure_version import SalaryStructureVersionModel
+from app.salary.repositories.salary_structure_version_repository import SalaryStructureVersionRepository
+from app.salary.validators.salary_structure_version_validator import SalaryStructureVersionValidator
+from app.salary.schemas.salary_structure_version import SalaryStructureVersionCreate, SalaryStructureVersionUpdate
+from app.salary.models.salary_structure_version import SalaryStructureVersionModel
 
 class SalaryStructureVersionService:
     def __init__(self, db: AsyncIOMotorDatabase):

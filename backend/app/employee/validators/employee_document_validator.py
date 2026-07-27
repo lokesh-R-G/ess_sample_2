@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_document import EmployeeDocumentCreate, EmployeeDocumentUpdate
+from app.employee.schemas.employee_document import EmployeeDocumentCreate, EmployeeDocumentUpdate
 from bson import ObjectId
 
 class EmployeeDocumentValidator:

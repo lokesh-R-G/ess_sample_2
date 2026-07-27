@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_role_assignment_repository import EmployeeRoleAssignmentRepository
-from ..validators.employee_role_assignment_validator import EmployeeRoleAssignmentValidator
-from ..schemas.employee_role_assignment import EmployeeRoleAssignmentCreate, EmployeeRoleAssignmentUpdate
-from ..models.employee_role_assignment import EmployeeRoleAssignmentModel
+from app.employee.repositories.employee_role_assignment_repository import EmployeeRoleAssignmentRepository
+from app.employee.validators.employee_role_assignment_validator import EmployeeRoleAssignmentValidator
+from app.employee.schemas.employee_role_assignment import EmployeeRoleAssignmentCreate, EmployeeRoleAssignmentUpdate
+from app.employee.models.employee_role_assignment import EmployeeRoleAssignmentModel
 
 class EmployeeRoleAssignmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

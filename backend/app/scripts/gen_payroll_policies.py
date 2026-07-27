@@ -37,7 +37,7 @@ class PolicyVersionModel(BaseModel):
     # Repository
     repo_code = """from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
-from ..models.policy_version import PolicyVersionModel
+from app.models.policy_version import PolicyVersionModel
 
 class PolicyRepository:
     def __init__(self, db: AsyncIOMotorDatabase, collection_name: str):
@@ -68,7 +68,7 @@ class PolicyRepository:
     # Service
     service_code = """from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
-from ..repositories.policy_repository import PolicyRepository
+from app.repositories.policy_repository import PolicyRepository
 
 class PolicyActivationService:
     def __init__(self, db: AsyncIOMotorDatabase, collection_name: str):
@@ -95,8 +95,8 @@ class PolicyActivationService:
 
     # Route (Business API)
     route_code = f"""from fastapi import APIRouter, Depends
-from ....db.mongo import get_database
-from ..services.activation_service import PolicyActivationService
+from app.db.mongo import get_database
+from app.services.activation_service import PolicyActivationService
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/{module.replace('_', '-')}", tags=["{module.replace('_', ' ').title()}"])

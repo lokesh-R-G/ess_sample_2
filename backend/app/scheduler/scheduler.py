@@ -5,8 +5,8 @@ from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from ..db.mongo import get_database
-from ..services.sync_service import sync_all_users_incremental, sync_user
+from app.db.mongo import get_database
+from app.services.sync_service import sync_all_users_incremental, sync_user
 
 scheduler: AsyncIOScheduler | None = None
 

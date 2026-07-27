@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_quota_policy_repository import LeaveQuotaPolicyRepository
-from ..validators.leave_quota_policy_validator import LeaveQuotaPolicyValidator
-from ..schemas.leave_quota_policy import LeaveQuotaPolicyCreate, LeaveQuotaPolicyUpdate
-from ..models.leave_quota_policy import LeaveQuotaPolicyModel
+from app.leave_policy.repositories.leave_quota_policy_repository import LeaveQuotaPolicyRepository
+from app.leave_policy.validators.leave_quota_policy_validator import LeaveQuotaPolicyValidator
+from app.leave_policy.schemas.leave_quota_policy import LeaveQuotaPolicyCreate, LeaveQuotaPolicyUpdate
+from app.leave_policy.models.leave_quota_policy import LeaveQuotaPolicyModel
 
 class LeaveQuotaPolicyService:
     def __init__(self, db: AsyncIOMotorDatabase):

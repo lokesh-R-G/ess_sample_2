@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.reimbursement_ledger import ReimbursementLedgerModel
+from app.reimbursement.repositories.base_repository import BaseRepository
+from app.reimbursement.models.reimbursement_ledger import ReimbursementLedgerModel
 
 class ReimbursementLedgerRepository(BaseRepository[ReimbursementLedgerModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

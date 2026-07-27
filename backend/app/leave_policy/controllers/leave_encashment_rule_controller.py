@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_encashment_rule_service import LeaveEncashmentRuleService
-from ..schemas.leave_encashment_rule import LeaveEncashmentRuleCreate, LeaveEncashmentRuleUpdate, LeaveEncashmentRuleResponse
-from ..models.leave_encashment_rule import LeaveEncashmentRuleModel
+from app.leave_policy.services.leave_encashment_rule_service import LeaveEncashmentRuleService
+from app.leave_policy.schemas.leave_encashment_rule import LeaveEncashmentRuleCreate, LeaveEncashmentRuleUpdate, LeaveEncashmentRuleResponse
+from app.leave_policy.models.leave_encashment_rule import LeaveEncashmentRuleModel
 
 class LeaveEncashmentRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

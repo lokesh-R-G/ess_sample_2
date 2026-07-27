@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.leave_policy import LeavePolicyModel
+from app.leave_policy.repositories.base_repository import BaseRepository
+from app.leave_policy.models.leave_policy import LeavePolicyModel
 
 class LeavePolicyRepository(BaseRepository[LeavePolicyModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

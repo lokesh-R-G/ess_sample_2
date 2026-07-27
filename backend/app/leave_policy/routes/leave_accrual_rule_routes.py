@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_accrual_rule_controller import LeaveAccrualRuleController
-from ..schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate, LeaveAccrualRuleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_accrual_rule_controller import LeaveAccrualRuleController
+from app.leave_policy.schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate, LeaveAccrualRuleResponse
 
 router = APIRouter(prefix="/leaveAccrualRule", tags=["LeaveAccrualRule"])
 

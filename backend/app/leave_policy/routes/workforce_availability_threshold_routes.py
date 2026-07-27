@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.workforce_availability_threshold_controller import WorkforceAvailabilityThresholdController
-from ..schemas.workforce_availability_threshold import WorkforceAvailabilityThresholdCreate, WorkforceAvailabilityThresholdUpdate, WorkforceAvailabilityThresholdResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.workforce_availability_threshold_controller import WorkforceAvailabilityThresholdController
+from app.leave_policy.schemas.workforce_availability_threshold import WorkforceAvailabilityThresholdCreate, WorkforceAvailabilityThresholdUpdate, WorkforceAvailabilityThresholdResponse
 
 router = APIRouter(prefix="/workforceAvailabilityThreshold", tags=["WorkforceAvailabilityThreshold"])
 

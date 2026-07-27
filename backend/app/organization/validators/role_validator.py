@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.role import RoleCreate, RoleUpdate
+from app.organization.schemas.role import RoleCreate, RoleUpdate
 from bson import ObjectId
 
 class RoleValidator:

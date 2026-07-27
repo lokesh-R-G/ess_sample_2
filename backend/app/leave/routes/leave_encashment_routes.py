@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_encashment_controller import LeaveEncashmentController
-from ..schemas.leave_encashment import LeaveEncashmentCreate, LeaveEncashmentUpdate, LeaveEncashmentResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_encashment_controller import LeaveEncashmentController
+from app.leave.schemas.leave_encashment import LeaveEncashmentCreate, LeaveEncashmentUpdate, LeaveEncashmentResponse
 
 router = APIRouter(prefix="/leaveEncashment", tags=["LeaveEncashment"])
 

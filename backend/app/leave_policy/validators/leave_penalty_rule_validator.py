@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_penalty_rule import LeavePenaltyRuleCreate, LeavePenaltyRuleUpdate
+from app.leave_policy.schemas.leave_penalty_rule import LeavePenaltyRuleCreate, LeavePenaltyRuleUpdate
 
 class LeavePenaltyRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

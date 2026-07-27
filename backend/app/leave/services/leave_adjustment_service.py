@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_adjustment_repository import LeaveAdjustmentRepository
-from ..validators.leave_adjustment_validator import LeaveAdjustmentValidator
-from ..schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate
-from ..models.leave_adjustment import LeaveAdjustmentModel
+from app.leave.repositories.leave_adjustment_repository import LeaveAdjustmentRepository
+from app.leave.validators.leave_adjustment_validator import LeaveAdjustmentValidator
+from app.leave.schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate
+from app.leave.models.leave_adjustment import LeaveAdjustmentModel
 
 class LeaveAdjustmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

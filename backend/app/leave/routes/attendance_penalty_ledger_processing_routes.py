@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_penalty_ledger_processing_controller import AttendancePenaltyLedgerProcessingController
-from ..schemas.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingCreate, AttendancePenaltyLedgerProcessingUpdate, AttendancePenaltyLedgerProcessingResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.attendance_penalty_ledger_processing_controller import AttendancePenaltyLedgerProcessingController
+from app.leave.schemas.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingCreate, AttendancePenaltyLedgerProcessingUpdate, AttendancePenaltyLedgerProcessingResponse
 
 router = APIRouter(prefix="/attendancePenaltyLedgerProcessing", tags=["AttendancePenaltyLedgerProcessing"])
 

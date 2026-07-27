@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_reporting import EmployeeReportingCreate, EmployeeReportingUpdate
+from app.employee.schemas.employee_reporting import EmployeeReportingCreate, EmployeeReportingUpdate
 from bson import ObjectId
 
 class EmployeeReportingValidator:

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.permission_overflow_rule_controller import PermissionOverflowRuleController
-from ..schemas.permission_overflow_rule import PermissionOverflowRuleCreate, PermissionOverflowRuleUpdate, PermissionOverflowRuleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.permission_overflow_rule_controller import PermissionOverflowRuleController
+from app.attendance_policy.schemas.permission_overflow_rule import PermissionOverflowRuleCreate, PermissionOverflowRuleUpdate, PermissionOverflowRuleResponse
 
 router = APIRouter(prefix="/permissionOverflowRules", tags=["PermissionOverflowRule"])
 

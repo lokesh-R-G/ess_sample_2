@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_eligibility_rule import LeaveEligibilityRuleCreate, LeaveEligibilityRuleUpdate
+from app.leave_policy.schemas.leave_eligibility_rule import LeaveEligibilityRuleCreate, LeaveEligibilityRuleUpdate
 
 class LeaveEligibilityRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

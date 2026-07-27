@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_reservation_service import LeaveReservationService
-from ..schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate, LeaveReservationResponse
-from ..models.leave_reservation import LeaveReservationModel
+from app.leave.services.leave_reservation_service import LeaveReservationService
+from app.leave.schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate, LeaveReservationResponse
+from app.leave.models.leave_reservation import LeaveReservationModel
 
 class LeaveReservationController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_exit_repository import EmployeeExitRepository
-from ..validators.employee_exit_validator import EmployeeExitValidator
-from ..schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate
-from ..models.employee_exit import EmployeeExitModel
+from app.employee.repositories.employee_exit_repository import EmployeeExitRepository
+from app.employee.validators.employee_exit_validator import EmployeeExitValidator
+from app.employee.schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate
+from app.employee.models.employee_exit import EmployeeExitModel
 
 class EmployeeExitService:
     def __init__(self, db: AsyncIOMotorDatabase):

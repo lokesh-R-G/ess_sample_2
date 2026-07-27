@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.designation_service import DesignationService
-from ..schemas.designation import DesignationCreate, DesignationUpdate, DesignationResponse
-from ..models.designation import DesignationModel
+from app.organization.services.designation_service import DesignationService
+from app.organization.schemas.designation import DesignationCreate, DesignationUpdate, DesignationResponse
+from app.organization.models.designation import DesignationModel
 
 class DesignationController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.permission_balance_repository import PermissionBalanceRepository
-from ..validators.permission_balance_validator import PermissionBalanceValidator
-from ..schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate
-from ..models.permission_balance import PermissionBalanceModel
+from app.permission.repositories.permission_balance_repository import PermissionBalanceRepository
+from app.permission.validators.permission_balance_validator import PermissionBalanceValidator
+from app.permission.schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate
+from app.permission.models.permission_balance import PermissionBalanceModel
 
 class PermissionBalanceService:
     def __init__(self, db: AsyncIOMotorDatabase):

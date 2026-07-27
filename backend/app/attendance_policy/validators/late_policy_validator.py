@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.late_policy import LatePolicyCreate, LatePolicyUpdate
+from app.attendance_policy.schemas.late_policy import LatePolicyCreate, LatePolicyUpdate
 
 class LatePolicyValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

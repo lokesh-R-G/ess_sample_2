@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.cost_center_repository import CostCenterRepository
-from ..validators.cost_center_validator import CostCenterValidator
-from ..schemas.cost_center import CostCenterCreate, CostCenterUpdate
-from ..models.cost_center import CostCenterModel
+from app.salary.repositories.cost_center_repository import CostCenterRepository
+from app.salary.validators.cost_center_validator import CostCenterValidator
+from app.salary.schemas.cost_center import CostCenterCreate, CostCenterUpdate
+from app.salary.models.cost_center import CostCenterModel
 
 class CostCenterService:
     def __init__(self, db: AsyncIOMotorDatabase):

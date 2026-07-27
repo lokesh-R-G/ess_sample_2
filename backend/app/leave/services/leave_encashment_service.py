@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_encashment_repository import LeaveEncashmentRepository
-from ..validators.leave_encashment_validator import LeaveEncashmentValidator
-from ..schemas.leave_encashment import LeaveEncashmentCreate, LeaveEncashmentUpdate
-from ..models.leave_encashment import LeaveEncashmentModel
+from app.leave.repositories.leave_encashment_repository import LeaveEncashmentRepository
+from app.leave.validators.leave_encashment_validator import LeaveEncashmentValidator
+from app.leave.schemas.leave_encashment import LeaveEncashmentCreate, LeaveEncashmentUpdate
+from app.leave.models.leave_encashment import LeaveEncashmentModel
 
 class LeaveEncashmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

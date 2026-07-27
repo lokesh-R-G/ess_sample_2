@@ -4,11 +4,11 @@ from collections import Counter
 
 from fastapi import APIRouter, Depends
 
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
-from ...services.attendance_service import infer_attendance_status
-from ...services.policy_service import get_attendance_policy
-from ...core.datetime_utils import get_current_ist, compare_time_with_policy
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.services.attendance_service import infer_attendance_status
+from app.services.policy_service import get_attendance_policy
+from app.core.datetime_utils import get_current_ist, compare_time_with_policy
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 

@@ -4,13 +4,13 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 
-from ...core.config import get_settings
-from ...core.security import create_access_token
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
-from ...models import ChangePasswordRequest, LoginRequest, TokenResponse, UserResponse
-from ...services.auth_service import authenticate_or_provision_user, change_password, serialize_user
-from ...scheduler.scheduler import schedule_user_sync_now
+from app.core.config import get_settings
+from app.core.security import create_access_token
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.models import ChangePasswordRequest, LoginRequest, TokenResponse, UserResponse
+from app.services.auth_service import authenticate_or_provision_user, change_password, serialize_user
+from app.scheduler.scheduler import schedule_user_sync_now
 from datetime import timedelta, timezone, datetime
 
 

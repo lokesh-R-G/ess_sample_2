@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.grace_balance_repository import GraceBalanceRepository
-from ..validators.grace_balance_validator import GraceBalanceValidator
-from ..schemas.grace_balance import GraceBalanceCreate, GraceBalanceUpdate
-from ..models.grace_balance import GraceBalanceModel
+from app.permission.repositories.grace_balance_repository import GraceBalanceRepository
+from app.permission.validators.grace_balance_validator import GraceBalanceValidator
+from app.permission.schemas.grace_balance import GraceBalanceCreate, GraceBalanceUpdate
+from app.permission.models.grace_balance import GraceBalanceModel
 
 class GraceBalanceService:
     def __init__(self, db: AsyncIOMotorDatabase):

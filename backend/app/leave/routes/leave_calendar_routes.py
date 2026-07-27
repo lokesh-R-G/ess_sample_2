@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_calendar_controller import LeaveCalendarController
-from ..schemas.leave_calendar import LeaveCalendarCreate, LeaveCalendarUpdate, LeaveCalendarResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_calendar_controller import LeaveCalendarController
+from app.leave.schemas.leave_calendar import LeaveCalendarCreate, LeaveCalendarUpdate, LeaveCalendarResponse
 
 router = APIRouter(prefix="/leaveCalendar", tags=["LeaveCalendar"])
 

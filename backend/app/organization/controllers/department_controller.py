@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.department_service import DepartmentService
-from ..schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
-from ..models.department import DepartmentModel
+from app.organization.services.department_service import DepartmentService
+from app.organization.schemas.department import DepartmentCreate, DepartmentUpdate, DepartmentResponse
+from app.organization.models.department import DepartmentModel
 
 class DepartmentController:
     def __init__(self, db: AsyncIOMotorDatabase):

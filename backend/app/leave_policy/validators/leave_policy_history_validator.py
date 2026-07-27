@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_policy_history import LeavePolicyHistoryCreate, LeavePolicyHistoryUpdate
+from app.leave_policy.schemas.leave_policy_history import LeavePolicyHistoryCreate, LeavePolicyHistoryUpdate
 
 class LeavePolicyHistoryValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

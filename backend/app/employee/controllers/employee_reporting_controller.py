@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_reporting_service import EmployeeReportingService
-from ..schemas.employee_reporting import EmployeeReportingCreate, EmployeeReportingUpdate, EmployeeReportingResponse
-from ..models.employee_reporting import EmployeeReportingModel
+from app.employee.services.employee_reporting_service import EmployeeReportingService
+from app.employee.schemas.employee_reporting import EmployeeReportingCreate, EmployeeReportingUpdate, EmployeeReportingResponse
+from app.employee.models.employee_reporting import EmployeeReportingModel
 
 class EmployeeReportingController:
     def __init__(self, db: AsyncIOMotorDatabase):

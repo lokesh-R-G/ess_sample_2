@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate
+from app.leave.schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate
 
 class LeaveClosingValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

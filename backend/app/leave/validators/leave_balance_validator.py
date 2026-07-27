@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate
+from app.leave.schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate
 
 class LeaveBalanceValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

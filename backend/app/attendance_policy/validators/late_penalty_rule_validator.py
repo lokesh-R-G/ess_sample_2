@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate
+from app.attendance_policy.schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate
 
 class LatePenaltyRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

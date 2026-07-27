@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.late_penalty_rule_repository import LatePenaltyRuleRepository
-from ..validators.late_penalty_rule_validator import LatePenaltyRuleValidator
-from ..schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate
-from ..models.late_penalty_rule import LatePenaltyRuleModel
+from app.attendance_policy.repositories.late_penalty_rule_repository import LatePenaltyRuleRepository
+from app.attendance_policy.validators.late_penalty_rule_validator import LatePenaltyRuleValidator
+from app.attendance_policy.schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate
+from app.attendance_policy.models.late_penalty_rule import LatePenaltyRuleModel
 
 class LatePenaltyRuleService:
     def __init__(self, db: AsyncIOMotorDatabase):

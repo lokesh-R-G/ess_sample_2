@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.grace_approval_service import GraceApprovalService
-from ..schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate, GraceApprovalResponse
-from ..models.grace_approval import GraceApprovalModel
+from app.permission.services.grace_approval_service import GraceApprovalService
+from app.permission.schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate, GraceApprovalResponse
+from app.permission.models.grace_approval import GraceApprovalModel
 
 class GraceApprovalController:
     def __init__(self, db: AsyncIOMotorDatabase):

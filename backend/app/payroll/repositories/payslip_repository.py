@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.payslip import PayslipModel
+from app.payroll.repositories.base_repository import BaseRepository
+from app.payroll.models.payslip import PayslipModel
 
 class PayslipRepository(BaseRepository[PayslipModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

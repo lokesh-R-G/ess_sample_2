@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.shift_attendance_policy_controller import ShiftAttendancePolicyController
-from ..schemas.shift_attendance_policy import ShiftAttendancePolicyCreate, ShiftAttendancePolicyUpdate, ShiftAttendancePolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.shift_attendance_policy_controller import ShiftAttendancePolicyController
+from app.attendance_policy.schemas.shift_attendance_policy import ShiftAttendancePolicyCreate, ShiftAttendancePolicyUpdate, ShiftAttendancePolicyResponse
 
 router = APIRouter(prefix="/shiftAttendancePolicys", tags=["ShiftAttendancePolicy"])
 

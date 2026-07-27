@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_application_repository import LeaveApplicationRepository
-from ..validators.leave_application_validator import LeaveApplicationValidator
-from ..schemas.leave_application import LeaveApplicationCreate, LeaveApplicationUpdate
-from ..models.leave_application import LeaveApplicationModel
+from app.leave.repositories.leave_application_repository import LeaveApplicationRepository
+from app.leave.validators.leave_application_validator import LeaveApplicationValidator
+from app.leave.schemas.leave_application import LeaveApplicationCreate, LeaveApplicationUpdate
+from app.leave.models.leave_application import LeaveApplicationModel
 
 class LeaveApplicationService:
     def __init__(self, db: AsyncIOMotorDatabase):

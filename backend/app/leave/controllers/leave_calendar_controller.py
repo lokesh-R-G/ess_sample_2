@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_calendar_service import LeaveCalendarService
-from ..schemas.leave_calendar import LeaveCalendarCreate, LeaveCalendarUpdate, LeaveCalendarResponse
-from ..models.leave_calendar import LeaveCalendarModel
+from app.leave.services.leave_calendar_service import LeaveCalendarService
+from app.leave.schemas.leave_calendar import LeaveCalendarCreate, LeaveCalendarUpdate, LeaveCalendarResponse
+from app.leave.models.leave_calendar import LeaveCalendarModel
 
 class LeaveCalendarController:
     def __init__(self, db: AsyncIOMotorDatabase):

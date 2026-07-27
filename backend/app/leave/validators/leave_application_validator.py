@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_application import LeaveApplicationCreate, LeaveApplicationUpdate
+from app.leave.schemas.leave_application import LeaveApplicationCreate, LeaveApplicationUpdate
 
 class LeaveApplicationValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

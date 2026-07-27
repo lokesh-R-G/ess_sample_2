@@ -89,7 +89,7 @@ def write_entity_code(entity: str):
     
     # Update Repo
     repo_content = f"""from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
+from app.scripts.base_repository import BaseRepository
 from ..models.{entity} import {cap}Model
 
 class {cap}Repository(BaseRepository[{cap}Model]):
@@ -174,7 +174,7 @@ class {cap}Controller:
     # Update Routes
     route_content = f"""from typing import List
 from fastapi import APIRouter, Depends
-from ....db.mongo import get_database
+from app.db.mongo import get_database
 from ..controllers.{entity}_controller import {cap}Controller
 from ..schemas.{entity} import {cap}Create, {cap}Update, {cap}Response
 

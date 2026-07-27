@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p>Welcome to the team! Your employee account has been created.</p>
+
+<ul>
+    <li><strong>Employee ID:</strong> {{ employee_id }}</li>
+    <li><strong>Department:</strong> {{ department }}</li>
+    <li><strong>Designation:</strong> {{ designation }}</li>
+    <li><strong>Temporary Password:</strong> {{ temp_password }}</li>
+</ul>
+
+<p>Please log in and change your password immediately.</p>
+
+<a href="{{ login_url }}" class="button">Log In Now</a>
+
+<div class="alert">
+    Do not share your temporary password with anyone.
+</div>
+{% endblock %}

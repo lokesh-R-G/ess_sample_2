@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.permission_history_controller import PermissionHistoryController
-from ..schemas.permission_history import PermissionHistoryCreate, PermissionHistoryUpdate, PermissionHistoryResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.permission.controllers.permission_history_controller import PermissionHistoryController
+from app.permission.schemas.permission_history import PermissionHistoryCreate, PermissionHistoryUpdate, PermissionHistoryResponse
 
 router = APIRouter(prefix="/permissionHistorys", tags=["PermissionHistory"])
 

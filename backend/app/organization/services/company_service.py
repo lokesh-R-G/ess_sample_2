@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.company_repository import CompanyRepository
-from ..validators.company_validator import CompanyValidator
-from ..schemas.company import CompanyCreate, CompanyUpdate
-from ..models.company import CompanyModel
+from app.organization.repositories.company_repository import CompanyRepository
+from app.organization.validators.company_validator import CompanyValidator
+from app.organization.schemas.company import CompanyCreate, CompanyUpdate
+from app.organization.models.company import CompanyModel
 
 class CompanyService:
     def __init__(self, db: AsyncIOMotorDatabase):

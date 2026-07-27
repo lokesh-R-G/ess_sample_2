@@ -28,6 +28,16 @@ class Settings:
     essl_api_password: str
     essl_serial_number: str
     frontend_origins: list[str]
+    
+    # SMTP Configuration
+    smtp_host: str
+    smtp_port: int
+    smtp_username: str
+    smtp_password: str
+    smtp_from_email: str
+    smtp_from_name: str
+    smtp_tls: bool
+    smtp_ssl: bool
 
 
 @lru_cache(maxsize=1)
@@ -49,6 +59,14 @@ def get_settings() -> Settings:
         essl_api_password=essl_api_password,
         essl_serial_number=essl_serial_number,
         frontend_origins=_csv_env("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
+        smtp_host=os.getenv("SMTP_HOST", "sandbox.smtp.mailtrap.io"),
+        smtp_port=int(os.getenv("SMTP_PORT", "2525")),
+        smtp_username=os.getenv("SMTP_USERNAME", ""),
+        smtp_password=os.getenv("SMTP_PASSWORD", ""),
+        smtp_from_email=os.getenv("SMTP_FROM_EMAIL", "no-reply@enterprise-hrms.com"),
+        smtp_from_name=os.getenv("SMTP_FROM_NAME", "HRMS Support"),
+        smtp_tls=os.getenv("SMTP_TLS", "True").lower() in ("true", "1", "yes"),
+        smtp_ssl=os.getenv("SMTP_SSL", "False").lower() in ("true", "1", "yes"),
     )
 
     print("[Settings] Loaded Configuration:")

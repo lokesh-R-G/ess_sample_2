@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.designation_repository import DesignationRepository
-from ..validators.designation_validator import DesignationValidator
-from ..schemas.designation import DesignationCreate, DesignationUpdate
-from ..models.designation import DesignationModel
+from app.organization.repositories.designation_repository import DesignationRepository
+from app.organization.validators.designation_validator import DesignationValidator
+from app.organization.schemas.designation import DesignationCreate, DesignationUpdate
+from app.organization.models.designation import DesignationModel
 
 class DesignationService:
     def __init__(self, db: AsyncIOMotorDatabase):

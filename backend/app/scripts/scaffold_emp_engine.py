@@ -191,7 +191,7 @@ class {class_name}Response({class_name}Create):
     # Repositories
     with open(BASE_DIR / "repositories" / f"{entity}_repository.py", "w") as f:
         f.write(f'''from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
+from app.scripts.base_repository import BaseRepository
 from ..models.{entity} import {class_name}Model
 
 class {class_name}Repository(BaseRepository[{class_name}Model]):
@@ -294,8 +294,8 @@ class {class_name}Controller:
     with open(BASE_DIR / "routes" / f"{entity}_routes.py", "w") as f:
         f.write(f'''from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
 from ..controllers.{entity}_controller import {class_name}Controller
 from ..schemas.{entity} import {class_name}Create, {class_name}Update, {class_name}Response
 

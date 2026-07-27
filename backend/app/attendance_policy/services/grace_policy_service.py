@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.grace_policy_repository import GracePolicyRepository
-from ..validators.grace_policy_validator import GracePolicyValidator
-from ..schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate
-from ..models.grace_policy import GracePolicyModel
+from app.attendance_policy.repositories.grace_policy_repository import GracePolicyRepository
+from app.attendance_policy.validators.grace_policy_validator import GracePolicyValidator
+from app.attendance_policy.schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate
+from app.attendance_policy.models.grace_policy import GracePolicyModel
 
 class GracePolicyService:
     def __init__(self, db: AsyncIOMotorDatabase):

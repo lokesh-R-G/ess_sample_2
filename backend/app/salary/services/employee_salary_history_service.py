@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_salary_history_repository import EmployeeSalaryHistoryRepository
-from ..validators.employee_salary_history_validator import EmployeeSalaryHistoryValidator
-from ..schemas.employee_salary_history import EmployeeSalaryHistoryCreate, EmployeeSalaryHistoryUpdate
-from ..models.employee_salary_history import EmployeeSalaryHistoryModel
+from app.salary.repositories.employee_salary_history_repository import EmployeeSalaryHistoryRepository
+from app.salary.validators.employee_salary_history_validator import EmployeeSalaryHistoryValidator
+from app.salary.schemas.employee_salary_history import EmployeeSalaryHistoryCreate, EmployeeSalaryHistoryUpdate
+from app.salary.models.employee_salary_history import EmployeeSalaryHistoryModel
 
 class EmployeeSalaryHistoryService:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_confirmation import EmployeeConfirmationCreate, EmployeeConfirmationUpdate
+from app.employee.schemas.employee_confirmation import EmployeeConfirmationCreate, EmployeeConfirmationUpdate
 from bson import ObjectId
 
 class EmployeeConfirmationValidator:

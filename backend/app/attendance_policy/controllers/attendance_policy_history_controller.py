@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.attendance_policy_history_service import AttendancePolicyHistoryService
-from ..schemas.attendance_policy_history import AttendancePolicyHistoryCreate, AttendancePolicyHistoryUpdate, AttendancePolicyHistoryResponse
-from ..models.attendance_policy_history import AttendancePolicyHistoryModel
+from app.attendance_policy.services.attendance_policy_history_service import AttendancePolicyHistoryService
+from app.attendance_policy.schemas.attendance_policy_history import AttendancePolicyHistoryCreate, AttendancePolicyHistoryUpdate, AttendancePolicyHistoryResponse
+from app.attendance_policy.models.attendance_policy_history import AttendancePolicyHistoryModel
 
 class AttendancePolicyHistoryController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_replay_queue_controller import AttendanceReplayQueueController
-from ..schemas.attendance_replay_queue import AttendanceReplayQueueCreate, AttendanceReplayQueueUpdate, AttendanceReplayQueueResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.attendance_replay_queue_controller import AttendanceReplayQueueController
+from app.attendance_v2.schemas.attendance_replay_queue import AttendanceReplayQueueCreate, AttendanceReplayQueueUpdate, AttendanceReplayQueueResponse
 
 router = APIRouter(prefix="/attendanceReplayQueue", tags=["AttendanceReplayQueue"])
 

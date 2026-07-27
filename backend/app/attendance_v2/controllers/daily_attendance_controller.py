@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.daily_attendance_service import DailyAttendanceService
-from ..schemas.daily_attendance import DailyAttendanceCreate, DailyAttendanceUpdate, DailyAttendanceResponse
-from ..models.daily_attendance import DailyAttendanceModel
+from app.attendance_v2.services.daily_attendance_service import DailyAttendanceService
+from app.attendance_v2.schemas.daily_attendance import DailyAttendanceCreate, DailyAttendanceUpdate, DailyAttendanceResponse
+from app.attendance_v2.models.daily_attendance import DailyAttendanceModel
 
 class DailyAttendanceController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.late_log_service import LateLogService
-from ..schemas.late_log import LateLogCreate, LateLogUpdate, LateLogResponse
-from ..models.late_log import LateLogModel
+from app.attendance_v2.services.late_log_service import LateLogService
+from app.attendance_v2.schemas.late_log import LateLogCreate, LateLogUpdate, LateLogResponse
+from app.attendance_v2.models.late_log import LateLogModel
 
 class LateLogController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.organization import OrganizationModel
+from app.organization.repositories.base_repository import BaseRepository
+from app.organization.models.organization import OrganizationModel
 
 class OrganizationRepository(BaseRepository[OrganizationModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.organization_repository import OrganizationRepository
-from ..validators.organization_validator import OrganizationValidator
-from ..schemas.organization import OrganizationCreate, OrganizationUpdate
-from ..models.organization import OrganizationModel
+from app.organization.repositories.organization_repository import OrganizationRepository
+from app.organization.validators.organization_validator import OrganizationValidator
+from app.organization.schemas.organization import OrganizationCreate, OrganizationUpdate
+from app.organization.models.organization import OrganizationModel
 
 class OrganizationService:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate
+from app.leave_policy.schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate
 
 class LeaveAccrualRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

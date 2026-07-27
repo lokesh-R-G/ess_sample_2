@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.permission_overflow_rule import PermissionOverflowRuleCreate, PermissionOverflowRuleUpdate
+from app.attendance_policy.schemas.permission_overflow_rule import PermissionOverflowRuleCreate, PermissionOverflowRuleUpdate
 
 class PermissionOverflowRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

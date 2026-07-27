@@ -4,9 +4,9 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
-from ...services.attendance_service import get_attendance_for_employee, infer_attendance_status
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.services.attendance_service import get_attendance_for_employee, infer_attendance_status
 
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])

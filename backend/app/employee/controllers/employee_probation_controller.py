@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_probation_service import EmployeeProbationService
-from ..schemas.employee_probation import EmployeeProbationCreate, EmployeeProbationUpdate, EmployeeProbationResponse
-from ..models.employee_probation import EmployeeProbationModel
+from app.employee.services.employee_probation_service import EmployeeProbationService
+from app.employee.schemas.employee_probation import EmployeeProbationCreate, EmployeeProbationUpdate, EmployeeProbationResponse
+from app.employee.models.employee_probation import EmployeeProbationModel
 
 class EmployeeProbationController:
     def __init__(self, db: AsyncIOMotorDatabase):

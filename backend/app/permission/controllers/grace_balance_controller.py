@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.grace_balance_service import GraceBalanceService
-from ..schemas.grace_balance import GraceBalanceCreate, GraceBalanceUpdate, GraceBalanceResponse
-from ..models.grace_balance import GraceBalanceModel
+from app.permission.services.grace_balance_service import GraceBalanceService
+from app.permission.schemas.grace_balance import GraceBalanceCreate, GraceBalanceUpdate, GraceBalanceResponse
+from app.permission.models.grace_balance import GraceBalanceModel
 
 class GraceBalanceController:
     def __init__(self, db: AsyncIOMotorDatabase):

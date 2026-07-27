@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from ..schemas.simulator import SimulationRequest, SimulationResponse
+from app.attendance_policy.schemas.simulator import SimulationRequest, SimulationResponse
 
 class SimulationEngine:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.branch_controller import BranchController
-from ..schemas.branch import BranchCreate, BranchUpdate, BranchResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.branch_controller import BranchController
+from app.organization.schemas.branch import BranchCreate, BranchUpdate, BranchResponse
 
 router = APIRouter(prefix="/branchs", tags=["Branch"])
 

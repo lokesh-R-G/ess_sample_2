@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingCreate, AttendancePenaltyLedgerProcessingUpdate
+from app.leave.schemas.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingCreate, AttendancePenaltyLedgerProcessingUpdate
 
 class AttendancePenaltyLedgerProcessingValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

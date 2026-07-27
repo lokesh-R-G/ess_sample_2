@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_log_controller import AttendanceLogController
-from ..schemas.attendance_log import AttendanceLogCreate, AttendanceLogUpdate, AttendanceLogResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.attendance_log_controller import AttendanceLogController
+from app.attendance_v2.schemas.attendance_log import AttendanceLogCreate, AttendanceLogUpdate, AttendanceLogResponse
 
 router = APIRouter(prefix="/attendanceLogs", tags=["AttendanceLog"])
 

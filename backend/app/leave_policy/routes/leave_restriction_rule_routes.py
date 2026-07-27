@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_restriction_rule_controller import LeaveRestrictionRuleController
-from ..schemas.leave_restriction_rule import LeaveRestrictionRuleCreate, LeaveRestrictionRuleUpdate, LeaveRestrictionRuleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_restriction_rule_controller import LeaveRestrictionRuleController
+from app.leave_policy.schemas.leave_restriction_rule import LeaveRestrictionRuleCreate, LeaveRestrictionRuleUpdate, LeaveRestrictionRuleResponse
 
 router = APIRouter(prefix="/leaveRestrictionRule", tags=["LeaveRestrictionRule"])
 

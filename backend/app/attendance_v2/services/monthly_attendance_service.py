@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.monthly_attendance_repository import MonthlyAttendanceRepository
-from ..validators.monthly_attendance_validator import MonthlyAttendanceValidator
-from ..schemas.monthly_attendance import MonthlyAttendanceCreate, MonthlyAttendanceUpdate
-from ..models.monthly_attendance import MonthlyAttendanceModel
+from app.attendance_v2.repositories.monthly_attendance_repository import MonthlyAttendanceRepository
+from app.attendance_v2.validators.monthly_attendance_validator import MonthlyAttendanceValidator
+from app.attendance_v2.schemas.monthly_attendance import MonthlyAttendanceCreate, MonthlyAttendanceUpdate
+from app.attendance_v2.models.monthly_attendance import MonthlyAttendanceModel
 
 class MonthlyAttendanceService:
     def __init__(self, db: AsyncIOMotorDatabase):

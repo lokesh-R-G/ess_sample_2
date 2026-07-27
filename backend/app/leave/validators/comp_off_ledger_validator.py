@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate
+from app.leave.schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate
 
 class CompOffLedgerValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
-from ...models import AttendancePolicy
-from ...services.policy_service import get_attendance_policy, update_attendance_policy
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.models import AttendancePolicy
+from app.services.policy_service import get_attendance_policy, update_attendance_policy
 
 router = APIRouter(prefix="/policy", tags=["policy"])
 

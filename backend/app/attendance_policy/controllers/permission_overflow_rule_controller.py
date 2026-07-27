@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.permission_overflow_rule_service import PermissionOverflowRuleService
-from ..schemas.permission_overflow_rule import PermissionOverflowRuleCreate, PermissionOverflowRuleUpdate, PermissionOverflowRuleResponse
-from ..models.permission_overflow_rule import PermissionOverflowRuleModel
+from app.attendance_policy.services.permission_overflow_rule_service import PermissionOverflowRuleService
+from app.attendance_policy.schemas.permission_overflow_rule import PermissionOverflowRuleCreate, PermissionOverflowRuleUpdate, PermissionOverflowRuleResponse
+from app.attendance_policy.models.permission_overflow_rule import PermissionOverflowRuleModel
 
 class PermissionOverflowRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

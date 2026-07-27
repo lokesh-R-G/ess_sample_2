@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_confirmation_controller import EmployeeConfirmationController
-from ..schemas.employee_confirmation import EmployeeConfirmationCreate, EmployeeConfirmationUpdate, EmployeeConfirmationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_confirmation_controller import EmployeeConfirmationController
+from app.employee.schemas.employee_confirmation import EmployeeConfirmationCreate, EmployeeConfirmationUpdate, EmployeeConfirmationResponse
 
 router = APIRouter(prefix="/employeeConfirmations", tags=["EmployeeConfirmation"])
 

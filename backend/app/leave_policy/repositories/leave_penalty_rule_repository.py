@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.leave_penalty_rule import LeavePenaltyRuleModel
+from app.leave_policy.repositories.base_repository import BaseRepository
+from app.leave_policy.models.leave_penalty_rule import LeavePenaltyRuleModel
 
 class LeavePenaltyRuleRepository(BaseRepository[LeavePenaltyRuleModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

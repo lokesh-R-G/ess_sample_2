@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.organization_service import OrganizationService
-from ..schemas.organization import OrganizationCreate, OrganizationUpdate, OrganizationResponse
-from ..models.organization import OrganizationModel
+from app.organization.services.organization_service import OrganizationService
+from app.organization.schemas.organization import OrganizationCreate, OrganizationUpdate, OrganizationResponse
+from app.organization.models.organization import OrganizationModel
 
 class OrganizationController:
     def __init__(self, db: AsyncIOMotorDatabase):

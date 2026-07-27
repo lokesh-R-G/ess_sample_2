@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.permission_usage import PermissionUsageCreate, PermissionUsageUpdate
+from app.permission.schemas.permission_usage import PermissionUsageCreate, PermissionUsageUpdate
 
 class PermissionUsageValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

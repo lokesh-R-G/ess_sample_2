@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.trip_sheet_claim import TripSheetClaimModel
+from app.reimbursement.repositories.base_repository import BaseRepository
+from app.reimbursement.models.trip_sheet_claim import TripSheetClaimModel
 
 class TripSheetClaimRepository(BaseRepository[TripSheetClaimModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

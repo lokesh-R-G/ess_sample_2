@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p>Your payslip for the month of <strong>{{ payroll_month }}</strong> is attached to this email.</p>
+<p>Salary Period: {{ salary_period }}</p>
+<div class="alert">
+    Please note: The attached PDF is confidential.
+</div>
+{% endblock %}

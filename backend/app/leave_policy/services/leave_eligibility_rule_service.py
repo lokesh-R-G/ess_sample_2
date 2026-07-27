@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_eligibility_rule_repository import LeaveEligibilityRuleRepository
-from ..validators.leave_eligibility_rule_validator import LeaveEligibilityRuleValidator
-from ..schemas.leave_eligibility_rule import LeaveEligibilityRuleCreate, LeaveEligibilityRuleUpdate
-from ..models.leave_eligibility_rule import LeaveEligibilityRuleModel
+from app.leave_policy.repositories.leave_eligibility_rule_repository import LeaveEligibilityRuleRepository
+from app.leave_policy.validators.leave_eligibility_rule_validator import LeaveEligibilityRuleValidator
+from app.leave_policy.schemas.leave_eligibility_rule import LeaveEligibilityRuleCreate, LeaveEligibilityRuleUpdate
+from app.leave_policy.models.leave_eligibility_rule import LeaveEligibilityRuleModel
 
 class LeaveEligibilityRuleService:
     def __init__(self, db: AsyncIOMotorDatabase):

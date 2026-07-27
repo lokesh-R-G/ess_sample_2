@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.grace_approval_repository import GraceApprovalRepository
-from ..validators.grace_approval_validator import GraceApprovalValidator
-from ..schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate
-from ..models.grace_approval import GraceApprovalModel
+from app.permission.repositories.grace_approval_repository import GraceApprovalRepository
+from app.permission.validators.grace_approval_validator import GraceApprovalValidator
+from app.permission.schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate
+from app.permission.models.grace_approval import GraceApprovalModel
 
 class GraceApprovalService:
     def __init__(self, db: AsyncIOMotorDatabase):

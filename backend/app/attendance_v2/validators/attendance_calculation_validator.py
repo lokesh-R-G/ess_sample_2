@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.attendance_calculation import AttendanceCalculationCreate, AttendanceCalculationUpdate
+from app.attendance_v2.schemas.attendance_calculation import AttendanceCalculationCreate, AttendanceCalculationUpdate
 
 class AttendanceCalculationValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

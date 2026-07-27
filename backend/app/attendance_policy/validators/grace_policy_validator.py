@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate
+from app.attendance_policy.schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate
 
 class GracePolicyValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

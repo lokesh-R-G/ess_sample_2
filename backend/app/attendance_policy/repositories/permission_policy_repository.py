@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.permission_policy import PermissionPolicyModel
+from app.attendance_policy.repositories.base_repository import BaseRepository
+from app.attendance_policy.models.permission_policy import PermissionPolicyModel
 
 class PermissionPolicyRepository(BaseRepository[PermissionPolicyModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

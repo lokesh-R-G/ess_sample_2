@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_conversion_rule import LeaveConversionRuleCreate, LeaveConversionRuleUpdate
+from app.attendance_policy.schemas.leave_conversion_rule import LeaveConversionRuleCreate, LeaveConversionRuleUpdate
 
 class LeaveConversionRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

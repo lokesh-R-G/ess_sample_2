@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_role_assignment_service import EmployeeRoleAssignmentService
-from ..schemas.employee_role_assignment import EmployeeRoleAssignmentCreate, EmployeeRoleAssignmentUpdate, EmployeeRoleAssignmentResponse
-from ..models.employee_role_assignment import EmployeeRoleAssignmentModel
+from app.employee.services.employee_role_assignment_service import EmployeeRoleAssignmentService
+from app.employee.schemas.employee_role_assignment import EmployeeRoleAssignmentCreate, EmployeeRoleAssignmentUpdate, EmployeeRoleAssignmentResponse
+from app.employee.models.employee_role_assignment import EmployeeRoleAssignmentModel
 
 class EmployeeRoleAssignmentController:
     def __init__(self, db: AsyncIOMotorDatabase):

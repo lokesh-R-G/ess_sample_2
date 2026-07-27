@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_sandwich_rule_controller import LeaveSandwichRuleController
-from ..schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate, LeaveSandwichRuleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_sandwich_rule_controller import LeaveSandwichRuleController
+from app.leave_policy.schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate, LeaveSandwichRuleResponse
 
 router = APIRouter(prefix="/leaveSandwichRule", tags=["LeaveSandwichRule"])
 

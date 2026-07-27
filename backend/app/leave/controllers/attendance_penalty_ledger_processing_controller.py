@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.attendance_penalty_ledger_processing_service import AttendancePenaltyLedgerProcessingService
-from ..schemas.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingCreate, AttendancePenaltyLedgerProcessingUpdate, AttendancePenaltyLedgerProcessingResponse
-from ..models.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingModel
+from app.leave.services.attendance_penalty_ledger_processing_service import AttendancePenaltyLedgerProcessingService
+from app.leave.schemas.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingCreate, AttendancePenaltyLedgerProcessingUpdate, AttendancePenaltyLedgerProcessingResponse
+from app.leave.models.attendance_penalty_ledger_processing import AttendancePenaltyLedgerProcessingModel
 
 class AttendancePenaltyLedgerProcessingController:
     def __init__(self, db: AsyncIOMotorDatabase):

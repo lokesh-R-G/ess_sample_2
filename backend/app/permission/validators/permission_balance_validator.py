@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate
+from app.permission.schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate
 
 class PermissionBalanceValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

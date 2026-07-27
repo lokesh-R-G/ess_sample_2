@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.attendance_replay_queue_repository import AttendanceReplayQueueRepository
-from ..validators.attendance_replay_queue_validator import AttendanceReplayQueueValidator
-from ..schemas.attendance_replay_queue import AttendanceReplayQueueCreate, AttendanceReplayQueueUpdate
-from ..models.attendance_replay_queue import AttendanceReplayQueueModel
+from app.attendance_v2.repositories.attendance_replay_queue_repository import AttendanceReplayQueueRepository
+from app.attendance_v2.validators.attendance_replay_queue_validator import AttendanceReplayQueueValidator
+from app.attendance_v2.schemas.attendance_replay_queue import AttendanceReplayQueueCreate, AttendanceReplayQueueUpdate
+from app.attendance_v2.models.attendance_replay_queue import AttendanceReplayQueueModel
 
 class AttendanceReplayQueueService:
     def __init__(self, db: AsyncIOMotorDatabase):

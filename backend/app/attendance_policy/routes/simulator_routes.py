@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..schemas.simulator import SimulationRequest, SimulationResponse
-from ..services.simulator_service import SimulationEngine
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.schemas.simulator import SimulationRequest, SimulationResponse
+from app.attendance_policy.services.simulator_service import SimulationEngine
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter(prefix="/simulate", tags=["Simulator"])

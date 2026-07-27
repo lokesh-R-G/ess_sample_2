@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.organization_controller import OrganizationController
-from ..schemas.organization import OrganizationCreate, OrganizationUpdate, OrganizationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.organization_controller import OrganizationController
+from app.organization.schemas.organization import OrganizationCreate, OrganizationUpdate, OrganizationResponse
 
 router = APIRouter(prefix="/organizations", tags=["Organization"])
 

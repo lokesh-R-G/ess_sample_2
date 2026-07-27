@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_contact_controller import EmployeeContactController
-from ..schemas.employee_contact import EmployeeContactCreate, EmployeeContactUpdate, EmployeeContactResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_contact_controller import EmployeeContactController
+from app.employee.schemas.employee_contact import EmployeeContactCreate, EmployeeContactUpdate, EmployeeContactResponse
 
 router = APIRouter(prefix="/employeeContacts", tags=["EmployeeContact"])
 

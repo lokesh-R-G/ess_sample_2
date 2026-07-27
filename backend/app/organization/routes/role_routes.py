@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.role_controller import RoleController
-from ..schemas.role import RoleCreate, RoleUpdate, RoleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.role_controller import RoleController
+from app.organization.schemas.role import RoleCreate, RoleUpdate, RoleResponse
 
 router = APIRouter(prefix="/roles", tags=["Role"])
 

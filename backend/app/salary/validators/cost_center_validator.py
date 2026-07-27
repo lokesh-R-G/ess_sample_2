@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.cost_center import CostCenterCreate, CostCenterUpdate
+from app.salary.schemas.cost_center import CostCenterCreate, CostCenterUpdate
 
 class CostCenterValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_encashment_service import LeaveEncashmentService
-from ..schemas.leave_encashment import LeaveEncashmentCreate, LeaveEncashmentUpdate, LeaveEncashmentResponse
-from ..models.leave_encashment import LeaveEncashmentModel
+from app.leave.services.leave_encashment_service import LeaveEncashmentService
+from app.leave.schemas.leave_encashment import LeaveEncashmentCreate, LeaveEncashmentUpdate, LeaveEncashmentResponse
+from app.leave.models.leave_encashment import LeaveEncashmentModel
 
 class LeaveEncashmentController:
     def __init__(self, db: AsyncIOMotorDatabase):

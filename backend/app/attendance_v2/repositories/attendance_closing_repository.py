@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.attendance_closing import AttendanceClosingModel
+from app.attendance_v2.repositories.base_repository import BaseRepository
+from app.attendance_v2.models.attendance_closing import AttendanceClosingModel
 
 class AttendanceClosingRepository(BaseRepository[AttendanceClosingModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

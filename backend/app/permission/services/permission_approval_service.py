@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.permission_approval_repository import PermissionApprovalRepository
-from ..validators.permission_approval_validator import PermissionApprovalValidator
-from ..schemas.permission_approval import PermissionApprovalCreate, PermissionApprovalUpdate
-from ..models.permission_approval import PermissionApprovalModel
+from app.permission.repositories.permission_approval_repository import PermissionApprovalRepository
+from app.permission.validators.permission_approval_validator import PermissionApprovalValidator
+from app.permission.schemas.permission_approval import PermissionApprovalCreate, PermissionApprovalUpdate
+from app.permission.models.permission_approval import PermissionApprovalModel
 
 class PermissionApprovalService:
     def __init__(self, db: AsyncIOMotorDatabase):

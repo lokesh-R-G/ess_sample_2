@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.designation import DesignationCreate, DesignationUpdate
+from app.organization.schemas.designation import DesignationCreate, DesignationUpdate
 from bson import ObjectId
 
 class DesignationValidator:

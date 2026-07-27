@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.pay_group_service import PayGroupService
-from ..schemas.pay_group import PayGroupCreate, PayGroupUpdate, PayGroupResponse
-from ..models.pay_group import PayGroupModel
+from app.salary.services.pay_group_service import PayGroupService
+from app.salary.schemas.pay_group import PayGroupCreate, PayGroupUpdate, PayGroupResponse
+from app.salary.models.pay_group import PayGroupModel
 
 class PayGroupController:
     def __init__(self, db: AsyncIOMotorDatabase):

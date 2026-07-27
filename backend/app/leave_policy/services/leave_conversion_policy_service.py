@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_conversion_policy_repository import LeaveConversionPolicyRepository
-from ..validators.leave_conversion_policy_validator import LeaveConversionPolicyValidator
-from ..schemas.leave_conversion_policy import LeaveConversionPolicyCreate, LeaveConversionPolicyUpdate
-from ..models.leave_conversion_policy import LeaveConversionPolicyModel
+from app.leave_policy.repositories.leave_conversion_policy_repository import LeaveConversionPolicyRepository
+from app.leave_policy.validators.leave_conversion_policy_validator import LeaveConversionPolicyValidator
+from app.leave_policy.schemas.leave_conversion_policy import LeaveConversionPolicyCreate, LeaveConversionPolicyUpdate
+from app.leave_policy.models.leave_conversion_policy import LeaveConversionPolicyModel
 
 class LeaveConversionPolicyService:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.permission_overflow_rule import PermissionOverflowRuleModel
+from app.attendance_policy.repositories.base_repository import BaseRepository
+from app.attendance_policy.models.permission_overflow_rule import PermissionOverflowRuleModel
 
 class PermissionOverflowRuleRepository(BaseRepository[PermissionOverflowRuleModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.grace_log import GraceLogCreate, GraceLogUpdate
+from app.attendance_v2.schemas.grace_log import GraceLogCreate, GraceLogUpdate
 
 class GraceLogValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

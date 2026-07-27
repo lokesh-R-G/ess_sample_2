@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_exit_controller import EmployeeExitController
-from ..schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate, EmployeeExitResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_exit_controller import EmployeeExitController
+from app.employee.schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate, EmployeeExitResponse
 
 router = APIRouter(prefix="/employeeExits", tags=["EmployeeExit"])
 

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_accrual_rule_service import LeaveAccrualRuleService
-from ..schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate, LeaveAccrualRuleResponse
-from ..models.leave_accrual_rule import LeaveAccrualRuleModel
+from app.leave_policy.services.leave_accrual_rule_service import LeaveAccrualRuleService
+from app.leave_policy.schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate, LeaveAccrualRuleResponse
+from app.leave_policy.models.leave_accrual_rule import LeaveAccrualRuleModel
 
 class LeaveAccrualRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

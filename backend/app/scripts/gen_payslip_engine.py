@@ -98,7 +98,7 @@ def write_repository(mod_path):
     repo_code = """from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime, timezone
-from ..models.payslip_model import PayslipModel
+from app.models.payslip_model import PayslipModel
 
 class PayslipRepository:
     def __init__(self, db: AsyncIOMotorDatabase):

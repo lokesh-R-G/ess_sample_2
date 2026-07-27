@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_policy_history_controller import AttendancePolicyHistoryController
-from ..schemas.attendance_policy_history import AttendancePolicyHistoryCreate, AttendancePolicyHistoryUpdate, AttendancePolicyHistoryResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.attendance_policy_history_controller import AttendancePolicyHistoryController
+from app.attendance_policy.schemas.attendance_policy_history import AttendancePolicyHistoryCreate, AttendancePolicyHistoryUpdate, AttendancePolicyHistoryResponse
 
 router = APIRouter(prefix="/attendancePolicyHistorys", tags=["AttendancePolicyHistory"])
 

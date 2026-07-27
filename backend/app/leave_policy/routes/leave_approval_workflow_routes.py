@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_approval_workflow_controller import LeaveApprovalWorkflowController
-from ..schemas.leave_approval_workflow import LeaveApprovalWorkflowCreate, LeaveApprovalWorkflowUpdate, LeaveApprovalWorkflowResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_approval_workflow_controller import LeaveApprovalWorkflowController
+from app.leave_policy.schemas.leave_approval_workflow import LeaveApprovalWorkflowCreate, LeaveApprovalWorkflowUpdate, LeaveApprovalWorkflowResponse
 
 router = APIRouter(prefix="/leaveApprovalWorkflow", tags=["LeaveApprovalWorkflow"])
 

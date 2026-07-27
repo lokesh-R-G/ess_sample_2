@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.permission_policy_controller import PermissionPolicyController
-from ..schemas.permission_policy import PermissionPolicyCreate, PermissionPolicyUpdate, PermissionPolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.permission_policy_controller import PermissionPolicyController
+from app.attendance_policy.schemas.permission_policy import PermissionPolicyCreate, PermissionPolicyUpdate, PermissionPolicyResponse
 
 router = APIRouter(prefix="/permissionPolicys", tags=["PermissionPolicy"])
 

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_conversion_ledger_service import LeaveConversionLedgerService
-from ..schemas.leave_conversion_ledger import LeaveConversionLedgerCreate, LeaveConversionLedgerUpdate, LeaveConversionLedgerResponse
-from ..models.leave_conversion_ledger import LeaveConversionLedgerModel
+from app.attendance_v2.services.leave_conversion_ledger_service import LeaveConversionLedgerService
+from app.attendance_v2.schemas.leave_conversion_ledger import LeaveConversionLedgerCreate, LeaveConversionLedgerUpdate, LeaveConversionLedgerResponse
+from app.attendance_v2.models.leave_conversion_ledger import LeaveConversionLedgerModel
 
 class LeaveConversionLedgerController:
     def __init__(self, db: AsyncIOMotorDatabase):

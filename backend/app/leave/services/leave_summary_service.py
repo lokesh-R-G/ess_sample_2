@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_summary_repository import LeaveSummaryRepository
-from ..validators.leave_summary_validator import LeaveSummaryValidator
-from ..schemas.leave_summary import LeaveSummaryCreate, LeaveSummaryUpdate
-from ..models.leave_summary import LeaveSummaryModel
+from app.leave.repositories.leave_summary_repository import LeaveSummaryRepository
+from app.leave.validators.leave_summary_validator import LeaveSummaryValidator
+from app.leave.schemas.leave_summary import LeaveSummaryCreate, LeaveSummaryUpdate
+from app.leave.models.leave_summary import LeaveSummaryModel
 
 class LeaveSummaryService:
     def __init__(self, db: AsyncIOMotorDatabase):

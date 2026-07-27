@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.holiday_repository import HolidayRepository
-from ..validators.holiday_validator import HolidayValidator
-from ..schemas.holiday import HolidayCreate, HolidayUpdate
-from ..models.holiday import HolidayModel
+from app.organization.repositories.holiday_repository import HolidayRepository
+from app.organization.validators.holiday_validator import HolidayValidator
+from app.organization.schemas.holiday import HolidayCreate, HolidayUpdate
+from app.organization.models.holiday import HolidayModel
 
 class HolidayService:
     def __init__(self, db: AsyncIOMotorDatabase):

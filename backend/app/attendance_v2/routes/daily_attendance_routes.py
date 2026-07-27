@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.daily_attendance_controller import DailyAttendanceController
-from ..schemas.daily_attendance import DailyAttendanceCreate, DailyAttendanceUpdate, DailyAttendanceResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.daily_attendance_controller import DailyAttendanceController
+from app.attendance_v2.schemas.daily_attendance import DailyAttendanceCreate, DailyAttendanceUpdate, DailyAttendanceResponse
 
 router = APIRouter(prefix="/dailyAttendances", tags=["DailyAttendance"])
 

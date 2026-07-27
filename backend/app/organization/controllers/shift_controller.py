@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.shift_service import ShiftService
-from ..schemas.shift import ShiftCreate, ShiftUpdate, ShiftResponse
-from ..models.shift import ShiftModel
+from app.organization.services.shift_service import ShiftService
+from app.organization.schemas.shift import ShiftCreate, ShiftUpdate, ShiftResponse
+from app.organization.models.shift import ShiftModel
 
 class ShiftController:
     def __init__(self, db: AsyncIOMotorDatabase):

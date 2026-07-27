@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_engine_health_controller import AttendanceEngineHealthController
-from ..schemas.attendance_engine_health import AttendanceEngineHealthCreate, AttendanceEngineHealthUpdate, AttendanceEngineHealthResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.attendance_engine_health_controller import AttendanceEngineHealthController
+from app.attendance_v2.schemas.attendance_engine_health import AttendanceEngineHealthCreate, AttendanceEngineHealthUpdate, AttendanceEngineHealthResponse
 
 router = APIRouter(prefix="/attendanceEngineHealth", tags=["AttendanceEngineHealth"])
 

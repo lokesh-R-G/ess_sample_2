@@ -7,9 +7,9 @@ from typing import Optional
 import logging
 from pymongo.errors import DuplicateKeyError
 
-from ..models import SyncResponse
-from .attendance_service import build_daily_summaries, upsert_daily_attendance, upsert_raw_logs
-from .essl_service import build_essl_client
+from app.models import SyncResponse
+from app.services.attendance_service import build_daily_summaries, upsert_daily_attendance, upsert_raw_logs
+from app.services.essl_service import build_essl_client
 
 
 class DictAttrWrapper:

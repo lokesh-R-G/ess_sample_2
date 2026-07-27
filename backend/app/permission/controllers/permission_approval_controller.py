@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.permission_approval_service import PermissionApprovalService
-from ..schemas.permission_approval import PermissionApprovalCreate, PermissionApprovalUpdate, PermissionApprovalResponse
-from ..models.permission_approval import PermissionApprovalModel
+from app.permission.services.permission_approval_service import PermissionApprovalService
+from app.permission.schemas.permission_approval import PermissionApprovalCreate, PermissionApprovalUpdate, PermissionApprovalResponse
+from app.permission.models.permission_approval import PermissionApprovalModel
 
 class PermissionApprovalController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_conversion_ledger_controller import LeaveConversionLedgerController
-from ..schemas.leave_conversion_ledger import LeaveConversionLedgerCreate, LeaveConversionLedgerUpdate, LeaveConversionLedgerResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.leave_conversion_ledger_controller import LeaveConversionLedgerController
+from app.attendance_v2.schemas.leave_conversion_ledger import LeaveConversionLedgerCreate, LeaveConversionLedgerUpdate, LeaveConversionLedgerResponse
 
 router = APIRouter(prefix="/leaveConversionLedger", tags=["LeaveConversionLedger"])
 

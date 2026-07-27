@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_shift_assignment import EmployeeShiftAssignmentCreate, EmployeeShiftAssignmentUpdate
+from app.employee.schemas.employee_shift_assignment import EmployeeShiftAssignmentCreate, EmployeeShiftAssignmentUpdate
 from bson import ObjectId
 
 class EmployeeShiftAssignmentValidator:

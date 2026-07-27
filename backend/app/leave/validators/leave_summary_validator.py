@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_summary import LeaveSummaryCreate, LeaveSummaryUpdate
+from app.leave.schemas.leave_summary import LeaveSummaryCreate, LeaveSummaryUpdate
 
 class LeaveSummaryValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from ...db.mongo import get_database
-from ...dependencies import require_roles
-from ...models import Company, Branch, Department, Designation
-from ...services import organization_service
+from app.db.mongo import get_database
+from app.dependencies import require_roles
+from app.models import Company, Branch, Department, Designation
+from app.services import organization_service
 
 router = APIRouter(prefix="/organization", tags=["organization"])
 

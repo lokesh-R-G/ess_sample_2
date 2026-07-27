@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_address_service import EmployeeAddressService
-from ..schemas.employee_address import EmployeeAddressCreate, EmployeeAddressUpdate, EmployeeAddressResponse
-from ..models.employee_address import EmployeeAddressModel
+from app.employee.services.employee_address_service import EmployeeAddressService
+from app.employee.schemas.employee_address import EmployeeAddressCreate, EmployeeAddressUpdate, EmployeeAddressResponse
+from app.employee.models.employee_address import EmployeeAddressModel
 
 class EmployeeAddressController:
     def __init__(self, db: AsyncIOMotorDatabase):

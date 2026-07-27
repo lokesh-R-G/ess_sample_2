@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.salary_structure import SalaryStructureCreate, SalaryStructureUpdate
+from app.salary.schemas.salary_structure import SalaryStructureCreate, SalaryStructureUpdate
 
 class SalaryStructureValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

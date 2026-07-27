@@ -5,10 +5,11 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 
-from ..core.config import get_settings
-from ..core.security import hash_password, verify_password
-from .essl_service import build_essl_client
-from .sync_service import sync_essl_logs
+from app.core.config import get_settings
+from app.core.security import hash_password, verify_password
+from app.services.sync_service import sync_essl_logs
+import asyncio
+from app.email_service.services.email_service import EmailService
 
 
 settings = get_settings()
@@ -104,6 +105,19 @@ async def change_password(db, emp_id: str, current_password: str, new_password: 
         },
     )
     updated = await db.users.find_one({"empId": emp_id})
+    
+    # Email Integration
+    email_service = EmailService(db)
+    # Typically, you'd fetch the employee's official email from the employees collection here.
+    # For now we'll attempt to send it to the emp_id if it's an email, or to a placeholder.
+    contact_email = emp_id if "@" in emp_id else f"{emp_id}@enterprise-hrms.com"
+    context = {
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+        "ip_address": "Security Context"
+    }
+    asyncio.create_task(email_service.send_password_changed_notification(recipient=contact_email, context=context))
+    
     return updated or user
 
 

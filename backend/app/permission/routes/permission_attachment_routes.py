@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.permission_attachment_controller import PermissionAttachmentController
-from ..schemas.permission_attachment import PermissionAttachmentCreate, PermissionAttachmentUpdate, PermissionAttachmentResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.permission.controllers.permission_attachment_controller import PermissionAttachmentController
+from app.permission.schemas.permission_attachment import PermissionAttachmentCreate, PermissionAttachmentUpdate, PermissionAttachmentResponse
 
 router = APIRouter(prefix="/permissionAttachments", tags=["PermissionAttachment"])
 

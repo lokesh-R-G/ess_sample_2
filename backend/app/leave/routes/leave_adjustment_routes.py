@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_adjustment_controller import LeaveAdjustmentController
-from ..schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate, LeaveAdjustmentResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_adjustment_controller import LeaveAdjustmentController
+from app.leave.schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate, LeaveAdjustmentResponse
 
 router = APIRouter(prefix="/leaveAdjustment", tags=["LeaveAdjustment"])
 

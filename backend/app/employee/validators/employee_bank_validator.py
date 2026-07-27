@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_bank import EmployeeBankCreate, EmployeeBankUpdate
+from app.employee.schemas.employee_bank import EmployeeBankCreate, EmployeeBankUpdate
 from bson import ObjectId
 
 class EmployeeBankValidator:

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.holiday import HolidayCreate, HolidayUpdate
+from app.organization.schemas.holiday import HolidayCreate, HolidayUpdate
 from bson import ObjectId
 
 class HolidayValidator:

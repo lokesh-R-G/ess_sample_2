@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.company_controller import CompanyController
-from ..schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.company_controller import CompanyController
+from app.organization.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
 
 router = APIRouter(prefix="/companys", tags=["Company"])
 

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employment_history_controller import EmploymentHistoryController
-from ..schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate, EmploymentHistoryResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employment_history_controller import EmploymentHistoryController
+from app.employee.schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate, EmploymentHistoryResponse
 
 router = APIRouter(prefix="/employmentHistorys", tags=["EmploymentHistory"])
 

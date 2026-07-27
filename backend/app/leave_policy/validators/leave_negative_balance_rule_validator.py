@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_negative_balance_rule import LeaveNegativeBalanceRuleCreate, LeaveNegativeBalanceRuleUpdate
+from app.leave_policy.schemas.leave_negative_balance_rule import LeaveNegativeBalanceRuleCreate, LeaveNegativeBalanceRuleUpdate
 
 class LeaveNegativeBalanceRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

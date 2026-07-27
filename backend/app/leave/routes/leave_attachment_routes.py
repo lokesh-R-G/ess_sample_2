@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_attachment_controller import LeaveAttachmentController
-from ..schemas.leave_attachment import LeaveAttachmentCreate, LeaveAttachmentUpdate, LeaveAttachmentResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_attachment_controller import LeaveAttachmentController
+from app.leave.schemas.leave_attachment import LeaveAttachmentCreate, LeaveAttachmentUpdate, LeaveAttachmentResponse
 
 router = APIRouter(prefix="/leaveAttachment", tags=["LeaveAttachment"])
 

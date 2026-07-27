@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate
+from app.leave.schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate
 
 class LeaveReservationValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

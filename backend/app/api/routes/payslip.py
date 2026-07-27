@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
 
 
 router = APIRouter(prefix="/payslip", tags=["payslip"])

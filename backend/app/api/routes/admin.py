@@ -5,10 +5,10 @@ from collections import Counter
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from ...db.mongo import get_database
-from ...dependencies import require_roles
-from ...services.auth_service import validate_employee_with_essl, create_provisioned_user
-from ...services.sync_service import sync_essl_logs
+from app.db.mongo import get_database
+from app.dependencies import require_roles
+from app.services.auth_service import validate_employee_with_essl, create_provisioned_user
+from app.services.sync_service import sync_essl_logs
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])

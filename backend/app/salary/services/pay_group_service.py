@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.pay_group_repository import PayGroupRepository
-from ..validators.pay_group_validator import PayGroupValidator
-from ..schemas.pay_group import PayGroupCreate, PayGroupUpdate
-from ..models.pay_group import PayGroupModel
+from app.salary.repositories.pay_group_repository import PayGroupRepository
+from app.salary.validators.pay_group_validator import PayGroupValidator
+from app.salary.schemas.pay_group import PayGroupCreate, PayGroupUpdate
+from app.salary.models.pay_group import PayGroupModel
 
 class PayGroupService:
     def __init__(self, db: AsyncIOMotorDatabase):

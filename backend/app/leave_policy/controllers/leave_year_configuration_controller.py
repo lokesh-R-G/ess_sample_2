@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_year_configuration_service import LeaveYearConfigurationService
-from ..schemas.leave_year_configuration import LeaveYearConfigurationCreate, LeaveYearConfigurationUpdate, LeaveYearConfigurationResponse
-from ..models.leave_year_configuration import LeaveYearConfigurationModel
+from app.leave_policy.services.leave_year_configuration_service import LeaveYearConfigurationService
+from app.leave_policy.schemas.leave_year_configuration import LeaveYearConfigurationCreate, LeaveYearConfigurationUpdate, LeaveYearConfigurationResponse
+from app.leave_policy.models.leave_year_configuration import LeaveYearConfigurationModel
 
 class LeaveYearConfigurationController:
     def __init__(self, db: AsyncIOMotorDatabase):

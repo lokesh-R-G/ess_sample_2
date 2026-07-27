@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate
+from app.leave_policy.schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate
 
 class LeaveSandwichRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

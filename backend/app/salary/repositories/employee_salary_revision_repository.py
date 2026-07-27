@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.employee_salary_revision import EmployeeSalaryRevisionModel
+from app.salary.repositories.base_repository import BaseRepository
+from app.salary.models.employee_salary_revision import EmployeeSalaryRevisionModel
 
 class EmployeeSalaryRevisionRepository(BaseRepository[EmployeeSalaryRevisionModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

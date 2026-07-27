@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.holiday import HolidayModel
+from app.organization.repositories.base_repository import BaseRepository
+from app.organization.models.holiday import HolidayModel
 
 class HolidayRepository(BaseRepository[HolidayModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

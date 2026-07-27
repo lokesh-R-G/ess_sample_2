@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.role_repository import RoleRepository
-from ..validators.role_validator import RoleValidator
-from ..schemas.role import RoleCreate, RoleUpdate
-from ..models.role import RoleModel
+from app.organization.repositories.role_repository import RoleRepository
+from app.organization.validators.role_validator import RoleValidator
+from app.organization.schemas.role import RoleCreate, RoleUpdate
+from app.organization.models.role import RoleModel
 
 class RoleService:
     def __init__(self, db: AsyncIOMotorDatabase):

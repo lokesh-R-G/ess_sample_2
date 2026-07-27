@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_cancellation_service import LeaveCancellationService
-from ..schemas.leave_cancellation import LeaveCancellationCreate, LeaveCancellationUpdate, LeaveCancellationResponse
-from ..models.leave_cancellation import LeaveCancellationModel
+from app.leave.services.leave_cancellation_service import LeaveCancellationService
+from app.leave.schemas.leave_cancellation import LeaveCancellationCreate, LeaveCancellationUpdate, LeaveCancellationResponse
+from app.leave.models.leave_cancellation import LeaveCancellationModel
 
 class LeaveCancellationController:
     def __init__(self, db: AsyncIOMotorDatabase):

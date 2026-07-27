@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_cancellation_controller import LeaveCancellationController
-from ..schemas.leave_cancellation import LeaveCancellationCreate, LeaveCancellationUpdate, LeaveCancellationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_cancellation_controller import LeaveCancellationController
+from app.leave.schemas.leave_cancellation import LeaveCancellationCreate, LeaveCancellationUpdate, LeaveCancellationResponse
 
 router = APIRouter(prefix="/leaveCancellation", tags=["LeaveCancellation"])
 

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_closing_controller import AttendanceClosingController
-from ..schemas.attendance_closing import AttendanceClosingCreate, AttendanceClosingUpdate, AttendanceClosingResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.attendance_closing_controller import AttendanceClosingController
+from app.attendance_v2.schemas.attendance_closing import AttendanceClosingCreate, AttendanceClosingUpdate, AttendanceClosingResponse
 
 router = APIRouter(prefix="/close", tags=["AttendanceClosing"])
 

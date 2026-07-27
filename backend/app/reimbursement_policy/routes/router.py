@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
-from ....db.mongo import get_database
-from ..services.activation_service import PolicyActivationService
+from app.db.mongo import get_database
+from app.reimbursement_policy.services.activation_service import PolicyActivationService
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/reimbursement-policy", tags=["Reimbursement Policy"])

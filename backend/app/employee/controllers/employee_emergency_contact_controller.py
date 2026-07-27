@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_emergency_contact_service import EmployeeEmergencyContactService
-from ..schemas.employee_emergency_contact import EmployeeEmergencyContactCreate, EmployeeEmergencyContactUpdate, EmployeeEmergencyContactResponse
-from ..models.employee_emergency_contact import EmployeeEmergencyContactModel
+from app.employee.services.employee_emergency_contact_service import EmployeeEmergencyContactService
+from app.employee.schemas.employee_emergency_contact import EmployeeEmergencyContactCreate, EmployeeEmergencyContactUpdate, EmployeeEmergencyContactResponse
+from app.employee.models.employee_emergency_contact import EmployeeEmergencyContactModel
 
 class EmployeeEmergencyContactController:
     def __init__(self, db: AsyncIOMotorDatabase):

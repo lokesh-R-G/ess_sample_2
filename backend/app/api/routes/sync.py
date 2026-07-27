@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from ...db.mongo import get_database
-from ...dependencies import require_roles
-from ...models import SyncRequest
-from ...services.sync_service import sync_essl_logs
-from ...dependencies import get_current_user
-from ...scheduler.scheduler import schedule_user_sync_now
+from app.db.mongo import get_database
+from app.dependencies import require_roles
+from app.models import SyncRequest
+from app.services.sync_service import sync_essl_logs
+from app.dependencies import get_current_user
+from app.scheduler.scheduler import schedule_user_sync_now
 from datetime import datetime
 
 

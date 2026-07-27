@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.salary_structure_version_controller import SalaryStructureVersionController
-from ..schemas.salary_structure_version import SalaryStructureVersionCreate, SalaryStructureVersionUpdate, SalaryStructureVersionResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.salary.controllers.salary_structure_version_controller import SalaryStructureVersionController
+from app.salary.schemas.salary_structure_version import SalaryStructureVersionCreate, SalaryStructureVersionUpdate, SalaryStructureVersionResponse
 
 router = APIRouter(prefix="/salaryStructureVersions", tags=["SalaryStructureVersion"])
 

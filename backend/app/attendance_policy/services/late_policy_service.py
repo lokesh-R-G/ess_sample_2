@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.late_policy_repository import LatePolicyRepository
-from ..validators.late_policy_validator import LatePolicyValidator
-from ..schemas.late_policy import LatePolicyCreate, LatePolicyUpdate
-from ..models.late_policy import LatePolicyModel
+from app.attendance_policy.repositories.late_policy_repository import LatePolicyRepository
+from app.attendance_policy.validators.late_policy_validator import LatePolicyValidator
+from app.attendance_policy.schemas.late_policy import LatePolicyCreate, LatePolicyUpdate
+from app.attendance_policy.models.late_policy import LatePolicyModel
 
 class LatePolicyService:
     def __init__(self, db: AsyncIOMotorDatabase):

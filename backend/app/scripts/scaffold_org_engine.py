@@ -79,7 +79,7 @@ class {entity.capitalize()}Response({entity.capitalize()}Create):
         # repository
         with open(BASE_DIR / "repositories" / f"{entity}_repository.py", "w") as f:
             f.write(f'''from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
+from app.scripts.base_repository import BaseRepository
 from ..models.{entity} import {entity.capitalize()}Model
 
 class {entity.capitalize()}Repository(BaseRepository[{entity.capitalize()}Model]):
@@ -121,7 +121,7 @@ class {entity.capitalize()}Controller:
         # routes
         with open(BASE_DIR / "routes" / f"{entity}_routes.py", "w") as f:
             f.write(f'''from fastapi import APIRouter, Depends
-from ....db.mongo import get_database
+from app.db.mongo import get_database
 from ..controllers.{entity}_controller import {entity.capitalize()}Controller
 
 router = APIRouter(prefix="/{entity if entity.endswith('s') else entity + 's'}", tags=["{entity.capitalize()}"])

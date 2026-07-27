@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.late_log import LateLogCreate, LateLogUpdate
+from app.attendance_v2.schemas.late_log import LateLogCreate, LateLogUpdate
 
 class LateLogValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

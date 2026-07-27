@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.cost_center_service import CostCenterService
-from ..schemas.cost_center import CostCenterCreate, CostCenterUpdate, CostCenterResponse
-from ..models.cost_center import CostCenterModel
+from app.salary.services.cost_center_service import CostCenterService
+from app.salary.schemas.cost_center import CostCenterCreate, CostCenterUpdate, CostCenterResponse
+from app.salary.models.cost_center import CostCenterModel
 
 class CostCenterController:
     def __init__(self, db: AsyncIOMotorDatabase):

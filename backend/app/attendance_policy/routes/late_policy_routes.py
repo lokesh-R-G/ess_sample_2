@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.late_policy_controller import LatePolicyController
-from ..schemas.late_policy import LatePolicyCreate, LatePolicyUpdate, LatePolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.late_policy_controller import LatePolicyController
+from app.attendance_policy.schemas.late_policy import LatePolicyCreate, LatePolicyUpdate, LatePolicyResponse
 
 router = APIRouter(prefix="/latePolicys", tags=["LatePolicy"])
 

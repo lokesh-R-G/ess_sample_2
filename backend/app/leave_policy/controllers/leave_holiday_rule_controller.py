@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_holiday_rule_service import LeaveHolidayRuleService
-from ..schemas.leave_holiday_rule import LeaveHolidayRuleCreate, LeaveHolidayRuleUpdate, LeaveHolidayRuleResponse
-from ..models.leave_holiday_rule import LeaveHolidayRuleModel
+from app.leave_policy.services.leave_holiday_rule_service import LeaveHolidayRuleService
+from app.leave_policy.schemas.leave_holiday_rule import LeaveHolidayRuleCreate, LeaveHolidayRuleUpdate, LeaveHolidayRuleResponse
+from app.leave_policy.models.leave_holiday_rule import LeaveHolidayRuleModel
 
 class LeaveHolidayRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

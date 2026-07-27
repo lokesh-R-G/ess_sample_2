@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.cash_voucher_claim import CashVoucherClaimModel
+from app.reimbursement.repositories.base_repository import BaseRepository
+from app.reimbursement.models.cash_voucher_claim import CashVoucherClaimModel
 
 class CashVoucherClaimRepository(BaseRepository[CashVoucherClaimModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

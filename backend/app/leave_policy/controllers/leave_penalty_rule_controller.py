@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_penalty_rule_service import LeavePenaltyRuleService
-from ..schemas.leave_penalty_rule import LeavePenaltyRuleCreate, LeavePenaltyRuleUpdate, LeavePenaltyRuleResponse
-from ..models.leave_penalty_rule import LeavePenaltyRuleModel
+from app.leave_policy.services.leave_penalty_rule_service import LeavePenaltyRuleService
+from app.leave_policy.schemas.leave_penalty_rule import LeavePenaltyRuleCreate, LeavePenaltyRuleUpdate, LeavePenaltyRuleResponse
+from app.leave_policy.models.leave_penalty_rule import LeavePenaltyRuleModel
 
 class LeavePenaltyRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.attendance_replay_queue import AttendanceReplayQueueCreate, AttendanceReplayQueueUpdate
+from app.attendance_v2.schemas.attendance_replay_queue import AttendanceReplayQueueCreate, AttendanceReplayQueueUpdate
 
 class AttendanceReplayQueueValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

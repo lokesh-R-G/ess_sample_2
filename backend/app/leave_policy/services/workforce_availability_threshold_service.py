@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.workforce_availability_threshold_repository import WorkforceAvailabilityThresholdRepository
-from ..validators.workforce_availability_threshold_validator import WorkforceAvailabilityThresholdValidator
-from ..schemas.workforce_availability_threshold import WorkforceAvailabilityThresholdCreate, WorkforceAvailabilityThresholdUpdate
-from ..models.workforce_availability_threshold import WorkforceAvailabilityThresholdModel
+from app.leave_policy.repositories.workforce_availability_threshold_repository import WorkforceAvailabilityThresholdRepository
+from app.leave_policy.validators.workforce_availability_threshold_validator import WorkforceAvailabilityThresholdValidator
+from app.leave_policy.schemas.workforce_availability_threshold import WorkforceAvailabilityThresholdCreate, WorkforceAvailabilityThresholdUpdate
+from app.leave_policy.models.workforce_availability_threshold import WorkforceAvailabilityThresholdModel
 
 class WorkforceAvailabilityThresholdService:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.shift_controller import ShiftController
-from ..schemas.shift import ShiftCreate, ShiftUpdate, ShiftResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.shift_controller import ShiftController
+from app.organization.schemas.shift import ShiftCreate, ShiftUpdate, ShiftResponse
 
 router = APIRouter(prefix="/shifts", tags=["Shift"])
 

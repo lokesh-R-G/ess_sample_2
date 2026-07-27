@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.branch import BranchCreate, BranchUpdate
+from app.organization.schemas.branch import BranchCreate, BranchUpdate
 from bson import ObjectId
 
 class BranchValidator:

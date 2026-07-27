@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.late_log_repository import LateLogRepository
-from ..validators.late_log_validator import LateLogValidator
-from ..schemas.late_log import LateLogCreate, LateLogUpdate
-from ..models.late_log import LateLogModel
+from app.attendance_v2.repositories.late_log_repository import LateLogRepository
+from app.attendance_v2.validators.late_log_validator import LateLogValidator
+from app.attendance_v2.schemas.late_log import LateLogCreate, LateLogUpdate
+from app.attendance_v2.models.late_log import LateLogModel
 
 class LateLogService:
     def __init__(self, db: AsyncIOMotorDatabase):

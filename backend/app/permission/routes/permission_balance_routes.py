@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.permission_balance_controller import PermissionBalanceController
-from ..schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate, PermissionBalanceResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.permission.controllers.permission_balance_controller import PermissionBalanceController
+from app.permission.schemas.permission_balance import PermissionBalanceCreate, PermissionBalanceUpdate, PermissionBalanceResponse
 
 router = APIRouter(prefix="/permissionBalances", tags=["PermissionBalance"])
 

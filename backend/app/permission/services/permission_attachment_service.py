@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.permission_attachment_repository import PermissionAttachmentRepository
-from ..validators.permission_attachment_validator import PermissionAttachmentValidator
-from ..schemas.permission_attachment import PermissionAttachmentCreate, PermissionAttachmentUpdate
-from ..models.permission_attachment import PermissionAttachmentModel
+from app.permission.repositories.permission_attachment_repository import PermissionAttachmentRepository
+from app.permission.validators.permission_attachment_validator import PermissionAttachmentValidator
+from app.permission.schemas.permission_attachment import PermissionAttachmentCreate, PermissionAttachmentUpdate
+from app.permission.models.permission_attachment import PermissionAttachmentModel
 
 class PermissionAttachmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

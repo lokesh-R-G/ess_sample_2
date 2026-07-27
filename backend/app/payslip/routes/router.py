@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, BackgroundTasks
+from app.db.mongo import get_database
+from app.email_service.services.email_service import EmailService
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/payslip", tags=["Payslip Engine"])
@@ -36,5 +38,25 @@ async def regenerate_payslip(req: RegenerateRequest):
     return {"status": "Success", "message": "Payslip regenerated."}
     
 @router.post("/email")
-async def email_payslip(payslipId: str):
-    return {"status": "Success", "message": "Email sent."}
+async def email_payslip(payslipId: str, background_tasks: BackgroundTasks, db = Depends(get_database)):
+    # In a real scenario, fetch payslip details and PDF attachment here.
+    # For now, we simulate finding the employee and triggering the email.
+    email_service = EmailService(db)
+    
+    # Mocking recipient and context for now
+    recipient = "employee@enterprise-hrms.com"
+    context = {
+        "employee_name": "Test Employee",
+        "payroll_month": "Current Month",
+        "salary_period": "01 - 30",
+    }
+    attachments = [] # Will hold file paths or bytes
+    
+    background_tasks.add_task(
+        email_service.send_payslip_email,
+        recipient=recipient,
+        context=context,
+        attachments=attachments
+    )
+    
+    return {"status": "Success", "message": f"Payslip email queued for {payslipId}."}

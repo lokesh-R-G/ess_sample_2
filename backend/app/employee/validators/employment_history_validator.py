@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate
+from app.employee.schemas.employment_history import EmploymentHistoryCreate, EmploymentHistoryUpdate
 from bson import ObjectId
 
 class EmploymentHistoryValidator:

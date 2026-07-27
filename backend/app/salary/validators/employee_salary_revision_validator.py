@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_salary_revision import EmployeeSalaryRevisionCreate, EmployeeSalaryRevisionUpdate
+from app.salary.schemas.employee_salary_revision import EmployeeSalaryRevisionCreate, EmployeeSalaryRevisionUpdate
 
 class EmployeeSalaryRevisionValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

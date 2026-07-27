@@ -1,7 +1,7 @@
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from ..models import AttendancePolicy
-from ..core.datetime_utils import to_ist, compare_time_with_policy
+from app.models import AttendancePolicy
+from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
     def __init__(self, db: AsyncIOMotorDatabase, policy: AttendancePolicy):

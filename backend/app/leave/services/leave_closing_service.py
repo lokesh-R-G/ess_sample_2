@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_closing_repository import LeaveClosingRepository
-from ..validators.leave_closing_validator import LeaveClosingValidator
-from ..schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate
-from ..models.leave_closing import LeaveClosingModel
+from app.leave.repositories.leave_closing_repository import LeaveClosingRepository
+from app.leave.validators.leave_closing_validator import LeaveClosingValidator
+from app.leave.schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate
+from app.leave.models.leave_closing import LeaveClosingModel
 
 class LeaveClosingService:
     def __init__(self, db: AsyncIOMotorDatabase):

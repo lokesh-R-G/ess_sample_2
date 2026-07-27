@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.shift_attendance_policy import ShiftAttendancePolicyCreate, ShiftAttendancePolicyUpdate
+from app.attendance_policy.schemas.shift_attendance_policy import ShiftAttendancePolicyCreate, ShiftAttendancePolicyUpdate
 
 class ShiftAttendancePolicyValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

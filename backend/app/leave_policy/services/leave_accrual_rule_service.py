@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_accrual_rule_repository import LeaveAccrualRuleRepository
-from ..validators.leave_accrual_rule_validator import LeaveAccrualRuleValidator
-from ..schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate
-from ..models.leave_accrual_rule import LeaveAccrualRuleModel
+from app.leave_policy.repositories.leave_accrual_rule_repository import LeaveAccrualRuleRepository
+from app.leave_policy.validators.leave_accrual_rule_validator import LeaveAccrualRuleValidator
+from app.leave_policy.schemas.leave_accrual_rule import LeaveAccrualRuleCreate, LeaveAccrualRuleUpdate
+from app.leave_policy.models.leave_accrual_rule import LeaveAccrualRuleModel
 
 class LeaveAccrualRuleService:
     def __init__(self, db: AsyncIOMotorDatabase):

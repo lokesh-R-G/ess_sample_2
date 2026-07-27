@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_history_service import LeaveHistoryService
-from ..schemas.leave_history import LeaveHistoryCreate, LeaveHistoryUpdate, LeaveHistoryResponse
-from ..models.leave_history import LeaveHistoryModel
+from app.leave.services.leave_history_service import LeaveHistoryService
+from app.leave.schemas.leave_history import LeaveHistoryCreate, LeaveHistoryUpdate, LeaveHistoryResponse
+from app.leave.models.leave_history import LeaveHistoryModel
 
 class LeaveHistoryController:
     def __init__(self, db: AsyncIOMotorDatabase):

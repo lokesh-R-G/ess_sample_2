@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.salary_grade_service import SalaryGradeService
-from ..schemas.salary_grade import SalaryGradeCreate, SalaryGradeUpdate, SalaryGradeResponse
-from ..models.salary_grade import SalaryGradeModel
+from app.salary.services.salary_grade_service import SalaryGradeService
+from app.salary.schemas.salary_grade import SalaryGradeCreate, SalaryGradeUpdate, SalaryGradeResponse
+from app.salary.models.salary_grade import SalaryGradeModel
 
 class SalaryGradeController:
     def __init__(self, db: AsyncIOMotorDatabase):

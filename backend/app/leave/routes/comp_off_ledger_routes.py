@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.comp_off_ledger_controller import CompOffLedgerController
-from ..schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate, CompOffLedgerResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.comp_off_ledger_controller import CompOffLedgerController
+from app.leave.schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate, CompOffLedgerResponse
 
 router = APIRouter(prefix="/compOffLedger", tags=["CompOffLedger"])
 

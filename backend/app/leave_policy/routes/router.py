@@ -1,25 +1,25 @@
 from fastapi import APIRouter
-from .leave_policy_routes import router as leave_policy_router
-from .leave_policy_version_routes import router as leave_policy_version_router
-from .leave_policy_history_routes import router as leave_policy_history_router
-from .leave_type_routes import router as leave_type_router
-from .leave_eligibility_rule_routes import router as leave_eligibility_rule_router
-from .leave_accrual_rule_routes import router as leave_accrual_rule_router
-from .leave_carry_forward_rule_routes import router as leave_carry_forward_rule_router
-from .leave_encashment_rule_routes import router as leave_encashment_rule_router
-from .leave_restriction_rule_routes import router as leave_restriction_rule_router
-from .leave_approval_workflow_routes import router as leave_approval_workflow_router
-from .leave_holiday_rule_routes import router as leave_holiday_rule_router
-from .leave_sandwich_rule_routes import router as leave_sandwich_rule_router
-from .leave_negative_balance_rule_routes import router as leave_negative_balance_rule_router
-from .leave_penalty_rule_routes import router as leave_penalty_rule_router
-from .leave_quota_policy_routes import router as leave_quota_policy_router
-from .leave_conversion_policy_routes import router as leave_conversion_policy_router
-from .leave_year_configuration_routes import router as leave_year_configuration_router
-from .workforce_availability_threshold_routes import router as workforce_availability_threshold_router
-from .simulator_routes import router as simulator_router
-\nleave_policy_router = APIRouter()
-leave_policy_router.include_router(leave_policy_router)
+from app.leave_policy.routes.leave_policy_routes import router as lp_crud_router
+from app.leave_policy.routes.leave_policy_version_routes import router as leave_policy_version_router
+from app.leave_policy.routes.leave_policy_history_routes import router as leave_policy_history_router
+from app.leave_policy.routes.leave_type_routes import router as leave_type_router
+from app.leave_policy.routes.leave_eligibility_rule_routes import router as leave_eligibility_rule_router
+from app.leave_policy.routes.leave_accrual_rule_routes import router as leave_accrual_rule_router
+from app.leave_policy.routes.leave_carry_forward_rule_routes import router as leave_carry_forward_rule_router
+from app.leave_policy.routes.leave_encashment_rule_routes import router as leave_encashment_rule_router
+from app.leave_policy.routes.leave_restriction_rule_routes import router as leave_restriction_rule_router
+from app.leave_policy.routes.leave_approval_workflow_routes import router as leave_approval_workflow_router
+from app.leave_policy.routes.leave_holiday_rule_routes import router as leave_holiday_rule_router
+from app.leave_policy.routes.leave_sandwich_rule_routes import router as leave_sandwich_rule_router
+from app.leave_policy.routes.leave_negative_balance_rule_routes import router as leave_negative_balance_rule_router
+from app.leave_policy.routes.leave_penalty_rule_routes import router as leave_penalty_rule_router
+from app.leave_policy.routes.leave_quota_policy_routes import router as leave_quota_policy_router
+from app.leave_policy.routes.leave_conversion_policy_routes import router as leave_conversion_policy_router
+from app.leave_policy.routes.leave_year_configuration_routes import router as leave_year_configuration_router
+from app.leave_policy.routes.workforce_availability_threshold_routes import router as workforce_availability_threshold_router
+from app.leave_policy.routes.simulator_routes import router as simulator_router
+leave_policy_router = APIRouter()
+leave_policy_router.include_router(lp_crud_router)
 leave_policy_router.include_router(leave_policy_version_router)
 leave_policy_router.include_router(leave_policy_history_router)
 leave_policy_router.include_router(leave_type_router)

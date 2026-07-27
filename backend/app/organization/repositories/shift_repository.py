@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.shift import ShiftModel
+from app.organization.repositories.base_repository import BaseRepository
+from app.organization.models.shift import ShiftModel
 
 class ShiftRepository(BaseRepository[ShiftModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

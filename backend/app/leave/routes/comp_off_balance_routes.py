@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.comp_off_balance_controller import CompOffBalanceController
-from ..schemas.comp_off_balance import CompOffBalanceCreate, CompOffBalanceUpdate, CompOffBalanceResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.comp_off_balance_controller import CompOffBalanceController
+from app.leave.schemas.comp_off_balance import CompOffBalanceCreate, CompOffBalanceUpdate, CompOffBalanceResponse
 
 router = APIRouter(prefix="/compOffBalance", tags=["CompOffBalance"])
 

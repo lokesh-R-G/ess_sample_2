@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.attendance_closing_service import AttendanceClosingService
-from ..schemas.attendance_closing import AttendanceClosingCreate, AttendanceClosingUpdate, AttendanceClosingResponse
-from ..models.attendance_closing import AttendanceClosingModel
+from app.attendance_v2.services.attendance_closing_service import AttendanceClosingService
+from app.attendance_v2.schemas.attendance_closing import AttendanceClosingCreate, AttendanceClosingUpdate, AttendanceClosingResponse
+from app.attendance_v2.models.attendance_closing import AttendanceClosingModel
 
 class AttendanceClosingController:
     def __init__(self, db: AsyncIOMotorDatabase):

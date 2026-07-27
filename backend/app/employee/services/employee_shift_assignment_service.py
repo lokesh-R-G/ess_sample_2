@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_shift_assignment_repository import EmployeeShiftAssignmentRepository
-from ..validators.employee_shift_assignment_validator import EmployeeShiftAssignmentValidator
-from ..schemas.employee_shift_assignment import EmployeeShiftAssignmentCreate, EmployeeShiftAssignmentUpdate
-from ..models.employee_shift_assignment import EmployeeShiftAssignmentModel
+from app.employee.repositories.employee_shift_assignment_repository import EmployeeShiftAssignmentRepository
+from app.employee.validators.employee_shift_assignment_validator import EmployeeShiftAssignmentValidator
+from app.employee.schemas.employee_shift_assignment import EmployeeShiftAssignmentCreate, EmployeeShiftAssignmentUpdate
+from app.employee.models.employee_shift_assignment import EmployeeShiftAssignmentModel
 
 class EmployeeShiftAssignmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

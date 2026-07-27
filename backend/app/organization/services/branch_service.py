@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.branch_repository import BranchRepository
-from ..validators.branch_validator import BranchValidator
-from ..schemas.branch import BranchCreate, BranchUpdate
-from ..models.branch import BranchModel
+from app.organization.repositories.branch_repository import BranchRepository
+from app.organization.validators.branch_validator import BranchValidator
+from app.organization.schemas.branch import BranchCreate, BranchUpdate
+from app.organization.models.branch import BranchModel
 
 class BranchService:
     def __init__(self, db: AsyncIOMotorDatabase):

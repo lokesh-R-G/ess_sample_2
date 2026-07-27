@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_probation_repository import EmployeeProbationRepository
-from ..validators.employee_probation_validator import EmployeeProbationValidator
-from ..schemas.employee_probation import EmployeeProbationCreate, EmployeeProbationUpdate
-from ..models.employee_probation import EmployeeProbationModel
+from app.employee.repositories.employee_probation_repository import EmployeeProbationRepository
+from app.employee.validators.employee_probation_validator import EmployeeProbationValidator
+from app.employee.schemas.employee_probation import EmployeeProbationCreate, EmployeeProbationUpdate
+from app.employee.models.employee_probation import EmployeeProbationModel
 
 class EmployeeProbationService:
     def __init__(self, db: AsyncIOMotorDatabase):

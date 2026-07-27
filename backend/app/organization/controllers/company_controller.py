@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.company_service import CompanyService
-from ..schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
-from ..models.company import CompanyModel
+from app.organization.services.company_service import CompanyService
+from app.organization.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
+from app.organization.models.company import CompanyModel
 
 class CompanyController:
     def __init__(self, db: AsyncIOMotorDatabase):

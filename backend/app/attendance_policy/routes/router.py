@@ -1,17 +1,18 @@
 from fastapi import APIRouter
-from .attendance_policy_routes import router as attendance_policy_router
-from .grace_policy_routes import router as grace_policy_router
-from .late_policy_routes import router as late_policy_router
-from .late_penalty_rule_routes import router as late_penalty_rule_router
-from .permission_policy_routes import router as permission_policy_router
-from .permission_overflow_rule_routes import router as permission_overflow_rule_router
-from .leave_conversion_rule_routes import router as leave_conversion_rule_router
-from .shift_attendance_policy_routes import router as shift_attendance_policy_router
-from .attendance_policy_history_routes import router as attendance_policy_history_router
-from .attendance_policy_version_routes import router as attendance_policy_version_router
-from .simulator_routes import router as simulator_router
-\nattendance_policy_router = APIRouter()
-attendance_policy_router.include_router(attendance_policy_router)
+from app.attendance_policy.routes.attendance_policy_routes import router as attendance_policy_routes_router
+from app.attendance_policy.routes.grace_policy_routes import router as grace_policy_router
+from app.attendance_policy.routes.late_policy_routes import router as late_policy_router
+from app.attendance_policy.routes.late_penalty_rule_routes import router as late_penalty_rule_router
+from app.attendance_policy.routes.permission_policy_routes import router as permission_policy_router
+from app.attendance_policy.routes.permission_overflow_rule_routes import router as permission_overflow_rule_router
+from app.attendance_policy.routes.leave_conversion_rule_routes import router as leave_conversion_rule_router
+from app.attendance_policy.routes.shift_attendance_policy_routes import router as shift_attendance_policy_router
+from app.attendance_policy.routes.attendance_policy_history_routes import router as attendance_policy_history_router
+from app.attendance_policy.routes.attendance_policy_version_routes import router as attendance_policy_version_router
+from app.attendance_policy.routes.simulator_routes import router as simulator_router
+
+attendance_policy_router = APIRouter()
+attendance_policy_router.include_router(attendance_policy_routes_router)
 attendance_policy_router.include_router(grace_policy_router)
 attendance_policy_router.include_router(late_policy_router)
 attendance_policy_router.include_router(late_penalty_rule_router)

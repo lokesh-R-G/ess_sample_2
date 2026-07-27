@@ -61,9 +61,9 @@ def build_raw_log_document(record: dict, sync_batch_id: str) -> dict:
                 "sourceLogFingerprints": [item["fingerprint"] for item in ordered],
                 "updatedAt": _utc_now(),'''
 from datetime import date, datetime, timezone, timedelta
-from .policy_service import get_attendance_policy
-from .policy_engine import PolicyEngine
-from ..core.datetime_utils import to_utc, to_ist, get_current_ist
+from app.services.policy_service import get_attendance_policy
+from app.services.policy_engine import PolicyEngine
+from app.core.datetime_utils import to_utc, to_ist, get_current_ist
 
 async def build_daily_summaries(db, logs):
     grouped = defaultdict(list)

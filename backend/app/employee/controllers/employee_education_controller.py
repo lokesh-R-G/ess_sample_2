@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_education_service import EmployeeEducationService
-from ..schemas.employee_education import EmployeeEducationCreate, EmployeeEducationUpdate, EmployeeEducationResponse
-from ..models.employee_education import EmployeeEducationModel
+from app.employee.services.employee_education_service import EmployeeEducationService
+from app.employee.schemas.employee_education import EmployeeEducationCreate, EmployeeEducationUpdate, EmployeeEducationResponse
+from app.employee.models.employee_education import EmployeeEducationModel
 
 class EmployeeEducationController:
     def __init__(self, db: AsyncIOMotorDatabase):

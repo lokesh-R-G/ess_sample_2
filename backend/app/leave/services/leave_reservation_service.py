@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_reservation_repository import LeaveReservationRepository
-from ..validators.leave_reservation_validator import LeaveReservationValidator
-from ..schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate
-from ..models.leave_reservation import LeaveReservationModel
+from app.leave.repositories.leave_reservation_repository import LeaveReservationRepository
+from app.leave.validators.leave_reservation_validator import LeaveReservationValidator
+from app.leave.schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate
+from app.leave.models.leave_reservation import LeaveReservationModel
 
 class LeaveReservationService:
     def __init__(self, db: AsyncIOMotorDatabase):

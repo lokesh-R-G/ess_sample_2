@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.department_repository import DepartmentRepository
-from ..validators.department_validator import DepartmentValidator
-from ..schemas.department import DepartmentCreate, DepartmentUpdate
-from ..models.department import DepartmentModel
+from app.organization.repositories.department_repository import DepartmentRepository
+from app.organization.validators.department_validator import DepartmentValidator
+from app.organization.schemas.department import DepartmentCreate, DepartmentUpdate
+from app.organization.models.department import DepartmentModel
 
 class DepartmentService:
     def __init__(self, db: AsyncIOMotorDatabase):

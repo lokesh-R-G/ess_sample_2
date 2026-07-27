@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.holiday_service import HolidayService
-from ..schemas.holiday import HolidayCreate, HolidayUpdate, HolidayResponse
-from ..models.holiday import HolidayModel
+from app.organization.services.holiday_service import HolidayService
+from app.organization.schemas.holiday import HolidayCreate, HolidayUpdate, HolidayResponse
+from app.organization.models.holiday import HolidayModel
 
 class HolidayController:
     def __init__(self, db: AsyncIOMotorDatabase):

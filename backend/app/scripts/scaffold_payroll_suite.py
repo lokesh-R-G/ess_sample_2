@@ -107,7 +107,7 @@ class {class_name}Response({class_name}Create):
     # Repo
     with open(base_path / "repositories" / f"{entity}_repository.py", "w") as f:
         f.write(f'''from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
+from app.scripts.base_repository import BaseRepository
 from ..models.{entity} import {class_name}Model
 
 class {class_name}Repository(BaseRepository[{class_name}Model]):

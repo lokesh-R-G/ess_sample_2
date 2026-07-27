@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.grace_log_repository import GraceLogRepository
-from ..validators.grace_log_validator import GraceLogValidator
-from ..schemas.grace_log import GraceLogCreate, GraceLogUpdate
-from ..models.grace_log import GraceLogModel
+from app.attendance_v2.repositories.grace_log_repository import GraceLogRepository
+from app.attendance_v2.validators.grace_log_validator import GraceLogValidator
+from app.attendance_v2.schemas.grace_log import GraceLogCreate, GraceLogUpdate
+from app.attendance_v2.models.grace_log import GraceLogModel
 
 class GraceLogService:
     def __init__(self, db: AsyncIOMotorDatabase):

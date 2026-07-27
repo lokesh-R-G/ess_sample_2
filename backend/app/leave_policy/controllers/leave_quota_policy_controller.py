@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_quota_policy_service import LeaveQuotaPolicyService
-from ..schemas.leave_quota_policy import LeaveQuotaPolicyCreate, LeaveQuotaPolicyUpdate, LeaveQuotaPolicyResponse
-from ..models.leave_quota_policy import LeaveQuotaPolicyModel
+from app.leave_policy.services.leave_quota_policy_service import LeaveQuotaPolicyService
+from app.leave_policy.schemas.leave_quota_policy import LeaveQuotaPolicyCreate, LeaveQuotaPolicyUpdate, LeaveQuotaPolicyResponse
+from app.leave_policy.models.leave_quota_policy import LeaveQuotaPolicyModel
 
 class LeaveQuotaPolicyController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.permission_approval_controller import PermissionApprovalController
-from ..schemas.permission_approval import PermissionApprovalCreate, PermissionApprovalUpdate, PermissionApprovalResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.permission.controllers.permission_approval_controller import PermissionApprovalController
+from app.permission.schemas.permission_approval import PermissionApprovalCreate, PermissionApprovalUpdate, PermissionApprovalResponse
 
 router = APIRouter(prefix="/permissionApprovals", tags=["PermissionApproval"])
 

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.grace_policy_controller import GracePolicyController
-from ..schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate, GracePolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.grace_policy_controller import GracePolicyController
+from app.attendance_policy.schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate, GracePolicyResponse
 
 router = APIRouter(prefix="/gracePolicys", tags=["GracePolicy"])
 

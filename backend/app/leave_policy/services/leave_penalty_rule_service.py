@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_penalty_rule_repository import LeavePenaltyRuleRepository
-from ..validators.leave_penalty_rule_validator import LeavePenaltyRuleValidator
-from ..schemas.leave_penalty_rule import LeavePenaltyRuleCreate, LeavePenaltyRuleUpdate
-from ..models.leave_penalty_rule import LeavePenaltyRuleModel
+from app.leave_policy.repositories.leave_penalty_rule_repository import LeavePenaltyRuleRepository
+from app.leave_policy.validators.leave_penalty_rule_validator import LeavePenaltyRuleValidator
+from app.leave_policy.schemas.leave_penalty_rule import LeavePenaltyRuleCreate, LeavePenaltyRuleUpdate
+from app.leave_policy.models.leave_penalty_rule import LeavePenaltyRuleModel
 
 class LeavePenaltyRuleService:
     def __init__(self, db: AsyncIOMotorDatabase):

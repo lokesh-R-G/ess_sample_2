@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_type_service import LeaveTypeService
-from ..schemas.leave_type import LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse
-from ..models.leave_type import LeaveTypeModel
+from app.leave_policy.services.leave_type_service import LeaveTypeService
+from app.leave_policy.schemas.leave_type import LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse
+from app.leave_policy.models.leave_type import LeaveTypeModel
 
 class LeaveTypeController:
     def __init__(self, db: AsyncIOMotorDatabase):

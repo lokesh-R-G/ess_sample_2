@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_carry_forward_rule import LeaveCarryForwardRuleCreate, LeaveCarryForwardRuleUpdate
+from app.leave_policy.schemas.leave_carry_forward_rule import LeaveCarryForwardRuleCreate, LeaveCarryForwardRuleUpdate
 
 class LeaveCarryForwardRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

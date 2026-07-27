@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.comp_off_balance_service import CompOffBalanceService
-from ..schemas.comp_off_balance import CompOffBalanceCreate, CompOffBalanceUpdate, CompOffBalanceResponse
-from ..models.comp_off_balance import CompOffBalanceModel
+from app.leave.services.comp_off_balance_service import CompOffBalanceService
+from app.leave.schemas.comp_off_balance import CompOffBalanceCreate, CompOffBalanceUpdate, CompOffBalanceResponse
+from app.leave.models.comp_off_balance import CompOffBalanceModel
 
 class CompOffBalanceController:
     def __init__(self, db: AsyncIOMotorDatabase):

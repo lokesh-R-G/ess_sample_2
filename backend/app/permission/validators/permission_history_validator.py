@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.permission_history import PermissionHistoryCreate, PermissionHistoryUpdate
+from app.permission.schemas.permission_history import PermissionHistoryCreate, PermissionHistoryUpdate
 
 class PermissionHistoryValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.grace_log_controller import GraceLogController
-from ..schemas.grace_log import GraceLogCreate, GraceLogUpdate, GraceLogResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.grace_log_controller import GraceLogController
+from app.attendance_v2.schemas.grace_log import GraceLogCreate, GraceLogUpdate, GraceLogResponse
 
 router = APIRouter(prefix="/graceLogs", tags=["GraceLog"])
 

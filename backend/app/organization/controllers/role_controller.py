@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.role_service import RoleService
-from ..schemas.role import RoleCreate, RoleUpdate, RoleResponse
-from ..models.role import RoleModel
+from app.organization.services.role_service import RoleService
+from app.organization.schemas.role import RoleCreate, RoleUpdate, RoleResponse
+from app.organization.models.role import RoleModel
 
 class RoleController:
     def __init__(self, db: AsyncIOMotorDatabase):

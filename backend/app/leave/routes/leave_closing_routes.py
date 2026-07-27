@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_closing_controller import LeaveClosingController
-from ..schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate, LeaveClosingResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_closing_controller import LeaveClosingController
+from app.leave.schemas.leave_closing import LeaveClosingCreate, LeaveClosingUpdate, LeaveClosingResponse
 
 router = APIRouter(prefix="/close", tags=["LeaveClosing"])
 

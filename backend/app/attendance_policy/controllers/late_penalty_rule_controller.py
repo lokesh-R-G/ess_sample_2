@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.late_penalty_rule_service import LatePenaltyRuleService
-from ..schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate, LatePenaltyRuleResponse
-from ..models.late_penalty_rule import LatePenaltyRuleModel
+from app.attendance_policy.services.late_penalty_rule_service import LatePenaltyRuleService
+from app.attendance_policy.schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate, LatePenaltyRuleResponse
+from app.attendance_policy.models.late_penalty_rule import LatePenaltyRuleModel
 
 class LatePenaltyRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
-from ...models import MissPunchRequest, UserResponse
-from ...services import miss_punch_service
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.models import MissPunchRequest, UserResponse
+from app.services import miss_punch_service
 
 router = APIRouter(prefix="/miss-punch", tags=["miss-punch"])
 

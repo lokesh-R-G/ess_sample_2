@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.department import DepartmentCreate, DepartmentUpdate
+from app.organization.schemas.department import DepartmentCreate, DepartmentUpdate
 from bson import ObjectId
 
 class DepartmentValidator:

@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from ..models import AttendancePolicy
+from app.models import AttendancePolicy
 
 async def get_attendance_policy(db: AsyncIOMotorDatabase) -> AttendancePolicy:
     policy_doc = await db.settings.find_one({"_id": "attendance_policy"})

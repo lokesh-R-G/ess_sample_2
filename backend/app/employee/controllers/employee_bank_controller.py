@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_bank_service import EmployeeBankService
-from ..schemas.employee_bank import EmployeeBankCreate, EmployeeBankUpdate, EmployeeBankResponse
-from ..models.employee_bank import EmployeeBankModel
+from app.employee.services.employee_bank_service import EmployeeBankService
+from app.employee.schemas.employee_bank import EmployeeBankCreate, EmployeeBankUpdate, EmployeeBankResponse
+from app.employee.models.employee_bank import EmployeeBankModel
 
 class EmployeeBankController:
     def __init__(self, db: AsyncIOMotorDatabase):

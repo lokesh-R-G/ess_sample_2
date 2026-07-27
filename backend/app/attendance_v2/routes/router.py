@@ -1,14 +1,22 @@
 from fastapi import APIRouter
-from .attendance_routes import router as attendance_router
-from .attendance_log_routes import router as attendance_log_router
-from .daily_attendance_routes import router as daily_attendance_router
-from .monthly_attendance_routes import router as monthly_attendance_router
-from .late_log_routes import router as late_log_router
-from .grace_log_routes import router as grace_log_router
-from .attendance_adjustment_routes import router as attendance_adjustment_router
-from .attendance_history_routes import router as attendance_history_router
-from .attendance_calculation_routes import router as attendance_calculation_router
-\nattendance_v2_router = APIRouter()
+from app.attendance_v2.routes.attendance_routes import router as attendance_router
+from app.attendance_v2.routes.attendance_log_routes import router as attendance_log_router
+from app.attendance_v2.routes.daily_attendance_routes import router as daily_attendance_router
+from app.attendance_v2.routes.monthly_attendance_routes import router as monthly_attendance_router
+from app.attendance_v2.routes.late_log_routes import router as late_log_router
+from app.attendance_v2.routes.grace_log_routes import router as grace_log_router
+from app.attendance_v2.routes.attendance_adjustment_routes import router as attendance_adjustment_router
+from app.attendance_v2.routes.attendance_history_routes import router as attendance_history_router
+from app.attendance_v2.routes.attendance_calculation_routes import router as attendance_calculation_router
+from app.attendance_v2.routes.attendance_calendar_routes import router as attendance_calendar_router
+from app.attendance_v2.routes.attendance_summary_routes import router as attendance_summary_router
+from app.attendance_v2.routes.leave_conversion_ledger_routes import router as leave_conversion_ledger_router
+from app.attendance_v2.routes.attendance_exception_routes import router as attendance_exception_router
+from app.attendance_v2.routes.attendance_replay_queue_routes import router as attendance_replay_queue_router
+from app.attendance_v2.routes.attendance_engine_health_routes import router as attendance_engine_health_router
+from app.attendance_v2.routes.attendance_closing_routes import router as attendance_closing_router
+
+attendance_v2_router = APIRouter()
 attendance_v2_router.include_router(attendance_router)
 attendance_v2_router.include_router(attendance_log_router)
 attendance_v2_router.include_router(daily_attendance_router)
@@ -18,17 +26,10 @@ attendance_v2_router.include_router(grace_log_router)
 attendance_v2_router.include_router(attendance_adjustment_router)
 attendance_v2_router.include_router(attendance_history_router)
 attendance_v2_router.include_router(attendance_calculation_router)
-from .attendance_calendar_routes import router as attendance_calendar_router
 attendance_v2_router.include_router(attendance_calendar_router)
-from .attendance_summary_routes import router as attendance_summary_router
 attendance_v2_router.include_router(attendance_summary_router)
-from .leave_conversion_ledger_routes import router as leave_conversion_ledger_router
 attendance_v2_router.include_router(leave_conversion_ledger_router)
-from .attendance_exception_routes import router as attendance_exception_router
 attendance_v2_router.include_router(attendance_exception_router)
-from .attendance_replay_queue_routes import router as attendance_replay_queue_router
 attendance_v2_router.include_router(attendance_replay_queue_router)
-from .attendance_engine_health_routes import router as attendance_engine_health_router
 attendance_v2_router.include_router(attendance_engine_health_router)
-from .attendance_closing_routes import router as attendance_closing_router
 attendance_v2_router.include_router(attendance_closing_router)

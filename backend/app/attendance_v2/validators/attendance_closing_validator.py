@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.attendance_closing import AttendanceClosingCreate, AttendanceClosingUpdate
+from app.attendance_v2.schemas.attendance_closing import AttendanceClosingCreate, AttendanceClosingUpdate
 
 class AttendanceClosingValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_role_assignment_controller import EmployeeRoleAssignmentController
-from ..schemas.employee_role_assignment import EmployeeRoleAssignmentCreate, EmployeeRoleAssignmentUpdate, EmployeeRoleAssignmentResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_role_assignment_controller import EmployeeRoleAssignmentController
+from app.employee.schemas.employee_role_assignment import EmployeeRoleAssignmentCreate, EmployeeRoleAssignmentUpdate, EmployeeRoleAssignmentResponse
 
 router = APIRouter(prefix="/employeeRoleAssignments", tags=["EmployeeRoleAssignment"])
 

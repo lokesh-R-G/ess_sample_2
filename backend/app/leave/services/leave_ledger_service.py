@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_ledger_repository import LeaveLedgerRepository
-from ..validators.leave_ledger_validator import LeaveLedgerValidator
-from ..schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate
-from ..models.leave_ledger import LeaveLedgerModel
+from app.leave.repositories.leave_ledger_repository import LeaveLedgerRepository
+from app.leave.validators.leave_ledger_validator import LeaveLedgerValidator
+from app.leave.schemas.leave_ledger import LeaveLedgerCreate, LeaveLedgerUpdate
+from app.leave.models.leave_ledger import LeaveLedgerModel
 
 class LeaveLedgerService:
     def __init__(self, db: AsyncIOMotorDatabase):

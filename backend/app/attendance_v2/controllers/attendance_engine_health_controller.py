@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.attendance_engine_health_service import AttendanceEngineHealthService
-from ..schemas.attendance_engine_health import AttendanceEngineHealthCreate, AttendanceEngineHealthUpdate, AttendanceEngineHealthResponse
-from ..models.attendance_engine_health import AttendanceEngineHealthModel
+from app.attendance_v2.services.attendance_engine_health_service import AttendanceEngineHealthService
+from app.attendance_v2.schemas.attendance_engine_health import AttendanceEngineHealthCreate, AttendanceEngineHealthUpdate, AttendanceEngineHealthResponse
+from app.attendance_v2.models.attendance_engine_health import AttendanceEngineHealthModel
 
 class AttendanceEngineHealthController:
     def __init__(self, db: AsyncIOMotorDatabase):

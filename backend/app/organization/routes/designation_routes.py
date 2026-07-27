@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.designation_controller import DesignationController
-from ..schemas.designation import DesignationCreate, DesignationUpdate, DesignationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.organization.controllers.designation_controller import DesignationController
+from app.organization.schemas.designation import DesignationCreate, DesignationUpdate, DesignationResponse
 
 router = APIRouter(prefix="/designations", tags=["Designation"])
 

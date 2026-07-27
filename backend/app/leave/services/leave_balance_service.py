@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_balance_repository import LeaveBalanceRepository
-from ..validators.leave_balance_validator import LeaveBalanceValidator
-from ..schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate
-from ..models.leave_balance import LeaveBalanceModel
+from app.leave.repositories.leave_balance_repository import LeaveBalanceRepository
+from app.leave.validators.leave_balance_validator import LeaveBalanceValidator
+from app.leave.schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate
+from app.leave.models.leave_balance import LeaveBalanceModel
 
 class LeaveBalanceService:
     def __init__(self, db: AsyncIOMotorDatabase):

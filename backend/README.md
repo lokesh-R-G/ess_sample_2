@@ -1,238 +1,381 @@
-# Enterprise HRMS - Backend Architecture
-
-Welcome to the Enterprise HRMS backend repository. This document serves as the master entry point and comprehensive guide for all developers, architects, and QA engineers working on the platform.
-
----
+# Enterprise HRMS Backend
 
 ## 1. Project Introduction
-The Enterprise HRMS is a massive, highly scalable Human Resource Management System designed to solve complex, enterprise-grade workforce management challenges. 
-It supports the entire employee lifecycle—from organization charting to payroll processing.
 
-**Target Users:**
-- **HR:** Manages compliance, organization policies, and employee lifecycles.
-- **Payroll Team:** Processes highly configured payrolls across disparate geographical branches.
-- **Managers:** Leverages Manager Self Service (MSS) for team attendance, approvals, and performance.
-- **Employees:** Leverages Employee Self Service (ESS) for payslips, leaves, and reimbursements.
-- **Administrators:** Configures the overarching immutable policies.
+The Enterprise HRMS is a modular backend system that manages the complete employee lifecycle for organizations. It handles organizational structure, employee data, attendance tracking (via biometric device integration), leave management, permission management, salary configuration, payroll processing, payslip generation, compliance reporting, and self-service portals for employees and managers.
 
-The backend is built as an **Enterprise Modular Monolith**. It isolates distinct business capabilities into independent engines, ensuring high maintainability and establishing a clear path for future migration to microservices.
+The backend was built as a **modular monolith** — a single FastAPI application composed of 27 independent domain engines (V2) layered on top of 13 legacy ESS route files (V1). Each engine owns a specific business domain and communicates with others through shared services and business events.
 
----
-
-## 2. Project Vision
-The system is architected around **Independent Business Engines**. Each engine owns a specific domain and is strictly forbidden from directly mutating another engine's state. 
-Engines communicate asynchronously through **Business Events**. 
-
-For example, the **Organization Engine** dictates hierarchy, while the **Workflow Engine** orchestrates approvals by dynamically querying the Organization Engine. The **Leave Engine** deducts balances, but it publishes a `LeaveApproved` event which the **Attendance Engine** listens to for LOP proration.
+**Who uses this system:**
+- **HR Administrators** — Configure policies, manage employees, process payroll.
+- **Payroll Team** — Run monthly payroll, manage deductions, generate compliance reports.
+- **Managers** — Approve leave/permission requests, view team attendance via MSS.
+- **Employees** — View attendance, request leaves, download payslips via ESS.
+- **System Administrators** — Configure eSSL biometric devices, manage user accounts.
 
 ---
 
-## 3. Project Architecture
-The project strictly adheres to **Domain-Driven Design (DDD)** principles within a FastAPI ecosystem.
+## 2. Project Workflow
 
-```text
-Client Request
-      │
-      ▼
-   FastAPI (Router/Controller Layer)  <-- DTO Validation (Pydantic)
-      │
-      ▼
- Service Layer  <-- Business Logic, Calculations, Event Publishing
-      │
-      ▼
-Repository Layer <-- Database Abstraction (Motor)
-      │
-      ▼
-   MongoDB
+The system follows this end-to-end business flow:
+
+```
+Organization Setup (companies, branches, departments, shifts)
+        ↓
+Employee Onboarding (master data, bank details, salary assignment)
+        ↓
+Daily Operations
+  ├── Biometric punch → eSSL Sync → Attendance Computation
+  ├── Leave Requests → Workflow Approval → Balance Deduction
+  └── Permission Requests → Approval → Usage Tracking
+        ↓
+Monthly Payroll Processing
+  ├── Salary Engine (CTC, components)
+  ├── Attendance Engine (LOP days)
+  ├── Deduction Engine (PF, ESI, PT)
+  └── Reimbursement Engine (trip sheets, vouchers)
+        ↓
+Payslip Generation → PDF → Email → ESS Download
+        ↓
+Compliance (PF/ESI/PT Registers, Challans)
 ```
 
-- **DTO Layer (Pydantic):** Strictly enforces request/response contracts.
-- **Dependency Injection:** Resolves repositories and services at runtime.
-- **Business Events:** Decouples engines (e.g., `PayrollProcessed` -> `PayslipGenerated`).
-- **Immutable Ledgers:** Financial and statutory data (Attendance, Leave, Payroll) are never overwritten. Reversals use double-entry ledger patterns.
+---
+
+## 3. Architecture Overview
+
+### Technology Stack
+
+| Technology | Purpose | Why Chosen |
+|-----------|---------|------------|
+| **Python 3.11+** | Backend language | Clean syntax, strong async support |
+| **FastAPI** | Web framework | Auto OpenAPI docs, async, Pydantic integration |
+| **MongoDB** | Database | Flexible schemas for varying HR policy configurations |
+| **Motor** | Async MongoDB driver | Non-blocking database access for FastAPI |
+| **Pydantic** | Data validation | Type-safe request/response contracts |
+| **bcrypt** | Password hashing | Industry standard for secure credential storage |
+| **PyJWT** | Token generation | Stateless authentication via JWT |
+| **APScheduler** | V1 background jobs | eSSL sync scheduling |
+
+### Architectural Patterns
+
+- **Repository Pattern** — All database access goes through repositories. The `BaseRepository` provides generic CRUD (create, get_by_id, get_all with pagination and search, update, soft_delete) with automatic audit fields (`createdAt`, `updatedAt`, `createdBy`, `deletedAt`).
+
+- **Service Layer** — Business logic lives in service classes. Services call repositories and validators. Controllers call services.
+
+- **Dependency Injection** — FastAPI's `Depends()` mechanism injects database connections, authenticated users, and controller instances.
+
+- **Soft Delete** — Records are never physically deleted. The `soft_delete` method sets `deletedAt` and `status: "Deleted"`. All queries filter by `deletedAt: None`.
+
+- **Immutable Policy Versioning** — Policy engines (Payroll, Deduction, Reimbursement) never update existing records. Every change creates a new version via `PolicyActivationService`.
+
+### Request Lifecycle
+
+```
+HTTP Request
+    ↓
+FastAPI Router (route definition with decorators)
+    ↓
+Dependency Injection (get_current_user, get_database, get_controller)
+    ↓
+Controller (accepts Pydantic DTO, calls service)
+    ↓
+Service (calls validator, then repository)
+    ↓
+Validator (checks business rules, raises HTTPException on failure)
+    ↓
+Repository (executes MongoDB operations via Motor)
+    ↓
+MongoDB
+    ↓
+Response DTO (Pydantic model serialization)
+    ↓
+HTTP Response (JSON)
+```
 
 ---
 
 ## 4. Engine Overview
-The platform contains **29 Independent Engines**.
 
-### Core HR
-- **Organization Engine:** Owns companies, branches, departments, and roles.
-- **Employee Engine:** Owns the employee lifecycle, profiles, and assignments.
-- **Salary Engine:** Owns CTC blueprints and component breakdowns.
-- **Salary Rule Engine:** Owns the dynamic mathematical formulas for salary calculation.
-- **Attendance Policy Engine:** Owns late rules, grace rules, and penalties.
-- **Attendance Engine:** Processes punches and manages the timesheet ledger.
-- **Leave Policy Engine:** Owns accrual rules, carry-forward, and leave mapping.
-- **Leave Engine:** Manages leave balances, requests, and the leave ledger.
-- **Permission Engine:** Manages short-duration employee absences.
+The backend contains **27 V2 engines** and **13 V1 route files**.
+
+### Core HR Engines
+| Engine | Mount Path | Sub-Modules | Purpose |
+|--------|-----------|-------------|---------|
+| Organization | `/api/v2/organization` | 10 | Company/branch/dept hierarchy, roles, shifts, holidays |
+| Employee | `/api/v2/employee` | 8 | Employee master data, addresses, bank, family, education |
+| Salary | `/api/v2/salary` | 13 | Salary structures, components, rules, grades, assignments |
+| Attendance Policy | `/api/v2/attendance-policy` | 8 | Late/grace/penalty/overtime/compoff rules |
+| Permission | `/api/v2/permission` | 10 | Short-duration permissions and grace management |
+| Attendance V2 | `/api/v2/attendance` | 6 | Attendance records, summaries, regularizations |
+| Leave Policy | `/api/v2/leave-policy` | 6 | Leave types, accrual, carry-forward, encashment |
+| Leave | `/api/v2/leave` | 6 | Leave requests, balances, transactions |
 
 ### Payroll Suite
-- **Payroll Policy / Deduction Policy / Reimbursement Policy Engines:** Store immutable, effective-dated rules (e.g., PF Ceilings, Mileage Rates).
-- **Deduction Engine:** Calculates PF, ESI, LWF, and handles manual PT/Loan recoveries.
-- **Reimbursement Engine:** Processes Trip Sheets and Cash Vouchers.
-- **Payroll Engine:** Orchestrates final payouts by aggregating Salary, Attendance, Leave, Deductions, and Reimbursements.
-- **Payslip Engine:** Publishes finalized payroll data, generates PDFs, and handles delivery.
+| Engine | Mount Path | Purpose |
+|--------|-----------|---------|
+| Payroll Policy | `/api/v2/payroll-policy` | Immutable payroll configuration versioning |
+| Deduction Policy | `/api/v2/deduction-policy` | Statutory deduction rules versioning |
+| Reimbursement Policy | `/api/v2/reimbursement-policy` | Reimbursement category/rate versioning |
+| Deduction | `/api/v2/deduction` | PF/ESI calculation + manual PT entry |
+| Reimbursement | `/api/v2/reimbursement` | Trip sheets, cash vouchers, ledger |
+| Payroll | `/api/v2/payroll` | Monthly payroll processing and locking |
+| Payslip | `/api/v2/payslip` | Payslip generation, PDF, email, versioning |
 
-### Enterprise Infrastructure
-- **Holiday Calendar & Calendar Engines:** Manages national/state holidays and company events.
-- **Compliance Engine:** Maintains statutory registers (PF, ESI, PT).
-- **Notification & Email Services:** Manages async delivery (SMTP, In-App).
-- **Workflow Engine:** Centralized dynamic approval routing.
-- **Audit Engine:** Centralized logging of all entity mutations.
-- **ESS & MSS Engines:** Aggregated Backend-For-Frontend APIs for employee and manager portals.
-- **Scheduler & Report / PDF Engines:** Background processing and documentation generation.
+### Infrastructure Engines
+| Engine | Mount Path | Purpose |
+|--------|-----------|---------|
+| Holiday Calendar | `/api/v2/holiday` | Holiday definitions and assignment |
+| Compliance | `/api/v2/compliance` | Statutory registers (PF, ESI, PT) |
+| Notification | `/api/v2/notification` | Email and in-app notifications (scaffolded) |
+| Workflow V2 | `/api/v2/workflow` | Centralized approval orchestration |
+| Audit | `/api/v2/audit` | Central audit log |
+| ESS | `/api/v2/ess` | Employee self-service aggregation |
+| MSS | `/api/v2/mss` | Manager self-service aggregation |
+| Organization Policy | `/api/v2/organization-policy` | HR policy documents and versioning |
+| Calendar | `/api/v2/calendar` | Shared enterprise calendar |
+| Scheduler | `/api/v2/scheduler` | MongoDB-driven background job execution |
+| Report Generator | `/api/v2/report` | Report generation (PDF/Excel/CSV) |
+| PDF Service | `/api/v2/pdf` | Shared PDF generation infrastructure |
+| Email Service | `/api/v2/email` | Shared SMTP email infrastructure |
 
 ---
 
 ## 5. Folder Structure
-```text
+
+```
 backend/
-├── app/                  # Main application source
-│   ├── core/             # Central configurations (settings, database)
-│   ├── [engine_name]/    # The 29 domain engines (e.g., employee, payroll)
-│   │   ├── controllers/  # Route handlers mapping HTTP to Services
-│   │   ├── services/     # Core business logic
-│   │   ├── repositories/ # MongoDB data access layer
-│   │   ├── schemas/      # Request/Response DTOs
-│   │   ├── models/       # Database representations
-│   │   ├── validators/   # Custom business rule validation
-│   │   ├── events/       # Event publishers/subscribers
-│   │   ├── utils/        # Domain-specific utilities (e.g., PFCalculator)
-│   │   └── routes/       # FastAPI router definitions
-├── docs/                 # Detailed architectural markdown reports
-├── scripts/              # Code generators and database seeders
-├── tests/                # Unit and Integration test suites
-├── .env.example          # Template environment variables
-├── requirements.txt      # Python dependencies
-└── README.md             # This master guide
+├── app/
+│   ├── main.py                     # FastAPI app, mounts all 42 routers
+│   ├── models.py                   # V1 Pydantic models
+│   ├── domain_models.py            # V2 domain models for all engines
+│   ├── dependencies.py             # JWT auth + role guards
+│   │
+│   ├── api/routes/                 # V1 Legacy ESS routes (13 files)
+│   ├── services/                   # V1 Shared services (9 files)
+│   │
+│   ├── core/
+│   │   ├── config.py               # Pydantic BaseSettings
+│   │   └── security.py             # JWT encode/decode
+│   │
+│   ├── db/
+│   │   └── mongo.py                # Motor client, get_database(), init_indexes()
+│   │
+│   ├── organization/               # V2 Engine (10 sub-modules)
+│   ├── employee/                   # V2 Engine (8 sub-modules)
+│   ├── salary/                     # V2 Engine (13 sub-modules)
+│   ├── attendance_policy/          # V2 Engine (8 sub-modules)
+│   ├── permission/                 # V2 Engine (10 sub-modules)
+│   ├── attendance_v2/              # V2 Engine (6 sub-modules)
+│   ├── leave_policy/               # V2 Engine (6 sub-modules)
+│   ├── leave/                      # V2 Engine (6 sub-modules)
+│   ├── payroll_policy/             # V2 Engine
+│   ├── deduction_policy/           # V2 Engine
+│   ├── reimbursement_policy/       # V2 Engine
+│   ├── payroll/                    # V2 Engine
+│   ├── deduction/                  # V2 Engine
+│   ├── reimbursement/              # V2 Engine
+│   ├── payslip/                    # V2 Engine
+│   ├── holiday_calendar/           # V2 Engine
+│   ├── compliance/                 # V2 Engine
+│   ├── notification/               # V2 Engine (scaffolded)
+│   ├── workflow/                   # V2 Engine
+│   ├── audit/                      # V2 Engine
+│   ├── ess/                        # V2 Engine
+│   ├── mss/                        # V2 Engine
+│   ├── organization_policy/        # V2 Engine
+│   ├── calendar/                   # V2 Engine
+│   ├── scheduler/                  # V2 Engine + V1 APScheduler
+│   ├── report_generator/           # V2 Engine
+│   ├── pdf_service/                # V2 Engine
+│   ├── email_service/              # V2 Engine
+│   └── scripts/                    # Code generators and scaffolding tools
+│
+├── docs/                           # Project documentation
+│   ├── API_REFERENCE.md
+│   ├── ENGINE_REFERENCE.md
+│   ├── MODULE_REFERENCE.md
+│   └── (other reports)
+│
+├── scripts/                        # Utility scripts
+├── .env.example                    # Environment variable template
+├── requirements.txt                # Python dependencies
+└── README.md                       # This file
+```
+
+Each V2 engine package contains up to 15 sub-folders:
+```
+[engine]/
+├── controllers/        # Request handlers
+├── services/           # Business logic
+├── repositories/       # Database access
+├── schemas/            # Pydantic DTOs (Create/Update/Response)
+├── models/             # Database model definitions
+├── validators/         # Business rule validation
+├── dtos/               # Data transfer objects
+├── routes/             # FastAPI router definitions
+├── events/             # Event publishers/subscribers
+├── constants/          # Enum values and constants
+├── exceptions/         # Custom exception classes
+├── interfaces/         # Abstract base classes
+├── types/              # Type definitions
+├── utils/              # Domain-specific utilities
+└── tests/              # Unit and integration tests
 ```
 
 ---
 
 ## 6. Technology Stack
-- **Python (3.11+)**: Clean, readable, and perfectly suited for fast enterprise development.
-- **FastAPI**: Provides ultra-fast async execution, automatic OpenAPI generation, and native Pydantic validation.
-- **MongoDB**: Schema-less design supports the heavily varying metadata of HR policies.
-- **Motor**: Native asynchronous Python driver for MongoDB.
-- **Pydantic**: Guarantees strict data validation at the boundaries.
-- **JWT**: Stateless, secure authentication.
+
+See the Architecture Overview table above.
 
 ---
 
-## 7. Project Planning & Development Approach
-The backend was intentionally developed **before** frontend integration to guarantee API stability.
-1. **Phase 1 (Core HR):** Scaffolding the fundamental Organization, Employee, and Leave engines.
-2. **Phase 2 (Payroll Suite):** Building the highly complex statutory engines and ensuring Ledger immutability.
-3. **Phase 3 (Enterprise Infrastructure):** Wiring up the Workflow, Audit, and Notification engines.
-4. **Phase 4 (Integration Testing):** Current Phase. Validating flow via Postman.
-5. **Phase 5 (Frontend):** Connecting the ESS, MSS, and Admin portals.
+## 7. Project Setup
+
+### Prerequisites
+- Python 3.11 or higher
+- MongoDB 6.0+ (running locally or via MongoDB Atlas)
+- pip (Python package manager)
+
+### Step-by-Step
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd ess_sample_2/backend
+
+# 2. Create a virtual environment
+python -m venv venv
+
+# 3. Activate the virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# 4. Install dependencies
+pip install -r requirements.txt
+
+# 5. Configure environment
+cp .env.example .env
+# Edit .env with your MongoDB URI, JWT secret, SMTP settings
+```
 
 ---
 
-## 8. Setup Guide
-1. **Clone Repository:** `git clone <repo-url>`
-2. **Virtual Environment:** `python -m venv venv` -> `source venv/bin/activate` (or `venv\Scripts\activate` on Windows).
-3. **Dependencies:** `pip install -r requirements.txt`
-4. **Environment:** Copy `.env.example` to `.env` and fill the variables.
-5. **Start MongoDB:** Ensure local MongoDB is running on port 27017.
-6. **Run FastAPI:** `uvicorn app.main:app --reload`
-7. **Verify API:** Navigate to `http://localhost:8000/docs`
+## 8. How to Run
+
+```bash
+# Start MongoDB (if running locally)
+mongod
+
+# Start the FastAPI backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Expected console output:**
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process
+INFO:     Started server process
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
+**Access Points:**
+| URL | Purpose |
+|-----|---------|
+| `http://localhost:8000/docs` | Swagger UI (interactive API explorer) |
+| `http://localhost:8000/redoc` | ReDoc (alternative API docs) |
+| `http://localhost:8000/api/v1/health` | Health check endpoint |
 
 ---
 
-## 9. Environment Variables
-See `.env.example` at the root of the project.
-- `MONGO_URI`: The connection string to your MongoDB instance.
-- `DB_NAME`: The database name (e.g., `enterprise_hrms`).
-- `JWT_SECRET`: Secret key for signing auth tokens.
-- `SMTP_*`: Configurations for the Email Service.
+## 9. Project Startup Flow
+
+When the FastAPI application starts, this sequence executes (defined in `main.py` lifespan):
+
+```
+1. Load Settings (Pydantic BaseSettings reads .env)
+     ↓
+2. Connect to MongoDB (Motor client initializes via get_settings)
+     ↓
+3. Initialize Indexes (init_indexes() creates MongoDB indexes)
+     ↓
+4. Start Scheduler (init_scheduler() starts APScheduler for eSSL sync)
+     ↓
+5. Register Routers (42 routers mounted with include_router())
+     ↓
+6. Start FastAPI (Uvicorn accepts connections)
+     ↓
+7. Swagger available at /docs
+```
 
 ---
 
-## 10. Running the Project
-- **Backend API:** `uvicorn app.main:app --reload` (Provides the REST API on port 8000).
-- **Background Scheduler:** Instantiated automatically during FastAPI startup via `lifespan` events.
-- **Swagger UI:** Accessible at `/docs`.
-- **ReDoc:** Accessible at `/redoc`.
+## 10. Documentation Structure
+
+| Document | Location | Purpose |
+|----------|----------|---------|
+| **README.md** | `backend/README.md` | This file — project overview, setup, architecture |
+| **API Reference** | `docs/API_REFERENCE.md` | Every endpoint with DTOs, auth, business rules |
+| **Engine Reference** | `docs/ENGINE_REFERENCE.md` | Every engine with responsibilities, collections, dependencies |
+| **Module Reference** | `docs/MODULE_REFERENCE.md` | Every module within every engine with file mappings |
 
 ---
 
-## 11. Project Startup Flow
-1. **Load Configuration:** Reads `.env` via Pydantic BaseSettings.
-2. **Connect MongoDB:** Motor client initializes.
-3. **Initialize Event Bus:** Registers engine subscribers.
-4. **Initialize Scheduler:** Starts the Mongo-polling worker loop.
-5. **Register Routers:** `main.py` mounts all 29 engine routers.
-6. **Start FastAPI:** Uvicorn begins accepting connections.
+## 11. Development Workflow
+
+### Adding a New Engine
+
+1. Create a new package under `app/[engine_name]/`.
+2. Create the 15 sub-folders (controllers, services, repositories, etc.).
+3. Add `__init__.py` to each folder.
+4. Define your Pydantic models in `schemas/`.
+5. Create a repository extending `BaseRepository`.
+6. Create a service with business logic.
+7. Create a controller.
+8. Create a router with FastAPI endpoints.
+9. Import and mount the router in `app/main.py`.
+
+### Adding a New API to an Existing Engine
+
+1. Define the endpoint in the appropriate route file.
+2. Add Pydantic request/response models in `schemas/`.
+3. Add business logic in the service layer.
+4. Add validation rules in the validator.
+5. Add repository methods if new database operations are needed.
+
+### Coding Conventions
+- All endpoints require JWT authentication unless explicitly public.
+- Use Pydantic models for all request/response contracts.
+- Use `BaseRepository` for all CRUD operations.
+- Use soft delete — never physically delete records.
+- Policy engines must use immutable versioning — never update policy records.
+- Professional Tax is never calculated — always manually entered.
 
 ---
 
-## 12. Business Flow Overview
-- **Payroll Processing Flow:** 
-  1. Scheduler triggers Payroll Engine.
-  2. Payroll fetches Base CTC (Salary Engine).
-  3. Payroll fetches LOP days (Attendance/Leave Engine) and prorates salary.
-  4. Payroll fetches PF/ESI rules (Deduction Policy) and calculates statutory deductions.
-  5. Ledger is finalized. Event `PayrollLocked` is fired.
-  6. Payslip Engine consumes event and generates PDFs.
+## 12. Testing Guide
 
----
+### Swagger UI Testing
+Navigate to `http://localhost:8000/docs`. Use the "Authorize" button to enter your JWT token. All endpoints can be tested interactively.
 
-## 13. API Documentation
-- **Swagger:** The absolute source of truth. Contains explicit request payloads, error codes, and authentication requirements.
-- **Postman:** Import `docs/EnterpriseHRMS.postman_collection.json` and set your `Local_Environment` variables (`baseUrl`, `accessToken`).
+### Postman Testing
+1. Import `docs/EnterpriseHRMS.postman_collection.json`.
+2. Import `docs/EnterpriseHRMS_Environment.postman_environment.json`.
+3. Set `baseUrl` to `http://localhost:8000`.
+4. Run the `Login` request first to obtain an `accessToken`.
+5. Set the `accessToken` environment variable.
+6. Test endpoints in this order: Authentication → Organization → Employee → Salary → Attendance → Leave → Payroll → Payslip.
 
----
+### Unit Testing
+```bash
+pytest tests/unit
+```
 
-## 14. Testing Guide
-- **Unit Tests:** Run via `pytest tests/unit`
-- **Integration Tests:** Run via `pytest tests/integration`
-- **Postman Validation:** Execute the collection folders sequentially: Authentication -> Organization -> Employee -> Payroll.
-
----
-
-## 15. Documentation Guide
-The `/docs` directory contains deep-dives into specific architectural decisions:
-- `API_REFERENCE.md`: Detailed route maps.
-- `DATABASE_SCHEMA.md`: Index and collection strategies.
-- `EVENT_ARCHITECTURE.md`: Complete list of cross-engine events.
-- `PROJECT_ARCHITECTURE.md`: In-depth DDD explanation.
-
----
-
-## 16. Deployment Guide
-- **Docker:** Build the provided `Dockerfile`. 
-- **Production MongoDB:** Utilize MongoDB Atlas or a replica set to support Mongo Transactions.
-- **Logging:** Ensure stdout is captured by Datadog/CloudWatch.
-
----
-
-## 17. Troubleshooting
-- **Mongo Transaction Errors:** Ensure you are running a replica set. Standalone MongoDB instances do not support multi-document transactions.
-- **Swagger Not Loading:** Check terminal for routing conflict errors during `app.include_router()`.
-- **JWT Errors:** Ensure `JWT_SECRET` is identical across clustered instances.
-
----
-
-## 18. Future Roadmap
-- **AI Integration:** Automated anomaly detection in payroll runs.
-- **Government Filing APIs:** Direct REST integration with EPFO/ESIC portals.
-- **Mobile Applications:** Flutter-based ESS app.
-
----
-
-## 19. Contribution Guide
-- **Adding an Engine:** Scaffold the 15-folder structure. Never mutate another engine's database directly. Expose a Business API, publish a domain event, or inject a cross-domain service.
-- **Coding Standards:** Enforce Pydantic typing. No raw dictionaries. Return explicit error DTOs.
-
----
-
-## 20. Documentation Index
-- [API Reference](docs/API_REFERENCE.md)
-- [Database Schema](docs/DATABASE_SCHEMA.md)
-- [Route Map](docs/ROUTE_MAP.md)
-- [Permission Matrix](docs/PERMISSION_MATRIX.md)
-- [Event Architecture](docs/EVENT_ARCHITECTURE.md)
-- [Testing Guide](docs/POSTMAN_TESTING_GUIDE.md)
-- [Backend Health Report](docs/BACKEND_HEALTH_REPORT.md)
+### Integration Testing
+```bash
+pytest tests/integration
+```

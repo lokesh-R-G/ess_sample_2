@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_sandwich_rule_service import LeaveSandwichRuleService
-from ..schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate, LeaveSandwichRuleResponse
-from ..models.leave_sandwich_rule import LeaveSandwichRuleModel
+from app.leave_policy.services.leave_sandwich_rule_service import LeaveSandwichRuleService
+from app.leave_policy.schemas.leave_sandwich_rule import LeaveSandwichRuleCreate, LeaveSandwichRuleUpdate, LeaveSandwichRuleResponse
+from app.leave_policy.models.leave_sandwich_rule import LeaveSandwichRuleModel
 
 class LeaveSandwichRuleController:
     def __init__(self, db: AsyncIOMotorDatabase):

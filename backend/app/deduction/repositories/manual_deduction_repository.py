@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.manual_deduction import ManualDeductionModel
+from app.deduction.repositories.base_repository import BaseRepository
+from app.deduction.models.manual_deduction import ManualDeductionModel
 
 class ManualDeductionRepository(BaseRepository[ManualDeductionModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

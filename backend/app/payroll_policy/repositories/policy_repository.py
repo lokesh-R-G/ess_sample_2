@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
-from ..models.policy_version import PolicyVersionModel
+from app.payroll_policy.models.policy_version import PolicyVersionModel
 
 class PolicyRepository:
     def __init__(self, db: AsyncIOMotorDatabase, collection_name: str):

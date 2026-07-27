@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_year_configuration import LeaveYearConfigurationCreate, LeaveYearConfigurationUpdate
+from app.leave_policy.schemas.leave_year_configuration import LeaveYearConfigurationCreate, LeaveYearConfigurationUpdate
 
 class LeaveYearConfigurationValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

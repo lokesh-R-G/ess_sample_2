@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.late_penalty_rule_controller import LatePenaltyRuleController
-from ..schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate, LatePenaltyRuleResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_policy.controllers.late_penalty_rule_controller import LatePenaltyRuleController
+from app.attendance_policy.schemas.late_penalty_rule import LatePenaltyRuleCreate, LatePenaltyRuleUpdate, LatePenaltyRuleResponse
 
 router = APIRouter(prefix="/latePenaltyRules", tags=["LatePenaltyRule"])
 

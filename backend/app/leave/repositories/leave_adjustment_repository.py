@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.leave_adjustment import LeaveAdjustmentModel
+from app.leave.repositories.base_repository import BaseRepository
+from app.leave.models.leave_adjustment import LeaveAdjustmentModel
 
 class LeaveAdjustmentRepository(BaseRepository[LeaveAdjustmentModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

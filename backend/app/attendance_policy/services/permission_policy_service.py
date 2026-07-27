@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.permission_policy_repository import PermissionPolicyRepository
-from ..validators.permission_policy_validator import PermissionPolicyValidator
-from ..schemas.permission_policy import PermissionPolicyCreate, PermissionPolicyUpdate
-from ..models.permission_policy import PermissionPolicyModel
+from app.attendance_policy.repositories.permission_policy_repository import PermissionPolicyRepository
+from app.attendance_policy.validators.permission_policy_validator import PermissionPolicyValidator
+from app.attendance_policy.schemas.permission_policy import PermissionPolicyCreate, PermissionPolicyUpdate
+from app.attendance_policy.models.permission_policy import PermissionPolicyModel
 
 class PermissionPolicyService:
     def __init__(self, db: AsyncIOMotorDatabase):

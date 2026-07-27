@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.grace_policy_service import GracePolicyService
-from ..schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate, GracePolicyResponse
-from ..models.grace_policy import GracePolicyModel
+from app.attendance_policy.services.grace_policy_service import GracePolicyService
+from app.attendance_policy.schemas.grace_policy import GracePolicyCreate, GracePolicyUpdate, GracePolicyResponse
+from app.attendance_policy.models.grace_policy import GracePolicyModel
 
 class GracePolicyController:
     def __init__(self, db: AsyncIOMotorDatabase):

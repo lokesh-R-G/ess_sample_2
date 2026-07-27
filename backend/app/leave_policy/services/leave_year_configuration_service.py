@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_year_configuration_repository import LeaveYearConfigurationRepository
-from ..validators.leave_year_configuration_validator import LeaveYearConfigurationValidator
-from ..schemas.leave_year_configuration import LeaveYearConfigurationCreate, LeaveYearConfigurationUpdate
-from ..models.leave_year_configuration import LeaveYearConfigurationModel
+from app.leave_policy.repositories.leave_year_configuration_repository import LeaveYearConfigurationRepository
+from app.leave_policy.validators.leave_year_configuration_validator import LeaveYearConfigurationValidator
+from app.leave_policy.schemas.leave_year_configuration import LeaveYearConfigurationCreate, LeaveYearConfigurationUpdate
+from app.leave_policy.models.leave_year_configuration import LeaveYearConfigurationModel
 
 class LeaveYearConfigurationService:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_reservation_controller import LeaveReservationController
-from ..schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate, LeaveReservationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_reservation_controller import LeaveReservationController
+from app.leave.schemas.leave_reservation import LeaveReservationCreate, LeaveReservationUpdate, LeaveReservationResponse
 
 router = APIRouter(prefix="/leaveReservation", tags=["LeaveReservation"])
 

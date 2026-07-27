@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.grace_approval_controller import GraceApprovalController
-from ..schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate, GraceApprovalResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.permission.controllers.grace_approval_controller import GraceApprovalController
+from app.permission.schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate, GraceApprovalResponse
 
 router = APIRouter(prefix="/graceApprovals", tags=["GraceApproval"])
 

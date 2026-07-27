@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.shift import ShiftCreate, ShiftUpdate
+from app.organization.schemas.shift import ShiftCreate, ShiftUpdate
 from bson import ObjectId
 
 class ShiftValidator:

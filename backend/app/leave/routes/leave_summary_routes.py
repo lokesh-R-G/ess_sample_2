@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_summary_controller import LeaveSummaryController
-from ..schemas.leave_summary import LeaveSummaryCreate, LeaveSummaryUpdate, LeaveSummaryResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_summary_controller import LeaveSummaryController
+from app.leave.schemas.leave_summary import LeaveSummaryCreate, LeaveSummaryUpdate, LeaveSummaryResponse
 
 router = APIRouter(prefix="/leaveSummary", tags=["LeaveSummary"])
 

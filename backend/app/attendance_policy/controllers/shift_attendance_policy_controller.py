@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.shift_attendance_policy_service import ShiftAttendancePolicyService
-from ..schemas.shift_attendance_policy import ShiftAttendancePolicyCreate, ShiftAttendancePolicyUpdate, ShiftAttendancePolicyResponse
-from ..models.shift_attendance_policy import ShiftAttendancePolicyModel
+from app.attendance_policy.services.shift_attendance_policy_service import ShiftAttendancePolicyService
+from app.attendance_policy.schemas.shift_attendance_policy import ShiftAttendancePolicyCreate, ShiftAttendancePolicyUpdate, ShiftAttendancePolicyResponse
+from app.attendance_policy.models.shift_attendance_policy import ShiftAttendancePolicyModel
 
 class ShiftAttendancePolicyController:
     def __init__(self, db: AsyncIOMotorDatabase):

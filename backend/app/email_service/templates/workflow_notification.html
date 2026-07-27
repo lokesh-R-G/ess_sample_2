@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+<p>You have a new workflow notification regarding: <strong>{{ workflow_type }}</strong>.</p>
+<p>{{ message }}</p>
+<a href="{{ action_url }}" class="button">View Details</a>
+{% endblock %}

@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_negative_balance_rule_repository import LeaveNegativeBalanceRuleRepository
-from ..validators.leave_negative_balance_rule_validator import LeaveNegativeBalanceRuleValidator
-from ..schemas.leave_negative_balance_rule import LeaveNegativeBalanceRuleCreate, LeaveNegativeBalanceRuleUpdate
-from ..models.leave_negative_balance_rule import LeaveNegativeBalanceRuleModel
+from app.leave_policy.repositories.leave_negative_balance_rule_repository import LeaveNegativeBalanceRuleRepository
+from app.leave_policy.validators.leave_negative_balance_rule_validator import LeaveNegativeBalanceRuleValidator
+from app.leave_policy.schemas.leave_negative_balance_rule import LeaveNegativeBalanceRuleCreate, LeaveNegativeBalanceRuleUpdate
+from app.leave_policy.models.leave_negative_balance_rule import LeaveNegativeBalanceRuleModel
 
 class LeaveNegativeBalanceRuleService:
     def __init__(self, db: AsyncIOMotorDatabase):

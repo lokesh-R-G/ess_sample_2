@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_calculation_controller import AttendanceCalculationController
-from ..schemas.attendance_calculation import AttendanceCalculationCreate, AttendanceCalculationUpdate, AttendanceCalculationResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.attendance_calculation_controller import AttendanceCalculationController
+from app.attendance_v2.schemas.attendance_calculation import AttendanceCalculationCreate, AttendanceCalculationUpdate, AttendanceCalculationResponse
 
 router = APIRouter(prefix="/attendanceCalculations", tags=["AttendanceCalculation"])
 

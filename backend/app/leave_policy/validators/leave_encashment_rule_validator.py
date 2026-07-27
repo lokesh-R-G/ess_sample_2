@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.leave_encashment_rule import LeaveEncashmentRuleCreate, LeaveEncashmentRuleUpdate
+from app.leave_policy.schemas.leave_encashment_rule import LeaveEncashmentRuleCreate, LeaveEncashmentRuleUpdate
 
 class LeaveEncashmentRuleValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

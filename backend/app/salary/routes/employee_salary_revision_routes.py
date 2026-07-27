@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_salary_revision_controller import EmployeeSalaryRevisionController
-from ..schemas.employee_salary_revision import EmployeeSalaryRevisionCreate, EmployeeSalaryRevisionUpdate, EmployeeSalaryRevisionResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.salary.controllers.employee_salary_revision_controller import EmployeeSalaryRevisionController
+from app.salary.schemas.employee_salary_revision import EmployeeSalaryRevisionCreate, EmployeeSalaryRevisionUpdate, EmployeeSalaryRevisionResponse
 
 router = APIRouter(prefix="/employeeSalaryRevisions", tags=["EmployeeSalaryRevision"])
 

@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.shift_repository import ShiftRepository
-from ..validators.shift_validator import ShiftValidator
-from ..schemas.shift import ShiftCreate, ShiftUpdate
-from ..models.shift import ShiftModel
+from app.organization.repositories.shift_repository import ShiftRepository
+from app.organization.validators.shift_validator import ShiftValidator
+from app.organization.schemas.shift import ShiftCreate, ShiftUpdate
+from app.organization.models.shift import ShiftModel
 
 class ShiftService:
     def __init__(self, db: AsyncIOMotorDatabase):

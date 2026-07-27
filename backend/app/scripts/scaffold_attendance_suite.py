@@ -187,7 +187,7 @@ class {class_name}Response({class_name}Create):
     # Repo
     with open(base_path / "repositories" / f"{entity}_repository.py", "w") as f:
         f.write(f'''from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
+from app.scripts.base_repository import BaseRepository
 from ..models.{entity} import {class_name}Model
 
 class {class_name}Repository(BaseRepository[{class_name}Model]):
@@ -289,8 +289,8 @@ class {class_name}Controller:
     with open(base_path / "routes" / f"{entity}_routes.py", "w") as f:
         f.write(f'''from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
 from ..controllers.{entity}_controller import {class_name}Controller
 from ..schemas.{entity} import {class_name}Create, {class_name}Update, {class_name}Response
 
@@ -368,7 +368,7 @@ class SimulationResponse(BaseModel):
     with open(base_path / "services" / "simulator_service.py", "w") as f:
         f.write('''from typing import Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from ..schemas.simulator import SimulationRequest, SimulationResponse
+from app.schemas.simulator import SimulationRequest, SimulationResponse
 
 class SimulationEngine:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -456,10 +456,10 @@ class SimulationEngine:
     # Simulator Route
     with open(base_path / "routes" / "simulator_routes.py", "w") as f:
         f.write('''from fastapi import APIRouter, Depends
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..schemas.simulator import SimulationRequest, SimulationResponse
-from ..services.simulator_service import SimulationEngine
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.schemas.simulator import SimulationRequest, SimulationResponse
+from app.services.simulator_service import SimulationEngine
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter(prefix="/simulate", tags=["Simulator"])

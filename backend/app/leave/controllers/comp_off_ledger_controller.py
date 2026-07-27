@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.comp_off_ledger_service import CompOffLedgerService
-from ..schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate, CompOffLedgerResponse
-from ..models.comp_off_ledger import CompOffLedgerModel
+from app.leave.services.comp_off_ledger_service import CompOffLedgerService
+from app.leave.schemas.comp_off_ledger import CompOffLedgerCreate, CompOffLedgerUpdate, CompOffLedgerResponse
+from app.leave.models.comp_off_ledger import CompOffLedgerModel
 
 class CompOffLedgerController:
     def __init__(self, db: AsyncIOMotorDatabase):

@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.payroll_ledger import PayrollLedgerModel
+from app.payroll.repositories.base_repository import BaseRepository
+from app.payroll.models.payroll_ledger import PayrollLedgerModel
 
 class PayrollLedgerRepository(BaseRepository[PayrollLedgerModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

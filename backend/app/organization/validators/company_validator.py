@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.company import CompanyCreate, CompanyUpdate
+from app.organization.schemas.company import CompanyCreate, CompanyUpdate
 from bson import ObjectId
 
 class CompanyValidator:

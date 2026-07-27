@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_history_controller import LeaveHistoryController
-from ..schemas.leave_history import LeaveHistoryCreate, LeaveHistoryUpdate, LeaveHistoryResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave.controllers.leave_history_controller import LeaveHistoryController
+from app.leave.schemas.leave_history import LeaveHistoryCreate, LeaveHistoryUpdate, LeaveHistoryResponse
 
 router = APIRouter(prefix="/leaveHistory", tags=["LeaveHistory"])
 

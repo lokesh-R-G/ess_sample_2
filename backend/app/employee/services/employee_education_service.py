@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_education_repository import EmployeeEducationRepository
-from ..validators.employee_education_validator import EmployeeEducationValidator
-from ..schemas.employee_education import EmployeeEducationCreate, EmployeeEducationUpdate
-from ..models.employee_education import EmployeeEducationModel
+from app.employee.repositories.employee_education_repository import EmployeeEducationRepository
+from app.employee.validators.employee_education_validator import EmployeeEducationValidator
+from app.employee.schemas.employee_education import EmployeeEducationCreate, EmployeeEducationUpdate
+from app.employee.models.employee_education import EmployeeEducationModel
 
 class EmployeeEducationService:
     def __init__(self, db: AsyncIOMotorDatabase):

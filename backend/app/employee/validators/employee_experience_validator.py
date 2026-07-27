@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_experience import EmployeeExperienceCreate, EmployeeExperienceUpdate
+from app.employee.schemas.employee_experience import EmployeeExperienceCreate, EmployeeExperienceUpdate
 from bson import ObjectId
 
 class EmployeeExperienceValidator:

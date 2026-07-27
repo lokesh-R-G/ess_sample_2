@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.branch_service import BranchService
-from ..schemas.branch import BranchCreate, BranchUpdate, BranchResponse
-from ..models.branch import BranchModel
+from app.organization.services.branch_service import BranchService
+from app.organization.schemas.branch import BranchCreate, BranchUpdate, BranchResponse
+from app.organization.models.branch import BranchModel
 
 class BranchController:
     def __init__(self, db: AsyncIOMotorDatabase):

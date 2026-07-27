@@ -1,7 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime, timezone
-from ..models.payslip_model import PayslipModel
+from app.payslip.models.payslip_model import PayslipModel
 
 class PayslipRepository:
     def __init__(self, db: AsyncIOMotorDatabase):

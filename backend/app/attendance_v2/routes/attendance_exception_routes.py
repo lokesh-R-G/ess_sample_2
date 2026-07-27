@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.attendance_exception_controller import AttendanceExceptionController
-from ..schemas.attendance_exception import AttendanceExceptionCreate, AttendanceExceptionUpdate, AttendanceExceptionResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.attendance_v2.controllers.attendance_exception_controller import AttendanceExceptionController
+from app.attendance_v2.schemas.attendance_exception import AttendanceExceptionCreate, AttendanceExceptionUpdate, AttendanceExceptionResponse
 
 router = APIRouter(prefix="/attendanceException", tags=["AttendanceException"])
 

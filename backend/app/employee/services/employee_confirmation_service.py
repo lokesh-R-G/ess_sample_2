@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.employee_confirmation_repository import EmployeeConfirmationRepository
-from ..validators.employee_confirmation_validator import EmployeeConfirmationValidator
-from ..schemas.employee_confirmation import EmployeeConfirmationCreate, EmployeeConfirmationUpdate
-from ..models.employee_confirmation import EmployeeConfirmationModel
+from app.employee.repositories.employee_confirmation_repository import EmployeeConfirmationRepository
+from app.employee.validators.employee_confirmation_validator import EmployeeConfirmationValidator
+from app.employee.schemas.employee_confirmation import EmployeeConfirmationCreate, EmployeeConfirmationUpdate
+from app.employee.models.employee_confirmation import EmployeeConfirmationModel
 
 class EmployeeConfirmationService:
     def __init__(self, db: AsyncIOMotorDatabase):

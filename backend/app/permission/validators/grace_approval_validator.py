@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate
+from app.permission.schemas.grace_approval import GraceApprovalCreate, GraceApprovalUpdate
 
 class GraceApprovalValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

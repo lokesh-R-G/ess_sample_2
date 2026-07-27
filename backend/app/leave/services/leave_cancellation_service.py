@@ -1,10 +1,10 @@
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..repositories.leave_cancellation_repository import LeaveCancellationRepository
-from ..validators.leave_cancellation_validator import LeaveCancellationValidator
-from ..schemas.leave_cancellation import LeaveCancellationCreate, LeaveCancellationUpdate
-from ..models.leave_cancellation import LeaveCancellationModel
+from app.leave.repositories.leave_cancellation_repository import LeaveCancellationRepository
+from app.leave.validators.leave_cancellation_validator import LeaveCancellationValidator
+from app.leave.schemas.leave_cancellation import LeaveCancellationCreate, LeaveCancellationUpdate
+from app.leave.models.leave_cancellation import LeaveCancellationModel
 
 class LeaveCancellationService:
     def __init__(self, db: AsyncIOMotorDatabase):

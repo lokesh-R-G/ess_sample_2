@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.leave_adjustment_service import LeaveAdjustmentService
-from ..schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate, LeaveAdjustmentResponse
-from ..models.leave_adjustment import LeaveAdjustmentModel
+from app.leave.services.leave_adjustment_service import LeaveAdjustmentService
+from app.leave.schemas.leave_adjustment import LeaveAdjustmentCreate, LeaveAdjustmentUpdate, LeaveAdjustmentResponse
+from app.leave.models.leave_adjustment import LeaveAdjustmentModel
 
 class LeaveAdjustmentController:
     def __init__(self, db: AsyncIOMotorDatabase):

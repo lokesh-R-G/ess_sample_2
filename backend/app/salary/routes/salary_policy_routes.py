@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.salary_policy_controller import SalaryPolicyController
-from ..schemas.salary_policy import SalaryPolicyCreate, SalaryPolicyUpdate, SalaryPolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.salary.controllers.salary_policy_controller import SalaryPolicyController
+from app.salary.schemas.salary_policy import SalaryPolicyCreate, SalaryPolicyUpdate, SalaryPolicyResponse
 
 router = APIRouter(prefix="/salaryPolicys", tags=["SalaryPolicy"])
 

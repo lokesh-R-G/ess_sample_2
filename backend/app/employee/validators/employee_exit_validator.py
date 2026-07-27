@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate
+from app.employee.schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate
 from bson import ObjectId
 
 class EmployeeExitValidator:

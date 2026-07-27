@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.leave_quota_policy_controller import LeaveQuotaPolicyController
-from ..schemas.leave_quota_policy import LeaveQuotaPolicyCreate, LeaveQuotaPolicyUpdate, LeaveQuotaPolicyResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.leave_policy.controllers.leave_quota_policy_controller import LeaveQuotaPolicyController
+from app.leave_policy.schemas.leave_quota_policy import LeaveQuotaPolicyCreate, LeaveQuotaPolicyUpdate, LeaveQuotaPolicyResponse
 
 router = APIRouter(prefix="/leaveQuotaPolicy", tags=["LeaveQuotaPolicy"])
 

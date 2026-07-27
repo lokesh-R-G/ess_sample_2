@@ -1,9 +1,9 @@
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..services.employee_exit_service import EmployeeExitService
-from ..schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate, EmployeeExitResponse
-from ..models.employee_exit import EmployeeExitModel
+from app.employee.services.employee_exit_service import EmployeeExitService
+from app.employee.schemas.employee_exit import EmployeeExitCreate, EmployeeExitUpdate, EmployeeExitResponse
+from app.employee.models.employee_exit import EmployeeExitModel
 
 class EmployeeExitController:
     def __init__(self, db: AsyncIOMotorDatabase):

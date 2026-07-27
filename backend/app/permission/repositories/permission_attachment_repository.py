@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.permission_attachment import PermissionAttachmentModel
+from app.permission.repositories.base_repository import BaseRepository
+from app.permission.models.permission_attachment import PermissionAttachmentModel
 
 class PermissionAttachmentRepository(BaseRepository[PermissionAttachmentModel]):
     def __init__(self, db: AsyncIOMotorDatabase):

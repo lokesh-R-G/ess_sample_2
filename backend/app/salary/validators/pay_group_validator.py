@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.pay_group import PayGroupCreate, PayGroupUpdate
+from app.salary.schemas.pay_group import PayGroupCreate, PayGroupUpdate
 
 class PayGroupValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

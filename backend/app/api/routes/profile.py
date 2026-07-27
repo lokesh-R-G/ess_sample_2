@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from ...db.mongo import get_database
-from ...dependencies import get_current_user
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
 
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -37,7 +37,7 @@ async def update_profile(payload: dict, current_user=Depends(get_current_user)):
     updated_user = await db.users.find_one({"empId": current_user["empId"]}, {"_id": 0})
     return updated_user or {}
 
-from ...dependencies import require_roles
+from app.dependencies import require_roles
 
 @router.put("/{emp_id}")
 async def admin_update_profile(emp_id: str, payload: dict, _admin=Depends(require_roles("Admin"))):

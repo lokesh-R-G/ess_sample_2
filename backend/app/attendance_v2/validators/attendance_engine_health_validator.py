@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
-from ..schemas.attendance_engine_health import AttendanceEngineHealthCreate, AttendanceEngineHealthUpdate
+from app.attendance_v2.schemas.attendance_engine_health import AttendanceEngineHealthCreate, AttendanceEngineHealthUpdate
 
 class AttendanceEngineHealthValidator:
     def __init__(self, db: AsyncIOMotorDatabase):

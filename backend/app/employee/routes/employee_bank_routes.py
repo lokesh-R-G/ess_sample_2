@@ -1,9 +1,9 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
-from ....db.mongo import get_database
-from ....dependencies import get_current_user
-from ..controllers.employee_bank_controller import EmployeeBankController
-from ..schemas.employee_bank import EmployeeBankCreate, EmployeeBankUpdate, EmployeeBankResponse
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+from app.employee.controllers.employee_bank_controller import EmployeeBankController
+from app.employee.schemas.employee_bank import EmployeeBankCreate, EmployeeBankUpdate, EmployeeBankResponse
 
 router = APIRouter(prefix="/employeeBanks", tags=["EmployeeBank"])
 

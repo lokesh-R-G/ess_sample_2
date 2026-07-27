@@ -9,7 +9,7 @@ from typing import Any
 
 import jwt
 
-from .config import get_settings
+from app.core.config import get_settings
 
 
 PBKDF2_ITERATIONS = 120_000

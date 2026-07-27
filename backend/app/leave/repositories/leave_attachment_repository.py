@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from .base_repository import BaseRepository
-from ..models.leave_attachment import LeaveAttachmentModel
+from app.leave.repositories.base_repository import BaseRepository
+from app.leave.models.leave_attachment import LeaveAttachmentModel
 
 class LeaveAttachmentRepository(BaseRepository[LeaveAttachmentModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
