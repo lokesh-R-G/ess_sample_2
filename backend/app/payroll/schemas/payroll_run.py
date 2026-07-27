@@ -2,10 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 
 class PayrollRunCreate(BaseModel):
-    status: Optional[str] = "Active"
+    pass
 
 class PayrollRunUpdate(BaseModel):
-    status: Optional[str] = None
+    pass
 
 class PayrollRunResponse(PayrollRunCreate):
     id: str

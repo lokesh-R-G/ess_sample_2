@@ -4,4 +4,4 @@ from app.employee.models.employee_emergency_contact import EmployeeEmergencyCont
 
 class EmployeeEmergencyContactRepository(BaseRepository[EmployeeEmergencyContactModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
-        super().__init__(db, "employee_emergency_contacts", EmployeeEmergencyContactModel)
+        super().__init__(db, 'employee_emergency_contacts', EmployeeEmergencyContactModel)

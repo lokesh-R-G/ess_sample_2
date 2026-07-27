@@ -4,4 +4,4 @@ from app.employee.models.employee_experience import EmployeeExperienceModel
 
 class EmployeeExperienceRepository(BaseRepository[EmployeeExperienceModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
-        super().__init__(db, "employee_experiences", EmployeeExperienceModel)
+        super().__init__(db, 'employee_experience', EmployeeExperienceModel)

@@ -4,4 +4,4 @@ from app.payroll.models.payroll_run import PayrollRunModel
 
 class PayrollRunRepository(BaseRepository[PayrollRunModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
-        super().__init__(db, "payroll_runs", PayrollRunModel)
+        super().__init__(db, 'payroll_runs', PayrollRunModel)

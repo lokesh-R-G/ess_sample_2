@@ -2,10 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 
 class EmployeeContactCreate(BaseModel):
-    employeeId: str
+    pass
 
 class EmployeeContactUpdate(BaseModel):
-    status: Optional[str] = None
+    pass
 
 class EmployeeContactResponse(EmployeeContactCreate):
     id: str

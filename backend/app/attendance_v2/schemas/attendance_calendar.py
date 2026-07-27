@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional
 
 class AttendanceCalendarCreate(BaseModel):
-    status: Optional[str] = None
+    pass
 
 class AttendanceCalendarUpdate(BaseModel):
-    status: Optional[str] = None
+    pass
 
 class AttendanceCalendarResponse(AttendanceCalendarCreate):
     id: str

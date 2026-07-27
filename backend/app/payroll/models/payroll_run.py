@@ -1,12 +1,5 @@
 from typing import Optional
-from datetime import datetime
-from pydantic import BaseModel, Field
+from app.core.models.base_model import BaseDBModel
 
-class PayrollRunModel(BaseModel):
-    id: Optional[str] = Field(default=None, alias="_id")
-    status: str = "Active"
-    createdAt: Optional[datetime] = None
-    updatedAt: Optional[datetime] = None
-    createdBy: Optional[str] = None
-    updatedBy: Optional[str] = None
-    deletedAt: Optional[datetime] = None
+class PayrollRunModel(BaseDBModel):
+    pass  # Add specific fields

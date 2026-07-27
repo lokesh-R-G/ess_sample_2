@@ -4,4 +4,4 @@ from app.attendance_v2.models.attendance_calendar import AttendanceCalendarModel
 
 class AttendanceCalendarRepository(BaseRepository[AttendanceCalendarModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
-        super().__init__(db, "attendance_calendars", AttendanceCalendarModel)
+        super().__init__(db, 'attendance_calendars', AttendanceCalendarModel)

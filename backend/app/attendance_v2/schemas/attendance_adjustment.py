@@ -2,10 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 
 class AttendanceAdjustmentCreate(BaseModel):
-    name: Optional[str] = None
+    pass
 
 class AttendanceAdjustmentUpdate(BaseModel):
-    status: Optional[str] = None
+    pass
 
 class AttendanceAdjustmentResponse(AttendanceAdjustmentCreate):
     id: str

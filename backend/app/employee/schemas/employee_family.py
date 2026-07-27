@@ -2,10 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 
 class EmployeeFamilyCreate(BaseModel):
-    employeeId: str
+    pass
 
 class EmployeeFamilyUpdate(BaseModel):
-    status: Optional[str] = None
+    pass
 
 class EmployeeFamilyResponse(EmployeeFamilyCreate):
     id: str

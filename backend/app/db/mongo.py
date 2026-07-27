@@ -38,3 +38,38 @@ async def init_indexes() -> None:
     await db.employee_shift_assignments.create_index([("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], unique=True, sparse=True)
     await db.employee_role_assignments.create_index([("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], unique=True, sparse=True)
     await db.employee_reportings.create_index([("employeeId", 1), ("managerId", 1), ("effectiveFrom", 1)], unique=True, sparse=True)
+
+    # Batch Generated Indexes
+    generic_collections = [
+        'locations', 'cost_centers', 'business_units',
+        'employee_documents', 'employee_contacts', 'employee_addresses', 'employee_emergency_contacts', 'employee_family', 'employee_education', 'employee_experience', 'employee_certifications',
+        'attendance_logs', 'attendance_adjustments', 'attendance_policies', 'attendance_settings', 'attendance_calendars',
+        'shift_definitions', 'shift_groups', 'shift_calendars', 'shift_rotations',
+        'leave_types', 'leave_policies', 'leave_balances', 'leave_approvals', 'holiday_calendars',
+        'salary_components', 'salary_component_groups', 'salary_structures', 'employee_salary_structures', 'salary_revisions', 'salary_history', 'payroll_runs', 'payroll_employees', 'payroll_adjustments', 'payroll_cycles', 'payroll_settings', 'payroll_policies',
+        'ctc_templates', 'employee_ctc',
+        'allowance_policies', 'employee_allowances', 'allowance_history',
+        'deduction_policies', 'employee_deductions', 'deduction_history',
+        'pf_settings', 'employee_pf_profiles', 'pf_contributions', 'pf_history', 'esi_settings', 'employee_esi_profiles', 'esi_contributions', 'esi_history', 'pt_settings', 'professional_tax_slabs', 'tds_settings', 'income_tax_slabs',
+        'loan_types', 'employee_loans', 'loan_repayments',
+        'reimbursement_policies', 'reimbursement_claims', 'employee_reimbursements',
+        'expense_categories', 'expense_claims',
+        'asset_categories', 'assets', 'asset_assignments', 'asset_history',
+        'job_openings', 'candidates', 'candidate_documents', 'interviews', 'offer_letters',
+        'onboarding_tasks', 'onboarding_templates',
+        'workflow_history',
+        'document_templates', 'generated_documents',
+        'payslips', 'payslip_templates', 'payslip_delivery_logs',
+        'email_templates', 'password_reset_tokens', 'login_audit_logs', 'audit_logs',
+        'notifications', 'notification_templates', 'notification_delivery_logs',
+        'financial_years', 'number_series'
+    ]
+    for col in generic_collections:
+        await db[col].create_index([('companyId', 1)])
+        await db[col].create_index([('employeeId', 1)])
+        await db[col].create_index([('createdAt', -1)])
+        
+    await db.payroll_runs.create_index([('financialYear', 1), ('month', 1)])
+    await db.payslips.create_index([('payrollRunId', 1), ('employeeId', 1)])
+    await db.login_audit_logs.create_index([('email', 1)])
+    await db.audit_logs.create_index([('createdAt', -1)])

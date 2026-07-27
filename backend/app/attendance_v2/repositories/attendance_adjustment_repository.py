@@ -4,4 +4,4 @@ from app.attendance_v2.models.attendance_adjustment import AttendanceAdjustmentM
 
 class AttendanceAdjustmentRepository(BaseRepository[AttendanceAdjustmentModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
-        super().__init__(db, "attendance_adjustments", AttendanceAdjustmentModel)
+        super().__init__(db, 'attendance_adjustments', AttendanceAdjustmentModel)
