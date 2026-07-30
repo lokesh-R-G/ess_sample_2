@@ -72,15 +72,6 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
         setLoading(true);
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=${entity}&search=${searchTerm}&limit=50`);
-          console.log("Search text:", searchTerm);
-          console.log("API response:", res);
-          const mappedOptions = (res.data || []).map((machine: any) => ({
-             value: machine[valueField],
-             label: machine[labelField] || machine[valueField],
-             machine
-          }));
-          console.log("Mapped options:", mappedOptions);
-          console.log("Rendered option count:", mappedOptions.length);
           setResults(res.data || []);
         } catch (e) {
           console.error('Error searching', e);

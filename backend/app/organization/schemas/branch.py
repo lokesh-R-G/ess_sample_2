@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
 from typing import Optional
 
 class BranchCreate(BaseModel):
+    companyId: str
     name: str
     code: Optional[str] = None
     location: Optional[str] = None
@@ -16,6 +18,7 @@ class BranchCreate(BaseModel):
     timezone: str = "Asia/Kolkata"
 
 class BranchUpdate(BaseModel):
+    companyId: Optional[str] = None
     name: Optional[str] = None
     code: Optional[str] = None
     location: Optional[str] = None
@@ -30,7 +33,9 @@ class BranchUpdate(BaseModel):
     timezone: Optional[str] = None
 
 class BranchResponse(BranchCreate):
-    id: str = Field(alias="_id")
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(validation_alias="id", serialization_alias="_id")
     companyId: str
-    createdAt: Optional[str] = None
-    updatedAt: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None

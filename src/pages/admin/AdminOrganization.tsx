@@ -42,7 +42,7 @@ export const AdminOrganization: React.FC = () => {
               { key: 'state', label: 'State', type: 'text' },
               { key: 'country', label: 'Country', type: 'text' },
               { key: 'pincode', label: 'Pincode', type: 'text' },
-              { key: 'esslMachineId', label: 'eSSL Machine (optional)', type: 'lookup', entity: 'ESSLMachine', labelField: 'serialNumber' },
+              { key: 'esslMachineId', label: 'eSSL Machine (optional)', type: 'essl-machine' },
               { key: 'attendanceEnabled', label: 'Attendance Enabled', type: 'checkbox' }
             ]}
           />

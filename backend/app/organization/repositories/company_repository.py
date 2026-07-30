@@ -4,4 +4,4 @@ from app.organization.models.company import CompanyModel
 
 class CompanyRepository(BaseRepository[CompanyModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
-        super().__init__(db, "companys", CompanyModel)
+        super().__init__(db, "companies", CompanyModel)

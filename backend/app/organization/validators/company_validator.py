@@ -6,7 +6,7 @@ from bson import ObjectId
 class CompanyValidator:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-        self.collection = db["companys"]
+        self.collection = db["companies"]
         
     async def validate_create(self, data: CompanyCreate):
         query = {"name": data.name, "deletedAt": None}

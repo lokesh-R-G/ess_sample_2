@@ -6,7 +6,7 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/search", tags=["Search"])
 
 ENTITY_REGISTRY = {
-    "Company": {"collection": "companys", "fields": ["name", "registrationNumber"]},
+    "Company": {"collection": "companies", "fields": ["name", "registrationNumber"]},
     "Branch": {"collection": "branchs", "fields": ["name", "code"]},
     "Department": {"collection": "departments", "fields": ["name", "code"]},
     "Designation": {"collection": "designations", "fields": ["name", "code"]},
@@ -24,7 +24,7 @@ async def global_search(
     search: str = Query(..., description="The text to search for"),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    status: Optional[str] = Query("Active", description="Filter by status (default: Active)"),
+    status: Optional[str] = Query(None, description="Optional status filter"),
     db = Depends(get_database),
     user: dict = Depends(get_current_user)
 ):
@@ -38,6 +38,8 @@ async def global_search(
     query: Dict = {"deletedAt": None}
     if status:
         query["status"] = status
+    else:
+        query["$or"] = [{"status": "Active"}, {"status": {"$exists": False}}, {"status": None}]
         
     # Apply text search if query is provided
     if search:

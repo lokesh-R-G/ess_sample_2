@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
-import { GlassCard, AnimatedButton, Input, Select, Modal, LookupSelect } from '../../components/ui';
+import { GlassCard, AnimatedButton, Input, Select, Modal, LookupSelect, ESSLMachineLookup } from '../../components/ui';
 
 export interface ColumnDef {
   key: string;
@@ -11,7 +11,7 @@ export interface ColumnDef {
 export interface FormFieldDef {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'checkbox' | 'date' | 'lookup';
+  type: 'text' | 'number' | 'select' | 'checkbox' | 'date' | 'lookup' | 'essl-machine';
   options?: { value: string; label: string }[];
   entity?: string;
   labelField?: string;
@@ -149,6 +149,13 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
                   entity={f.entity}
                   labelField={f.labelField}
                   valueField={f.valueField}
+                  label={f.label}
+                  value={formData[f.key] || ''}
+                  onChange={(val) => setFormData({ ...formData, [f.key]: val })}
+                  required={f.required}
+                />
+              ) : f.type === 'essl-machine' ? (
+                <ESSLMachineLookup
                   label={f.label}
                   value={formData[f.key] || ''}
                   onChange={(val) => setFormData({ ...formData, [f.key]: val })}

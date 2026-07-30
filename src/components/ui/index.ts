@@ -10,3 +10,4 @@ export { DataTable } from './DataTable';
 export { NotificationCard } from './NotificationCard';
 export { LoadingSkeleton } from './LoadingSkeleton';
 export { BackgroundParticles } from './BackgroundParticles';
+export { ESSLMachineLookup } from './ESSLMachineLookup';
