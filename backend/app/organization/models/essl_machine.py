@@ -6,7 +6,6 @@ class ESSLMachineModel(BaseModel):
     model_config = ConfigDict(extra="allow")
     
     id: Optional[str] = Field(default=None, alias="_id")
-    name: str
     serialNumber: str
     vendor: Optional[str] = None
     model: Optional[str] = None

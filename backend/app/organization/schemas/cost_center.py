@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class CostCenterCreate(BaseModel):
@@ -8,4 +8,4 @@ class CostCenterUpdate(BaseModel):
     pass
 
 class CostCenterResponse(CostCenterCreate):
-    id: str
+    id: str = Field(alias="_id")

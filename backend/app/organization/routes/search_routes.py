@@ -13,7 +13,7 @@ ENTITY_REGISTRY = {
     "Holiday": {"collection": "holidays", "fields": ["name", "date"]},
     "Role": {"collection": "roles", "fields": ["name", "code"]},
     "Shift": {"collection": "shifts", "fields": ["name", "code", "startTime", "endTime"]},
-    "ESSLMachine": {"collection": "essl_machines", "fields": ["name", "serialNumber", "ipAddress"]},
+    "ESSLMachine": {"collection": "essl_machines", "fields": ["serialNumber", "ipAddress"]},
     "SalaryComponent": {"collection": "salary_components", "fields": ["name", "code"]},
     "SalaryStructure": {"collection": "salary_structures", "fields": ["name", "code"]},
 }
@@ -50,10 +50,10 @@ async def global_search(
     cursor = collection.find(query).skip(skip).limit(limit)
     documents = await cursor.to_list(length=limit)
     
-    # Format documents to have standard id field
+    # Format documents to ensure _id is string
     results = []
     for doc in documents:
-        doc["id"] = str(doc.pop("_id"))
+        doc["_id"] = str(doc["_id"])
         results.append(doc)
         
     # Get total count

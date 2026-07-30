@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Literal
 
 class SalaryComponentCreate(BaseModel):
@@ -28,4 +28,4 @@ class SalaryComponentUpdate(BaseModel):
     isActive: Optional[bool] = None
 
 class SalaryComponentResponse(SalaryComponentCreate):
-    id: str
+    id: str = Field(alias="_id")

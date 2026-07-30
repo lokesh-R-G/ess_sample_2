@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class DesignationCreate(BaseModel):
@@ -8,4 +8,4 @@ class DesignationUpdate(BaseModel):
     name: Optional[str] = None
 
 class DesignationResponse(DesignationCreate):
-    id: str
+    id: str = Field(alias="_id")

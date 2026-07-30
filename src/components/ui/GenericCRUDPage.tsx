@@ -14,6 +14,8 @@ export interface FormFieldDef {
   type: 'text' | 'number' | 'select' | 'checkbox' | 'date' | 'lookup';
   options?: { value: string; label: string }[];
   entity?: string;
+  labelField?: string;
+  valueField?: string;
   required?: boolean;
 }
 
@@ -82,7 +84,7 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
 
   const openEditModal = (row: any) => {
     setFormData(row);
-    setEditingId(row.id || row._id);
+    setEditingId(row._id);
     setIsModalOpen(true);
   };
 
@@ -106,7 +108,7 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
             </thead>
             <tbody>
               {data.map(row => (
-                <tr key={row.id || row._id} className="border-b border-neutral-100 hover:bg-neutral-50/50">
+                <tr key={row._id} className="border-b border-neutral-100 hover:bg-neutral-50/50">
                   {columns.map(c => (
                     <td key={c.key} className="p-3">
                       {c.render ? c.render(row[c.key], row) : row[c.key]}
@@ -114,7 +116,7 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
                   ))}
                   <td className="p-3 space-x-2">
                     <button onClick={() => openEditModal(row)} className="text-primary-600 hover:underline">Edit</button>
-                    <button onClick={() => handleDelete(row.id || row._id)} className="text-red-600 hover:underline">Delete</button>
+                    <button onClick={() => handleDelete(row._id)} className="text-red-600 hover:underline">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -145,6 +147,8 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
               {f.type === 'lookup' && f.entity ? (
                 <LookupSelect
                   entity={f.entity}
+                  labelField={f.labelField}
+                  valueField={f.valueField}
                   label={f.label}
                   value={formData[f.key] || ''}
                   onChange={(val) => setFormData({ ...formData, [f.key]: val })}

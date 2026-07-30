@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class SalaryStructureCreate(BaseModel):
@@ -12,4 +12,4 @@ class SalaryStructureUpdate(BaseModel):
     description: Optional[str] = None
 
 class SalaryStructureResponse(SalaryStructureCreate):
-    id: str
+    id: str = Field(alias="_id")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class LocationCreate(BaseModel):
@@ -8,4 +8,4 @@ class LocationUpdate(BaseModel):
     pass
 
 class LocationResponse(LocationCreate):
-    id: str
+    id: str = Field(alias="_id")

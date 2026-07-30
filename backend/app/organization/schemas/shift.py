@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class ShiftCreate(BaseModel):
@@ -8,4 +8,4 @@ class ShiftUpdate(BaseModel):
     name: Optional[str] = None
 
 class ShiftResponse(ShiftCreate):
-    id: str
+    id: str = Field(alias="_id")

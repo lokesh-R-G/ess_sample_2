@@ -11,6 +11,8 @@ interface LookupSelectProps {
   placeholder?: string;
   error?: string;
   required?: boolean;
+  labelField?: string;
+  valueField?: string;
 }
 
 export const LookupSelect: React.FC<LookupSelectProps> = ({
@@ -20,7 +22,9 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
   label,
   placeholder = 'Search...',
   error,
-  required
+  required,
+  labelField = 'name',
+  valueField = '_id'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,10 +41,10 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=${entity}&limit=100`);
           const items = res.data || [];
-          const found = items.find((i: any) => i.id === value);
+          const found = items.find((i: any) => i[valueField] === value);
           if (found) {
             setSelectedItem(found);
-            setSearchTerm(found.name || found.serialNumber || found.id);
+            setSearchTerm(found[labelField] || found[valueField]);
           }
         } catch (e) {
           console.error('Error fetching initial lookup data', e);
@@ -68,6 +72,15 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
         setLoading(true);
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=${entity}&search=${searchTerm}&limit=50`);
+          console.log("Search text:", searchTerm);
+          console.log("API response:", res);
+          const mappedOptions = (res.data || []).map((machine: any) => ({
+             value: machine[valueField],
+             label: machine[labelField] || machine[valueField],
+             machine
+          }));
+          console.log("Mapped options:", mappedOptions);
+          console.log("Rendered option count:", mappedOptions.length);
           setResults(res.data || []);
         } catch (e) {
           console.error('Error searching', e);
@@ -82,8 +95,8 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
 
   const handleSelect = (item: any) => {
     setSelectedItem(item);
-    setSearchTerm(item.name || item.serialNumber || item.id);
-    onChange(item.id);
+    setSearchTerm(item[labelField] || item[valueField]);
+    onChange(item[valueField]);
     setIsOpen(false);
   };
 
@@ -116,7 +129,7 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
             ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
           `}
           placeholder={placeholder}
-          value={isOpen ? searchTerm : (selectedItem?.name || selectedItem?.serialNumber || '')}
+          value={isOpen ? searchTerm : (selectedItem?.[labelField] || '')}
           onChange={(e) => {
             setSearchTerm(e.target.value);
             if (!isOpen) setIsOpen(true);
@@ -144,16 +157,16 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
                 <ul className="py-1">
                   {results.map((item) => (
                     <li
-                      key={item.id}
+                      key={item[valueField]}
                       onClick={() => handleSelect(item)}
                       className={`
                         px-4 py-2 cursor-pointer flex justify-between items-center text-sm
                         hover:bg-primary-50
-                        ${value === item.id ? 'bg-primary-50 text-primary-900 font-medium' : 'text-neutral-700'}
+                        ${value === item[valueField] ? 'bg-primary-50 text-primary-900 font-medium' : 'text-neutral-700'}
                       `}
                     >
-                      <span>{item.name || item.serialNumber || item.id}</span>
-                      {value === item.id && <Check className="w-4 h-4 text-primary-600" />}
+                      <span>{item[labelField] || item[valueField]}</span>
+                      {value === item[valueField] && <Check className="w-4 h-4 text-primary-600" />}
                     </li>
                   ))}
                 </ul>

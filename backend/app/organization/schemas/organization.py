@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class OrganizationCreate(BaseModel):
@@ -8,4 +8,4 @@ class OrganizationUpdate(BaseModel):
     name: Optional[str] = None
 
 class OrganizationResponse(OrganizationCreate):
-    id: str
+    id: str = Field(alias="_id")

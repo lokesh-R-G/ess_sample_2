@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class DepartmentCreate(BaseModel):
@@ -8,4 +8,4 @@ class DepartmentUpdate(BaseModel):
     name: Optional[str] = None
 
 class DepartmentResponse(DepartmentCreate):
-    id: str
+    id: str = Field(alias="_id")

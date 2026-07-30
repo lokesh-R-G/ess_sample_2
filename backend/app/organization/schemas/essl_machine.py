@@ -1,9 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime
 
 class ESSLMachineCreate(BaseModel):
-    name: str
     serialNumber: str
     vendor: Optional[str] = None
     model: Optional[str] = None
@@ -16,7 +15,6 @@ class ESSLMachineCreate(BaseModel):
     status: Literal["Active", "Offline", "Maintenance"] = "Active"
     
 class ESSLMachineUpdate(BaseModel):
-    name: Optional[str] = None
     serialNumber: Optional[str] = None
     vendor: Optional[str] = None
     model: Optional[str] = None
@@ -29,7 +27,7 @@ class ESSLMachineUpdate(BaseModel):
     status: Optional[Literal["Active", "Offline", "Maintenance"]] = None
 
 class ESSLMachineResponse(ESSLMachineCreate):
-    id: str
+    id: str = Field(alias="_id")
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     createdBy: Optional[str] = None

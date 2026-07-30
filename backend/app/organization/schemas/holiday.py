@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class HolidayCreate(BaseModel):
@@ -8,4 +8,4 @@ class HolidayUpdate(BaseModel):
     name: Optional[str] = None
 
 class HolidayResponse(HolidayCreate):
-    id: str
+    id: str = Field(alias="_id")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class BranchCreate(BaseModel):
@@ -30,7 +30,7 @@ class BranchUpdate(BaseModel):
     timezone: Optional[str] = None
 
 class BranchResponse(BranchCreate):
-    id: str
+    id: str = Field(alias="_id")
     companyId: str
     createdAt: Optional[str] = None
     updatedAt: Optional[str] = None

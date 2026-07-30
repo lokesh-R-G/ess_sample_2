@@ -17,7 +17,7 @@ class ESSLMachineService:
         return await self.repo.create(data.model_dump(exclude_unset=True), user_id)
         
     async def get_all(self, query: dict = None, skip: int = 0, limit: int = 100, search: str = None) -> dict:
-        return await self.repo.get_all(query=query, skip=skip, limit=limit, search=search, search_fields=["name", "serialNumber"])
+        return await self.repo.get_all(query=query, skip=skip, limit=limit, search=search, search_fields=["serialNumber"])
         
     async def get_by_id(self, id: str) -> Optional[ESSLMachineModel]:
         return await self.repo.get_by_id(id)
