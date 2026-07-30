@@ -24,11 +24,6 @@ class Company(OrgBase):
     taxId: Optional[str] = None
     status: Literal["Active", "Inactive"] = "Active"
 
-class ESSLMachine(OrgBase):
-    serialNumber: str
-    ipAddress: Optional[str] = None
-    status: Literal["Active", "Offline", "Maintenance"] = "Active"
-    lastSyncAt: Optional[datetime] = None
 
 class Branch(OrgBase):
     companyId: str

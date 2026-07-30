@@ -9,15 +9,12 @@ from app.organization.routes.shift_routes import router as shift_router
 from app.organization.routes.holiday_routes import router as holiday_router
 from app.organization.routes.search_routes import router as search_router
 from app.organization.routes.generic_routes import create_generic_router
-from app.domain_models import ESSLMachine, SalaryComponent, SalaryStructure
-from app.organization.schemas.essl_machine import ESSLMachineCreate, ESSLMachineUpdate, ESSLMachineResponse
+from app.organization.routes.essl_machine_routes import router as essl_machine_router
+from app.domain_models import SalaryComponent, SalaryStructure
 from app.organization.schemas.salary_component import SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse
 from app.organization.schemas.salary_structure import SalaryStructureCreate, SalaryStructureUpdate, SalaryStructureResponse
 
-essl_machine_router = create_generic_router(
-    prefix="/essl-machines", tag="ESSL Machine", collection_name="essl_machines",
-    model_class=ESSLMachine, create_schema=ESSLMachineCreate, update_schema=ESSLMachineUpdate, response_schema=ESSLMachineResponse, search_fields=["serialNumber", "ipAddress"]
-)
+
 salary_component_router = create_generic_router(
     prefix="/salary-components", tag="Salary Component", collection_name="salary_components",
     model_class=SalaryComponent, create_schema=SalaryComponentCreate, update_schema=SalaryComponentUpdate, response_schema=SalaryComponentResponse
