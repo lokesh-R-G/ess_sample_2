@@ -1,7 +1,8 @@
 export { GlassCard } from './GlassCard';
 export { KPICard } from './KPICard';
 export { AnimatedButton } from './AnimatedButton';
-export { StatusBadge } from './StatusBadge';
+export { default as StatusBadge } from './StatusBadge';
+export { default as LookupSelect } from './LookupSelect';
 export { Input } from './Input';
 export { Select } from './Select';
 export { Modal } from './Modal';

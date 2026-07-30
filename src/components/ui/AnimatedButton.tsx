@@ -13,6 +13,7 @@ interface AnimatedButtonProps {
   fullWidth?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
+  form?: string;
   className?: string;
 }
 
@@ -27,6 +28,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   fullWidth = false,
   onClick,
   type = 'button',
+  form,
   className = '',
 }) => {
   const baseStyles =
@@ -52,6 +54,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   return (
     <motion.button
       type={type}
+      form={form}
       onClick={onClick}
       disabled={disabled || loading}
       className={`

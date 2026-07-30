@@ -35,14 +35,14 @@ export const AdminOrganization: React.FC = () => {
               { key: 'esslMachineId', label: 'eSSL Machine ID' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Branch Name', type: 'text', required: true },
               { key: 'address', label: 'Address', type: 'text' },
               { key: 'city', label: 'City', type: 'text' },
               { key: 'state', label: 'State', type: 'text' },
               { key: 'country', label: 'Country', type: 'text' },
               { key: 'pincode', label: 'Pincode', type: 'text' },
-              { key: 'esslMachineId', label: 'eSSL Machine ID (optional)', type: 'text' },
+              { key: 'esslMachineId', label: 'eSSL Machine (optional)', type: 'lookup', entity: 'ESSLMachine' },
               { key: 'attendanceEnabled', label: 'Attendance Enabled', type: 'checkbox' }
             ]}
           />
@@ -57,7 +57,7 @@ export const AdminOrganization: React.FC = () => {
               { key: 'companyId', label: 'Company ID' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Department Name', type: 'text', required: true }
             ]}
           />
@@ -72,8 +72,8 @@ export const AdminOrganization: React.FC = () => {
               { key: 'departmentId', label: 'Department ID' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
-              { key: 'departmentId', label: 'Department ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
+              { key: 'departmentId', label: 'Department', type: 'lookup', entity: 'Department', required: true },
               { key: 'name', label: 'Designation Name', type: 'text', required: true }
             ]}
           />
@@ -89,7 +89,7 @@ export const AdminOrganization: React.FC = () => {
               { key: 'endTime', label: 'End Time' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Shift Name', type: 'text', required: true },
               { key: 'startTime', label: 'Start Time (HH:MM)', type: 'text', required: true },
               { key: 'endTime', label: 'End Time (HH:MM)', type: 'text', required: true }
@@ -106,7 +106,7 @@ export const AdminOrganization: React.FC = () => {
               { key: 'date', label: 'Date' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Holiday Name', type: 'text', required: true },
               { key: 'date', label: 'Date', type: 'date', required: true }
             ]}
@@ -144,7 +144,7 @@ export const AdminOrganization: React.FC = () => {
               { key: 'calculationMethod', label: 'Method' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Component Name', type: 'text', required: true },
               { key: 'componentType', label: 'Type', type: 'select', options: [
                 { value: 'Earning', label: 'Earning' },
@@ -171,7 +171,7 @@ export const AdminOrganization: React.FC = () => {
               { key: 'description', label: 'Description' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Structure Name', type: 'text', required: true },
               { key: 'description', label: 'Description', type: 'text' }
             ]}
