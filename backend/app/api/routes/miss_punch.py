@@ -20,7 +20,7 @@ async def create_request(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.get("/me", response_model=List[Dict[str, Any]])
+@router.get("/me/", response_model=List[Dict[str, Any]])
 async def get_my_requests(user: UserResponse = Depends(get_current_user)):
     db = get_database()
     return await miss_punch_service.get_employee_requests(db, user.empId)

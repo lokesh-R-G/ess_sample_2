@@ -1,94 +1,221 @@
-import React, { useState, useEffect } from 'react';
-import { GlassCard, AnimatedButton, Input, Select } from '../../components/ui';
-import { organizationApi } from '../../services/organization.api';
-import { api } from '../../lib/api';
-
+import React, { useState } from 'react';
+import { GenericCRUDPage } from '../../components/ui/GenericCRUDPage';
 export const AdminOrganization: React.FC = () => {
-  const [orgData, setOrgData] = useState({ companies: [] as any[], branches: [] as any[], departments: [] as any[], designations: [] as any[] });
-  
-  const [companyName, setCompanyName] = useState('');
-  const [branchName, setBranchName] = useState('');
-  const [branchCompanyId, setBranchCompanyId] = useState('');
-  const [deptName, setDeptName] = useState('');
-  const [deptCompanyId, setDeptCompanyId] = useState('');
-  const [desigName, setDesigName] = useState('');
-  const [desigCompanyId, setDesigCompanyId] = useState('');
+  const [activeTab, setActiveTab] = useState('Organization');
 
-  const loadData = async () => {
-    try {
-      const [companies, branches, departments, designations] = await Promise.all([
-        organizationApi.getCompanies(),
-        organizationApi.getBranches(),
-        organizationApi.getDepartments(),
-        organizationApi.getDesignations()
-      ]);
-      setOrgData({ 
-        companies: companies || [], 
-        branches: branches || [], 
-        departments: departments || [], 
-        designations: designations || [] 
-      });
-    } catch (e) {
-      console.error(e);
+  const tabs = [
+    'Organization', 'Company', 'Branch', 'Department', 'Designation',
+    'Shift', 'Holiday', 'eSSL Machine', 'Salary Component', 'Salary Structure'
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Company':
+        return (
+          <GenericCRUDPage
+            title="Companies"
+            endpoint="/v2/organization/companys/"
+            columns={[
+              { key: 'name', label: 'Company Name' },
+              { key: 'status', label: 'Status' }
+            ]}
+            formFields={[
+              { key: 'name', label: 'Company Name', type: 'text', required: true }
+            ]}
+          />
+        );
+      case 'Branch':
+        return (
+          <GenericCRUDPage
+            title="Branches"
+            endpoint="/v2/organization/branchs/"
+            columns={[
+              { key: 'name', label: 'Branch Name' },
+              { key: 'companyId', label: 'Company ID' },
+              { key: 'esslMachineId', label: 'eSSL Machine ID' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'name', label: 'Branch Name', type: 'text', required: true },
+              { key: 'address', label: 'Address', type: 'text' },
+              { key: 'city', label: 'City', type: 'text' },
+              { key: 'state', label: 'State', type: 'text' },
+              { key: 'country', label: 'Country', type: 'text' },
+              { key: 'pincode', label: 'Pincode', type: 'text' },
+              { key: 'esslMachineId', label: 'eSSL Machine ID (optional)', type: 'text' },
+              { key: 'attendanceEnabled', label: 'Attendance Enabled', type: 'checkbox' }
+            ]}
+          />
+        );
+      case 'Department':
+        return (
+          <GenericCRUDPage
+            title="Departments"
+            endpoint="/v2/organization/departments/"
+            columns={[
+              { key: 'name', label: 'Department Name' },
+              { key: 'companyId', label: 'Company ID' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'name', label: 'Department Name', type: 'text', required: true }
+            ]}
+          />
+        );
+      case 'Designation':
+        return (
+          <GenericCRUDPage
+            title="Designations"
+            endpoint="/v2/organization/designations/"
+            columns={[
+              { key: 'name', label: 'Designation Name' },
+              { key: 'departmentId', label: 'Department ID' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'departmentId', label: 'Department ID', type: 'text', required: true },
+              { key: 'name', label: 'Designation Name', type: 'text', required: true }
+            ]}
+          />
+        );
+      case 'Shift':
+        return (
+          <GenericCRUDPage
+            title="Shifts"
+            endpoint="/v2/organization/shifts/"
+            columns={[
+              { key: 'name', label: 'Shift Name' },
+              { key: 'startTime', label: 'Start Time' },
+              { key: 'endTime', label: 'End Time' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'name', label: 'Shift Name', type: 'text', required: true },
+              { key: 'startTime', label: 'Start Time (HH:MM)', type: 'text', required: true },
+              { key: 'endTime', label: 'End Time (HH:MM)', type: 'text', required: true }
+            ]}
+          />
+        );
+      case 'Holiday':
+        return (
+          <GenericCRUDPage
+            title="Holidays"
+            endpoint="/v2/organization/holidays/"
+            columns={[
+              { key: 'name', label: 'Holiday Name' },
+              { key: 'date', label: 'Date' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'name', label: 'Holiday Name', type: 'text', required: true },
+              { key: 'date', label: 'Date', type: 'date', required: true }
+            ]}
+          />
+        );
+      case 'eSSL Machine':
+        return (
+          <GenericCRUDPage
+            title="eSSL Machines"
+            endpoint="/v2/organization/essl-machines/"
+            columns={[
+              { key: 'serialNumber', label: 'Serial Number' },
+              { key: 'ipAddress', label: 'IP Address' },
+              { key: 'status', label: 'Status' }
+            ]}
+            formFields={[
+              { key: 'serialNumber', label: 'Serial Number', type: 'text', required: true },
+              { key: 'ipAddress', label: 'IP Address', type: 'text' },
+              { key: 'status', label: 'Status', type: 'select', options: [
+                { value: 'Active', label: 'Active' },
+                { value: 'Offline', label: 'Offline' },
+                { value: 'Maintenance', label: 'Maintenance' }
+              ], required: true }
+            ]}
+          />
+        );
+      case 'Salary Component':
+        return (
+          <GenericCRUDPage
+            title="Salary Components"
+            endpoint="/v2/organization/salary-components/"
+            columns={[
+              { key: 'name', label: 'Component Name' },
+              { key: 'componentType', label: 'Type' },
+              { key: 'calculationMethod', label: 'Method' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'name', label: 'Component Name', type: 'text', required: true },
+              { key: 'componentType', label: 'Type', type: 'select', options: [
+                { value: 'Earning', label: 'Earning' },
+                { value: 'Deduction', label: 'Deduction' }
+              ], required: true },
+              { key: 'calculationMethod', label: 'Method', type: 'select', options: [
+                { value: 'Flat', label: 'Flat' },
+                { value: 'Percentage', label: 'Percentage' },
+                { value: 'Formula', label: 'Formula' }
+              ], required: true },
+              { key: 'isTaxable', label: 'Taxable', type: 'checkbox' },
+              { key: 'pfApplicability', label: 'PF Applicable', type: 'checkbox' },
+              { key: 'esiApplicability', label: 'ESI Applicable', type: 'checkbox' }
+            ]}
+          />
+        );
+      case 'Salary Structure':
+        return (
+          <GenericCRUDPage
+            title="Salary Structures"
+            endpoint="/v2/organization/salary-structures/"
+            columns={[
+              { key: 'name', label: 'Structure Name' },
+              { key: 'description', label: 'Description' }
+            ]}
+            formFields={[
+              { key: 'companyId', label: 'Company ID', type: 'text', required: true },
+              { key: 'name', label: 'Structure Name', type: 'text', required: true },
+              { key: 'description', label: 'Description', type: 'text' }
+            ]}
+          />
+        );
+      case 'Organization':
+      default:
+        return (
+          <GenericCRUDPage
+            title="Organizations"
+            endpoint="/v2/organization/organizations/"
+            columns={[
+              { key: 'name', label: 'Organization Name' },
+              { key: 'domain', label: 'Domain' }
+            ]}
+            formFields={[
+              { key: 'name', label: 'Organization Name', type: 'text', required: true },
+              { key: 'domain', label: 'Domain', type: 'text', required: true }
+            ]}
+          />
+        );
     }
   };
 
-  useEffect(() => { loadData(); }, []);
-
-  const handleCreateCompany = async () => {
-    await api.post('/organization/companies', { name: companyName });
-    setCompanyName(''); loadData();
-  };
-  const handleCreateBranch = async () => {
-    await api.post('/organization/branches', { name: branchName, companyId: branchCompanyId });
-    setBranchName(''); loadData();
-  };
-  const handleCreateDept = async () => {
-    await api.post('/organization/departments', { name: deptName, companyId: deptCompanyId });
-    setDeptName(''); loadData();
-  };
-  const handleCreateDesig = async () => {
-    await api.post('/organization/designations', { name: desigName, companyId: desigCompanyId });
-    setDesigName(''); loadData();
-  };
-
-  const companyOptions = (orgData.companies || []).map(c => ({value: c._id, label: c.name}));
-
   return (
     <div className="space-y-6">
-      <GlassCard className="p-6">
-        <h2 className="text-xl font-bold mb-4">Organization Master Data</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="space-y-3 p-4 border border-neutral-200 rounded-lg">
-            <h3 className="font-semibold">Companies ({(orgData.companies || []).length})</h3>
-            <Input label="Name" value={companyName} onChange={e => setCompanyName(e.target.value)} />
-            <AnimatedButton size="sm" onClick={handleCreateCompany}>Add Company</AnimatedButton>
-          </div>
-
-          <div className="space-y-3 p-4 border border-neutral-200 rounded-lg">
-            <h3 className="font-semibold">Branches ({(orgData.branches || []).length})</h3>
-            <Select label="Company" options={companyOptions} value={branchCompanyId} onChange={e => setBranchCompanyId(e.target.value)} />
-            <Input label="Name" value={branchName} onChange={e => setBranchName(e.target.value)} />
-            <AnimatedButton size="sm" onClick={handleCreateBranch}>Add Branch</AnimatedButton>
-          </div>
-
-          <div className="space-y-3 p-4 border border-neutral-200 rounded-lg">
-            <h3 className="font-semibold">Departments ({(orgData.departments || []).length})</h3>
-            <Select label="Company" options={companyOptions} value={deptCompanyId} onChange={e => setDeptCompanyId(e.target.value)} />
-            <Input label="Name" value={deptName} onChange={e => setDeptName(e.target.value)} />
-            <AnimatedButton size="sm" onClick={handleCreateDept}>Add Dept</AnimatedButton>
-          </div>
-
-          <div className="space-y-3 p-4 border border-neutral-200 rounded-lg">
-            <h3 className="font-semibold">Designations ({(orgData.designations || []).length})</h3>
-            <Select label="Company" options={companyOptions} value={desigCompanyId} onChange={e => setDesigCompanyId(e.target.value)} />
-            <Input label="Name" value={desigName} onChange={e => setDesigName(e.target.value)} />
-            <AnimatedButton size="sm" onClick={handleCreateDesig}>Add Desig</AnimatedButton>
-          </div>
-        </div>
-      </GlassCard>
+      <div className="flex space-x-2 overflow-x-auto pb-2 border-b border-neutral-200">
+        {tabs.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === tab ? 'bg-primary-500 text-white' : 'text-neutral-600 hover:bg-neutral-100'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      <div>
+        {renderTabContent()}
+      </div>
     </div>
   );
 };
+
 export default AdminOrganization;

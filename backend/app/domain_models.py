@@ -24,10 +24,25 @@ class Company(OrgBase):
     taxId: Optional[str] = None
     status: Literal["Active", "Inactive"] = "Active"
 
+class ESSLMachine(OrgBase):
+    serialNumber: str
+    ipAddress: Optional[str] = None
+    status: Literal["Active", "Offline", "Maintenance"] = "Active"
+    lastSyncAt: Optional[datetime] = None
+
 class Branch(OrgBase):
     companyId: str
     name: str
+    code: Optional[str] = None
     location: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    pincode: Optional[str] = None
+    contactDetails: Optional[str] = None
+    attendanceEnabled: bool = True
+    esslMachineId: Optional[str] = None
     timezone: str = "Asia/Kolkata"
 
 class Department(OrgBase):
@@ -168,9 +183,15 @@ class SalaryComponent(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     companyId: str
     name: str
+    code: Optional[str] = None
     componentType: Literal["Earning", "Deduction"]
+    calculationMethod: Literal["Flat", "Percentage", "Formula"] = "Flat"
+    defaultFormula: Optional[str] = None
     isTaxable: bool = True
-    calculationType: Literal["Flat", "Percentage"]
+    pfApplicability: bool = False
+    esiApplicability: bool = False
+    displayOrder: int = 1
+    isActive: bool = True
 
 class SalaryStructure(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
@@ -184,14 +205,25 @@ class SalaryStructureComponent(BaseModel):
     componentId: str
     formula: Optional[str] = None
 
-class EmployeeSalary(BaseModel):
+class EmployeeSalaryAssignment(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
     structureId: str
     effectiveFrom: datetime
     effectiveTo: Optional[datetime] = None
-    ctcAmount: float
-    baseAmount: float
+    ctcAmount: float = 0.0
+    baseAmount: float = 0.0
+
+class EmployeeSalaryComponent(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    employeeId: str
+    salaryComponentId: str
+    monthlyAmount: float
+    annualAmount: float
+    formulaUsed: Optional[str] = None
+    effectiveDate: datetime
+    version: int = 1
+    status: Literal["Active", "Archived"] = "Active"
 
 class ComplianceConfig(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")

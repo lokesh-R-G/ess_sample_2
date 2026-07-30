@@ -14,14 +14,14 @@ from datetime import datetime
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
-@router.post("/essl")
+@router.post("/essl/")
 async def sync_essl(payload: SyncRequest | None = None, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     request = payload or SyncRequest()
     return await sync_essl_logs(db, request.fromDate, request.toDate)
 
 
-@router.post("/my-data")
+@router.post("/my-data/")
 async def sync_my_data(current_user=Depends(get_current_user)):
     db = get_database()
     emp_id = current_user["empId"]

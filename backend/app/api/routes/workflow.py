@@ -12,12 +12,12 @@ class ActionRequest(BaseModel):
     action: str
     remarks: str | None = None
 
-@router.get("/pending", response_model=List[Dict[str, Any]])
+@router.get("/pending/", response_model=List[Dict[str, Any]])
 async def get_pending_workflows(user: UserResponse = Depends(get_current_user)):
     db = get_database()
     return await workflow_service.get_pending_workflows(db, user.empId)
 
-@router.post("/{workflow_id}/action", response_model=Workflow)
+@router.post("/{workflow_id}/action/", response_model=Workflow)
 async def process_workflow_action(
     workflow_id: str,
     action_req: ActionRequest,

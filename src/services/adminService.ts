@@ -15,11 +15,11 @@ export interface AdminSummary {
 }
 
 export async function getAdminSummary() {
-  return api.get<AdminSummary>('/admin/summary');
+  return api.get<AdminSummary>('/v1/admin/summary/');
 }
 
 export async function createUser(empId: string, name?: string, force?: boolean) {
-  return api.post('/admin/create-user', { empId, name, force });
+  return api.post('/v1/admin/create-user/', { empId, name, force });
 }
 
 export interface AttendanceSummary {
@@ -29,5 +29,5 @@ export interface AttendanceSummary {
 }
 
 export async function getAttendanceSummary() {
-  return api.get<AttendanceSummary>('/admin/attendance-summary');
+  return api.get<AttendanceSummary>('/v1/admin/attendance-summary/');
 }

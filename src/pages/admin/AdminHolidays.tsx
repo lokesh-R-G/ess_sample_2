@@ -10,7 +10,7 @@ export const AdminHolidays: React.FC = () => {
   const fetchHolidays = async () => {
     setLoading(true);
     try {
-      const data = await api.get<any[]>('/admin/holidays');
+      const data = await api.get<any[]>('/v1/admin/holidays/');
       setHolidays(data);
     } catch (e) {
       console.error(e);
@@ -25,7 +25,7 @@ export const AdminHolidays: React.FC = () => {
 
   const handleAddHoliday = async () => {
     try {
-      await api.post('/admin/holidays', newHoliday);
+      await api.post('/v1/admin/holidays/', newHoliday);
       setNewHoliday({ name: '', date: '', type: 'National' });
       fetchHolidays();
     } catch (e) {

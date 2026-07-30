@@ -13,7 +13,7 @@ from app.core.datetime_utils import get_current_ist, compare_time_with_policy
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
-@router.get("/me")
+@router.get("/me/")
 async def me(current_user=Depends(get_current_user)):
     db = get_database()
     # exclude internal MongoDB _id to keep payload JSON serializable

@@ -12,7 +12,7 @@ from app.dependencies import get_current_user, require_roles
 router = APIRouter(prefix="/leave", tags=["leave"])
 
 
-@router.get("/me")
+@router.get("/me/")
 async def my_leave_requests(current_user=Depends(get_current_user)):
     db = get_database()
     leave_rows = await db.leave_requests.find({"empId": current_user["empId"]}, {"_id": 0}).sort("createdAt", -1).to_list(length=None)
@@ -28,7 +28,7 @@ async def my_leave_requests(current_user=Depends(get_current_user)):
     }
 
 
-@router.post("/me")
+@router.post("/me/")
 async def create_leave_request(payload: dict, current_user=Depends(get_current_user)):
     db = get_database()
     now = datetime.now(timezone.utc)
@@ -50,7 +50,7 @@ async def create_leave_request(payload: dict, current_user=Depends(get_current_u
 
 from bson.objectid import ObjectId
 
-@router.get("/pending")
+@router.get("/pending/")
 async def pending_leaves(_admin=Depends(require_roles("Admin"))):
     db = get_database()
     cursor = db.leave_requests.find({"status": "pending"})
@@ -62,7 +62,7 @@ async def pending_leaves(_admin=Depends(require_roles("Admin"))):
 
 from datetime import timedelta
 
-@router.post("/{req_id}/approve")
+@router.post("/{req_id}/approve/")
 async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     now = datetime.now(timezone.utc)
@@ -106,7 +106,7 @@ async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
 
     return {"success": True}
 
-@router.post("/{req_id}/reject")
+@router.post("/{req_id}/reject/")
 async def reject_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "rejected", "updatedAt": datetime.now(timezone.utc)}})

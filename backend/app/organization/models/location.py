@@ -1,5 +1,8 @@
 from typing import Optional
-from app.core.models.base_model import BaseDBModel
+from datetime import datetime
+from pydantic import BaseModel, Field, ConfigDict
 
-class LocationModel(BaseDBModel):
-    pass  # Add specific fields
+class LocationModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    
+    id: Optional[str] = Field(default=None, alias="_id")

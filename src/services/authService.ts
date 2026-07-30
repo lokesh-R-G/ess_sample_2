@@ -36,25 +36,25 @@ export interface UserProfile {
 }
 
 export async function login(empId: string, password: string) {
-  const response = await api.post<LoginResponse>('/auth/login', { empId, password });
+  const response = await api.post<LoginResponse>('/v1/auth/login/', { empId, password });
   setAuthStorage(response.accessToken, response);
   return response;
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {
-  return api.post<{ success?: boolean }>('/auth/change-password', { currentPassword, newPassword });
+  return api.post<{ success?: boolean }>('/v1/auth/change-password/', { currentPassword, newPassword });
 }
 
 export async function getCurrentUser() {
-  return api.get<UserProfile>('/auth/me');
+  return api.get<UserProfile>('/v1/auth/me/');
 }
 
 export async function getProfile() {
-  return api.get<UserProfile>('/profile/me');
+  return api.get<UserProfile>('/v1/profile/me/');
 }
 
 export async function updateProfile(data: any) {
-  return api.put<UserProfile>('/profile/me', data);
+  return api.put<UserProfile>('/v1/profile/me/', data);
 }
 
 export function logout() {

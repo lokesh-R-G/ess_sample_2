@@ -19,9 +19,9 @@ export interface AttendancePolicy {
 }
 
 export async function getAttendancePolicy() {
-  return api.get<AttendancePolicy>('/policy/attendance');
+  return api.get<AttendancePolicy>('/v1/policy/attendance/');
 }
 
 export async function updateAttendancePolicy(policy: AttendancePolicy) {
-  return api.put<AttendancePolicy>('/policy/attendance', policy);
+  return api.put<AttendancePolicy>('/v1/policy/attendance/', policy);
 }

@@ -30,7 +30,7 @@ export async function getMyAttendance(fromDate?: string, toDate?: string) {
   if (fromDate) searchParams.set('fromDate', fromDate);
   if (toDate) searchParams.set('toDate', toDate);
   const query = searchParams.toString();
-  return api.get<AttendanceResponse>(`/attendance/me${query ? `?${query}` : ''}`);
+  return api.get<AttendanceResponse>(`/v1/attendance/me/${query ? `?${query}` : ''}`);
 }
 
 export async function getAttendanceForEmployee(empId: string, fromDate?: string, toDate?: string) {
@@ -38,5 +38,5 @@ export async function getAttendanceForEmployee(empId: string, fromDate?: string,
   if (fromDate) searchParams.set('fromDate', fromDate);
   if (toDate) searchParams.set('toDate', toDate);
   const query = searchParams.toString();
-  return api.get<AttendanceResponse>(`/attendance/${empId}${query ? `?${query}` : ''}`);
+  return api.get<AttendanceResponse>(`/v1/attendance/${empId}/${query ? `?${query}` : ''}`);
 }

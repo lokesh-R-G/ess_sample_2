@@ -10,7 +10,7 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/profile", tags=["profile"])
 
 
-@router.get("/me")
+@router.get("/me/")
 async def me(current_user=Depends(get_current_user)):
     user_data = dict(current_user)
     if "_id" in user_data:
@@ -20,7 +20,7 @@ async def me(current_user=Depends(get_current_user)):
 class ProfileUpdatePayload(BaseModel):
     model_config = {"extra": "allow"}
 
-@router.put("/me")
+@router.put("/me/")
 async def update_profile(payload: dict, current_user=Depends(get_current_user)):
     db = get_database()
     update_data = {}
@@ -39,7 +39,7 @@ async def update_profile(payload: dict, current_user=Depends(get_current_user)):
 
 from app.dependencies import require_roles
 
-@router.put("/{emp_id}")
+@router.put("/{emp_id}/")
 async def admin_update_profile(emp_id: str, payload: dict, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     update_data = {}

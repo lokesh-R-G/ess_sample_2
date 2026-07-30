@@ -8,6 +8,7 @@ interface ModalProps {
   title?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }
 
 const sizes = {
@@ -24,6 +25,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   size = 'md',
   children,
+  footer,
 }) => {
   return (
     <AnimatePresence>
@@ -43,7 +45,7 @@ export const Modal: React.FC<ModalProps> = ({
           />
 
           <motion.div
-            className={`relative ${sizes[size]} w-full bg-white rounded-2xl border border-neutral-200 shadow-2xl overflow-hidden`}
+            className={`relative ${sizes[size]} w-full bg-white rounded-2xl border border-neutral-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]`}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -63,7 +65,13 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
             )}
 
-            <div className="p-6">{children}</div>
+            <div className="p-6 overflow-y-auto flex-1">{children}</div>
+
+            {footer && (
+              <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50/50">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}

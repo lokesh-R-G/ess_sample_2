@@ -35,5 +35,5 @@ export interface DashboardSummary {
 }
 
 export async function getDashboardSummary() {
-  return api.get<DashboardSummary>('/dashboard/me');
+  return api.get<DashboardSummary>('/v1/dashboard/me/');
 }

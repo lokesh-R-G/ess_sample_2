@@ -36,7 +36,7 @@ export const AdminEmployees: React.FC = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const data = await api.get<any[]>('/admin/users');
+      const data = await api.get<any[]>('/v1/admin/users/');
       setEmployees(data);
     } catch (e) {
       console.error(e);
@@ -71,7 +71,7 @@ export const AdminEmployees: React.FC = () => {
 
   const handleToggleStatus = async (empId: string, currentStatus: string) => {
     try {
-      await api.put(`/admin/users/${empId}/status`, { status: currentStatus === 'active' ? 'inactive' : 'active' });
+      await api.put(`/v1/admin/users/${empId}/status/`, { status: currentStatus === 'active' ? 'inactive' : 'active' });
       fetchEmployees();
     } catch (e) {
       console.error(e);
@@ -90,7 +90,7 @@ export const AdminEmployees: React.FC = () => {
     }
 
     try {
-      await api.post('/admin/create-user', formData);
+      await api.post('/v1/admin/create-user/', formData);
       setFormSuccess('User created successfully!');
       fetchEmployees();
       setTimeout(() => {
@@ -141,7 +141,7 @@ export const AdminEmployees: React.FC = () => {
           ifscCode: updateData.ifscCode
         }
       };
-      await api.put(`/profile/${updateData.empId}`, payload);
+      await api.put(`/v1/profile/${updateData.empId}/`, payload);
       setUpdateSuccess('User updated successfully!');
       fetchEmployees();
       setTimeout(() => {

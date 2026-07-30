@@ -25,7 +25,7 @@ export interface LeaveResponse {
 }
 
 export async function getLeaveData() {
-  return api.get<LeaveResponse>('/leave/me');
+  return api.get<LeaveResponse>('/v1/leave/me/');
 }
 
 export async function createLeaveRequest(payload: {
@@ -36,5 +36,5 @@ export async function createLeaveRequest(payload: {
   reason: string;
   odLocation: string;
 }) {
-  return api.post<{ success: boolean }>('/leave/me', payload);
+  return api.post<{ success: boolean }>('/v1/leave/me/', payload);
 }

@@ -12,7 +12,7 @@ from app.services.attendance_service import get_attendance_for_employee, infer_a
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
-@router.get("/me")
+@router.get("/me/")
 async def my_attendance(
     fromDate: datetime | None = Query(default=None),
     toDate: datetime | None = Query(default=None),
@@ -24,7 +24,7 @@ async def my_attendance(
     return {"empId": current_user["empId"], "records": records_with_status}
 
 
-@router.get("/{emp_id}")
+@router.get("/{emp_id}/")
 async def attendance_by_employee(
     emp_id: str,
     fromDate: datetime | None = Query(default=None),

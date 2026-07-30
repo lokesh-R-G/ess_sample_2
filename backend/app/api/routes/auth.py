@@ -18,7 +18,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login/", response_model=TokenResponse)
 async def login(payload: LoginRequest):
     db = get_database()
     user = await authenticate_or_provision_user(db, payload.empId, payload.password)
@@ -46,14 +46,14 @@ async def login(payload: LoginRequest):
     )
 
 
-@router.post("/change-password", response_model=UserResponse)
+@router.post("/change-password/", response_model=UserResponse)
 async def update_password(payload: ChangePasswordRequest, current_user=Depends(get_current_user)):
     db = get_database()
     updated = await change_password(db, current_user["empId"], payload.currentPassword, payload.newPassword)
     return UserResponse(empId=updated["empId"], role=updated.get("role", "Employee"), firstLogin=bool(updated.get("firstLogin", False)))
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me/", response_model=UserResponse)
 async def me(current_user=Depends(get_current_user)):
     user_data = dict(current_user)
     if "_id" in user_data:

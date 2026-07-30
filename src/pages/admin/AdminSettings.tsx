@@ -14,7 +14,7 @@ export const AdminSettings: React.FC = () => {
         fromDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         toDate: new Date().toISOString()
       };
-      const res = await api.post<any>('/sync/essl', payload);
+      const res = await api.post<any>('/v1/sync/essl/', payload);
       setResult(`Sync completed successfully. ${res?.message || ''}`);
     } catch (e: any) {
       setResult(`Sync failed: ${e.message}`);

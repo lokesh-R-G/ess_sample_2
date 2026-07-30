@@ -1,8 +1,10 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class RoleModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    
     id: Optional[str] = Field(default=None, alias="_id")
     status: str = "Active"
     createdAt: Optional[datetime] = None

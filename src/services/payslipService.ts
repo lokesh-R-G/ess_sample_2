@@ -35,7 +35,7 @@ export interface PayslipResponse {
 }
 
 export async function getPayslips() {
-  const response = await api.get<{ payslips: Array<Partial<PayslipDetails> & { month?: string; netPay?: number; status?: string }> }>('/payslip/me');
+  const response = await api.get<{ payslips: Array<Partial<PayslipDetails> & { month?: string; netPay?: number; status?: string }> }>('/v1/payslip/me/');
   const history = (response.payslips ?? []).map((payslip) => ({
     month: payslip.month ?? 'Unknown',
     netPay: payslip.netPay ?? 0,

@@ -14,7 +14,7 @@ from app.services.sync_service import sync_essl_logs
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/summary")
+@router.get("/summary/")
 async def summary(_admin=Depends(require_roles("Admin"))):
     db = get_database()
     total_employees = await db.users.count_documents({})
@@ -100,7 +100,7 @@ class CreateUserRequest(BaseModel):
     managerId: str | None = None
 
 
-@router.post("/create-user")
+@router.post("/create-user/")
 async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     # Validate with eSSL unless force is used
@@ -136,7 +136,7 @@ async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("
 
     return {"user": {"empId": created.get("empId"), "role": created.get("role"), "firstLogin": created.get("firstLogin")}}
 
-@router.get("/users")
+@router.get("/users/")
 async def get_users(_admin=Depends(require_roles("Admin"))):
     db = get_database()
     users = await db.users.find({}, {"_id": 0}).to_list(length=None)
@@ -149,14 +149,14 @@ async def get_users(_admin=Depends(require_roles("Admin"))):
 class StatusUpdatePayload(BaseModel):
     status: str
 
-@router.put("/users/{emp_id}/status")
+@router.put("/users/{emp_id}/status/")
 async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     is_active = payload.status.lower() == "active"
     await db.users.update_one({"empId": emp_id}, {"$set": {"isActive": is_active, "status": payload.status.lower()}})
     return {"success": True}
 
-@router.get("/holidays")
+@router.get("/holidays/")
 async def get_holidays(_admin=Depends(require_roles("Admin"))):
     db = get_database()
     holidays = await db.holidays.find({}, {"_id": 0}).sort("date", 1).to_list(length=None)
@@ -167,7 +167,7 @@ class HolidayPayload(BaseModel):
     date: str
     type: str = "National"
 
-@router.post("/holidays")
+@router.post("/holidays/")
 async def add_holiday(payload: HolidayPayload, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     document = payload.model_dump()
@@ -177,7 +177,7 @@ async def add_holiday(payload: HolidayPayload, _admin=Depends(require_roles("Adm
 class EsslConfigPayload(BaseModel):
     serialNumber: str
 
-@router.put("/essl-config/{branch}")
+@router.put("/essl-config/{branch}/")
 async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Depends(require_roles("Admin"))):
     db = get_database()
     await db.essl_configs.update_one(
@@ -189,7 +189,7 @@ async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Dep
 
 from datetime import datetime, timezone
 
-@router.get("/attendance-summary")
+@router.get("/attendance-summary/")
 async def get_attendance_summary(_admin=Depends(require_roles("Admin"))):
     db = get_database()
     today_str = datetime.now(timezone.utc).date().isoformat()
