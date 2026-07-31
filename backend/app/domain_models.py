@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Literal, Optional, List, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class OrgBase(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
@@ -175,24 +175,40 @@ class AuthUser(OrgBase):
 # ==========================================
 
 class SalaryComponent(BaseModel):
+    model_config = ConfigDict(extra="allow")
     id: Optional[str] = Field(default=None, alias="_id")
-    companyId: str
+    # companyId intentionally removed – SalaryComponent is a global reusable master
     name: str
     code: Optional[str] = None
-    componentType: Literal["Earning", "Deduction"]
-    calculationMethod: Literal["Flat", "Percentage", "Formula"] = "Flat"
+    componentType: Optional[Literal["Earning", "Deduction"]] = None
+    calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = "Flat"
+    percentageValue: Optional[float] = None
+    percentageDerivedFrom: Optional[str] = None
     defaultFormula: Optional[str] = None
     isTaxable: bool = True
-    pfApplicability: bool = False
-    esiApplicability: bool = False
+    pfApplicable: bool = False
+    esiApplicable: bool = False
+    # Legacy field aliases kept for backward compat with old documents
+    pfApplicability: Optional[bool] = None
+    esiApplicability: Optional[bool] = None
     displayOrder: int = 1
     isActive: bool = True
+    status: str = "Active"
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    deletedAt: Optional[datetime] = None
 
 class SalaryStructure(BaseModel):
+    model_config = ConfigDict(extra="allow")
     id: Optional[str] = Field(default=None, alias="_id")
-    companyId: str
+    # companyId intentionally removed – SalaryStructure is a global template
     name: str
     description: Optional[str] = None
+    componentIds: List[str] = []   # references to SalaryComponent._id
+    status: str = "Active"
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    deletedAt: Optional[datetime] = None
 
 class SalaryStructureComponent(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")

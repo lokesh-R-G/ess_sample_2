@@ -169,11 +169,26 @@ export const AdminOrganization: React.FC = () => {
             endpoint="/v2/organization/salary-structures/"
             columns={[
               { key: 'name', label: 'Structure Name' },
-              { key: 'description', label: 'Description' }
+              { key: 'description', label: 'Description' },
+              {
+                key: 'components',
+                label: 'Components',
+                render: (val, row) => {
+                  const comps = row.components || [];
+                  if (comps.length === 0) return <span className="text-neutral-400 text-xs">None</span>;
+                  return (
+                    <span className="text-xs text-neutral-700">
+                      {comps.slice(0, 2).map((c: any) => c.name).join(', ')}
+                      {comps.length > 2 ? ` +${comps.length - 2} more` : ''}
+                    </span>
+                  );
+                }
+              }
             ]}
             formFields={[
               { key: 'name', label: 'Structure Name', type: 'text', required: true },
-              { key: 'description', label: 'Description', type: 'text' }
+              { key: 'description', label: 'Description', type: 'text' },
+              { key: 'componentIds', label: 'Salary Components', type: 'component-multiselect' }
             ]}
           />
         );

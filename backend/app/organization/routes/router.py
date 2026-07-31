@@ -10,18 +10,14 @@ from app.organization.routes.holiday_routes import router as holiday_router
 from app.organization.routes.search_routes import router as search_router
 from app.organization.routes.generic_routes import create_generic_router
 from app.organization.routes.essl_machine_routes import router as essl_machine_router
-from app.domain_models import SalaryComponent, SalaryStructure
+from app.organization.routes.salary_structure_routes import router as salary_structure_router
+from app.domain_models import SalaryComponent
 from app.organization.schemas.salary_component import SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse
-from app.organization.schemas.salary_structure import SalaryStructureCreate, SalaryStructureUpdate, SalaryStructureResponse
 
 
 salary_component_router = create_generic_router(
     prefix="/salary-components", tag="Salary Component", collection_name="salary_components",
     model_class=SalaryComponent, create_schema=SalaryComponentCreate, update_schema=SalaryComponentUpdate, response_schema=SalaryComponentResponse
-)
-salary_structure_router = create_generic_router(
-    prefix="/salary-structures", tag="Salary Structure", collection_name="salary_structures",
-    model_class=SalaryStructure, create_schema=SalaryStructureCreate, update_schema=SalaryStructureUpdate, response_schema=SalaryStructureResponse
 )
 
 organization_router = APIRouter()

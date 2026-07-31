@@ -1,6 +1,12 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any
+
+class SalaryComponentSummary(BaseModel):
+    id: str
+    name: str
+    componentType: Optional[str] = None
+    calculationMethod: Optional[str] = None
 
 class SalaryStructureCreate(BaseModel):
     name: str
@@ -18,6 +24,7 @@ class SalaryStructureResponse(BaseModel):
     name: str
     description: Optional[str] = None
     componentIds: Optional[List[str]] = None
+    components: Optional[List[SalaryComponentSummary]] = None   # enriched summaries
     status: Optional[str] = None
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None

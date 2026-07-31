@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
-import { GlassCard, AnimatedButton, Input, Select, Modal, LookupSelect, ESSLMachineLookup } from '../../components/ui';
+import { GlassCard, AnimatedButton, Input, Select, Modal, LookupSelect, ESSLMachineLookup, SalaryComponentMultiSelect } from '../../components/ui';
 
 export interface ColumnDef {
   key: string;
@@ -11,7 +11,7 @@ export interface ColumnDef {
 export interface FormFieldDef {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'select' | 'checkbox' | 'date' | 'lookup' | 'essl-machine';
+  type: 'text' | 'number' | 'select' | 'checkbox' | 'date' | 'lookup' | 'essl-machine' | 'component-multiselect';
   options?: { value: string; label: string }[];
   entity?: string;
   labelField?: string;
@@ -159,6 +159,13 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
                   label={f.label}
                   value={formData[f.key] || ''}
                   onChange={(val) => setFormData({ ...formData, [f.key]: val })}
+                  required={f.required}
+                />
+              ) : f.type === 'component-multiselect' ? (
+                <SalaryComponentMultiSelect
+                  label={f.label}
+                  value={formData[f.key] || []}
+                  onChange={(ids) => setFormData({ ...formData, [f.key]: ids })}
                   required={f.required}
                 />
               ) : f.type === 'select' ? (
