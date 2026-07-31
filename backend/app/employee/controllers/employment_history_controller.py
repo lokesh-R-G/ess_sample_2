@@ -15,7 +15,7 @@ class EmploymentHistoryController:
     async def get_all(self, query: dict, skip: int, limit: int, search: str) -> dict:
         return await self.service.get_all(query, skip, limit, search)
         
-    async def get_by_id(self, id: str) -> EmploymentHistoryModel:
+    async def get_by_id(self, id: str) -> dict:
         doc = await self.service.get_by_id(id)
         if not doc:
             raise HTTPException(status_code=404, detail="EmploymentHistory not found")

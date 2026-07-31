@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+from app.payroll.routes.payroll_rules_routes import router as rules_router
 
-router = APIRouter(prefix="/payroll", tags=["Payroll Engine"])
+router = APIRouter(tags=["Payroll Engine"])
+router.include_router(rules_router)
 
 class ProcessPayroll(BaseModel):
     payrollPeriod: str

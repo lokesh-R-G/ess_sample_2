@@ -15,7 +15,9 @@ from app.employee.routes.employee_role_assignment_routes import router as employ
 from app.employee.routes.employee_reporting_routes import router as employee_reporting_router
 from app.employee.routes.employee_probation_routes import router as employee_probation_router
 from app.employee.routes.employee_confirmation_routes import router as employee_confirmation_router
-from app.employee.routes.employee_exit_routes import router as employee_exit_router
+from app.employee.routes.employee_exit_routes import router as employee_exit_routes
+from app.employee.routes.employee_government_id_routes import router as employee_government_id_routes
+from app.employee.routes.employee_payroll_config_routes import router as employee_payroll_config_routes
 
 employee_router = APIRouter()
 employee_router.include_router(emp_crud_router)
@@ -34,4 +36,6 @@ employee_router.include_router(employee_role_assignment_router)
 employee_router.include_router(employee_reporting_router)
 employee_router.include_router(employee_probation_router)
 employee_router.include_router(employee_confirmation_router)
-employee_router.include_router(employee_exit_router)
+employee_router.include_router(employee_exit_routes)
+employee_router.include_router(employee_government_id_routes)
+employee_router.include_router(employee_payroll_config_routes)

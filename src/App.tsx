@@ -22,6 +22,8 @@ import AdminAttendance from './pages/admin/AdminAttendance';
 import AdminAttendancePolicy from './pages/admin/AdminAttendancePolicy';
 import AdminOrganization from './pages/admin/AdminOrganization';
 import AdminLayout from './components/layout/AdminLayout';
+import AdminPayrollRules from './pages/admin/AdminPayrollRules';
+import EmployeeWizard from './pages/admin/employee/EmployeeWizard';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -89,10 +91,11 @@ function AppRoutes() {
         <Route path="/admin" element={<ProtectedRoute allowRoles={['Admin']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminDashboard />} />
           <Route path="employees" element={<AdminEmployees />} />
+          <Route path="employees/new" element={<EmployeeWizard />} />
           <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
           <Route path="holidays" element={<AdminHolidays />} />
           <Route path="sync" element={<AdminSync />} />
-          <Route path="payroll" element={<AdminDashboard />} />
+          <Route path="payroll" element={<AdminPayrollRules />} />
           <Route path="branches" element={<AdminBranches />} />
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="attendance-policy" element={<AdminAttendancePolicy />} />

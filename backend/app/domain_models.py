@@ -191,6 +191,23 @@ class SalaryComponent(BaseModel):
     # Legacy field aliases kept for backward compat with old documents
     pfApplicability: Optional[bool] = None
     esiApplicability: Optional[bool] = None
+    # Additional Payroll Flags
+    ptApplicable: bool = False
+    incomeTaxApplicable: bool = False
+    includeInGross: bool = True
+    includeInCTC: bool = True
+    includeInBonus: bool = False
+    includeInGratuity: bool = False
+    
+    # UI and Behavior Flags
+    isFixedComponent: bool = True
+    allowManualOverride: bool = False
+    showInPayslip: bool = True
+    isRecurring: bool = True
+    isStatutory: bool = False
+    isEmployerContribution: bool = False
+    isEmployeeContribution: bool = False
+    
     displayOrder: int = 1
     isActive: bool = True
     status: str = "Active"
@@ -236,14 +253,76 @@ class EmployeeSalaryComponent(BaseModel):
     version: int = 1
     status: Literal["Active", "Archived"] = "Active"
 
-class ComplianceConfig(BaseModel):
+# ==========================================
+# 3.5 PAYROLL RULE ENGINE
+# ==========================================
+
+class RuleBase(BaseModel):
+    version: int = 1
+    effectiveFrom: datetime
+    effectiveTo: Optional[datetime] = None
+    status: Literal["Active", "Archived"] = "Active"
+
+class PayrollSettings(RuleBase):
     id: Optional[str] = Field(default=None, alias="_id")
-    companyId: str
-    complianceType: Literal["PF", "ESI", "PT", "LWF"]
-    employeeContributionPercent: float = 0.0
-    employerContributionPercent: float = 0.0
-    maxLimit: float = 0.0
-    effectiveDate: datetime
+    payrollFrequency: Literal["Monthly", "Weekly", "Bi-Weekly"] = "Monthly"
+    financialYear: str = "April-March"
+    currency: str = "INR"
+    roundOffMethod: Literal["Nearest Rupee", "Nearest 10", "None"] = "Nearest Rupee"
+    payrollStartDate: int = 1 # day of month
+    payrollEndDate: int = 31  # day of month (or last day)
+    lockPayrollAfterProcessing: bool = True
+    allowRetroPayroll: bool = False
+    defaultPayrollCalendar: str = "Standard"
+    defaultSalaryCalculationMethod: Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"] = "Calendar Days"
+    defaultCurrencySymbol: str = "₹"
+    payrollLockDate: int = 5 # day of month
+    payslipGenerationDate: int = 7 # day of month
+
+class PFRule(RuleBase):
+    id: Optional[str] = Field(default=None, alias="_id")
+    pfEnabled: bool = True
+    mandatoryBelowGross: float = 15000.0
+    optionalAboveGross: float = 15000.0
+    defaultMode: Literal["Ask During Employee Creation", "Always Ceiling", "Always Actual Gross"] = "Ask During Employee Creation"
+    pfCeilingAmount: float = 15000.0
+    employeePfPercent: float = 12.0
+    employerPfPercent: float = 3.67
+    employerPensionPercent: float = 8.33
+    maxPensionAmount: float = 1250.0
+    allowExistingPensionMember: bool = True
+    allowFresherLogic: bool = True
+    processingFeeEnabled: bool = True
+    processingFeePercent: float = 0.5
+    askPfOptionAboveThreshold: bool = True
+    askCalculationMethod: bool = True
+    askExistingPensionMember: bool = True
+
+class ESIRule(RuleBase):
+    id: Optional[str] = Field(default=None, alias="_id")
+    esiEnabled: bool = True
+    eligibilityGross: float = 21000.0
+    employeePercent: float = 0.75
+    employerPercent: float = 3.25
+    roundOffRule: Literal["Nearest Rupee", "Nearest 10 Paisa", "Nearest 50 Paisa", "Ceil"] = "Ceil"
+
+class ProfessionalTaxRule(RuleBase):
+    id: Optional[str] = Field(default=None, alias="_id")
+    name: str = "Standard PT Rules"
+
+class ProfessionalTaxState(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    ptRuleId: str
+    stateName: str
+    status: Literal["Active", "Archived"] = "Active"
+
+class ProfessionalTaxSlab(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    ptStateId: str
+    minGross: float
+    maxGross: float
+    taxAmount: float
+    gender: Optional[Literal["Male", "Female", "Any"]] = "Any"
 
 # ==========================================
 # 4. LEAVE ENGINE

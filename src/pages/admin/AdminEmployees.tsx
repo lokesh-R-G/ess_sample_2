@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GlassCard, AnimatedButton, Input, StatusBadge, Modal, Select } from '../../components/ui';
 import { api } from '../../lib/api';
 import { organizationApi } from '../../services/organization.api';
 
 export const AdminEmployees: React.FC = () => {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -160,7 +162,7 @@ export const AdminEmployees: React.FC = () => {
       <div className="space-y-6">
         <GlassCard className="p-6 flex justify-between items-center">
           <h2 className="text-xl font-bold text-neutral-900">Manage Employees</h2>
-          <AnimatedButton onClick={() => setIsModalOpen(true)}>Create User</AnimatedButton>
+          <AnimatedButton onClick={() => navigate('/admin/employees/new')}>Create Employee (Wizard)</AnimatedButton>
         </GlassCard>
 
         <GlassCard className="p-6 overflow-x-auto">

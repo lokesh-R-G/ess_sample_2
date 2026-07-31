@@ -2,16 +2,15 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-class EmployeeContactModel(BaseModel):
+class EmployeeGovernmentIdModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
-    officialEmail: Optional[str] = None
-    officialMobile: Optional[str] = None
-    personalEmail: Optional[str] = None
-    personalMobile: Optional[str] = None
-    emergencyContactName: Optional[str] = None
-    emergencyContactNumber: Optional[str] = None
-    emergencyContactRelation: Optional[str] = None
+    panNumber: Optional[str] = None
+    aadharNumber: Optional[str] = None
+    uanNumber: Optional[str] = None
+    pfNumber: Optional[str] = None
+    esiNumber: Optional[str] = None
+    passportNumber: Optional[str] = None
     status: str = "Active"
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
