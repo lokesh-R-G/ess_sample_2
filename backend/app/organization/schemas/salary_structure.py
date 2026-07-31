@@ -1,15 +1,23 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
+from typing import Optional, List
 
 class SalaryStructureCreate(BaseModel):
-    companyId: str
     name: str
     description: Optional[str] = None
+    componentIds: List[str] = []   # list of SalaryComponent ObjectId strings
 
 class SalaryStructureUpdate(BaseModel):
-    companyId: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
+    componentIds: Optional[List[str]] = None
 
-class SalaryStructureResponse(SalaryStructureCreate):
-    id: str = Field(alias="_id")
+class SalaryStructureResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    id: str = Field(serialization_alias="_id")
+    name: str
+    description: Optional[str] = None
+    componentIds: Optional[List[str]] = None
+    status: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None

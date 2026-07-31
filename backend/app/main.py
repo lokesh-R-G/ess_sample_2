@@ -93,7 +93,10 @@ app = FastAPI(
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
     openapi_tags=tags_metadata,
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Serialize Pydantic models using serialization_alias globally
+    # This ensures all response DTOs emit "_id" rather than "id"
+    response_model_by_alias=True,
 )
 
 # Configure CORS for local development. Do NOT use allow_origins=['*'] in production.

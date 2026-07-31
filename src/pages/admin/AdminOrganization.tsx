@@ -32,7 +32,7 @@ export const AdminOrganization: React.FC = () => {
             columns={[
               { key: 'name', label: 'Branch Name' },
               { key: 'companyId', label: 'Company ID' },
-              { key: 'esslMachineId', label: 'eSSL Machine ID' }
+              { key: 'esslMachineId', label: 'eSSL Machine', render: (val, row) => row.esslMachine?.serialNumber || val || '-' }
             ]}
             formFields={[
               { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
@@ -144,20 +144,21 @@ export const AdminOrganization: React.FC = () => {
               { key: 'calculationMethod', label: 'Method' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Component Name', type: 'text', required: true },
               { key: 'componentType', label: 'Type', type: 'select', options: [
                 { value: 'Earning', label: 'Earning' },
                 { value: 'Deduction', label: 'Deduction' }
               ], required: true },
-              { key: 'calculationMethod', label: 'Method', type: 'select', options: [
+              { key: 'calculationMethod', label: 'Calculation Method', type: 'select', options: [
                 { value: 'Flat', label: 'Flat' },
                 { value: 'Percentage', label: 'Percentage' },
                 { value: 'Formula', label: 'Formula' }
               ], required: true },
+              { key: 'percentageValue', label: 'Percentage Value (%)', type: 'number' },
+              { key: 'percentageDerivedFrom', label: 'Derived From (e.g. Gross Salary)', type: 'text' },
               { key: 'isTaxable', label: 'Taxable', type: 'checkbox' },
-              { key: 'pfApplicability', label: 'PF Applicable', type: 'checkbox' },
-              { key: 'esiApplicability', label: 'ESI Applicable', type: 'checkbox' }
+              { key: 'pfApplicable', label: 'PF Applicable', type: 'checkbox' },
+              { key: 'esiApplicable', label: 'ESI Applicable', type: 'checkbox' }
             ]}
           />
         );
@@ -171,7 +172,6 @@ export const AdminOrganization: React.FC = () => {
               { key: 'description', label: 'Description' }
             ]}
             formFields={[
-              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'name', label: 'Structure Name', type: 'text', required: true },
               { key: 'description', label: 'Description', type: 'text' }
             ]}
