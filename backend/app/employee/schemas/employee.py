@@ -2,8 +2,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 class EmployeeCreate(BaseModel):
-    employeeId: str
-    employeeCode: str = ""
+    # Empty schema, the backend generates everything on creation
+    pass
 
 class EmployeeUpdate(BaseModel):
     status: Optional[str] = None
@@ -12,8 +12,10 @@ class EmployeeUpdate(BaseModel):
     essStatus: Optional[str] = None
     employeeCode: Optional[str] = None
 
-class EmployeeResponse(EmployeeCreate):
+class EmployeeResponse(BaseModel):
     id: str
+    employeeId: str
+    employeeCode: Optional[str] = None
     systemAccessEnabled: bool
     authUserId: Optional[str] = None
     essStatus: str

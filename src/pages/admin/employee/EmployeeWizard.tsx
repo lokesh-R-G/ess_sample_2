@@ -104,12 +104,8 @@ export default function EmployeeWizard() {
         // Create base employee first if not exists
         let empId = formData.employeeId;
         if (!empId) {
-          const empRes = await employeeApi.createEmployee({
-            employeeCode: `EMP${Math.floor(1000 + Math.random() * 9000)}`,
-            systemAccessEnabled: false,
-            essStatus: 'Not Invited'
-          });
-          empId = empRes.data._id || empRes.data.id;
+          const empRes = await employeeApi.createEmployee({});
+          empId = empRes.data._id || empRes.data.employeeId || empRes.data.id;
           setFormData((prev: any) => ({ ...prev, employeeId: empId }));
         }
         // Save Personal

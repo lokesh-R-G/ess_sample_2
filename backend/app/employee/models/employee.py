@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class EmployeeModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
-    employeeCode: str = ""
+    employeeCode: Optional[str] = None
     systemAccessEnabled: bool = False
     authUserId: Optional[str] = None
     essStatus: str = "No User Account"

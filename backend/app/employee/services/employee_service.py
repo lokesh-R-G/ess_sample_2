@@ -6,6 +6,7 @@ from app.employee.validators.employee_validator import EmployeeValidator
 from app.employee.schemas.employee import EmployeeCreate, EmployeeUpdate
 from app.employee.models.employee import EmployeeModel
 import asyncio
+import uuid
 from app.email_service.services.email_service import EmailService
 
 class EmployeeService:
@@ -17,22 +18,16 @@ class EmployeeService:
         
     async def create(self, data: EmployeeCreate, user_id: str = None) -> EmployeeModel:
         await self.validator.validate_create(data)
-        employee = await self.repo.create(data.model_dump(exclude_unset=True), user_id)
         
-        # Email Integration
-        if employee:
-            context = {
-                "employee_id": getattr(employee, "employeeId", ""),
-                "department": getattr(employee, "departmentId", ""),
-                "designation": getattr(employee, "designationId", ""),
-                "temp_password": "ChangeMe@123", # From settings.default_password
-                "login_url": "https://hrms.enterprise.com/login"
-            }
-            # Optional: find personal email from contact info, default to official email if possible
-            email = getattr(employee, "officialEmail", None)
-            if email:
-                asyncio.create_task(self.email_service.send_welcome_email(recipient=email, context=context))
-                
+        # Override payload with system defaults for Employee Creation
+        payload = data.model_dump(exclude_unset=True)
+        payload["employeeId"] = str(uuid.uuid4())
+        payload["employeeCode"] = None
+        payload["systemAccessEnabled"] = False
+        payload["essStatus"] = "Not Invited"
+        
+        employee = await self.repo.create(payload, user_id)
+        
         return employee
         
     async def get_all(self, query: dict = None, skip: int = 0, limit: int = 100, search: str = None) -> dict:
