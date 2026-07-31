@@ -3,6 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime, timezone
 import math
+from pymongo import ReturnDocument
 
 T = TypeVar("T")
 
@@ -29,6 +30,34 @@ class BaseRepository(Generic[T]):
         result = await self.collection.insert_one(data)
         data["_id"] = str(result.inserted_id)
         return self.model_class(**data)
+
+    async def upsert_by_field(self, query_field: str, query_value: Any, data: dict, user_id: str = None) -> T:
+        now = datetime.now(timezone.utc)
+        data["updatedAt"] = now
+        data["updatedBy"] = user_id
+        data["status"] = data.get("status", "Active")
+        
+        # We don't overwrite createdAt if it exists
+        update_doc = {
+            "$set": data,
+            "$setOnInsert": {
+                "createdAt": now,
+                "createdBy": user_id
+            }
+        }
+        
+        print("========== Mongo Document ==========")
+        print(update_doc)
+        
+        result = await self.collection.find_one_and_update(
+            {query_field: query_value, "deletedAt": None},
+            update_doc,
+            upsert=True,
+            return_document=ReturnDocument.AFTER
+        )
+        print("Inserted Document")
+        print(result)
+        return self.model_class(**self._prepare_doc(result))
 
     async def get_by_id(self, id: str) -> Optional[T]:
         try:

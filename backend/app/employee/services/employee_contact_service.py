@@ -14,7 +14,7 @@ class EmployeeContactService:
         
     async def create(self, data: EmployeeContactCreate, user_id: str = None) -> EmployeeContactModel:
         await self.validator.validate_create(data)
-        return await self.repo.create(data.model_dump(exclude_unset=True), user_id)
+        return await self.repo.upsert_by_field("employeeId", data.employeeId, data.model_dump(exclude_unset=True), user_id)
         
     async def get_all(self, query: dict = None, skip: int = 0, limit: int = 100, search: str = None) -> dict:
         return await self.repo.get_all(query=query, skip=skip, limit=limit, search=search, search_fields=["employeeId"])

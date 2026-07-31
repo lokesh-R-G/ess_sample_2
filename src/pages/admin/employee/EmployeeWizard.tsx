@@ -97,34 +97,59 @@ export default function EmployeeWizard() {
     }
     return isValid;
   };
+  const cleanPayload = (payload: any) => {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(payload)) {
+      if (value === '') continue;
+      cleaned[key] = value;
+    }
+    return cleaned;
+  };
 
   const saveStepApi = async (stepIndex: number): Promise<boolean> => {
     try {
       if (stepIndex === 0) {
         // Create base employee first if not exists
         let empId = formData.employeeId;
+        console.log("STEP 1 - Creating Employee", { employeeId: empId });
         if (!empId) {
           const empRes = await employeeApi.createEmployee({});
+          console.log("Employee Created", empRes.data);
           empId = empRes.data._id || empRes.data.employeeId || empRes.data.id;
-          setFormData((prev: any) => ({ ...prev, employeeId: empId }));
+          setFormData((prev: any) => {
+             const newState = { ...prev, employeeId: empId };
+             console.log("State after setting employeeId:", newState);
+             return newState;
+          });
         }
         // Save Personal
-        await employeeApi.createPersonal({ ...formData, employeeId: empId });
+        const personalPayload = cleanPayload({ ...formData, employeeId: empId });
+        console.log("Posting Personal Info", personalPayload);
+        const persRes = await employeeApi.createPersonal(personalPayload);
+        console.log("Personal Saved", persRes.data);
       } else if (stepIndex === 1) {
-        await employeeApi.createContact({ ...formData, employeeId: formData.employeeId });
-        await employeeApi.createAddress({ ...formData, employeeId: formData.employeeId });
+        await employeeApi.createContact(cleanPayload({ ...formData, employeeId: formData.employeeId }));
+        await employeeApi.createAddress(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       } else if (stepIndex === 2) {
-        await employeeApi.createEmployment({ ...formData, employeeId: formData.employeeId });
+        await employeeApi.createEmployment(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       } else if (stepIndex === 3) {
-        await employeeApi.createBanking({ ...formData, employeeId: formData.employeeId });
-        await employeeApi.createGovernmentId({ ...formData, employeeId: formData.employeeId });
+        await employeeApi.createBanking(cleanPayload({ ...formData, employeeId: formData.employeeId }));
+        await employeeApi.createGovernmentId(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       } else if (stepIndex === 4) {
-        await employeeApi.createPayrollConfig({ ...formData, employeeId: formData.employeeId });
+        await employeeApi.createPayrollConfig(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       }
       return true;
     } catch (e: any) {
       console.error(e);
-      toast.error(e.response?.data?.detail || 'Failed to save section.');
+      let errorMsg = 'Failed to save section.';
+      if (e.response?.data?.detail) {
+        if (Array.isArray(e.response.data.detail)) {
+          errorMsg = e.response.data.detail.map((err: any) => `${err.loc?.join('.')} - ${err.msg}`).join(', ');
+        } else if (typeof e.response.data.detail === 'string') {
+          errorMsg = e.response.data.detail;
+        }
+      }
+      toast.error(errorMsg);
       return false;
     }
   };
@@ -144,6 +169,7 @@ export default function EmployeeWizard() {
       }
       
       if (currentStep < STEPS.length - 1) {
+        console.log("Moving to next step from", currentStep, "to", currentStep + 1);
         setCurrentStep(curr => curr + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {

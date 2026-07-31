@@ -12,6 +12,8 @@ def get_controller(db = Depends(get_database)) -> EmployeePersonalController:
 
 @router.post("/", response_model=EmployeePersonalResponse)
 async def create(data: EmployeePersonalCreate, controller: EmployeePersonalController = Depends(get_controller), user: dict = Depends(get_current_user)):
+    print("========== Employee Personal ==========")
+    print(data.model_dump())
     return await controller.create(data, user.get("empId"))
 
 @router.get("/")

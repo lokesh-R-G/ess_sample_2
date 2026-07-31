@@ -7,7 +7,7 @@ class PayslipModel(BaseModel):
     companyId: str
     branchId: str
     employeeId: str
-    employeeCode: str
+    employeeCode: Optional[str] = None
     employeeName: str
     designation: str
     department: str

@@ -12,6 +12,7 @@ def get_controller(db = Depends(get_database)) -> EmployeeController:
 
 @router.post("/", response_model=EmployeeResponse)
 async def create(data: EmployeeCreate, controller: EmployeeController = Depends(get_controller), user: dict = Depends(get_current_user)):
+    print("Employee endpoint hit")
     return await controller.create(data, user.get("empId"))
 
 @router.get("/")

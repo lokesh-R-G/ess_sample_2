@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 class EmployeeContactModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
-    officialEmail: Optional[str] = None
-    officialMobile: Optional[str] = None
+    workEmail: Optional[str] = None
+    mobilePhone: Optional[str] = None
     personalEmail: Optional[str] = None
     personalMobile: Optional[str] = None
     emergencyContactName: Optional[str] = None

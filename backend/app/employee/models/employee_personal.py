@@ -7,12 +7,14 @@ class EmployeePersonalModel(BaseModel):
     employeeId: str
     firstName: str = ""
     lastName: str = ""
+    displayName: Optional[str] = None
     middleName: Optional[str] = None
     dob: Optional[datetime] = None
     gender: Optional[str] = None
     maritalStatus: Optional[str] = None
     bloodGroup: Optional[str] = None
     nationality: Optional[str] = None
+    religion: Optional[str] = None
     status: str = "Active"
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None

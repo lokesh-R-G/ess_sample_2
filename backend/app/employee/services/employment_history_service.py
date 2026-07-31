@@ -15,7 +15,7 @@ class EmploymentHistoryService:
         
     async def create(self, data: EmploymentHistoryCreate, user_id: str = None) -> EmploymentHistoryModel:
         await self.validator.validate_create(data)
-        return await self.repo.create(data.model_dump(exclude_unset=True), user_id)
+        return await self.repo.upsert_by_field("employeeId", data.employeeId, data.model_dump(exclude_unset=True), user_id)
         
     async def _enrich_organizations(self, docs: List[dict]) -> List[dict]:
         if not docs:
