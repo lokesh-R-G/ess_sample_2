@@ -28,11 +28,11 @@ export default function EmploymentStep({ data, onChange, errors = {} }: Employme
         organizationApi.getDesignations(),
         organizationApi.getShifts()
       ]);
-      setCompanies(compRes.data);
-      setBranches(branchRes.data);
-      setDepartments(deptRes.data);
-      setDesignations(desigRes.data);
-      setShifts(shiftRes.data);
+      setCompanies(compRes?.data || compRes || []);
+      setBranches(branchRes?.data || branchRes || []);
+      setDepartments(deptRes?.data || deptRes || []);
+      setDesignations(desigRes?.data || desigRes || []);
+      setShifts(shiftRes?.data || shiftRes || []);
     } catch (e) {
       console.error("Failed to load organization masters", e);
     }

@@ -108,14 +108,17 @@ export default function EmployeeWizard() {
 
   const saveStepApi = async (stepIndex: number): Promise<boolean> => {
     try {
+      console.log("saveStepApi called with stepIndex:", stepIndex);
       if (stepIndex === 0) {
         // Create base employee first if not exists
         let empId = formData.employeeId;
         console.log("STEP 1 - Creating Employee", { employeeId: empId });
         if (!empId) {
+          console.log("Before createEmployee");
           const empRes = await employeeApi.createEmployee({});
-          console.log("Employee Created", empRes.data);
-          empId = empRes.data._id || empRes.data.employeeId || empRes.data.id;
+          console.log("Raw API Response", empRes);
+          console.log("Employee created", empRes);
+          empId = empRes._id || empRes.employeeId || empRes.id;
           setFormData((prev: any) => {
              const newState = { ...prev, employeeId: empId };
              console.log("State after setting employeeId:", newState);
@@ -124,9 +127,11 @@ export default function EmployeeWizard() {
         }
         // Save Personal
         const personalPayload = cleanPayload({ ...formData, employeeId: empId });
-        console.log("Posting Personal Info", personalPayload);
+        console.log("About to call createPersonal");
+        console.log(personalPayload);
         const persRes = await employeeApi.createPersonal(personalPayload);
-        console.log("Personal Saved", persRes.data);
+        console.log("Raw API Response", persRes);
+        console.log("Personal saved", persRes);
       } else if (stepIndex === 1) {
         await employeeApi.createContact(cleanPayload({ ...formData, employeeId: formData.employeeId }));
         await employeeApi.createAddress(cleanPayload({ ...formData, employeeId: formData.employeeId }));
@@ -138,29 +143,44 @@ export default function EmployeeWizard() {
       } else if (stepIndex === 4) {
         await employeeApi.createPayrollConfig(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       }
+      console.log("saveStepApi returning true");
       return true;
     } catch (e: any) {
+      console.log("saveStepApi caught an exception", e);
       console.error(e);
       let errorMsg = 'Failed to save section.';
-      if (e.response?.data?.detail) {
-        if (Array.isArray(e.response.data.detail)) {
-          errorMsg = e.response.data.detail.map((err: any) => `${err.loc?.join('.')} - ${err.msg}`).join(', ');
-        } else if (typeof e.response.data.detail === 'string') {
-          errorMsg = e.response.data.detail;
+      // Our custom fetch wrapper throws an Error with the message being the parsed detail.
+      if (e instanceof Error && e.message) {
+        // e.message might be a JSON string if the backend returned a validation array, or a simple string.
+        try {
+          const parsed = JSON.parse(e.message);
+          if (Array.isArray(parsed)) {
+             errorMsg = parsed.map((err: any) => `${err.loc?.join('.')} - ${err.msg}`).join(', ');
+          } else {
+             errorMsg = e.message;
+          }
+        } catch {
+          errorMsg = e.message;
         }
       }
       toast.error(errorMsg);
+      console.log("saveStepApi returning false after catch");
       return false;
     }
   };
 
   const handleSaveAndContinue = async () => {
-    if (!validateStep(currentStep)) return;
+    console.log("STEP =", currentStep);
+    if (!validateStep(currentStep)) {
+      console.log("validateStep returned false. Early return.");
+      return;
+    }
 
     setIsSubmitting(true);
     const toastId = toast.loading(`Saving ${STEPS[currentStep].title}...`);
 
     const success = await saveStepApi(currentStep);
+    console.log("saveStepApi success result:", success);
     
     if (success) {
       toast.success(`${STEPS[currentStep].title} saved successfully`, { id: toastId });
@@ -174,15 +194,18 @@ export default function EmployeeWizard() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         // Final Step Completed
+        console.log("Final Step Completed. Navigating to employees list.");
         localStorage.removeItem('employee_wizard_draft');
         toast.success("Employee Onboarding Completed!");
         navigate('/admin/employees');
       }
     } else {
+      console.log("success is false, dismissing toast");
       toast.dismiss(toastId);
     }
     
     setIsSubmitting(false);
+    console.log("handleSaveAndContinue execution complete");
   };
 
   const handleBack = () => {

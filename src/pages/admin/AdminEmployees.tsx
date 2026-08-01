@@ -101,7 +101,7 @@ export const AdminEmployees: React.FC = () => {
         setFormSuccess('');
       }, 1500);
     } catch (e: any) {
-      setFormError(e.response?.data?.detail || e.message || 'Failed to create user');
+      setFormError(e.message || 'Failed to create user');
     } finally {
       setFormLoading(false);
     }
@@ -151,7 +151,7 @@ export const AdminEmployees: React.FC = () => {
         setUpdateSuccess('');
       }, 1500);
     } catch (e: any) {
-      setUpdateError(e.response?.data?.detail || e.message || 'Failed to update user');
+      setUpdateError(e.message || 'Failed to update user');
     } finally {
       setUpdateLoading(false);
     }

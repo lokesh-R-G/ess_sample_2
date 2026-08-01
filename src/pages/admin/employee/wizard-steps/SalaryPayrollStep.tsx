@@ -22,7 +22,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
   const fetchStructures = async () => {
     try {
       const res = await organizationApi.getSalaryStructures();
-      setStructures(res.data);
+      setStructures(res?.data || res || []);
     } catch (e) {
       console.error(e);
     }
@@ -45,7 +45,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
         esiOption: data.esiOption || 'Default',
         ptState: data.ptState || 'None'
       });
-      setPreview(res.data);
+      setPreview(res?.data || res || null);
     } catch (e) {
       console.error("Preview failed", e);
     } finally {
