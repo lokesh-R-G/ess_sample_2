@@ -28,8 +28,9 @@ export default function PayrollSettingsTab() {
   const fetchSettings = async () => {
     try {
       const response = await payrollRulesApi.getPayrollSettings();
-      if (response.data && response.data.length > 0) {
-        setSettings(response.data[0]);
+      const data = response?.data || response || [];
+      if (data && data.length > 0) {
+        setSettings(data[0]);
         setIsConfigured(true);
       } else {
         setSettings(defaultSettings);

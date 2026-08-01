@@ -22,8 +22,9 @@ export default function PTRulesTab() {
   const fetchRule = async () => {
     try {
       const response = await payrollRulesApi.getPTRules();
-      if (response.data && response.data.length > 0) {
-        setRule(response.data[0]);
+      const data = response?.data || response || [];
+      if (data && data.length > 0) {
+        setRule(data[0]);
         setIsConfigured(true);
       } else {
         setRule(defaultRule);

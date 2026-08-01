@@ -14,8 +14,9 @@ export default function ComponentBehaviorTab() {
   const fetchComponents = async () => {
     try {
       const response = await payrollRulesApi.getSalaryComponents();
-      if (response.data) {
-        setComponents(response.data);
+      const data = response?.data || response || [];
+      if (data && data.length > 0) {
+        setComponents(data);
       }
     } catch (error) {
       toast.error('Failed to load salary components');

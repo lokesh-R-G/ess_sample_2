@@ -37,7 +37,7 @@ export const ESSLMachineLookup: React.FC<ESSLMachineLookupProps> = ({
       const fetchInitial = async () => {
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=ESSLMachine&limit=100`);
-          const items = res.data || [];
+          const items = res?.data || res || [];
           // The API might return `id` or `_id`, so we check both safely
           const found = items.find((i: any) => (i.id || i._id) === value);
           if (found) {
@@ -114,7 +114,7 @@ export const ESSLMachineLookup: React.FC<ESSLMachineLookupProps> = ({
         setLoading(true);
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=ESSLMachine&search=${searchTerm}&limit=50`);
-          setResults(res.data || []);
+          setResults(res?.data || res || []);
         } catch (e) {
           console.error('Error searching eSSL Machines', e);
         } finally {

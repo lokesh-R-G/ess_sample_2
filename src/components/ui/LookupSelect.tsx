@@ -40,7 +40,7 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
       const fetchInitial = async () => {
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=${entity}&limit=100`);
-          const items = res.data || [];
+          const items = res?.data || res || [];
           const found = items.find((i: any) => i[valueField] === value);
           if (found) {
             setSelectedItem(found);
@@ -72,7 +72,7 @@ export const LookupSelect: React.FC<LookupSelectProps> = ({
         setLoading(true);
         try {
           const res: any = await api.get(`/v2/organization/search/?entity=${entity}&search=${searchTerm}&limit=50`);
-          setResults(res.data || []);
+          setResults(res?.data || res || []);
         } catch (e) {
           console.error('Error searching', e);
         } finally {
