@@ -16,7 +16,6 @@ from app.api.routes.payslip import router as payslip_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.sync import router as sync_router
 from app.api.routes.policy import router as policy_router
-from app.api.routes.organization import router as organization_router
 from app.api.routes.workflow import router as workflow_router
 from app.api.routes.miss_punch import router as miss_punch_router
 from app.organization.routes.router import organization_router as v2_org_router
@@ -123,7 +122,6 @@ app.include_router(payslip_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(sync_router, prefix="/api/v1")
 app.include_router(policy_router, prefix="/api/v1")
-app.include_router(organization_router, prefix="/api/v1")
 app.include_router(workflow_router, prefix="/api/v1")
 app.include_router(miss_punch_router, prefix="/api/v1")
 app.include_router(v2_org_router, prefix="/api/v2/organization")

@@ -3,45 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard, AnimatedButton, Input, StatusBadge, Modal, Select } from '../../components/ui';
 import { api } from '../../lib/api';
 import { organizationApi } from '../../services/organization.api';
+import { toast } from 'react-hot-toast';
 
 export const AdminEmployees: React.FC = () => {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Create User State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ 
-    empId: '', name: '', empType: '', joiningDate: '', 
-    managerId: '', companyId: '', branchId: '', departmentId: '', designationId: '',
-    address: '', phone: '', email: '', force: false 
-  });
-  const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
+  const [orgData, setOrgData] = useState({ companies: [] as any[], branches: [] as any[], departments: [] as any[], designations: [] as any[] });
 
-  // Update User State
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [updateData, setUpdateData] = useState({ 
-    empId: '', name: '', phone: '', address: '',
-    designation: '', branch: '', department: '',
-    bankName: '', accountNumber: '', ifscCode: ''
+  // Invite User State
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [inviteData, setInviteData] = useState({
+    employeeCode: '',
+    username: '',
+    role: 'Employee',
+    personalEmail: '',
+    temporaryPassword: '',
+    sendWelcomeMail: true,
+    forcePasswordChange: true
   });
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [updateError, setUpdateError] = useState('');
-  const [updateSuccess, setUpdateSuccess] = useState('');
-
-  const [orgData, setOrgData] = useState({
-    companies: [] as any[], branches: [] as any[], departments: [] as any[], designations: [] as any[]
-  });
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const data = await api.get<any[]>('/v1/admin/users/');
-      setEmployees(data);
+      const data: any = await api.get('/v2/employee/employees/directory/');
+      setEmployees(data.data || []);
     } catch (e) {
       console.error(e);
+      toast.error('Failed to load employees');
     } finally {
       setLoading(false);
     }
@@ -56,10 +47,10 @@ export const AdminEmployees: React.FC = () => {
         organizationApi.getDesignations()
       ]);
       setOrgData({ 
-        companies: companies || [], 
-        branches: branches || [], 
-        departments: departments || [], 
-        designations: designations || [] 
+        companies: companies?.data || companies || [], 
+        branches: branches?.data || branches || [], 
+        departments: departments?.data || departments || [], 
+        designations: designations?.data || designations || [] 
       });
     } catch (e) {
       console.error(e);
@@ -71,89 +62,59 @@ export const AdminEmployees: React.FC = () => {
     fetchOrgData();
   }, []);
 
-  const handleToggleStatus = async (empId: string, currentStatus: string) => {
-    try {
-      await api.put(`/v1/admin/users/${empId}/status/`, { status: currentStatus === 'active' ? 'inactive' : 'active' });
-      fetchEmployees();
-    } catch (e) {
-      console.error(e);
-    }
+  const getEntityName = (list: any[], id: string) => {
+    if (!id) return '-';
+    const found = list.find((i: any) => i._id === id || i.id === id);
+    return found ? found.name : id;
   };
 
-  const handleCreateUser = async () => {
-    setFormLoading(true);
-    setFormError('');
-    setFormSuccess('');
-
-    if (!formData.empId) {
-      setFormError('Required field missing: empId');
-      setFormLoading(false);
-      return;
-    }
-
-    try {
-      await api.post('/v1/admin/create-user/', formData);
-      setFormSuccess('User created successfully!');
-      fetchEmployees();
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setFormData({ empId: '', name: '', empType: '', joiningDate: '', managerId: '', companyId: '', branchId: '', departmentId: '', designationId: '', address: '', phone: '', email: '', force: false });
-        setFormSuccess('');
-      }, 1500);
-    } catch (e: any) {
-      setFormError(e.message || 'Failed to create user');
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
-  const openUpdateModal = (emp: any) => {
-    setUpdateData({ 
-      empId: emp.empId, 
-      name: emp.name || '', 
-      phone: emp.phone || '', 
-      address: emp.address || '',
-      designation: emp.designation || '',
-      branch: emp.branch || '',
-      department: emp.department || '',
-      bankName: emp.bankDetails?.bankName || '',
-      accountNumber: emp.bankDetails?.accountNumber || '',
-      ifscCode: emp.bankDetails?.ifscCode || ''
+  const handleOpenInvite = (emp: any) => {
+    setSelectedEmployee(emp);
+    setInviteData({
+      employeeCode: emp.employeeCode || '',
+      username: '',
+      role: 'Employee',
+      personalEmail: '',
+      temporaryPassword: Math.random().toString(36).slice(-8),
+      sendWelcomeMail: true,
+      forcePasswordChange: true
     });
-    setUpdateError('');
-    setUpdateSuccess('');
-    setIsUpdateModalOpen(true);
+    setIsInviteModalOpen(true);
   };
 
-  const handleUpdateUser = async () => {
-    setUpdateLoading(true);
-    setUpdateError('');
-    setUpdateSuccess('');
+  const handleInviteUser = async () => {
+    setInviteLoading(true);
     try {
-      const payload = {
-        name: updateData.name,
-        phone: updateData.phone,
-        address: updateData.address,
-        designation: updateData.designation,
-        branch: updateData.branch,
-        department: updateData.department,
-        bankDetails: {
-          bankName: updateData.bankName,
-          accountNumber: updateData.accountNumber,
-          ifscCode: updateData.ifscCode
-        }
+      // 1. Create User via V1 Auth endpoints
+      const userPayload = {
+        empId: selectedEmployee.employeeId,
+        name: `${selectedEmployee.firstName || ''} ${selectedEmployee.lastName || ''}`.trim(),
+        role: inviteData.role,
+        email: inviteData.personalEmail,
+        password: inviteData.temporaryPassword,
+        companyId: selectedEmployee.companyId,
+        branchId: selectedEmployee.branchId,
+        departmentId: selectedEmployee.departmentId,
+        designationId: selectedEmployee.designationId
       };
-      await api.put(`/v1/profile/${updateData.empId}/`, payload);
-      setUpdateSuccess('User updated successfully!');
+      
+      const userRes: any = await api.post('/v1/admin/create-user/', userPayload);
+      
+      // 2. Update Employee Auth Status via V2 Employee endpoints
+      await api.put(`/v2/employee/employees/${selectedEmployee.employeeId}`, {
+        employeeCode: inviteData.employeeCode,
+        systemAccessEnabled: true,
+        essStatus: 'Invitation Pending',
+        authUserId: userRes.empId || selectedEmployee.employeeId
+      });
+      
+      toast.success('ESS User created and employee updated successfully!');
       fetchEmployees();
-      setTimeout(() => {
-        setIsUpdateModalOpen(false);
-        setUpdateSuccess('');
-      }, 1500);
+      setIsInviteModalOpen(false);
     } catch (e: any) {
-      setUpdateError(e.message || 'Failed to update user');
+      toast.error(e.message || 'Failed to invite user');
     } finally {
-      setUpdateLoading(false);
+      setInviteLoading(false);
     }
   };
 
@@ -169,37 +130,56 @@ export const AdminEmployees: React.FC = () => {
           {loading ? (
             <p>Loading employees...</p>
           ) : (
-            <table className="w-full text-left border-collapse min-w-[600px]">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr className="border-b border-neutral-200">
-                  <th className="py-3 px-4">Emp ID</th>
+                  <th className="py-3 px-4">Emp Code</th>
                   <th className="py-3 px-4">Name</th>
+                  <th className="py-3 px-4">Company</th>
+                  <th className="py-3 px-4">Department</th>
+                  <th className="py-3 px-4">Designation</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">ESS Status</th>
                   <th className="py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {employees.map((emp) => (
-                  <tr key={emp.empId} className="border-b border-neutral-100">
-                    <td className="py-3 px-4">{emp.empId}</td>
-                    <td className="py-3 px-4">{emp.name}</td>
+                  <tr key={emp.employeeId} className="border-b border-neutral-100 hover:bg-neutral-50/50">
+                    <td className="py-3 px-4 font-mono text-sm">{emp.employeeCode || '-'}</td>
+                    <td className="py-3 px-4 font-medium">{`${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'No Name'}</td>
+                    <td className="py-3 px-4 text-sm">{getEntityName(orgData.companies, emp.companyId)}</td>
+                    <td className="py-3 px-4 text-sm">{getEntityName(orgData.departments, emp.departmentId)}</td>
+                    <td className="py-3 px-4 text-sm">{getEntityName(orgData.designations, emp.designationId)}</td>
                     <td className="py-3 px-4">
-                      <StatusBadge 
-                        status={emp.status === 'active' ? 'success' : 'error'} 
-                        label={emp.status?.toUpperCase()} 
-                      />
+                      <StatusBadge status={emp.status === 'Active' ? 'success' : 'error'} label={emp.status?.toUpperCase() || 'UNKNOWN'} />
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        emp.essStatus === 'Active' ? 'bg-green-100 text-green-700' :
+                        emp.essStatus === 'Not Invited' ? 'bg-neutral-100 text-neutral-600' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {emp.essStatus || 'Not Invited'}
+                      </span>
                     </td>
                     <td className="py-3 px-4 flex gap-2">
-                      <AnimatedButton variant="secondary" size="sm" onClick={() => handleToggleStatus(emp.empId, emp.status)}>
-                        {emp.status === 'active' ? 'Deactivate' : 'Activate'}
-                      </AnimatedButton>
-                      <AnimatedButton variant="secondary" size="sm" onClick={() => openUpdateModal(emp)}>Update</AnimatedButton>
+                      {!emp.authUserId && (
+                        <AnimatedButton variant="secondary" size="sm" onClick={() => handleOpenInvite(emp)}>
+                          Invite to ESS
+                        </AnimatedButton>
+                      )}
+                      {emp.authUserId && (
+                        <AnimatedButton variant="secondary" size="sm" disabled>
+                          Manage ESS
+                        </AnimatedButton>
+                      )}
                     </td>
                   </tr>
                 ))}
                 {employees.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-4 text-center text-neutral-500">No employees found or API not connected.</td>
+                    <td colSpan={8} className="py-8 text-center text-neutral-500">No employees found. Create an employee to get started.</td>
                   </tr>
                 )}
               </tbody>
@@ -208,98 +188,70 @@ export const AdminEmployees: React.FC = () => {
         </GlassCard>
       </div>
 
-      {/* Create User Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create User">
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
-          {formError && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{formError}</div>}
-          {formSuccess && <div className="p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm">{formSuccess}</div>}
+      {/* Invite ESS Modal */}
+      <Modal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} title={`Invite to ESS: ${selectedEmployee?.firstName || ''}`}>
+        <div className="space-y-4 px-1">
+          <Input 
+            label="Employee Code" 
+            value={inviteData.employeeCode} 
+            onChange={(e) => setInviteData({ ...inviteData, employeeCode: e.target.value })} 
+            placeholder="Assign Employee Code" 
+          />
+          <Input 
+            label="Username" 
+            value={inviteData.username} 
+            onChange={(e) => setInviteData({ ...inviteData, username: e.target.value })} 
+            placeholder="System Username" 
+          />
+          <Input 
+            label="Personal Email" 
+            value={inviteData.personalEmail} 
+            onChange={(e) => setInviteData({ ...inviteData, personalEmail: e.target.value })} 
+            type="email" 
+          />
+          <Input 
+            label="Temporary Password" 
+            value={inviteData.temporaryPassword} 
+            onChange={(e) => setInviteData({ ...inviteData, temporaryPassword: e.target.value })} 
+          />
           
-          <Input label="Employee ID *" value={formData.empId} onChange={(e) => setFormData({ ...formData, empId: e.target.value })} placeholder="e.g. EMP001" />
-          <Input label="Full Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. John Doe" />
-          
-          <div className="grid grid-cols-2 gap-2">
-            <Select 
-              label="Company" 
-              options={(orgData.companies || []).map(c => ({value: c._id, label: c.name}))} 
-              value={formData.companyId} 
-              onChange={e => setFormData({...formData, companyId: e.target.value})} 
-            />
-            <Select 
-              label="Branch" 
-              options={(orgData.branches || []).map(b => ({value: b._id, label: b.name}))} 
-              value={formData.branchId} 
-              onChange={e => setFormData({...formData, branchId: e.target.value})} 
-            />
-          </div>
+          <Select 
+            label="System Role" 
+            options={[
+              { value: 'Employee', label: 'Employee' },
+              { value: 'Manager', label: 'Manager' },
+              { value: 'Admin', label: 'Administrator' }
+            ]}
+            value={inviteData.role} 
+            onChange={e => setInviteData({...inviteData, role: e.target.value})} 
+          />
 
-          <div className="grid grid-cols-2 gap-2">
-            <Select 
-              label="Department" 
-              options={(orgData.departments || []).map(d => ({value: d._id, label: d.name}))} 
-              value={formData.departmentId} 
-              onChange={e => setFormData({...formData, departmentId: e.target.value})} 
+          <label className="flex items-center gap-2 cursor-pointer mt-2">
+            <input 
+              type="checkbox" 
+              className="w-4 h-4 text-primary-600 rounded border-neutral-300"
+              checked={inviteData.sendWelcomeMail}
+              onChange={(e) => setInviteData({ ...inviteData, sendWelcomeMail: e.target.checked })}
             />
-            <Select 
-              label="Designation" 
-              options={(orgData.designations || []).map(d => ({value: d._id, label: d.name}))} 
-              value={formData.designationId} 
-              onChange={e => setFormData({...formData, designationId: e.target.value})} 
-            />
-          </div>
-          
-          <Input label="Manager ID (Approver)" value={formData.managerId} onChange={(e) => setFormData({ ...formData, managerId: e.target.value })} placeholder="Manager Employee ID" />
-          
-          <Input label="Employee Type" value={formData.empType} onChange={(e) => setFormData({ ...formData, empType: e.target.value })} placeholder="e.g. Full Time" />
-          <Input label="Joining Date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} placeholder="YYYY-MM-DD" type="date" />
-          <Input label="Address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Full Address" />
-          
-          <div className="grid grid-cols-2 gap-2">
-            <Input label="Phone (Optional)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone Number" />
-            <Input label="Email (Optional)" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email Address" type="email" />
-          </div>
+            <span className="text-sm text-neutral-700">Send Welcome Email</span>
+          </label>
           
           <label className="flex items-center gap-2 cursor-pointer mt-2">
             <input 
               type="checkbox" 
               className="w-4 h-4 text-primary-600 rounded border-neutral-300"
-              checked={formData.force}
-              onChange={(e) => setFormData({ ...formData, force: e.target.checked })}
+              checked={inviteData.forcePasswordChange}
+              onChange={(e) => setInviteData({ ...inviteData, forcePasswordChange: e.target.checked })}
             />
-            <span className="text-sm text-neutral-700">Force Create (Bypass eSSL check)</span>
+            <span className="text-sm text-neutral-700">Force Password Change on first login</span>
           </label>
           
-          <div className="flex justify-end gap-3 pt-4">
-            <AnimatedButton variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</AnimatedButton>
-            <AnimatedButton onClick={handleCreateUser} loading={formLoading} disabled={!formData.empId}>Create</AnimatedButton>
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+            <AnimatedButton variant="secondary" onClick={() => setIsInviteModalOpen(false)}>Cancel</AnimatedButton>
+            <AnimatedButton onClick={handleInviteUser} loading={inviteLoading} disabled={!inviteData.employeeCode || !inviteData.personalEmail}>Create ESS User</AnimatedButton>
           </div>
         </div>
       </Modal>
-
-      {/* Update User Modal */}
-      <Modal isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} title={`Update User: ${updateData.empId}`}>
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
-          {updateError && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{updateError}</div>}
-          {updateSuccess && <div className="p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm">{updateSuccess}</div>}
-          
-          <Input label="Full Name" value={updateData.name} onChange={(e) => setUpdateData({ ...updateData, name: e.target.value })} />
-          <Input label="Phone Number" value={updateData.phone} onChange={(e) => setUpdateData({ ...updateData, phone: e.target.value })} />
-          <Input label="Address" value={updateData.address} onChange={(e) => setUpdateData({ ...updateData, address: e.target.value })} />
-          <Input label="Designation" value={updateData.designation} onChange={(e) => setUpdateData({ ...updateData, designation: e.target.value })} />
-          <Input label="Department" value={updateData.department} onChange={(e) => setUpdateData({ ...updateData, department: e.target.value })} />
-          <Input label="Branch" value={updateData.branch} onChange={(e) => setUpdateData({ ...updateData, branch: e.target.value })} />
-          
-          <h4 className="text-sm font-semibold mt-4">Bank Details</h4>
-          <Input label="Bank Name" value={updateData.bankName} onChange={(e) => setUpdateData({ ...updateData, bankName: e.target.value })} />
-          <Input label="Account Number" value={updateData.accountNumber} onChange={(e) => setUpdateData({ ...updateData, accountNumber: e.target.value })} />
-          <Input label="IFSC Code" value={updateData.ifscCode} onChange={(e) => setUpdateData({ ...updateData, ifscCode: e.target.value })} />
-          
-          <div className="flex justify-end gap-3 pt-4">
-            <AnimatedButton variant="secondary" onClick={() => setIsUpdateModalOpen(false)}>Cancel</AnimatedButton>
-            <AnimatedButton onClick={handleUpdateUser} loading={updateLoading}>Update</AnimatedButton>
-          </div>
-        </div>
-      </Modal>
-
     </>
   );
 };

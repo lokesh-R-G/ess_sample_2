@@ -2,23 +2,33 @@ import { api } from '../lib/api';
 
 export const organizationApi = {
   getCompanies: async () => {
-    const res = await api.get('/v1/organization/companies/');
-    return (res as any).data;
+    return await api.get('/v2/organization/companys/?limit=500');
   },
   getBranches: async (companyId?: string) => {
-    const res = await api.get('/v1/organization/branches/' + (companyId ? `?companyId=${companyId}` : ''));
-    return (res as any).data;
+    return await api.get('/v2/organization/branchs/?limit=500' + (companyId ? `&companyId=${companyId}` : ''));
   },
   getDepartments: async (companyId?: string) => {
-    const res = await api.get('/v1/organization/departments/' + (companyId ? `?companyId=${companyId}` : ''));
-    return (res as any).data;
+    return await api.get('/v2/organization/departments/?limit=500' + (companyId ? `&companyId=${companyId}` : ''));
   },
   getDesignations: async (companyId?: string, departmentId?: string) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ limit: '500' });
     if (companyId) params.append('companyId', companyId);
     if (departmentId) params.append('departmentId', departmentId);
-    const qs = params.toString();
-    const res = await api.get('/v1/organization/designations/' + (qs ? `?${qs}` : ''));
-    return (res as any).data;
+    return await api.get('/v2/organization/designations/?' + params.toString());
+  },
+  getShifts: async () => {
+    return await api.get('/v2/organization/shifts/?limit=500');
+  },
+  getHolidays: async () => {
+    return await api.get('/v2/organization/holidays/?limit=500');
+  },
+  getSalaryStructures: async () => {
+    return await api.get('/v2/organization/salary-structures/?limit=500');
+  },
+  getSalaryComponents: async () => {
+    return await api.get('/v2/organization/salary-components/?limit=500');
+  },
+  getESSLMachines: async () => {
+    return await api.get('/v2/organization/essl-machines/?limit=500');
   }
 };

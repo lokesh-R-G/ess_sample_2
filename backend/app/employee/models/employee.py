@@ -8,7 +8,7 @@ class EmployeeModel(BaseModel):
     employeeCode: Optional[str] = None
     systemAccessEnabled: bool = False
     authUserId: Optional[str] = None
-    essStatus: str = "No User Account"
+    essStatus: str = "Not Invited"
     status: str = "Active"
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None

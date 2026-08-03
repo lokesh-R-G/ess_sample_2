@@ -26,6 +26,10 @@ class BaseRepository(Generic[T]):
         data["createdBy"] = created_by
         data["updatedBy"] = created_by
         data["status"] = data.get("status", "Active")
+        data["version"] = 1
+        data["isCurrent"] = True
+        data["effectiveFrom"] = now
+        data["effectiveTo"] = None
         
         result = await self.collection.insert_one(data)
         data["_id"] = str(result.inserted_id)
@@ -37,27 +41,45 @@ class BaseRepository(Generic[T]):
         data["updatedBy"] = user_id
         data["status"] = data.get("status", "Active")
         
-        # We don't overwrite createdAt if it exists
-        update_doc = {
-            "$set": data,
-            "$setOnInsert": {
-                "createdAt": now,
-                "createdBy": user_id
-            }
-        }
-        
-        print("========== Mongo Document ==========")
-        print(update_doc)
-        
-        result = await self.collection.find_one_and_update(
-            {query_field: query_value, "deletedAt": None},
-            update_doc,
-            upsert=True,
-            return_document=ReturnDocument.AFTER
-        )
-        print("Inserted Document")
-        print(result)
-        return self.model_class(**self._prepare_doc(result))
+        # Check if current version exists
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                current_doc = await self.collection.find_one(
+                    {query_field: query_value, "isCurrent": True, "deletedAt": None},
+                    session=session
+                )
+                
+                if current_doc:
+                    # Mark current as false
+                    await self.collection.update_one(
+                        {"_id": current_doc["_id"]}, 
+                        {"$set": {"isCurrent": False, "effectiveTo": now}},
+                        session=session
+                    )
+                    
+                    # Prepare new document
+                    new_doc = {**current_doc, **data}
+                    new_doc.pop("_id", None)
+                    new_doc["version"] = current_doc.get("version", 1) + 1
+                    new_doc["isCurrent"] = True
+                    new_doc["effectiveFrom"] = now
+                    new_doc["effectiveTo"] = None
+                    
+                    result = await self.collection.insert_one(new_doc, session=session)
+                    new_doc["_id"] = str(result.inserted_id)
+                    return self.model_class(**self._prepare_doc(new_doc))
+                else:
+                    # Insert first version
+                    data["createdAt"] = now
+                    data["createdBy"] = user_id
+                    data["version"] = 1
+                    data["isCurrent"] = True
+                    data["effectiveFrom"] = now
+                    data["effectiveTo"] = None
+                    
+                    result = await self.collection.insert_one(data, session=session)
+                    data["_id"] = str(result.inserted_id)
+                    return self.model_class(**self._prepare_doc(data))
 
     async def get_by_id(self, id: str) -> Optional[T]:
         try:
@@ -75,6 +97,9 @@ class BaseRepository(Generic[T]):
             
         if "deletedAt" not in query:
             query["deletedAt"] = None
+            
+        if "isCurrent" not in query:
+            query["isCurrent"] = True
             
         if search and search_fields:
             search_query = [{"$regex": search, "$options": "i"}]
@@ -109,14 +134,33 @@ class BaseRepository(Generic[T]):
         except:
             return None
             
-        result = await self.collection.find_one_and_update(
-            {"_id": obj_id, "deletedAt": None},
-            {"$set": data},
-            return_document=True
-        )
-        if result:
-            return self.model_class(**self._prepare_doc(result))
-        return None
+        now = datetime.now(timezone.utc)
+            
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                current_doc = await self.collection.find_one(
+                    {"_id": obj_id, "deletedAt": None},
+                    session=session
+                )
+                if not current_doc:
+                    return None
+                    
+                await self.collection.update_one(
+                    {"_id": obj_id}, 
+                    {"$set": {"isCurrent": False, "effectiveTo": now}},
+                    session=session
+                )
+                
+                new_doc = {**current_doc, **data}
+                new_doc.pop("_id", None)
+                new_doc["version"] = current_doc.get("version", 1) + 1
+                new_doc["isCurrent"] = True
+                new_doc["effectiveFrom"] = now
+                new_doc["effectiveTo"] = None
+                
+                result = await self.collection.insert_one(new_doc, session=session)
+                new_doc["_id"] = str(result.inserted_id)
+                return self.model_class(**self._prepare_doc(new_doc))
 
     async def soft_delete(self, id: str, deleted_by: str = None) -> bool:
         try:
@@ -137,5 +181,14 @@ class BaseRepository(Generic[T]):
     async def exists(self, query: dict) -> bool:
         if "deletedAt" not in query:
             query["deletedAt"] = None
+        if "isCurrent" not in query:
+            query["isCurrent"] = True
         doc = await self.collection.find_one(query, {"_id": 1})
         return doc is not None
+
+    async def get_history(self, query_field: str, query_value: Any) -> List[T]:
+        # Returns all versions sorted by version ascending
+        cursor = self.collection.find({query_field: query_value, "deletedAt": None})
+        cursor = cursor.sort("version", 1)
+        docs = await cursor.to_list(length=None)
+        return [self.model_class(**self._prepare_doc(doc)) for doc in docs]
