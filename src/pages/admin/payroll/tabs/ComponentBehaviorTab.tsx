@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { GlassCard, AnimatedButton } from '../../../components/ui';
-import { payrollRulesApi } from '../../../services/payrollRulesApi';
+import { GlassCard, AnimatedButton } from '../../../../components/ui';
+import { payrollRulesApi } from '../../../../services/payrollRulesApi';
 import { toast } from 'react-hot-toast';
 
 export default function ComponentBehaviorTab() {

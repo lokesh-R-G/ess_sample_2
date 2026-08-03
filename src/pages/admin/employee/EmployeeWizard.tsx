@@ -128,7 +128,10 @@ export default function EmployeeWizard() {
       if (!formData.panNumber) errors.panNumber = "PAN Number is required for payroll";
     } else if (stepIndex === 4) {
       if (!formData.salaryStructureId) errors.salaryStructureId = "Salary Structure is required";
-      if (!formData.monthlyGross) errors.monthlyGross = "Monthly Gross is required";
+      if (!formData.basicSalary) errors.basicSalary = "Basic Salary is required";
+      if (!formData.isSalaryPreviewCalculated) {
+        errors.general = "You must calculate and review the salary preview before saving.";
+      }
     }
 
     setValidationErrors(errors);
@@ -167,7 +170,9 @@ export default function EmployeeWizard() {
         await employeeApi.createBanking(cleanPayload({ ...formData, employeeId: formData.employeeId }));
         await employeeApi.createGovernmentId(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       } else if (stepIndex === 4) {
-        await employeeApi.createPayrollConfig(cleanPayload({ ...formData, employeeId: formData.employeeId }));
+        const payload = cleanPayload({ ...formData, employeeId: formData.employeeId });
+        await employeeApi.createPayrollConfig(payload);
+        await employeeApi.assignSalary(payload);
       }
       return true;
     } catch (e: any) {
@@ -335,7 +340,7 @@ export default function EmployeeWizard() {
             </button>
 
             <AnimatedButton onClick={handleSaveAndContinue} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : currentStep === STEPS.length - 1 ? 'Complete Employee Creation' : 'Save & Continue'}
+              {isSubmitting ? 'Saving...' : currentStep === STEPS.length - 1 ? 'Save & Assign Salary' : 'Save & Continue'}
             </AnimatedButton>
           </div>
 

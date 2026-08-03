@@ -64,5 +64,8 @@ export const employeeApi = {
   },
 
   // Calculate Payslip Preview
-  calculatePayslipPreview: (data: any) => api.post('/v2/payroll/calculate-preview', data)
+  calculatePayslipPreview: (data: any) => api.post('/v2/payroll/calculate-preview', data),
+
+  // Assign Salary & Store Snapshot
+  assignSalary: (data: any) => api.post('/v2/payroll/assign', data)
 };

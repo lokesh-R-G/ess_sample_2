@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { GlassCard, Input, AnimatedButton } from '../../../components/ui';
-import { payrollRulesApi } from '../../../services/payrollRulesApi';
+import { GlassCard, Input, AnimatedButton } from '../../../../components/ui';
+import { payrollRulesApi } from '../../../../services/payrollRulesApi';
 import { toast } from 'react-hot-toast';
 import { Plus, Trash2 } from 'lucide-react';
 

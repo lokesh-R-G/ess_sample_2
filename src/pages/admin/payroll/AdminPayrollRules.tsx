@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Settings, Shield, Activity, Receipt, SlidersHorizontal } from 'lucide-react';
-import PayrollSettingsTab from './payroll/PayrollSettingsTab';
-import PFRulesTab from './payroll/PFRulesTab';
-import ESIRulesTab from './payroll/ESIRulesTab';
-import PTRulesTab from './payroll/PTRulesTab';
-import ComponentBehaviorTab from './payroll/ComponentBehaviorTab';
+import PayrollSettingsTab from './tabs/PayrollSettingsTab';
+import PFRulesTab from './tabs/PFRulesTab';
+import ESIRulesTab from './tabs/ESIRulesTab';
+import PTRulesTab from './tabs/PTRulesTab';
+import ComponentBehaviorTab from './tabs/ComponentBehaviorTab';
 
 export default function AdminPayrollRules() {
   const [activeTab, setActiveTab] = useState('settings');

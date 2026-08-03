@@ -16,13 +16,14 @@ import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminLeaveApprovals from './pages/admin/AdminLeaveApprovals';
 import AdminHolidays from './pages/admin/AdminHolidays';
 import AdminSync from './pages/admin/AdminSync';
-import AdminSettings from './pages/admin/AdminSettings';
+import AdminPayrollRules from './pages/admin/payroll/AdminPayrollRules';
+import SalaryPreviewPage from './pages/admin/payroll/SalaryPreviewPage';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import AdminAttendancePolicy from './pages/admin/AdminAttendancePolicy';
 import AdminOrganization from './pages/admin/AdminOrganization';
 import AdminLayout from './components/layout/AdminLayout';
-import AdminPayrollRules from './pages/admin/AdminPayrollRules';
+import AdminSettings from './pages/admin/AdminSettings';
 import EmployeeWizard from './pages/admin/employee/EmployeeWizard';
 
 function AppRoutes() {
@@ -97,6 +98,7 @@ function AppRoutes() {
           <Route path="holidays" element={<AdminHolidays />} />
           <Route path="sync" element={<AdminSync />} />
           <Route path="payroll" element={<AdminPayrollRules />} />
+          <Route path="payroll/preview" element={<SalaryPreviewPage />} />
           <Route path="branches" element={<AdminBranches />} />
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
