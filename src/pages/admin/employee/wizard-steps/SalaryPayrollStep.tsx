@@ -12,12 +12,54 @@ interface SalaryPayrollStepProps {
 
 export default function SalaryPayrollStep({ data, onChange, errors = {} }: SalaryPayrollStepProps) {
   const [structures, setStructures] = useState<any[]>([]);
+  const [allComponents, setAllComponents] = useState<any[]>([]);
   const [preview, setPreview] = useState<any>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
   useEffect(() => {
-    fetchStructures();
+    fetchInitialData();
   }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      const [structRes, compRes] = await Promise.all([
+        organizationApi.getSalaryStructures(),
+        organizationApi.getSalaryComponents()
+      ]);
+      setStructures(structRes?.data || structRes || []);
+      setAllComponents(compRes?.data || compRes || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Extract the specific components for the currently selected structure
+  const currentStructure = structures.find(s => (s._id || s.id) === data.salaryStructureId);
+  const structureComponentIds = currentStructure?.componentIds || [];
+  const activeComponents = allComponents.filter(c => structureComponentIds.includes(c._id || c.id));
+  
+  // Separate into Flat and Others
+  const flatComponents = activeComponents.filter(c => c.calculationMethod === 'Flat');
+  const otherComponents = activeComponents.filter(c => c.calculationMethod !== 'Flat');
+
+  // When structure changes, we want to prefill customComponents with default flat amounts if they aren't set
+  useEffect(() => {
+    if (data.salaryStructureId && currentStructure) {
+      const newCustomComps = { ...(data.customComponents || {}) };
+      let changed = false;
+      flatComponents.forEach(c => {
+        const cid = c._id || c.id;
+        if (newCustomComps[cid] === undefined) {
+          newCustomComps[cid] = c.monthlyAmount || c.amount || 0;
+          changed = true;
+        }
+      });
+      if (changed) {
+        onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false });
+        setPreview(null);
+      }
+    }
+  }, [data.salaryStructureId, currentStructure, flatComponents]);
 
   // When input changes, reset preview calculation
   useEffect(() => {
@@ -25,19 +67,16 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
       onChange({ ...data, isSalaryPreviewCalculated: false });
       setPreview(null);
     }
-  }, [data.salaryStructureId, data.basicSalary, data.pfOption, data.esiOption, data.ptState]);
-
-  const fetchStructures = async () => {
-    try {
-      const res = await organizationApi.getSalaryStructures();
-      setStructures(res?.data || res || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  }, [data.salaryStructureId, data.basicSalary, data.pfOption, data.esiOption, data.ptState, data.customComponents]);
 
   const handleChange = (field: string, value: any) => {
     onChange({ ...data, [field]: value, isSalaryPreviewCalculated: false });
+    setPreview(null);
+  };
+
+  const handleCustomComponentChange = (cid: string, value: number) => {
+    const newCustomComps = { ...(data.customComponents || {}), [cid]: value };
+    onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false });
     setPreview(null);
   };
 
@@ -51,7 +90,8 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
         basicSalary: Number(data.basicSalary),
         pfOption: data.pfOption || 'Default',
         esiOption: data.esiOption || 'Default',
-        ptState: data.ptState || 'None'
+        ptState: data.ptState || 'None',
+        customComponents: data.customComponents || {}
       });
       setPreview(res?.data || res || null);
       onChange({ ...data, isSalaryPreviewCalculated: true });
@@ -88,14 +128,49 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
             required
           />
           
-          <Input
-            label="Basic Salary (₹)"
-            type="number"
-            value={data.basicSalary || ''}
-            onChange={(e) => handleChange('basicSalary', Number(e.target.value))}
-            error={errors.basicSalary}
-            required
-          />
+          <div className="p-4 bg-brand-50 border border-brand-200 rounded-lg space-y-4">
+            <h4 className="text-sm font-semibold text-brand-900 border-b border-brand-200 pb-2">Master Input</h4>
+            <Input
+              label="Basic Salary (₹)"
+              type="number"
+              value={data.basicSalary || ''}
+              onChange={(e) => handleChange('basicSalary', Number(e.target.value))}
+              error={errors.basicSalary}
+              required
+            />
+          </div>
+
+          {currentStructure && flatComponents.length > 0 && (
+            <div className="p-4 bg-white border border-neutral-200 shadow-sm rounded-lg space-y-4">
+              <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">Flat Components (Editable)</h4>
+              {flatComponents.map((c) => {
+                const cid = c._id || c.id;
+                return (
+                  <Input
+                    key={cid}
+                    label={`${c.name} (₹)`}
+                    type="number"
+                    value={data.customComponents?.[cid] ?? (c.monthlyAmount || c.amount || '')}
+                    onChange={(e) => handleCustomComponentChange(cid, Number(e.target.value))}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {currentStructure && otherComponents.length > 0 && (
+            <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-lg space-y-3">
+              <h4 className="text-sm font-semibold text-neutral-700 border-b border-neutral-200 pb-2">Calculated Components (Read-only)</h4>
+              <div className="flex flex-wrap gap-2">
+                {otherComponents.map((c) => (
+                  <span key={c._id || c.id} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-200 text-neutral-800">
+                    {c.name} ({c.calculationMethod})
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-500 italic mt-2">These will be automatically calculated when you click Calculate.</p>
+            </div>
+          )}
 
           <Select
             label="PF Calculation Option"
@@ -135,9 +210,9 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
           <button
             onClick={(e) => { e.preventDefault(); generatePreview(); }}
             disabled={loadingPreview || !data.salaryStructureId || !data.basicSalary}
-            className="w-full flex items-center justify-center px-4 py-3 bg-brand-600 text-white rounded hover:bg-brand-700 disabled:opacity-50 text-sm font-medium transition-colors"
+            className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-neutral-200 disabled:text-neutral-400 focus:ring-green-500 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
           >
-            <Calculator className="w-4 h-4 mr-2" />
+            <Calculator className="w-5 h-5 mr-2" />
             {loadingPreview ? 'Calculating...' : 'Calculate'}
           </button>
         </div>

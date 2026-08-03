@@ -35,6 +35,15 @@ class SalaryAssignmentService:
         obj_ids = [ObjectId(cid) for cid in component_ids if ObjectId.is_valid(cid)]
         components_docs = await self.db["salary_components"].find({"_id": {"$in": obj_ids}, "deletedAt": None}).to_list(length=None)
         
+        # Override flat component amounts using customComponents if provided
+        custom_comps = payload.get("customComponents", {})
+        for doc in components_docs:
+            if doc.get("calculationMethod") == "Flat":
+                cid = str(doc.get("_id"))
+                if cid in custom_comps:
+                    doc["amount"] = custom_comps[cid]
+                    doc["monthlyAmount"] = custom_comps[cid]
+        
         # We don't need actual rules for snapshot if they just dictate deductions, but we can pass mock rules for the engine.
         pf_rule = PFRule(pfEnabled=True, defaultMode="Always Ceiling", pfCeilingAmount=15000, employeePfPercent=12.0)
         esi_rule = ESIRule(esiEnabled=True, employeePercent=0.75, employerPercent=3.25, eligibilityGross=21000)

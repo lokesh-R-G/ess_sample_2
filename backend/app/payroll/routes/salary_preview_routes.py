@@ -33,6 +33,7 @@ class PreviewRequest(BaseModel):
     pfOption: str = "Default"
     esiOption: str = "Default"
     ptState: str = "None"
+    customComponents: Optional[dict[str, float]] = None
 
 @router.post("/")
 async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depends(get_database)):
@@ -52,8 +53,19 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     # 2. Fetch Components
     obj_ids = [ObjectId(cid) for cid in component_ids if ObjectId.is_valid(cid)]
     components_cursor = db["salary_components"].find({"_id": {"$in": obj_ids}, "deletedAt": None})
-    components_docs = await components_cursor.to_list(length=None)
-    components_docs = serialize_mongo(components_docs)
+    components_docs_raw = await components_cursor.to_list(length=None)
+    
+    # Override flat component amounts using customComponents if provided
+    custom_comps = req.customComponents or {}
+    for doc in components_docs_raw:
+        if doc.get("calculationMethod") == "Flat":
+            cid = str(doc.get("_id"))
+            if cid in custom_comps:
+                # Override the amount only for calculation, Mongo is never updated.
+                doc["amount"] = custom_comps[cid]
+                doc["monthlyAmount"] = custom_comps[cid]
+                
+    components_docs = serialize_mongo(components_docs_raw)
     
     # 3. Fetch Rules (Mocked for now, assume default rules if none exist)
     pf_doc = await db["pf_rules"].find_one({"status": "Active"})
