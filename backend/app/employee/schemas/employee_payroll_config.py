@@ -9,6 +9,8 @@ class EmployeePayrollConfigCreate(BaseModel):
     pfEnabled: bool = True
     wantsPf: bool = True
     pfCalculationMethod: Literal["Ceiling", "Actual", "Default"] = "Default"
+    wantsPension: bool = True
+    isFresher: bool = True
     esiEnabled: bool = True
     workingDayMethod: Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"] = "Calendar Days"
     existingPensionMember: bool = False
@@ -22,6 +24,8 @@ class EmployeePayrollConfigUpdate(BaseModel):
     pfEnabled: Optional[bool] = None
     wantsPf: Optional[bool] = None
     pfCalculationMethod: Optional[Literal["Ceiling", "Actual", "Default"]] = None
+    wantsPension: Optional[bool] = None
+    isFresher: Optional[bool] = None
     esiEnabled: Optional[bool] = None
     workingDayMethod: Optional[Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"]] = None
     existingPensionMember: Optional[bool] = None

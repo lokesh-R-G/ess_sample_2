@@ -7,6 +7,17 @@ from bson import ObjectId
 from app.domain_models import PFRule, ESIRule, ProfessionalTaxSlab, EmployeeSalaryComponent
 from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine
 
+class MockRequest:
+    def __init__(self, data: dict):
+        for k, v in data.items():
+            setattr(self, k, v)
+
+def clean_mongo_doc(doc: dict) -> dict:
+    if not doc: return {}
+    clean = dict(doc)
+    if "_id" in clean: clean["_id"] = str(clean["_id"])
+    return clean
+
 class SalaryAssignmentService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -44,9 +55,18 @@ class SalaryAssignmentService:
                     doc["amount"] = custom_comps[cid]
                     doc["monthlyAmount"] = custom_comps[cid]
         
-        # We don't need actual rules for snapshot if they just dictate deductions, but we can pass mock rules for the engine.
-        pf_rule = PFRule(pfEnabled=True, defaultMode="Always Ceiling", pfCeilingAmount=15000, employeePfPercent=12.0)
-        esi_rule = ESIRule(esiEnabled=True, employeePercent=0.75, employerPercent=3.25, eligibilityGross=21000)
+        # Fetch actual rules dynamically instead of mocking
+        pf_doc = await self.db["pf_rules"].find_one({"status": "Active"})
+        pf_rule = PFRule(**clean_mongo_doc(pf_doc)) if pf_doc else PFRule(effectiveFrom=datetime.utcnow())
+        
+        esi_doc = await self.db["esi_rules"].find_one({"status": "Active"})
+        esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=datetime.utcnow())
+        
+        pt_cursor = self.db["pt_slabs"].find({"state": payload.get("ptState", "None")})
+        pt_docs = await pt_cursor.to_list(length=None)
+        pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
+        
+        req = MockRequest(payload)
         
         preview = SalaryCalculationEngine.calculate(
             basic_salary=basic_salary,
@@ -56,7 +76,8 @@ class SalaryAssignmentService:
             pt_state=payload.get("ptState", "None"),
             pf_rule=pf_rule,
             esi_rule=esi_rule,
-            pt_slabs=[]
+            pt_slabs=pt_slabs,
+            preview_request=req
         )
         
         raw_components = preview.get("_rawComponents", [])

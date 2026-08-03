@@ -109,9 +109,9 @@ class PayrollCalculationEngine:
         )
 
     @staticmethod
-    def calculatePfGross(components: List[Dict[str, Any]], pf_rules: PFRule) -> float:
+    def calculatePfGross(components: List[Dict[str, Any]], pf_rules: Optional[PFRule] = None) -> float:
         """Calculate PF Gross based on components flagged with 'pfApplicable'."""
-        if not pf_rules.pfEnabled:
+        if pf_rules and not pf_rules.pfEnabled:
             return 0.0
             
         return sum(
@@ -132,62 +132,57 @@ class PayrollCalculationEngine:
     @staticmethod
     def calculatePf(pf_gross: float, pf_rules: PFRule, employee_choice: Dict[str, Any]) -> Dict[str, float]:
         """
-        Calculate Employee PF, Employer PF, and Pension based on PF Rules.
-        
-        Args:
-            pf_gross: The calculated PF Gross for the month.
-            pf_rules: The PFRule object.
-            employee_choice: Dict containing:
-                             - wantsPf: bool
-                             - useCeiling: bool
-                             - isExistingPensionMember: bool
+        Calculate Employee PF, Employer PF, Pension, EDLI, and Admin Charges based on PF Rules.
         """
         result = {
             "employeePf": 0.0,
             "employerPf": 0.0,
             "employerPension": 0.0,
             "pfAdminCharges": 0.0,
+            "edli": 0.0,
         }
 
         if not pf_rules.pfEnabled:
             return result
 
-        is_mandatory = pf_gross < pf_rules.mandatoryBelowGross
         wants_pf = employee_choice.get("wantsPf", True)
+        wants_pension = employee_choice.get("wantsPension", True)
+        is_fresher = employee_choice.get("isFresher", True)
+        is_existing_pension = employee_choice.get("isExistingPensionMember", False)
+        use_ceiling = employee_choice.get("useCeiling", False)
 
-        if not is_mandatory and not wants_pf:
-            return result
-
-        # Determine calculation base
-        calc_base = pf_gross
-        if pf_rules.defaultMode == "Always Ceiling" or employee_choice.get("useCeiling", False):
-            calc_base = min(pf_gross, pf_rules.pfCeilingAmount)
+        # Case 1: Fresher <= Ceiling -> Forced PF & Pension
+        if is_fresher and pf_gross <= pf_rules.pfCeilingAmount:
+            wants_pf = True
+            wants_pension = True
+            calc_base = pf_gross
+        elif wants_pf:
+            if wants_pension:
+                # PF + Pension -> Auto Ceiling Wage
+                calc_base = min(pf_gross, pf_rules.pfCeilingAmount)
+            else:
+                # PF only -> Choice of Ceiling or Actual
+                calc_base = min(pf_gross, pf_rules.pfCeilingAmount) if use_ceiling else pf_gross
+        else:
+            return result # Wants neither
 
         # Calculate Employee PF
         employee_pf = calc_base * (pf_rules.employeePfPercent / 100.0)
 
-        # Calculate Employer splits
-        is_existing_pension = employee_choice.get("isExistingPensionMember", False)
-        if pf_rules.allowExistingPensionMember and is_existing_pension:
+        # Calculate Employer Pension
+        employer_pension = 0.0
+        if wants_pension:
             pension_base = min(calc_base, pf_rules.pfCeilingAmount)
             employer_pension = pension_base * (pf_rules.employerPensionPercent / 100.0)
-            # Cap pension
             employer_pension = min(employer_pension, pf_rules.maxPensionAmount)
-            employer_pf = (calc_base * (pf_rules.employeePfPercent / 100.0)) - employer_pension
-        elif pf_rules.allowFresherLogic and not is_existing_pension:
-            if calc_base > pf_rules.pfCeilingAmount:
-                # Fresher with salary > 15000 -> No pension, all goes to Employer PF
-                employer_pension = 0.0
-                employer_pf = calc_base * (pf_rules.employeePfPercent / 100.0)
-            else:
-                employer_pension = calc_base * (pf_rules.employerPensionPercent / 100.0)
-                employer_pf = (calc_base * (pf_rules.employeePfPercent / 100.0)) - employer_pension
-        else:
-            # Fallback
-            employer_pension = calc_base * (pf_rules.employerPensionPercent / 100.0)
-            employer_pf = (calc_base * (pf_rules.employeePfPercent / 100.0)) - employer_pension
 
-        # Processing fees
+        # Employer PF receives the remainder
+        employer_pf = employee_pf - employer_pension
+
+        # Admin Charges and EDLI (EDLI defaults to 0.5% if not present in rule)
+        edli_percent = getattr(pf_rules, 'edliPercent', 0.5)
+        edli = calc_base * (edli_percent / 100.0)
+        
         admin_charges = 0.0
         if pf_rules.processingFeeEnabled:
             admin_charges = calc_base * (pf_rules.processingFeePercent / 100.0)
@@ -196,6 +191,7 @@ class PayrollCalculationEngine:
         result["employerPf"] = round(employer_pf)
         result["employerPension"] = round(employer_pension)
         result["pfAdminCharges"] = round(admin_charges)
+        result["edli"] = round(edli)
         return result
 
     @staticmethod
