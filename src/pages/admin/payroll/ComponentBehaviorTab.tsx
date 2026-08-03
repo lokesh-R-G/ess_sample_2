@@ -59,6 +59,10 @@ export default function ComponentBehaviorTab() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">Component</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">Is Earning?</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">Include in Gross?</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                  Attendance Dependent?
+                  <div className="text-[10px] text-neutral-400 normal-case">(LOP Applicable)</div>
+                </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">Taxable?</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">PF Applicable?</th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">ESI Applicable?</th>
@@ -87,11 +91,19 @@ export default function ComponentBehaviorTab() {
                         className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
                       />
                     </td>
+                    <td className="px-4 py-3 text-center" title="If enabled, this component will be proportionally adjusted based on the employee's earned gross during payroll processing. If disabled, the component remains constant regardless of attendance.">
+                      <input
+                        type="checkbox"
+                        checked={comp.attendanceDependent ?? true}
+                        onChange={(e) => handleToggleFlag(id, 'attendanceDependent', e.target.checked)}
+                        className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        checked={comp.taxable}
-                        onChange={(e) => handleToggleFlag(id, 'taxable', e.target.checked)}
+                        checked={comp.taxable ?? comp.isTaxable}
+                        onChange={(e) => handleToggleFlag(id, 'isTaxable', e.target.checked)}
                         className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
                       />
                     </td>

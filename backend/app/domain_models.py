@@ -198,6 +198,7 @@ class SalaryComponent(BaseModel):
     includeInCTC: bool = True
     includeInBonus: bool = False
     includeInGratuity: bool = False
+    attendanceDependent: bool = True
     
     # UI and Behavior Flags
     isFixedComponent: bool = True
@@ -249,6 +250,7 @@ class EmployeeSalaryComponent(BaseModel):
     monthlyAmount: float
     annualAmount: float
     formulaUsed: Optional[str] = None
+    distributionRatio: Optional[float] = None
     effectiveDate: datetime
     version: int = 1
     status: Literal["Active", "Archived"] = "Active"

@@ -14,6 +14,7 @@ class SalaryComponentCreate(BaseModel):
     isTaxable: bool = True
     pfApplicable: bool = False
     esiApplicable: bool = False
+    attendanceDependent: bool = True
     displayOrder: int = 1
     isActive: bool = True
 
@@ -28,6 +29,7 @@ class SalaryComponentUpdate(BaseModel):
     isTaxable: Optional[bool] = None
     pfApplicable: Optional[bool] = None
     esiApplicable: Optional[bool] = None
+    attendanceDependent: Optional[bool] = None
     displayOrder: Optional[int] = None
     isActive: Optional[bool] = None
 
@@ -44,6 +46,7 @@ class SalaryComponentResponse(BaseModel):
     isTaxable: Optional[bool] = None
     pfApplicable: Optional[bool] = None
     esiApplicable: Optional[bool] = None
+    attendanceDependent: Optional[bool] = None
     # Legacy field aliases for backward compat
     pfApplicability: Optional[bool] = None
     esiApplicability: Optional[bool] = None

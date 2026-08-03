@@ -20,39 +20,82 @@ class PayrollCalculationEngine:
         return max(0.0, monthly_gross)
 
     @staticmethod
-    def splitSalaryComponents(monthly_gross: float, structure_components: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def calculateDistributionRatios(structure_components: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Redistribute the monthly gross back into the individual components based on their percentage share
-        of the total original gross.
-        
-        Args:
-            monthly_gross: The prorated gross for the month (after LOP).
-            structure_components: List of dicts representing the assigned components with their original amounts.
-                                  Must include 'amount' and 'includeInGross' flag.
+        Calculate and append the distributionRatio (0-1) for attendance-dependent components.
+        This should be called during Salary Assignment or Revision and the resulting 
+        components should be stored as the employee's assigned salary snapshot.
         """
-        total_original_gross = sum(
-            c.get("amount", 0.0) 
-            for c in structure_components 
+        # Gross contribution is from earning components that are included in gross
+        total_gross = sum(
+            c.get("amount", 0.0)
+            for c in structure_components
             if c.get("includeInGross", True)
         )
 
+        # Fixed components are those that are attendanceDependent = False
+        fixed_gross = sum(
+            c.get("amount", 0.0)
+            for c in structure_components
+            if c.get("includeInGross", True) and not c.get("attendanceDependent", True)
+        )
+
+        distributable_gross = total_gross - fixed_gross
+
         result = []
         for c in structure_components:
-            # We don't prorate non-gross components like employer PF
+            new_c = c.copy()
+            if new_c.get("includeInGross", True) and new_c.get("attendanceDependent", True):
+                if distributable_gross > 0:
+                    new_c["distributionRatio"] = new_c.get("amount", 0.0) / distributable_gross
+                else:
+                    new_c["distributionRatio"] = 0.0
+            else:
+                new_c["distributionRatio"] = 0.0
+            result.append(new_c)
+
+        return result
+
+    @staticmethod
+    def splitSalaryComponents(monthly_gross: float, structure_components: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Redistribute the monthly gross back into the individual components.
+        Fixed components (attendanceDependent = False) retain their full amount and are subtracted from the gross first.
+        The remaining gross is then distributed across attendance-dependent components using their stored distributionRatios.
+        """
+        # First pass: identify fixed components and subtract them from available gross
+        remaining_gross = monthly_gross
+        result = []
+        
+        for c in structure_components:
+            # Skip non-gross components immediately
             if not c.get("includeInGross", True):
                 result.append(c.copy())
                 continue
+                
+            # Handle fixed components
+            if not c.get("attendanceDependent", True):
+                original_amount = c.get("amount", 0.0)
+                new_c = c.copy()
+                new_c["proratedAmount"] = original_amount
+                remaining_gross -= original_amount
+                result.append(new_c)
+                
+        # Prevent negative remaining gross if LOP is extreme and fixed components exceed it
+        remaining_gross = max(0.0, remaining_gross)
 
-            original_amount = c.get("amount", 0.0)
-            if total_original_gross > 0:
-                share_percentage = original_amount / total_original_gross
-                prorated_amount = monthly_gross * share_percentage
-            else:
-                prorated_amount = 0.0
-
-            new_c = c.copy()
-            new_c["proratedAmount"] = prorated_amount
-            result.append(new_c)
+        # Second pass: distribute remaining gross to attendance-dependent components based on ratios
+        for c in structure_components:
+            if not c.get("includeInGross", True):
+                continue
+                
+            if c.get("attendanceDependent", True):
+                ratio = c.get("distributionRatio", 0.0)
+                prorated_amount = remaining_gross * ratio
+                
+                new_c = c.copy()
+                new_c["proratedAmount"] = prorated_amount
+                result.append(new_c)
 
         return result
 
