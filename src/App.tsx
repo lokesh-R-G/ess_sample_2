@@ -92,6 +92,7 @@ function AppRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="employees" element={<AdminEmployees />} />
           <Route path="employees/new" element={<EmployeeWizard />} />
+          <Route path="employees/edit/:id" element={<EmployeeWizard />} />
           <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
           <Route path="holidays" element={<AdminHolidays />} />
           <Route path="sync" element={<AdminSync />} />

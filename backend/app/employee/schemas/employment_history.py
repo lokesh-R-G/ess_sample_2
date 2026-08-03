@@ -13,6 +13,8 @@ class EmploymentHistoryCreate(BaseModel):
     reportingManagerId: Optional[str] = None
     shiftId: Optional[str] = None
     noticePeriodDays: int = 0
+    probationPeriodDays: int = 0
+    effectiveFrom: Optional[datetime] = None
 
 class EmploymentHistoryUpdate(BaseModel):
     status: Optional[str] = None
@@ -25,6 +27,8 @@ class EmploymentHistoryUpdate(BaseModel):
     reportingManagerId: Optional[str] = None
     shiftId: Optional[str] = None
     noticePeriodDays: Optional[int] = None
+    probationPeriodDays: Optional[int] = None
+    effectiveFrom: Optional[datetime] = None
 
 class EmploymentHistoryResponse(EmploymentHistoryCreate):
     id: str

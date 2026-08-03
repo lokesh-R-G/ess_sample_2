@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard, AnimatedButton } from '../../../components/ui';
 import { employeeApi } from '../../../services/employeeApi';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle, ChevronRight, ChevronLeft, Save, X } from 'lucide-react';
 
 import PersonalInfoStep from './wizard-steps/PersonalInfoStep';
@@ -21,6 +21,7 @@ const STEPS = [
 
 export default function EmployeeWizard() {
   const navigate = useNavigate();
+  const { id: editEmployeeId } = useParams<{ id: string }>();
   const [currentStep, setCurrentStep] = useState(0);
   
   // Highest step the user is allowed to navigate to
@@ -31,18 +32,58 @@ export default function EmployeeWizard() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const draft = localStorage.getItem('employee_wizard_draft');
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        setFormData(parsed.data || {});
-        setCurrentStep(parsed.step || 0);
-        setMaxCompletedStep(parsed.maxCompletedStep || -1);
-      } catch (e) {
-        console.error("Failed to parse draft", e);
+    if (editEmployeeId) {
+      loadEmployeeData(editEmployeeId);
+    } else {
+      const draft = localStorage.getItem('employee_wizard_draft');
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          setFormData(parsed.data || {});
+          setCurrentStep(parsed.step || 0);
+          setMaxCompletedStep(parsed.maxCompletedStep || -1);
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
       }
     }
-  }, []);
+  }, [editEmployeeId]);
+
+  const loadEmployeeData = async (employeeId: string) => {
+    try {
+      // Base
+      const empRes = await employeeApi.getEmployee(employeeId);
+      const baseData = empRes?.data || empRes || {};
+      
+      const [pers, cont, addr, emp, bank, gov, pay] = await Promise.all([
+        employeeApi.getPersonal(employeeId),
+        employeeApi.getContact(employeeId),
+        employeeApi.getAddress(employeeId),
+        employeeApi.getEmployment(employeeId),
+        employeeApi.getBanking(employeeId),
+        employeeApi.getGovernmentId(employeeId),
+        employeeApi.getPayrollConfig(employeeId)
+      ]);
+
+      setFormData({
+        employeeId,
+        ...baseData,
+        ...(pers?.data?.[0] || pers?.[0] || {}),
+        ...(cont?.[0] || {}), // Contact is already mapped in api
+        ...(addr?.data?.[0] || addr?.[0] || {}),
+        ...(emp?.[0] || {}), // Employment is already mapped in api
+        ...(bank?.data?.[0] || bank?.[0] || {}),
+        ...(gov?.data?.[0] || gov?.[0] || {}),
+        ...(pay?.[0] || {}) // Payroll is already mapped in api
+      });
+      
+      // In edit mode, all steps are accessible
+      setMaxCompletedStep(STEPS.length - 1);
+    } catch (e) {
+      console.error("Failed to load employee data", e);
+      toast.error("Failed to load employee data for editing.");
+    }
+  };
 
   const handleSaveDraft = () => {
     localStorage.setItem('employee_wizard_draft', JSON.stringify({
@@ -108,30 +149,15 @@ export default function EmployeeWizard() {
 
   const saveStepApi = async (stepIndex: number): Promise<boolean> => {
     try {
-      console.log("saveStepApi called with stepIndex:", stepIndex);
       if (stepIndex === 0) {
-        // Create base employee first if not exists
         let empId = formData.employeeId;
-        console.log("STEP 1 - Creating Employee", { employeeId: empId });
         if (!empId) {
-          console.log("Before createEmployee");
           const empRes = await employeeApi.createEmployee({});
-          console.log("Raw API Response", empRes);
-          console.log("Employee created", empRes);
           empId = empRes._id || empRes.employeeId || empRes.id;
-          setFormData((prev: any) => {
-             const newState = { ...prev, employeeId: empId };
-             console.log("State after setting employeeId:", newState);
-             return newState;
-          });
+          setFormData((prev: any) => ({ ...prev, employeeId: empId }));
         }
-        // Save Personal
         const personalPayload = cleanPayload({ ...formData, employeeId: empId });
-        console.log("About to call createPersonal");
-        console.log(personalPayload);
-        const persRes = await employeeApi.createPersonal(personalPayload);
-        console.log("Raw API Response", persRes);
-        console.log("Personal saved", persRes);
+        await employeeApi.createPersonal(personalPayload);
       } else if (stepIndex === 1) {
         await employeeApi.createContact(cleanPayload({ ...formData, employeeId: formData.employeeId }));
         await employeeApi.createAddress(cleanPayload({ ...formData, employeeId: formData.employeeId }));
@@ -143,10 +169,8 @@ export default function EmployeeWizard() {
       } else if (stepIndex === 4) {
         await employeeApi.createPayrollConfig(cleanPayload({ ...formData, employeeId: formData.employeeId }));
       }
-      console.log("saveStepApi returning true");
       return true;
     } catch (e: any) {
-      console.log("saveStepApi caught an exception", e);
       console.error(e);
       let errorMsg = 'Failed to save section.';
       // Our custom fetch wrapper throws an Error with the message being the parsed detail.
@@ -164,15 +188,12 @@ export default function EmployeeWizard() {
         }
       }
       toast.error(errorMsg);
-      console.log("saveStepApi returning false after catch");
       return false;
     }
   };
 
   const handleSaveAndContinue = async () => {
-    console.log("STEP =", currentStep);
     if (!validateStep(currentStep)) {
-      console.log("validateStep returned false. Early return.");
       return;
     }
 
@@ -180,7 +201,6 @@ export default function EmployeeWizard() {
     const toastId = toast.loading(`Saving ${STEPS[currentStep].title}...`);
 
     const success = await saveStepApi(currentStep);
-    console.log("saveStepApi success result:", success);
     
     if (success) {
       toast.success(`${STEPS[currentStep].title} saved successfully`, { id: toastId });
@@ -189,23 +209,19 @@ export default function EmployeeWizard() {
       }
       
       if (currentStep < STEPS.length - 1) {
-        console.log("Moving to next step from", currentStep, "to", currentStep + 1);
         setCurrentStep(curr => curr + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         // Final Step Completed
-        console.log("Final Step Completed. Navigating to employees list.");
         localStorage.removeItem('employee_wizard_draft');
-        toast.success("Employee Onboarding Completed!");
+        toast.success(editEmployeeId ? "Employee Update Completed!" : "Employee Onboarding Completed!");
         navigate('/admin/employees');
       }
     } else {
-      console.log("success is false, dismissing toast");
       toast.dismiss(toastId);
     }
     
     setIsSubmitting(false);
-    console.log("handleSaveAndContinue execution complete");
   };
 
   const handleBack = () => {
@@ -230,7 +246,7 @@ export default function EmployeeWizard() {
       
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Create New Employee</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">{editEmployeeId ? 'Edit Employee' : 'Create New Employee'}</h1>
           <p className="text-neutral-500 mt-1">Step {currentStep + 1} of {STEPS.length} - {STEPS[currentStep].title}</p>
         </div>
       </div>

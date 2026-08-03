@@ -12,6 +12,7 @@ class EmployeePayrollConfigCreate(BaseModel):
     esiEnabled: bool = True
     workingDayMethod: Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"] = "Calendar Days"
     existingPensionMember: bool = False
+    ptState: Optional[str] = None
 
 class EmployeePayrollConfigUpdate(BaseModel):
     status: Optional[str] = None
@@ -24,6 +25,7 @@ class EmployeePayrollConfigUpdate(BaseModel):
     esiEnabled: Optional[bool] = None
     workingDayMethod: Optional[Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"]] = None
     existingPensionMember: Optional[bool] = None
+    ptState: Optional[str] = None
 
 class EmployeePayrollConfigResponse(EmployeePayrollConfigCreate):
     id: str

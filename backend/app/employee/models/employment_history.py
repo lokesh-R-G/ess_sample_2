@@ -14,6 +14,8 @@ class EmploymentHistoryModel(BaseModel):
     reportingManagerId: Optional[str] = None
     shiftId: Optional[str] = None
     noticePeriodDays: int = 0
+    probationPeriodDays: int = 0
+    effectiveFrom: Optional[datetime] = None
     status: str = "Active"
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
