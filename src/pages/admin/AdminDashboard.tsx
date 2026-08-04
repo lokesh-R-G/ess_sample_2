@@ -38,12 +38,31 @@ export const AdminDashboard: React.FC = () => {
   const branchData = summary?.branchData ?? [];
 
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <GlassCard className="p-4 text-sm text-neutral-500">
+          Loading admin dashboard...
+        </GlassCard>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <GlassCard className="p-4 border border-red-200 bg-red-50 text-red-700">
+          {error}
+        </GlassCard>
+      </div>
+    );
+  }
+
+  if (!summary) return null;
+
   return (
     <>
       <div className="space-y-6">
-
-        {error ? <GlassCard className="p-4 border border-red-200 bg-red-50 text-red-700">{error}</GlassCard> : null}
-        {isLoading ? <GlassCard className="p-4 text-sm text-neutral-500">Loading admin dashboard...</GlassCard> : null}
         {/* Welcome Section */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <GlassCard className="p-6">

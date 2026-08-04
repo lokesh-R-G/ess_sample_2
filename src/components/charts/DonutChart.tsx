@@ -14,7 +14,17 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   colors = ['#00924C', '#3b82f6', '#9333ea', '#f59e0b', '#ef4444'],
   height = 300,
 }) => {
-  if (!series || series.length === 0 || !labels || labels.length === 0) return null;
+  console.log(`[DonutChart] Render. series length: ${series?.length}, labels length: ${labels?.length}`);
+
+  React.useEffect(() => {
+    console.log('[DonutChart] Mounted');
+    return () => console.log('[DonutChart] Unmounted');
+  }, []);
+
+  if (!series || series.length === 0 || !labels || labels.length === 0) {
+    console.log('[DonutChart] Returning null due to empty series/labels');
+    return null;
+  }
   const options = {
     chart: {
       type: 'donut' as const,

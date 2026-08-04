@@ -13,7 +13,17 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   categories,
   height = 350,
 }) => {
-  if (!data || data.length === 0 || !categories || categories.length === 0) return null;
+  console.log(`[AreaChart] Render. data length: ${data?.length}, categories length: ${categories?.length}`);
+
+  React.useEffect(() => {
+    console.log('[AreaChart] Mounted');
+    return () => console.log('[AreaChart] Unmounted');
+  }, []);
+
+  if (!data || data.length === 0 || !categories || categories.length === 0) {
+    console.log('[AreaChart] Returning null due to empty data/categories');
+    return null;
+  }
   const options = {
     chart: {
       type: 'area' as const,
