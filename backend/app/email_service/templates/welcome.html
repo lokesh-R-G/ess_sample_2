@@ -1,20 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>Welcome to the team! Your employee account has been created.</p>
+<p>Hello <strong>{{ name }}</strong>,</p>
+
+<p>Your ESS account has been created on <strong>IDS Enterprise HRMS</strong>. You can now log in using the credentials below.</p>
 
 <ul>
-    <li><strong>Employee ID:</strong> {{ employee_id }}</li>
-    <li><strong>Department:</strong> {{ department }}</li>
-    <li><strong>Designation:</strong> {{ designation }}</li>
-    <li><strong>Temporary Password:</strong> {{ temp_password }}</li>
+    <li><strong>Username:</strong> {{ username }}</li>
+    <li><strong>Temporary Password:</strong> <code>{{ temporary_password }}</code></li>
 </ul>
 
-<p>Please log in and change your password immediately.</p>
+<p>For security reasons, you <strong>must change your password</strong> during your first login.</p>
 
 <a href="{{ login_url }}" class="button">Log In Now</a>
 
 <div class="alert">
-    Do not share your temporary password with anyone.
+    Do not share your temporary password with anyone. This password expires after your first login.
 </div>
+
+<p>Regards,<br>HR Team</p>
 {% endblock %}

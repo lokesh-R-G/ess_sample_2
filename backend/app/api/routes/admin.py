@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+import asyncio
+import secrets
 from collections import Counter
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.db.mongo import get_database
-from app.dependencies import require_roles
-from app.services.auth_service import validate_employee_with_essl, create_provisioned_user
+from app.dependencies import require_roles, get_current_user
+from app.services.auth_service import create_provisioned_user
 from app.services.sync_service import sync_essl_logs
+from app.core.security import hash_password
+from app.email_service.services.email_service import EmailService
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -90,14 +95,135 @@ async def summary(_admin=Depends(require_roles("Admin"))):
 
 
 class CreateUserRequest(BaseModel):
-    empId: str
+    """Deprecated. Use /invite-employee/ instead."""
+    employeeId: str
+    role: str = "Employee"
     name: str | None = None
     force: bool = False
-    companyId: str | None = None
-    branchId: str | None = None
-    departmentId: str | None = None
-    designationId: str | None = None
-    managerId: str | None = None
+
+
+class InviteEmployeeRequest(BaseModel):
+    employeeId: str          # V2 UUID — the single trusted identifier from the UI
+    employeeCode: str        # HR assigns/confirms this value in the dialog
+    email: str               # Personal email for welcome notification
+    role: str = "Employee"
+
+
+
+@router.post("/invite-employee/", status_code=201)
+async def invite_employee(
+    payload: InviteEmployeeRequest,
+    admin=Depends(require_roles("Admin")),
+):
+    """
+    Canonical ESS invitation endpoint.
+    The frontend sends: { employeeId (UUID), employeeCode (HR input), email, role }.
+    The backend is the sole owner of Employee Code assignment and validation.
+    """
+    db = get_database()
+    now = datetime.now(timezone.utc)
+
+    from app.employee.repositories.employee_repository import EmployeeRepository
+    employee_repo = EmployeeRepository(db)
+
+    # 1. Load Employee from V2 module using UUID
+    employee = await employee_repo.get_by_employee_id(payload.employeeId)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found in HRMS")
+    if employee.status != "Active":
+        raise HTTPException(status_code=400, detail="Employee is not active")
+    if employee.deletedAt is not None:
+        raise HTTPException(status_code=400, detail="Employee has been deleted")
+
+    # 2. Employee Code assignment and immutability logic
+    if employee.employeeCode:
+        # Code already set — must match the incoming value exactly (immutable after assignment)
+        if employee.employeeCode != payload.employeeCode:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Employee Code is already set to '{employee.employeeCode}' and cannot be changed via invitation."
+            )
+        resolved_code = employee.employeeCode
+    else:
+        # Code not yet assigned — validate and save it
+        if not payload.employeeCode or not payload.employeeCode.strip():
+            raise HTTPException(status_code=400, detail="Employee Code is required")
+        resolved_code = payload.employeeCode.strip()
+        # Uniqueness check across Employee records
+        duplicate = await employee_repo.get_by_employee_code(resolved_code)
+        if duplicate:
+            raise HTTPException(status_code=409, detail=f"Employee Code '{resolved_code}' is already assigned to another employee")
+        # Persist the code into the Employee V2 record
+        await employee_repo.assign_employee_code(payload.employeeId, resolved_code)
+
+    # 3. Prevent duplicate ESS accounts
+    if employee.essStatus not in (None, "Not Invited"):
+        raise HTTPException(status_code=409, detail=f"Employee already has an ESS account (status: {employee.essStatus})")
+    existing_user = await db.users.find_one({"empId": resolved_code})
+    if existing_user:
+        raise HTTPException(status_code=409, detail="An ESS user with this Employee Code already exists")
+
+    # 4. Email uniqueness check
+    email = payload.email.strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    existing_email = await db.users.find_one({"email": email})
+    if existing_email:
+        raise HTTPException(status_code=409, detail="This email is already registered to another ESS account")
+
+    # 5. Generate cryptographically secure temporary password
+    temp_password = secrets.token_urlsafe(12)
+
+    # 6. Create V1 user document
+    user_doc = {
+        "employeeId": payload.employeeId,
+        "employeeCode": resolved_code,
+        "empId": resolved_code,          # Legacy compatibility — login username
+        "username": resolved_code,
+        "email": email,
+        "role": payload.role,
+        "passwordHash": hash_password(temp_password),
+        "firstLogin": True,
+        "isActive": True,
+        "createdAt": now,
+        "createdBy": admin.get("empId"),
+        "updatedAt": now,
+    }
+    result = await db.users.insert_one(user_doc)
+    auth_user_id = str(result.inserted_id)
+
+    # 7. Write-back ESS status to Employee V2
+    await employee_repo.update_ess_status(
+        employee_id=payload.employeeId,
+        ess_status="Invited",
+        auth_user_id=auth_user_id,
+        system_access_enabled=True,
+    )
+
+    # 8. Send welcome email (fire-and-forget — failure does NOT roll back user creation)
+    email_sent = False
+    try:
+        email_service = EmailService(db)
+        context = {
+            "name": f"{getattr(employee, 'firstName', '')} {getattr(employee, 'lastName', '')}".strip() or resolved_code,
+            "username": resolved_code,
+            "temporary_password": temp_password,
+            "login_url": "http://localhost:5173/login",
+        }
+        asyncio.create_task(email_service.send_welcome_email(email, context))
+        email_sent = True
+    except Exception as exc:
+        # Log failure but keep the user created
+        print(f"[InviteEmployee] Welcome email failed for {resolved_code}: {exc}")
+
+    return {
+        "success": True,
+        "empId": resolved_code,
+        "employeeId": payload.employeeId,
+        "username": resolved_code,
+        "essStatus": "Invited",
+        "emailSent": email_sent,
+    }
 
 
 @router.post("/create-user/")

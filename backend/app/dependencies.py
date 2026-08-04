@@ -18,7 +18,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
         payload = decode_access_token(credentials.credentials)
     except Exception:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    emp_id = payload.get("empId")
+    emp_id = payload.get("sub") or payload.get("empId")
     if not emp_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
@@ -31,6 +31,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
     for k, v in list(user.items()):
         if isinstance(v, ObjectId):
             user[k] = str(v)
+    # Supplement with JWT claims for convenience
+    user.setdefault("employeeId", payload.get("employeeId"))
+    user.setdefault("employeeCode", payload.get("employeeCode"))
     return user
 
 
