@@ -31,7 +31,10 @@ async def login(payload: LoginRequest):
         schedule_user_sync_now(user_view["empId"], from_date=from_date, to_date=None)
     token = create_access_token(
         {
+            "sub": user_view["empId"],
             "empId": user_view["empId"],
+            "employeeId": user_view.get("employeeId"),
+            "employeeCode": user_view.get("employeeCode", user_view["empId"]),
             "role": user_view["role"],
             "firstLogin": user_view["firstLogin"],
         },
@@ -40,6 +43,8 @@ async def login(payload: LoginRequest):
     return TokenResponse(
         accessToken=token,
         empId=user_view["empId"],
+        employeeId=user_view.get("employeeId"),
+        employeeCode=user_view.get("employeeCode", user_view["empId"]),
         role=user_view["role"],
         firstLogin=user_view["firstLogin"],
         mustChangePassword=user_view["firstLogin"],

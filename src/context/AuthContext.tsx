@@ -43,10 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const fullUser = await getCurrentUser();
         setUser(fullUser);
       } catch {
-        setUser({ empId: response.empId, role: response.role, firstLogin: response.firstLogin });
+        setUser({
+          empId: response.empId,
+          employeeId: response.employeeId,
+          employeeCode: response.employeeCode,
+          role: response.role,
+          firstLogin: response.firstLogin,
+        });
       }
       return { mustChangePassword: response.mustChangePassword, role: response.role };
     },
+
     changePassword: async (currentPassword, newPassword) => {
       await apiChangePassword(currentPassword, newPassword);
       const refreshedUser = await getCurrentUser();

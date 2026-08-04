@@ -4,6 +4,8 @@ export interface LoginResponse {
   accessToken: string;
   tokenType: string;
   empId: string;
+  employeeId?: string | null;
+  employeeCode?: string | null;
   role: 'Employee' | 'Admin';
   firstLogin: boolean;
   mustChangePassword: boolean;
@@ -11,6 +13,8 @@ export interface LoginResponse {
 
 export interface UserProfile {
   empId: string;
+  employeeId?: string | null;
+  employeeCode?: string | null;
   role: 'Employee' | 'Admin';
   firstLogin: boolean;
   name?: string;

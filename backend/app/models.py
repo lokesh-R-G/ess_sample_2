@@ -23,9 +23,12 @@ class TokenResponse(BaseModel):
     accessToken: str
     tokenType: str = "bearer"
     empId: str
+    employeeId: str | None = None
+    employeeCode: str | None = None
     role: RoleType
     firstLogin: bool
     mustChangePassword: bool = False
+
 
 
 class UserResponse(BaseModel):
