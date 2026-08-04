@@ -7,7 +7,8 @@ from datetime import datetime
 
 from app.db.mongo import get_database
 from app.domain_models import PFRule, ESIRule, ProfessionalTaxSlab
-from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine
+from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine, CalculationMode, StatutoryDecisions
+from app.payroll.services.payroll_calculation_service import PayrollCalculationEngine
 
 def clean_mongo_doc(doc: dict) -> dict:
     if not doc:
@@ -72,11 +73,26 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
                 
     components_docs = serialize_mongo(components_docs_raw)
     
-    # We do NOT instantiate PFRule or ESIRule here.
-    # Just call the engine's new calculate_gross_only method.
-    result = SalaryCalculationEngine.calculate_gross_only(
+    # Call the canonical engine method with GROSS_ONLY mode
+    # For GROSS_ONLY, statutory decisions and rules can be mostly defaults
+    # but we still need to know if PF is globally enabled.
+    
+    decisions = StatutoryDecisions(
+        isFresher=True,
+        wantsPf=True,
+        wantsPension=True,
+        esiEnabled=True,
+        ptState="None"
+    )
+    
+    result = SalaryCalculationEngine.calculate(
         basic_salary=req.basicSalary,
-        structure_components=components_docs
+        structure_components=components_docs,
+        calculation_mode=CalculationMode.GROSS_ONLY,
+        statutory_decisions=decisions,
+        pf_rule=None, # GROSS_ONLY ignores this internally, calculatePfGross handles None
+        esi_rule=None,
+        pt_slabs=None
     )
     
     # Check if PF is globally enabled to zero out PF Gross if disabled
@@ -130,16 +146,24 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
     
     # 4. Pass to Engine
+    decisions = StatutoryDecisions(
+        isFresher=req.isFresher,
+        isExistingPensionMember=req.isExistingPensionMember,
+        wantsPf=req.wantsPf,
+        wantsPension=req.wantsPension,
+        pfCalculationMode=req.pfCalculationMode,
+        esiEnabled=req.esiEnabled,
+        ptState=req.ptState
+    )
+    
     result = SalaryCalculationEngine.calculate(
         basic_salary=req.basicSalary,
         structure_components=components_docs,
-        pf_option=req.pfOption,
-        esi_option=req.esiOption,
-        pt_state=req.ptState,
+        calculation_mode=CalculationMode.PREVIEW,
+        statutory_decisions=decisions,
         pf_rule=pf_rule,
         esi_rule=esi_rule,
-        pt_slabs=pt_slabs,
-        preview_request=req
+        pt_slabs=pt_slabs
     )
     
     return serialize_mongo(result)

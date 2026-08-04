@@ -4,8 +4,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
 from bson import ObjectId
 
-from app.domain_models import PFRule, ESIRule, ProfessionalTaxSlab, EmployeeSalaryComponent
-from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine
+from app.domain_models import EmployeeSalaryAssignment, EmployeeSalaryComponent, PFRule, ESIRule, ProfessionalTaxSlab
+from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine, CalculationMode, StatutoryDecisions
 
 class MockRequest:
     def __init__(self, data: dict):
@@ -66,18 +66,24 @@ class SalaryAssignmentService:
         pt_docs = await pt_cursor.to_list(length=None)
         pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
         
-        req = MockRequest(payload)
+        decisions = StatutoryDecisions(
+            isFresher=payload.get("isFresher", True),
+            isExistingPensionMember=payload.get("isExistingPensionMember", False),
+            wantsPf=payload.get("wantsPf", True),
+            wantsPension=payload.get("wantsPension", True),
+            pfCalculationMode=payload.get("pfCalculationMode", "Default"),
+            esiEnabled=payload.get("esiEnabled", True),
+            ptState=payload.get("ptState", "None")
+        )
         
         preview = SalaryCalculationEngine.calculate(
             basic_salary=basic_salary,
             structure_components=components_docs,
-            pf_option=payload.get("pfOption", "Default"),
-            esi_option=payload.get("esiOption", "Default"),
-            pt_state=payload.get("ptState", "None"),
+            calculation_mode=CalculationMode.ASSIGNMENT,
+            statutory_decisions=decisions,
             pf_rule=pf_rule,
             esi_rule=esi_rule,
-            pt_slabs=pt_slabs,
-            preview_request=req
+            pt_slabs=pt_slabs
         )
         
         raw_components = preview.get("_rawComponents", [])

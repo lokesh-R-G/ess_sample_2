@@ -1,6 +1,22 @@
 from typing import List, Dict, Any, Optional
+from enum import Enum
+from pydantic import BaseModel
 from app.domain_models import PFRule, ESIRule, ProfessionalTaxSlab
 from app.payroll.services.payroll_calculation_service import PayrollCalculationEngine
+
+class CalculationMode(str, Enum):
+    GROSS_ONLY = "GROSS_ONLY"
+    PREVIEW = "PREVIEW"
+    ASSIGNMENT = "ASSIGNMENT"
+
+class StatutoryDecisions(BaseModel):
+    isFresher: bool = True
+    isExistingPensionMember: bool = False
+    wantsPf: bool = True
+    wantsPension: bool = True
+    pfCalculationMode: str = "Default"
+    esiEnabled: bool = True
+    ptState: str = "None"
 
 class SalaryCalculationEngine:
     """
@@ -9,88 +25,17 @@ class SalaryCalculationEngine:
     which is heavily consumed by both the UI Preview and backend Assignment processors.
     """
 
-    @staticmethod
-    def calculate_gross_only(basic_salary: float, structure_components: List[dict]) -> dict:
-        """
-        Calculates earnings, gross, PF gross, ESI gross, and distribution snapshot 
-        without running any statutory deductions. 
-        Requires no Rule objects.
-        """
-        earnings = []
-        for sc in structure_components:
-            if sc.get("componentType") != "Earning":
-                continue
 
-            name = sc.get("name", "")
-            calc_method = sc.get("calculationMethod", "Flat")
-            amount = 0.0
-            formula_used = ""
-
-            if name.lower() == "basic":
-                amount = basic_salary
-                formula_used = "Base Input"
-            elif calc_method == "Percentage":
-                perc = sc.get("percentageValue", 0.0)
-                amount = basic_salary * (perc / 100.0)
-                formula_used = f"{perc}% of Basic"
-            elif calc_method == "Formula":
-                perc = sc.get("percentageValue", 0.0)
-                amount = basic_salary * (perc / 100.0)
-                formula_used = sc.get("defaultFormula") or f"{perc}% of Basic"
-            else:
-                amount = sc.get("amount") or sc.get("monthlyAmount") or 0.0
-                formula_used = "Flat"
-
-            c_dict = sc.copy()
-            c_dict["amount"] = amount
-            c_dict["formulaUsed"] = formula_used
-            
-            c_dict["includeInGross"] = c_dict.get("includeInGross", True)
-            c_dict["attendanceDependent"] = c_dict.get("attendanceDependent", True)
-            c_dict["pfApplicable"] = c_dict.get("pfApplicable", False)
-            c_dict["esiApplicable"] = c_dict.get("esiApplicable", False)
-            c_dict["ptApplicable"] = c_dict.get("ptApplicable", False)
-            c_dict["componentType"] = c_dict.get("componentType", "Earning")
-
-            earnings.append(c_dict)
-
-        gross_salary = PayrollCalculationEngine.calculateGross(earnings)
-        earnings_with_ratios = PayrollCalculationEngine.calculateDistributionRatios(earnings)
-
-        distribution_preview = []
-        for e in earnings_with_ratios:
-            if e.get("includeInGross", True):
-                ratio = e.get("distributionRatio", 0.0)
-                distribution_preview.append({
-                    "name": e.get("name"),
-                    "amount": e.get("amount", 0.0),
-                    "distributionRatio": ratio,
-                    "distributionPercentage": ratio * 100,
-                    "attendanceDependent": e.get("attendanceDependent", True)
-                })
-
-        # Calculate base statutory grosses (without ceiling/rules applied)
-        pf_gross = PayrollCalculationEngine.calculatePfGross(earnings_with_ratios, None)
-        esi_gross = PayrollCalculationEngine.calculateEsiGross(earnings_with_ratios)
-        
-        return {
-            "earnings": [{"name": e["name"], "amount": e["amount"], "formula": e["formulaUsed"]} for e in earnings_with_ratios],
-            "distribution": distribution_preview,
-            "grossSalary": gross_salary,
-            "pfGross": pf_gross,
-            "esiGross": esi_gross
-        }
 
     @staticmethod
     def calculate(
         basic_salary: float,
         structure_components: List[Dict[str, Any]],
-        pf_option: str,
-        esi_option: str,
-        pt_state: str,
-        pf_rule: PFRule,
-        esi_rule: ESIRule,
-        pt_slabs: List[ProfessionalTaxSlab]
+        calculation_mode: CalculationMode,
+        statutory_decisions: StatutoryDecisions,
+        pf_rule: Optional[PFRule] = None,
+        esi_rule: Optional[ESIRule] = None,
+        pt_slabs: Optional[List[ProfessionalTaxSlab]] = None
     ) -> Dict[str, Any]:
         
         # 1. Calculate Earnings
@@ -153,51 +98,48 @@ class SalaryCalculationEngine:
                     "attendanceDependent": e.get("attendanceDependent", True)
                 })
 
-        # 4. Statutory: PF Calculations
+        # Calculate base statutory grosses (without ceiling/rules applied)
         pf_gross = PayrollCalculationEngine.calculatePfGross(earnings_with_ratios, pf_rule)
+        esi_gross = PayrollCalculationEngine.calculateEsiGross(earnings_with_ratios)
+
+        if calculation_mode == CalculationMode.GROSS_ONLY:
+            return {
+                "earnings": [{"name": e["name"], "amount": e["amount"], "formula": e["formulaUsed"]} for e in earnings_with_ratios],
+                "distribution": distribution_preview,
+                "grossSalary": gross_salary,
+                "pfGross": pf_gross,
+                "esiGross": esi_gross
+            }
         
-        # Determine employee choice based on explicit flags if available
-        if preview_request:
-            wants_pf = getattr(preview_request, "wantsPf", True)
-            wants_pension = getattr(preview_request, "wantsPension", True)
-            is_existing_pension = getattr(preview_request, "isExistingPensionMember", False)
-            is_fresher = getattr(preview_request, "isFresher", True)
-            use_ceiling = getattr(preview_request, "pfCalculationMode", "Default") == "Ceiling"
-        else:
-            wants_pf = pf_option != 'OptOut'
-            use_ceiling = pf_option == 'Ceiling'
-            wants_pension = True
-            is_existing_pension = False
-            is_fresher = True
-            
+        # Determine employee choice based on explicit flags
         employee_choice = {
-            "wantsPf": wants_pf,
-            "wantsPension": wants_pension,
-            "isFresher": is_fresher,
-            "useCeiling": use_ceiling,
-            "isExistingPensionMember": is_existing_pension
+            "wantsPf": statutory_decisions.wantsPf,
+            "wantsPension": statutory_decisions.wantsPension,
+            "isFresher": statutory_decisions.isFresher,
+            "useCeiling": statutory_decisions.pfCalculationMode == "Ceiling",
+            "isExistingPensionMember": statutory_decisions.isExistingPensionMember
         }
         
-        pf_result = PayrollCalculationEngine.calculatePf(pf_gross, pf_rule, employee_choice)
+        pf_result = PayrollCalculationEngine.calculatePf(pf_gross, pf_rule, employee_choice) if pf_rule else {"employeePf": 0.0, "employerPf": 0.0, "employerPension": 0.0, "pfAdminCharges": 0.0, "edli": 0.0}
 
         pf_preview = {
             "pfGross": pf_gross,
-            "ceilingApplied": pf_rule.defaultMode == "Always Ceiling" or use_ceiling,
-            "pfWageUsed": min(pf_gross, pf_rule.pfCeilingAmount) if (pf_rule.defaultMode == "Always Ceiling" or use_ceiling) else pf_gross,
+            "ceilingApplied": (pf_rule.defaultMode == "Always Ceiling" if pf_rule else False) or employee_choice["useCeiling"],
+            "pfWageUsed": min(pf_gross, pf_rule.pfCeilingAmount if pf_rule else pf_gross) if ((pf_rule.defaultMode == "Always Ceiling" if pf_rule else False) or employee_choice["useCeiling"]) else pf_gross,
             "employeePf": pf_result["employeePf"],
             "employerPf": pf_result["employerPf"],
             "employerPension": pf_result["employerPension"],
             "adminCharges": pf_result["pfAdminCharges"],
-            "totalEmployerPf": pf_result["employerPf"] + pf_result["employerPension"] + pf_result["pfAdminCharges"]
+            "edli": pf_result.get("edli", 0.0),
+            "totalEmployerPf": pf_result["employerPf"] + pf_result["employerPension"] + pf_result["pfAdminCharges"] + pf_result.get("edli", 0.0)
         }
 
         # 5. Statutory: ESI Calculations
-        esi_gross = PayrollCalculationEngine.calculateEsiGross(earnings_with_ratios)
+        # esi_gross already calculated above
         
-        # esiOption: 'Default', 'PhysicalDisability'
-        # Check esiEnabled from preview_request if available
-        esi_enabled = getattr(preview_request, "esiEnabled", True) if preview_request else (esi_option != 'OptOut')
-        esi_result = PayrollCalculationEngine.calculateEsi(esi_gross, esi_rule) if esi_enabled else {"employeeEsi": 0.0, "employerEsi": 0.0}
+        # Check esiEnabled from statutory_decisions
+        esi_enabled = statutory_decisions.esiEnabled
+        esi_result = PayrollCalculationEngine.calculateEsi(esi_gross, esi_rule) if (esi_enabled and esi_rule) else {"employeeEsi": 0.0, "employerEsi": 0.0}
 
         esi_preview = {
             "esiGross": esi_gross,
@@ -206,11 +148,9 @@ class SalaryCalculationEngine:
         }
 
         # 6. Statutory: PT Calculation
-        # PT state is passed directly. If state == "None", PT is 0.
         pt_amount = 0.0
-        if pt_state != "None":
-            # Just matching the state to slabs if we had state-specific slabs.
-            # Currently calculateProfessionalTax uses 'gender'. We'll assume 'Any'.
+        pt_state = statutory_decisions.ptState
+        if pt_state != "None" and pt_slabs:
             pt_amount = PayrollCalculationEngine.calculateProfessionalTax(gross_salary, pt_slabs, gender="Any")
             
         pt_preview = {
