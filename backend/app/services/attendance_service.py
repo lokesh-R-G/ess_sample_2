@@ -88,7 +88,23 @@ async def build_daily_summaries(db, logs):
     
     # Load policy once
     policy = await get_attendance_policy(db)
-    engine = PolicyEngine(db, policy)
+    
+    # Pre-fetch monthly aggregates for this batch (for simplicity, we'll fetch all attendance for the affected months and empIds)
+    emp_ids = list(set([k[0] for k in grouped.keys()]))
+    months = list(set([k[1].strftime("%Y-%m") for k in grouped.keys()]))
+    
+    # Query monthly records to pass into the engine (No DB queries in engine)
+    monthly_records = []
+    if emp_ids and months:
+        # Match any of the months
+        month_regex = "^(" + "|".join(months) + ")"
+        cursor = db.attendance.find({
+            "empId": {"$in": emp_ids},
+            "date": {"$regex": month_regex}
+        })
+        monthly_records = await cursor.to_list(length=None)
+
+    engine = PolicyEngine(policy=policy, monthly_records=monthly_records)
 
     for (empId, date_val), items in grouped.items():
         items.sort(key=lambda x: x["timestamp"])

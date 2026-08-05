@@ -4,9 +4,13 @@ from app.models import AttendancePolicy
 from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
-    def __init__(self, db: AsyncIOMotorDatabase, policy: AttendancePolicy):
-        self.db = db
+    def __init__(self, policy: AttendancePolicy, shift=None, holiday_calendar=None, weekly_off_policy=None, monthly_records=None):
         self.policy = policy
+        self.shift = shift
+        self.holiday_calendar = holiday_calendar
+        self.weekly_off_policy = weekly_off_policy
+        self.monthly_records = monthly_records or []
+        
         # Cache monthly aggregates per employee
         self.monthly_late_counts = {}
         self.monthly_permission_used = {}
@@ -17,12 +21,8 @@ class PolicyEngine:
         if key in self.monthly_late_counts:
             return
 
-        # Query all attendance for this employee in this month
-        cursor = self.db.attendance.find({
-            "empId": emp_id,
-            "date": {"$regex": f"^{month_str}"}
-        })
-        records = await cursor.to_list(length=None)
+        # Use the injected monthly records instead of querying the database
+        records = self.monthly_records
 
         late_count = sum(1 for r in records if r.get("lateMinutes", 0) > 0)
         permission_used = sum(r.get("permissionHoursUsed", 0.0) for r in records)
@@ -104,9 +104,15 @@ class PolicyEngine:
             metrics["status"] = "Absent"
             return metrics
 
-        # Determine shift start based on weekday
-        shift_start_str = self.policy.shiftStartTime
-        shift_end_str = self.policy.shiftEndTime if ist_date.weekday() != 5 else self.policy.saturdayShiftEndTime
+        # Determine shift start based on weekday using Resolved Shift
+        shift_start_str = getattr(self.shift, "startTime", getattr(self.policy, "shiftStartTime", "10:00:00"))
+        
+        # In the future, this Saturday logic will be driven by Weekly Off Policy and Shift combination.
+        # For now, fallback to policy if shift lacks it
+        if ist_date.weekday() == 5:
+            shift_end_str = getattr(self.shift, "saturdayEndTime", getattr(self.policy, "saturdayShiftEndTime", "17:30:00"))
+        else:
+            shift_end_str = getattr(self.shift, "endTime", getattr(self.policy, "shiftEndTime", "18:30:00"))
 
         late_diff = compare_time_with_policy(in_time, shift_start_str)
 

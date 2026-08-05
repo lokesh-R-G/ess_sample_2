@@ -1,26 +1,17 @@
-from typing import Optional
+from typing import Optional, List, Dict
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-class AttendancePolicyModel(BaseModel):
+class WeeklyOffDayRule(BaseModel):
+    dayOfWeek: int # 0=Monday, 6=Sunday
+    weekNumbers: List[int] # [1, 2, 3, 4, 5] means every week, [1, 3] means 1st and 3rd week
+
+class WeeklyOffPolicyModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     name: str
     description: Optional[str] = None
     
-    # Grace Rules
-    graceInMinutes: int = 0
-    graceOutMinutes: int = 0
-    
-    # Hour Thresholds
-    minHoursForFullDay: float = 8.0
-    minHoursForHalfDay: float = 4.0
-    absentHoursThreshold: float = 2.0
-    lopHalfDayHours: float = 4.0
-    lopFullDayHours: float = 8.0
-    
-    # Penalties
-    lateInThresholdMinutes: int = 15
-    earlyOutThresholdMinutes: int = 15
+    rules: List[WeeklyOffDayRule] = []
     
     # Hierarchy & Versioning
     status: str = "Active"

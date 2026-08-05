@@ -25,3 +25,37 @@ export async function getAttendancePolicy() {
 export async function updateAttendancePolicy(policy: AttendancePolicy) {
   return api.put<AttendancePolicy>('/v1/policy/attendance/', policy);
 }
+
+// V2 Attendance Policy (Assigned to Shifts)
+export interface AttendancePolicyV2 {
+  _id?: string;
+  name: string;
+  description?: string;
+  graceInMinutes: number;
+  graceOutMinutes: number;
+  minHoursForFullDay: number;
+  minHoursForHalfDay: number;
+  absentHoursThreshold: number;
+  lopHalfDayHours: number;
+  lopFullDayHours: number;
+  lateInThresholdMinutes: number;
+  earlyOutThresholdMinutes: number;
+  status?: string;
+  isCurrent?: boolean;
+}
+
+export async function getAttendancePoliciesV2() {
+  return api.get<AttendancePolicyV2[]>('/v2/attendance-policy/attendancePolicys/');
+}
+
+export async function createAttendancePolicyV2(policy: AttendancePolicyV2) {
+  return api.post<AttendancePolicyV2>('/v2/attendance-policy/attendancePolicys/', policy);
+}
+
+export async function updateAttendancePolicyV2(id: string, policy: AttendancePolicyV2) {
+  return api.put<AttendancePolicyV2>(`/v2/attendance-policy/attendancePolicys/${id}`, policy);
+}
+
+export async function deleteAttendancePolicyV2(id: string) {
+  return api.delete(`/v2/attendance-policy/attendancePolicys/${id}`);
+}
