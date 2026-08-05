@@ -1,8 +1,9 @@
 import { api } from '../lib/api';
 
 export interface HolidayDate {
+  id?: string;
   _id?: string;
-  calendarId: string;
+  calendarId?: string;
   holidayDate: string; // YYYY-MM-DD
   holidayName: string;
   holidayType: string; // Mandatory, Restricted, Optional, Branch, Festival, National
@@ -12,6 +13,7 @@ export interface HolidayDate {
 }
 
 export interface HolidayCalendar {
+  id?: string;
   _id?: string;
   name: string;
   description?: string;
@@ -47,11 +49,13 @@ export async function getHolidayDates(calendarId: string) {
 }
 
 export async function createHolidayDate(calendarId: string, date: HolidayDate) {
-  return api.post<HolidayDate>(`/v2/holiday/holiday-calendar/${calendarId}/dates`, date);
+  const { calendarId: _, id, _id, ...payload } = date;
+  return api.post<HolidayDate>(`/v2/holiday/holiday-calendar/${calendarId}/dates`, payload);
 }
 
 export async function updateHolidayDate(calendarId: string, dateId: string, date: HolidayDate) {
-  return api.put<HolidayDate>(`/v2/holiday/holiday-calendar/${calendarId}/dates/${dateId}`, date);
+  const { calendarId: _, id, _id, ...payload } = date;
+  return api.put<HolidayDate>(`/v2/holiday/holiday-calendar/${calendarId}/dates/${dateId}`, payload);
 }
 
 export async function deleteHolidayDate(calendarId: string, dateId: string) {

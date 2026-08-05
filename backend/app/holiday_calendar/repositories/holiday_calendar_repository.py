@@ -50,6 +50,7 @@ class HolidayCalendarRepository(BaseRepository[HolidayCalendarModel]):
             },
             {
                 "$addFields": {
+                    "id": "$calendarIdStr",
                     "branchName": "$branchInfo.name",
                     "branchCode": "$branchInfo.code",
                     "holidayCount": {"$size": "$dates"}

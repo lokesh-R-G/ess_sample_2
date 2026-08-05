@@ -54,7 +54,8 @@ export const AdminHolidays: React.FC = () => {
 
   const handleSelectCalendar = (c: HolidayCalendar) => {
     setSelectedCalendar(c);
-    if (c._id) loadDates(c._id);
+    const calId = c.id || c._id;
+    if (calId) loadDates(calId);
   };
 
   // Calendar CRUD
@@ -62,8 +63,9 @@ export const AdminHolidays: React.FC = () => {
     if (!editingCalendar) return;
     try {
       setIsSaving(true);
-      if (editingCalendar._id) {
-        await updateHolidayCalendar(editingCalendar._id, editingCalendar);
+      const calId = editingCalendar.id || editingCalendar._id;
+      if (calId) {
+        await updateHolidayCalendar(calId, editingCalendar);
       } else {
         await createHolidayCalendar(editingCalendar);
       }
@@ -76,16 +78,18 @@ export const AdminHolidays: React.FC = () => {
 
   // Date CRUD
   const handleSaveDate = async () => {
-    if (!editingDate || !selectedCalendar?._id) return;
+    const calId = selectedCalendar?.id || selectedCalendar?._id;
+    if (!editingDate || !calId) return;
     try {
       setIsSaving(true);
-      if (editingDate._id) {
-        await updateHolidayDate(selectedCalendar._id, editingDate._id, editingDate);
+      const dateId = editingDate.id || editingDate._id;
+      if (dateId) {
+        await updateHolidayDate(calId, dateId, editingDate);
       } else {
-        await createHolidayDate(selectedCalendar._id, editingDate);
+        await createHolidayDate(calId, editingDate);
       }
       setEditingDate(null);
-      await loadDates(selectedCalendar._id);
+      await loadDates(calId);
     } finally {
       setIsSaving(false);
     }
@@ -105,7 +109,7 @@ export const AdminHolidays: React.FC = () => {
 
       {editingCalendar && (
         <GlassCard className="p-6">
-          <h2 className="text-xl font-bold mb-4">{editingCalendar._id ? 'Edit Calendar' : 'Create Calendar'}</h2>
+          <h2 className="text-xl font-bold mb-4">{(editingCalendar.id || editingCalendar._id) ? 'Edit Calendar' : 'Create Calendar'}</h2>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Input label="Name" value={editingCalendar.name} onChange={e => setEditingCalendar({...editingCalendar, name: e.target.value})} />
             <Input type="number" label="Year" value={editingCalendar.year} onChange={e => setEditingCalendar({...editingCalendar, year: parseInt(e.target.value)})} />
@@ -134,7 +138,7 @@ export const AdminHolidays: React.FC = () => {
       {!selectedCalendar && !editingCalendar && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {calendars.map(c => (
-            <GlassCard key={c._id} className="p-4 cursor-pointer hover:border-primary-500 transition-colors" onClick={() => handleSelectCalendar(c)}>
+            <GlassCard key={c.id || c._id} className="p-4 cursor-pointer hover:border-primary-500 transition-colors" onClick={() => handleSelectCalendar(c)}>
               <div className="flex justify-between items-start mb-2">
                 <h3 className="font-semibold text-lg">{c.name}</h3>
                 <StatusBadge status={c.status === 'Active' ? 'success' : 'neutral'} label={c.status || 'Active'} />
@@ -166,7 +170,7 @@ export const AdminHolidays: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold flex items-center gap-2"><Calendar className="w-5 h-5 text-blue-500"/> Holiday Dates</h3>
               {!editingDate && (
-                <AnimatedButton size="sm" icon={Plus} onClick={() => setEditingDate({ calendarId: selectedCalendar._id!, holidayName: '', holidayDate: '', holidayType: 'Mandatory', isRecurring: false, remarks: '' })}>Add Date</AnimatedButton>
+                <AnimatedButton size="sm" icon={Plus} onClick={() => setEditingDate({ calendarId: selectedCalendar.id || selectedCalendar._id!, holidayName: '', holidayDate: '', holidayType: 'Mandatory', isRecurring: false, remarks: '' })}>Add Date</AnimatedButton>
               )}
             </div>
 
@@ -201,7 +205,7 @@ export const AdminHolidays: React.FC = () => {
 
             <div className="space-y-2">
               {dates.map(d => (
-                <div key={d._id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                <div key={d.id || d._id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="bg-primary-50 text-primary-700 px-3 py-1 rounded font-medium">{new Date(d.holidayDate).toLocaleDateString()}</div>
                     <div className="font-medium text-neutral-900">{d.holidayName}</div>
@@ -212,8 +216,12 @@ export const AdminHolidays: React.FC = () => {
                     <AnimatedButton variant="secondary" size="sm" icon={Edit2} onClick={() => setEditingDate(d)}>Edit</AnimatedButton>
                     <AnimatedButton variant="danger" size="sm" icon={Trash2} onClick={async () => {
                       if(confirm('Delete holiday?')) {
-                        await deleteHolidayDate(selectedCalendar._id!, d._id!);
-                        loadDates(selectedCalendar._id!);
+                        const calId = selectedCalendar.id || selectedCalendar._id;
+                        const dId = d.id || d._id;
+                        if(calId && dId) {
+                          await deleteHolidayDate(calId, dId);
+                          loadDates(calId);
+                        }
                       }
                     }}>Delete</AnimatedButton>
                   </div>

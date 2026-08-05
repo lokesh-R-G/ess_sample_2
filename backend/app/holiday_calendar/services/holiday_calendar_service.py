@@ -30,7 +30,7 @@ class HolidayCalendarService:
     async def get_dates(self, calendar_id: str) -> List[dict]:
         cursor = self.date_repo.collection.find({"calendarId": calendar_id, "deletedAt": None, "status": "Active"}).sort([("holidayDate", 1)])
         docs = await cursor.to_list(length=None)
-        return [self.date_repo._prepare_doc(doc) for doc in docs]
+        return [self.date_repo.model_class(**self.date_repo._prepare_doc(doc)) for doc in docs]
 
     async def add_date(self, calendar_id: str, data: HolidayDateCreate, current_user_id: str) -> dict:
         dump = data.model_dump(exclude_unset=True)

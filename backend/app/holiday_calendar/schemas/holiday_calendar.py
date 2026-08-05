@@ -51,7 +51,6 @@ class PaginatedHolidayCalendarResponse(BaseModel):
     totalPages: int = 1
 
 class HolidayDateCreate(BaseModel):
-    calendarId: str
     holidayDate: date
     holidayName: str
     holidayType: str = "Mandatory"
@@ -68,6 +67,7 @@ class HolidayDateUpdate(BaseModel):
 
 class HolidayDateResponse(HolidayDateCreate):
     id: str
+    calendarId: str
     holidayId: Optional[str] = None
     status: str
     createdAt: Optional[datetime] = None
