@@ -7,6 +7,7 @@ class BranchModel(BaseModel):
     
     id: Optional[str] = Field(default=None, alias="_id")
     companyId: Optional[str] = None
+    companyName: Optional[str] = None
     name: Optional[str] = None
     code: Optional[str] = None
     location: Optional[str] = None

@@ -5,6 +5,8 @@ import { GlassCard, AnimatedButton, Input, Select, Modal, LookupSelect, ESSLMach
 export interface ColumnDef {
   key: string;
   label: string;
+  valueField?: string;
+  labelField?: string;
   render?: (val: any, row: any) => React.ReactNode;
 }
 
@@ -109,11 +111,15 @@ export const GenericCRUDPage: React.FC<GenericCRUDPageProps> = ({ title, endpoin
             <tbody>
               {data.map(row => (
                 <tr key={row._id} className="border-b border-neutral-100 hover:bg-neutral-50/50">
-                  {columns.map(c => (
-                    <td key={c.key} className="p-3">
-                      {c.render ? c.render(row[c.key], row) : row[c.key]}
-                    </td>
-                  ))}
+                  {columns.map(c => {
+                    const actualValue = c.valueField ? row[c.valueField] : row[c.key];
+                    const displayValue = c.labelField ? row[c.labelField] : actualValue;
+                    return (
+                      <td key={c.key} className="p-3">
+                        {c.render ? c.render(actualValue, row) : displayValue}
+                      </td>
+                    );
+                  })}
                   <td className="p-3 space-x-2">
                     <button onClick={() => openEditModal(row)} className="text-primary-600 hover:underline">Edit</button>
                     <button onClick={() => handleDelete(row._id)} className="text-red-600 hover:underline">Delete</button>

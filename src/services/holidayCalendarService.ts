@@ -17,8 +17,9 @@ export interface HolidayCalendar {
   status?: string;
 }
 
-export async function getHolidayCalendars() {
-  return api.get<HolidayCalendar[]>('/v2/holiday/holiday-calendar/');
+export async function getHolidayCalendars(): Promise<HolidayCalendar[]> {
+  const res = await api.get<any>('/v2/holiday/holiday-calendar/');
+  return res?.data || res || [];
 }
 
 export async function createHolidayCalendar(calendar: HolidayCalendar) {

@@ -28,3 +28,10 @@ class WeeklyOffPolicyResponse(WeeklyOffPolicyCreate):
     isCurrent: bool
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
+
+class PaginatedWeeklyOffPolicyResponse(BaseModel):
+    data: List[WeeklyOffPolicyResponse]
+    total: int
+    page: int = 1
+    pageSize: int = 100
+    totalPages: int = 1

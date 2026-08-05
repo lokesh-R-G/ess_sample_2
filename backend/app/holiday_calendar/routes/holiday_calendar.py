@@ -3,7 +3,7 @@ from typing import List
 from app.db.mongo import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.holiday_calendar.schemas.holiday_calendar import (
-    HolidayCalendarCreate, HolidayCalendarUpdate, HolidayCalendarResponse,
+    HolidayCalendarCreate, HolidayCalendarUpdate, HolidayCalendarResponse, PaginatedHolidayCalendarResponse,
     HolidayDateCreate, HolidayDateUpdate, HolidayDateResponse
 )
 from app.holiday_calendar.services.holiday_calendar_service import HolidayCalendarService
@@ -11,7 +11,7 @@ from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/holiday-calendar", tags=["Holiday Calendar"])
 
-@router.get("/", response_model=List[HolidayCalendarResponse])
+@router.get("/", response_model=PaginatedHolidayCalendarResponse)
 async def get_all_calendars(skip: int = 0, limit: int = 100, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
     service = HolidayCalendarService(db)
     return await service.get_all(skip=skip, limit=limit)

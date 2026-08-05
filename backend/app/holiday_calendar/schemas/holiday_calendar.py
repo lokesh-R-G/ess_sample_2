@@ -19,6 +19,13 @@ class HolidayCalendarResponse(HolidayCalendarCreate):
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
 
+class PaginatedHolidayCalendarResponse(BaseModel):
+    data: List[HolidayCalendarResponse]
+    total: int
+    page: int = 1
+    pageSize: int = 100
+    totalPages: int = 1
+
 class HolidayDateCreate(BaseModel):
     calendarId: str
     date: date

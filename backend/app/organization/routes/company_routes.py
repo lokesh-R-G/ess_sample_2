@@ -5,7 +5,7 @@ from app.dependencies import get_current_user
 from app.organization.controllers.company_controller import CompanyController
 from app.organization.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
 
-router = APIRouter(prefix="/companys", tags=["Company"])
+router = APIRouter(prefix="/companies", tags=["Company"])
 
 def get_controller(db = Depends(get_database)) -> CompanyController:
     return CompanyController(db)

@@ -58,6 +58,35 @@ class BranchService:
                 else:
                     setattr(b, 'esslMachine', summary)
                     
+        # Lookup companyName
+        company_ids = []
+        for b in branches:
+            is_dict = isinstance(b, dict)
+            cid = b.get('companyId') if is_dict else getattr(b, 'companyId', None)
+            if cid:
+                company_ids.append(cid)
+                
+        company_ids = list(set(company_ids))
+        if company_ids:
+            c_obj_ids = []
+            for cid in company_ids:
+                try:
+                    c_obj_ids.append(ObjectId(cid))
+                except:
+                    pass
+            comp_cursor = self.db["companies"].find({"_id": {"$in": c_obj_ids}})
+            comps = await comp_cursor.to_list(length=None)
+            comp_map = {str(c["_id"]): c.get("name") for c in comps}
+            
+            for b in branches:
+                is_dict = isinstance(b, dict)
+                cid = b.get('companyId') if is_dict else getattr(b, 'companyId', None)
+                if cid and cid in comp_map:
+                    if is_dict:
+                        b['companyName'] = comp_map[cid]
+                    else:
+                        setattr(b, 'companyName', comp_map[cid])
+                        
         return branches
 
     async def create(self, data: BranchCreate, user_id: str = None) -> BranchModel:

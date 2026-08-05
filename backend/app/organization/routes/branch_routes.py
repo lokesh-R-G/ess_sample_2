@@ -5,7 +5,7 @@ from app.dependencies import get_current_user
 from app.organization.controllers.branch_controller import BranchController
 from app.organization.schemas.branch import BranchCreate, BranchUpdate, BranchResponse
 
-router = APIRouter(prefix="/branchs", tags=["Branch"])
+router = APIRouter(prefix="/branches", tags=["Branch"])
 
 def get_controller(db = Depends(get_database)) -> BranchController:
     return BranchController(db)

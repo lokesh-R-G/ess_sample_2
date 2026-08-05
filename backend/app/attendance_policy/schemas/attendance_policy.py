@@ -40,3 +40,10 @@ class AttendancePolicyResponse(AttendancePolicyCreate):
     isCurrent: bool
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
+
+class PaginatedAttendancePolicyResponse(BaseModel):
+    data: List[AttendancePolicyResponse]
+    total: int
+    page: int = 1
+    pageSize: int = 100
+    totalPages: int = 1

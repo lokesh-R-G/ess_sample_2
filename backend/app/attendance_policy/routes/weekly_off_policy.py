@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from app.db.mongo import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.attendance_policy.schemas.weekly_off_policy import WeeklyOffPolicyCreate, WeeklyOffPolicyUpdate, WeeklyOffPolicyResponse
+from app.attendance_policy.schemas.weekly_off_policy import WeeklyOffPolicyCreate, WeeklyOffPolicyUpdate, WeeklyOffPolicyResponse, PaginatedWeeklyOffPolicyResponse
 from app.attendance_policy.services.weekly_off_policy_service import WeeklyOffPolicyService
 from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/weekly-off-policy", tags=["Weekly Off Policy"])
 
-@router.get("/", response_model=List[WeeklyOffPolicyResponse])
+@router.get("/", response_model=PaginatedWeeklyOffPolicyResponse)
 async def get_all_policies(skip: int = 0, limit: int = 100, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
     service = WeeklyOffPolicyService(db)
     return await service.get_all(skip=skip, limit=limit)

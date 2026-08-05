@@ -12,7 +12,7 @@ class ESSLMachineSummary(BaseModel):
 class BranchCreate(BaseModel):
     companyId: str
     name: str
-    code: Optional[str] = None
+    code: str
     location: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
@@ -43,8 +43,9 @@ class BranchResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     id: str = Field(serialization_alias="_id")
     companyId: str
+    companyName: Optional[str] = None
     name: str
-    code: Optional[str] = None
+    code: str
     location: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None

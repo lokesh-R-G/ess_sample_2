@@ -3,14 +3,17 @@ from datetime import datetime
 from typing import Optional
 
 class CompanyCreate(BaseModel):
+    code: str
     name: str
 
 class CompanyUpdate(BaseModel):
+    code: Optional[str] = None
     name: Optional[str] = None
 
 class CompanyResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     id: str = Field(serialization_alias="_id")
+    code: str
     name: str
     status: Optional[str] = None
     createdAt: Optional[datetime] = None

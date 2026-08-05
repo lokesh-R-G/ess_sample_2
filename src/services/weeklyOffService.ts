@@ -14,8 +14,9 @@ export interface WeeklyOffPolicy {
   isCurrent?: boolean;
 }
 
-export async function getWeeklyOffPolicies() {
-  return api.get<WeeklyOffPolicy[]>('/v2/attendance-policy/weekly-off-policy/');
+export async function getWeeklyOffPolicies(): Promise<WeeklyOffPolicy[]> {
+  const res = await api.get<any>('/v2/attendance-policy/weekly-off-policy/');
+  return res?.data || res || [];
 }
 
 export async function createWeeklyOffPolicy(policy: WeeklyOffPolicy) {
