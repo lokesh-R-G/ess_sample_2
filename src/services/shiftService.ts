@@ -25,8 +25,9 @@ export interface ShiftV2 {
   status?: string;
 }
 
-export async function getShiftsV2() {
-  return api.get<ShiftV2[]>('/v2/organization/shifts/');
+export async function getShiftsV2(): Promise<ShiftV2[]> {
+  const res = await api.get<any>('/v2/organization/shifts/');
+  return res?.data || res || [];
 }
 
 export async function createShiftV2(shift: ShiftV2) {

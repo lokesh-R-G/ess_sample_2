@@ -8,7 +8,7 @@ from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/attendancePolicys", tags=["Attendance Policy"])
 
-@router.get("/", response_model=List[AttendancePolicyResponse])
+@router.get("/")
 async def get_all_policies(skip: int = 0, limit: int = 100, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
     service = AttendancePolicyService(db)
     return await service.get_all(skip=skip, limit=limit)

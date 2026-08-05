@@ -44,8 +44,9 @@ export interface AttendancePolicyV2 {
   isCurrent?: boolean;
 }
 
-export async function getAttendancePoliciesV2() {
-  return api.get<AttendancePolicyV2[]>('/v2/attendance-policy/attendancePolicys/');
+export async function getAttendancePoliciesV2(): Promise<AttendancePolicyV2[]> {
+  const res = await api.get<any>('/v2/attendance-policy/attendancePolicys/');
+  return res?.data || res || [];
 }
 
 export async function createAttendancePolicyV2(policy: AttendancePolicyV2) {
