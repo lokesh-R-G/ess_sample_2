@@ -28,7 +28,7 @@ class HolidayCalendarService:
 
     # Dates management
     async def get_dates(self, calendar_id: str) -> List[dict]:
-        cursor = self.date_repo.collection.find({"calendarId": calendar_id, "deletedAt": None, "status": "Active"}).sort([("date", 1)])
+        cursor = self.date_repo.collection.find({"calendarId": calendar_id, "deletedAt": None, "status": "Active"}).sort([("holidayDate", 1)])
         docs = await cursor.to_list(length=None)
         return [self.date_repo._prepare_doc(doc) for doc in docs]
 
@@ -36,14 +36,14 @@ class HolidayCalendarService:
         dump = data.model_dump(exclude_unset=True)
         dump["calendarId"] = calendar_id
         # ensure date is stored as datetime so mongo handles it well
-        if "date" in dump and not isinstance(dump["date"], datetime):
-            dump["date"] = datetime.combine(dump["date"], datetime.min.time())
+        if "holidayDate" in dump and not isinstance(dump["holidayDate"], datetime):
+            dump["holidayDate"] = datetime.combine(dump["holidayDate"], datetime.min.time())
         return await self.date_repo.create(dump, created_by=current_user_id)
 
     async def update_date(self, date_id: str, data: HolidayDateUpdate, current_user_id: str) -> Optional[dict]:
         dump = data.model_dump(exclude_unset=True)
-        if "date" in dump and dump["date"] and not isinstance(dump["date"], datetime):
-            dump["date"] = datetime.combine(dump["date"], datetime.min.time())
+        if "holidayDate" in dump and dump["holidayDate"] and not isinstance(dump["holidayDate"], datetime):
+            dump["holidayDate"] = datetime.combine(dump["holidayDate"], datetime.min.time())
         return await self.date_repo.update(date_id, dump, updated_by=current_user_id)
 
     async def delete_date(self, date_id: str, current_user_id: str) -> bool:

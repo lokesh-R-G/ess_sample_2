@@ -282,23 +282,7 @@ async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=D
     await db.users.update_one({"empId": emp_id}, {"$set": {"isActive": is_active, "status": payload.status.lower()}})
     return {"success": True}
 
-@router.get("/holidays/")
-async def get_holidays(_admin=Depends(require_roles("Admin"))):
-    db = get_database()
-    holidays = await db.holidays.find({}, {"_id": 0}).sort("date", 1).to_list(length=None)
-    return holidays
 
-class HolidayPayload(BaseModel):
-    name: str
-    date: str
-    type: str = "National"
-
-@router.post("/holidays/")
-async def add_holiday(payload: HolidayPayload, _admin=Depends(require_roles("Admin"))):
-    db = get_database()
-    document = payload.model_dump()
-    await db.holidays.insert_one(document)
-    return {"success": True}
 
 class EsslConfigPayload(BaseModel):
     serialNumber: str

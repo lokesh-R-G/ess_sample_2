@@ -4,10 +4,10 @@ from app.models import AttendancePolicy
 from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
-    def __init__(self, policy: AttendancePolicy, shift=None, holiday_calendar=None, weekly_off_policy=None, monthly_records=None):
+    def __init__(self, policy: AttendancePolicy, shift=None, holiday_dates=None, weekly_off_policy=None, monthly_records=None):
         self.policy = policy
         self.shift = shift
-        self.holiday_calendar = holiday_calendar
+        self.holiday_dates = holiday_dates or []
         self.weekly_off_policy = weekly_off_policy
         self.monthly_records = monthly_records or []
         
@@ -99,6 +99,18 @@ class PolicyEngine:
             "halfDayCount": 0.0,
             "status": "Absent"
         }
+
+        # Check for Holiday Date match first
+        is_holiday = any(
+            isinstance(hd, dict) and str(hd.get("holidayDate")) == ist_date.strftime("%Y-%m-%d")
+            or getattr(hd, "holidayDate", None) and str(hd.holidayDate) == ist_date.strftime("%Y-%m-%d")
+            for hd in self.holiday_dates
+        )
+
+        if is_holiday:
+            metrics["status"] = "Holiday"
+            # In Phase 7: Do not implement Worked-on-Holiday yet, so just return
+            return metrics
 
         if not in_time:
             metrics["status"] = "Absent"

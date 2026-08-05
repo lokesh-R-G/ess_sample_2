@@ -30,7 +30,10 @@ async def init_indexes() -> None:
     await db.departments.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
     await db.designations.create_index([("departmentId", 1), ("name", 1)], unique=True, sparse=True)
     await db.roles.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
-    await db.holidays.create_index([("companyId", 1), ("branchId", 1), ("date", 1)], unique=True, sparse=True)
+    
+    # Holiday Calendar V2 Indexes
+    await db.holiday_calendars.create_index([("branchId", 1), ("effectiveFrom", 1)], sparse=True)
+    await db.holiday_dates.create_index([("calendarId", 1), ("holidayDate", 1)], unique=True, sparse=True)
 
     # Employee Engine Indexes
     await db.employees.create_index([("companyId", 1), ("employeeCode", 1)], unique=True, partialFilterExpression={"employeeCode": {"$type": "string"}})

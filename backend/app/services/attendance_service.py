@@ -65,6 +65,8 @@ from app.services.policy_service import get_attendance_policy
 from app.services.policy_engine import PolicyEngine
 from app.core.datetime_utils import to_utc, to_ist, get_current_ist
 
+from app.services.attendance_context_resolver import AttendanceContextResolver
+
 async def build_daily_summaries(db, logs):
     grouped = defaultdict(list)
 
@@ -86,8 +88,7 @@ async def build_daily_summaries(db, logs):
 
     summaries = []
     
-    # Load policy once
-    policy = await get_attendance_policy(db)
+    resolver = AttendanceContextResolver(db)
     
     # Pre-fetch monthly aggregates for this batch (for simplicity, we'll fetch all attendance for the affected months and empIds)
     emp_ids = list(set([k[0] for k in grouped.keys()]))
@@ -104,9 +105,13 @@ async def build_daily_summaries(db, logs):
         })
         monthly_records = await cursor.to_list(length=None)
 
-    engine = PolicyEngine(policy=policy, monthly_records=monthly_records)
-
     for (empId, date_val), items in grouped.items():
+        ctx = await resolver.resolve_context(empId, date_val)
+        if not ctx or not ctx.get("policy"):
+            continue
+
+        engine = PolicyEngine(policy=ctx["policy"], holiday_dates=ctx["holidayDates"], monthly_records=monthly_records)
+
         items.sort(key=lambda x: x["timestamp"])
         timestamps = [x["timestamp"] for x in items]
         fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
@@ -243,9 +248,19 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         today_ist = get_current_ist().date()
         end_date_ist = min(end_date_ist, today_ist)
         
-        holidays_cursor = db.holidays.find({}, {"_id": 0, "date": 1, "name": 1})
-        holidays_list = await holidays_cursor.to_list(length=None)
-        holiday_dates = {h.get("date"): h.get("name") for h in holidays_list if h.get("date")}
+        resolver = AttendanceContextResolver(db)
+        # We can resolve once for the from_date (assuming same year)
+        ctx = await resolver.resolve_context(emp_id, from_date.date())
+        holiday_dates = []
+        if ctx and ctx.get("holidayDates"):
+            holiday_dates = ctx["holidayDates"]
+            
+        holiday_dict = {}
+        for hd in holiday_dates:
+            d_val = hd.get("holidayDate") if isinstance(hd, dict) else getattr(hd, "holidayDate", None)
+            name_val = hd.get("holidayName") if isinstance(hd, dict) else getattr(hd, "holidayName", None)
+            if d_val:
+                holiday_dict[str(d_val)] = name_val
 
         while current_date_ist <= end_date_ist:
             date_str = current_date_ist.isoformat()
@@ -255,13 +270,13 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
                 if rec.get("source") != "override":
                     if current_date_ist.weekday() == 6:
                         rec["status"] = "weekoff"
-                    elif date_str in holiday_dates:
+                    elif date_str in holiday_dict:
                         rec["status"] = "holiday"
                 filled_records.append(rec)
             else:
                 if current_date_ist.weekday() == 6:
                     status = "weekoff"
-                elif date_str in holiday_dates:
+                elif date_str in holiday_dict:
                     status = "holiday"
                 else:
                     status = "absent"
