@@ -38,6 +38,50 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
             {"$unwind": {"path": "$personal", "preserveNullAndEmptyArrays": True}},
             {"$unwind": {"path": "$contact", "preserveNullAndEmptyArrays": True}},
             {"$unwind": {"path": "$employment", "preserveNullAndEmptyArrays": True}},
+            {"$addFields": {
+                "compObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.companyId", None]}, {"$ne": ["$employment.companyId", ""]}]},
+                        "then": {"$toObjectId": "$employment.companyId"},
+                        "else": None
+                    }
+                },
+                "deptObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.departmentId", None]}, {"$ne": ["$employment.departmentId", ""]}]},
+                        "then": {"$toObjectId": "$employment.departmentId"},
+                        "else": None
+                    }
+                },
+                "desgObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.designationId", None]}, {"$ne": ["$employment.designationId", ""]}]},
+                        "then": {"$toObjectId": "$employment.designationId"},
+                        "else": None
+                    }
+                }
+            }},
+            {"$lookup": {
+                "from": "companies",
+                "localField": "compObjId",
+                "foreignField": "_id",
+                "as": "companyDoc"
+            }},
+            {"$lookup": {
+                "from": "departments",
+                "localField": "deptObjId",
+                "foreignField": "_id",
+                "as": "deptDoc"
+            }},
+            {"$lookup": {
+                "from": "designations",
+                "localField": "desgObjId",
+                "foreignField": "_id",
+                "as": "desgDoc"
+            }},
+            {"$unwind": {"path": "$companyDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$deptDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$desgDoc", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
                 "employeeId": {"$toString": "$employeeId"},
@@ -50,9 +94,11 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
                 "lastName": "$personal.lastName",
                 "personalEmail": "$contact.personalEmail",
                 "companyId": "$employment.companyId",
-                "branchId": "$employment.branchId",
+                "companyName": "$companyDoc.name",
                 "departmentId": "$employment.departmentId",
-                "designationId": "$employment.designationId"
+                "departmentName": "$deptDoc.name",
+                "designationId": "$employment.designationId",
+                "designationName": "$desgDoc.name"
             }},
             {"$skip": skip},
             {"$limit": limit}

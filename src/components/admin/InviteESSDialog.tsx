@@ -10,8 +10,11 @@ export interface DirectoryEmployee {
   lastName?: string;
   personalEmail?: string | null;
   companyId?: string;
+  companyName?: string;
   departmentId?: string;
+  departmentName?: string;
   designationId?: string;
+  designationName?: string;
   essStatus?: string;
   authUserId?: string | null;
 }
@@ -123,6 +126,21 @@ export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">Employee Information</p>
           <p className="text-sm font-semibold text-neutral-900">{employeeName}</p>
           <p className="text-xs text-neutral-500 font-mono">{employee.employeeId}</p>
+          
+          <div className="mt-3 pt-3 border-t border-neutral-200 grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-neutral-500 text-xs uppercase">Company</span>
+              <p className="font-medium">{employee.companyName || 'Not Assigned'}</p>
+            </div>
+            <div>
+              <span className="text-neutral-500 text-xs uppercase">Department</span>
+              <p className="font-medium">{employee.departmentName || 'Not Assigned'}</p>
+            </div>
+            <div className="col-span-2 mt-1">
+              <span className="text-neutral-500 text-xs uppercase">Designation</span>
+              <p className="font-medium">{employee.designationName || 'Not Assigned'}</p>
+            </div>
+          </div>
         </div>
 
         {/* Identity Section */}
