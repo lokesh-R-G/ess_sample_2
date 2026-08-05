@@ -26,6 +26,7 @@ import AdminLayout from './components/layout/AdminLayout';
 import AdminSettings from './pages/admin/AdminSettings';
 import EmployeeWizard from './pages/admin/employee/EmployeeWizard';
 import AdminWeeklyOffPolicy from './pages/admin/AdminWeeklyOffPolicy';
+import AdminShifts from './pages/admin/AdminShifts';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();

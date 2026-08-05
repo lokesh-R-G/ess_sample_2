@@ -9,14 +9,13 @@ class ShiftValidator:
         self.collection = db["shifts"]
         
     async def validate_create(self, data: ShiftCreate):
-        query = {"name": data.name, "deletedAt": None}
-        if hasattr(data, 'companyId') and data.companyId:
-            query["companyId"] = data.companyId
-            parent = await self.db["companies"].find_one({"_id": ObjectId(data.companyId), "deletedAt": None})
-            if not parent:
-                raise HTTPException(status_code=400, detail="Parent company not found or archived")
+        query = {"shiftCode": data.shiftCode, "deletedAt": None}
         if await self.collection.find_one(query):
-            raise HTTPException(status_code=409, detail=f"Shift with this name already exists")
+            raise HTTPException(status_code=409, detail=f"Shift with this shiftCode already exists")
+            
+        policy = await self.db["attendance_policies"].find_one({"_id": ObjectId(data.attendancePolicyId), "deletedAt": None})
+        if not policy:
+            raise HTTPException(status_code=400, detail="Attendance Policy not found or archived")
             
     async def validate_update(self, id: str, data: ShiftUpdate):
         pass # Optional update validation

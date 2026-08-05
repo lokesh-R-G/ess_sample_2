@@ -27,13 +27,5 @@ class ShiftService:
         return await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
         
     async def delete(self, id: str, user_id: str = None) -> bool:
-        # Relationship Integrity
-        if "shift" == "company":
-            has_branches = await self.db["branches"].find_one({"companyId": id, "deletedAt": None})
-            if has_branches:
-                raise HTTPException(status_code=409, detail="Cannot archive Company with active Branches")
-        elif "shift" == "branch":
-            has_depts = await self.db["departments"].find_one({"branchId": id, "deletedAt": None})
-            if has_depts:
-                raise HTTPException(status_code=409, detail="Cannot archive Branch with active Departments")
+        # Future: Check if any Employee is assigned to this Shift
         return await self.repo.soft_delete(id, user_id)

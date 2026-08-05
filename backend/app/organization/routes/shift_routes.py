@@ -19,13 +19,11 @@ async def get_all(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     search: Optional[str] = None,
-    companyId: Optional[str] = None,
     status: Optional[str] = None,
     controller: ShiftController = Depends(get_controller),
     user: dict = Depends(get_current_user)
 ):
     query = {}
-    if companyId: query["companyId"] = companyId
     if status: query["status"] = status
     return await controller.get_all(query, skip, limit, search)
 

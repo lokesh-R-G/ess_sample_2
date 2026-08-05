@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GenericCRUDPage } from '../../components/ui/GenericCRUDPage';
+import { AdminShifts } from './AdminShifts';
 export const AdminOrganization: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Organization');
 
@@ -79,23 +80,7 @@ export const AdminOrganization: React.FC = () => {
           />
         );
       case 'Shift':
-        return (
-          <GenericCRUDPage
-            title="Shifts"
-            endpoint="/v2/organization/shifts/"
-            columns={[
-              { key: 'name', label: 'Shift Name' },
-              { key: 'startTime', label: 'Start Time' },
-              { key: 'endTime', label: 'End Time' }
-            ]}
-            formFields={[
-              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
-              { key: 'name', label: 'Shift Name', type: 'text', required: true },
-              { key: 'startTime', label: 'Start Time (HH:MM)', type: 'text', required: true },
-              { key: 'endTime', label: 'End Time (HH:MM)', type: 'text', required: true }
-            ]}
-          />
-        );
+        return <AdminShifts />;
       case 'Holiday':
         return (
           <GenericCRUDPage
