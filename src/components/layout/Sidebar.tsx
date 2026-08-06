@@ -42,7 +42,7 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/employees', label: 'Employees', icon: Users, adminOnly: true },
   { path: '/admin/payroll', label: 'Payroll', icon: Receipt, adminOnly: true },
   { path: '/admin/organization', label: 'Organization', icon: Building2, adminOnly: true },
-  { path: '/admin/branches', label: 'Branches', icon: Building2, adminOnly: true },
+  //{ path: '/admin/branches', label: 'Branches', icon: Building2, adminOnly: true },    
   { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true },
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true },
   { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true },

@@ -1,0 +1,51 @@
+c3a8e75d04fdb4ce13ecaebb3e8ef31130816426|2026-08-05 17:41:49 +0530|HEAD -> user, origin/user|feat: implement backend services and frontend admin page for holiday calendar management
+559d0f3ef9fbc203ed676d16b5602a2814d91327|2026-08-05 17:07:03 +0530||feat: implement admin dashboard summary API and employee invitation workflow with HRMS integration
+b45b7cb6699b267685cade1b932c9d61161a6074|2026-08-05 15:30:26 +0530||feat: add EmployeeRepository methods and InviteESSDialog component for ESS invitation workflow
+9e86c42e51c5c49473fc21bc5d1cd8f7918067dd|2026-08-05 15:13:50 +0530||feat: implement organization management modules and attendance policy services with CRUD functionality
+6b52d9401c273393922249e241ad0549124a8e17|2026-08-05 14:17:49 +0530||feat: add CRUD services for shifts and attendance policies with associated backend API routes
+ac7fe88094957202d0ed096586e88275f882e877|2026-08-05 13:34:47 +0530||refactor: consolidate attendance policy routes and implement cleanup script for redundant policy modules
+666ef36fae384755e39f258aef1e4a115569acc8|2026-08-05 13:13:42 +0530||feat: implement shift management system with CRUD backend services, schemas, validation, and admin UI integration
+91b5e56610b682107ed39f32172c4c587f9b589e|2026-08-05 12:25:13 +0530||feat: implement attendance policy framework, holiday calendar management, and automated daily attendance summary processing
+f0a02987341bf98ff91c966cfa9317a6f04f97ee|2026-08-04 15:42:07 +0530|origin/main, origin/HEAD|Merge pull request #1 from lokesh-R-G/user
+e19fa88710e7654498a78f041b96f2afe7a0a009|2026-08-04 15:37:53 +0530||feat: implement employee repository and admin authentication workflow for ESS provisioning
+22f236813f370f72a544980c4215001c057656ec|2026-08-04 11:11:44 +0530|main|chore: update dependencies and regenerate node_modules for puppeteer, zod, and chromium-bidi
+bbaed051680911830475a0b5065d1f5d13291d97|2026-08-04 10:26:48 +0530||feat: add salary calculation engine, preview routes, and assignment service for payroll management
+cd53c13ff3ac4bccdb404996a1c81ace692c4bba|2026-08-03 18:19:18 +0530||feat: implement payroll calculation engine, API routes, and employee payroll configuration schema
+0e1dcbfa47fa656519a8f4cf4209b3e8786c4f0b|2026-08-03 17:52:57 +0530||feat: add salary calculation preview API and employee salary assignment service with UI wizard step
+de482684ffcc1c5028cd1158cfe822c5ad582206|2026-08-03 16:48:09 +0530||feat: implement salary preview calculator and payroll configuration framework
+a578eb0a0824cdd0a906e9b77b9e4ef7944131f9|2026-08-03 15:33:17 +0530||feat: implement salary component behavior configuration UI and backend domain models
+5cacee8be026c6820f00f3b6d90d1802b3893bcd|2026-08-03 14:39:30 +0530||feat: implement multi-step employee onboarding wizard with backend integration and draft persistence
+6624cac13f695ffec89a8776dac243813d993371|2026-08-03 10:47:36 +0530||feat: create EmployeeGovernmentIdRepository for managing government ID records
+1522fc991620869ca5e8c4aea6ce3aa0b02948ac|2026-08-03 10:05:02 +0530||feat: implement BaseRepository for MongoDB and add Employee management modules and services
+18ebac1a1e1128b0af7bb32d061ee87ed1634877|2026-08-01 12:20:53 +0530||feat: add payroll configuration tabs and eSSL machine lookup components
+0de185f61b3a7f81a56eae2a72eb4af6491e0702|2026-08-01 11:15:57 +0530||feat: implement employee management dashboard and multi-step onboarding wizard for new hires
+30a1a571cb9deb7a12ae5cf3f38eb254272eda2c|2026-08-01 10:46:45 +0530||feat: implement employee history, address, and bank repositories
+44cb2ca34baa56b555843990fb5a1ca21d710eea|2026-07-31 18:10:13 +0530||summa
+9bf41a1292f6b059091de071bad74e44561f6793|2026-07-31 16:33:44 +0530||feat: implement multi-step employee onboarding wizard with state management and backend integration
+ddad1dfb3fdc036181ea4bbe9451aca81f4c8839|2026-07-31 16:07:34 +0530||draft feat: implement employee management modules including UI wizard steps and backend CRUD services
+45d7b0c26718d5435455716399b65ed196fc8330|2026-07-31 11:59:35 +0530||locked organization feat: implement backend routes and frontend components for salary structure management with multi-select functionality
+7ba3777ccd77f7cc7fca8f246de042899a098874|2026-07-31 11:28:48 +0530||feat: implement organization management module with Pydantic schemas and Admin CRUD UI components
+37a2cdaefc57f0e79cbe8ab2e6c932932e812a44|2026-07-30 18:13:15 +0530||feat: implement organization management module with generic CRUD components and backend API support
+eeea896cf7f00f96fee51017044c2db65334b8c8|2026-07-30 16:49:36 +0530||feat: implement organization entity schemas, eSSL machine service, and global search routing
+fd48a82cbf5db99a8fc2dc5f900cdf8eaf0cf0b3|2026-07-30 15:27:37 +0530||feat: add ESSL machine management module including CRUD operations and API routes
+66e231596be063a992f27886fc41cc8861c45558|2026-07-30 15:07:51 +0530||feat: add reusable UI components and a generic CRUD page implementation for administrative modules
+ff3a7dcd8ff6592dda6bca5be3c13e3dde7554b7|2026-07-30 14:51:13 +0530||organization
+ab7b18055508ff1de766e85965198bfc4dbda1a6|2026-07-27 16:26:53 +0530||feat: bootstrap initial module architecture with base repositories and core entity models
+86a2c94c3986a6aaab8a44ca2f9f2b6724b24eb6|2026-07-27 14:57:47 +0530||feat: scaffold comprehensive backend architecture for attendance, leave, salary, and employee management modules
+f11c6a846d651e070b1ca8d9d5805ed57e0b1136|2026-07-25 17:30:38 +0530||feat: scaffold backend module structure and core domain entities for employee, leave, attendance, and payroll systems
+58d612d96677b893287cc130f573ffe3679f6411|2026-07-22 17:57:44 +0530||feat: implement attendance tracking, policy management, and dashboard system with backend services
+ac3e2d2b38bce90a1637b637fab3ffe87c3e9dd2|2026-06-20 12:45:52 +0530||feat: implement admin dashboard and management API routes with associated frontend pages
+7720cb674dc74138366589e7f24f031061dd476d|2026-06-17 10:52:43 +0530||feat: implement attendance tracking system with ESSL log synchronization and admin management dashboard
+603f5ed1eafd1d40269d49f2db608d35f49d0e00|2026-06-16 16:52:40 +0530||feat: implement employee attendance tracking system with calendar view and backend services
+a4160dc269c59721c18b331f368714ed292fca30|2026-06-16 15:30:39 +0530||feat: implement attendance service, eSSL log integration, and employee dashboard scaffolding
+8b9e59100fe8485a94daf16b9f8fb936c2169bc3|2026-06-15 17:45:18 +0530||feat: implement full-stack employee payroll and management system including core API routes, services, and frontend UI pages
+26fef731b475796c69b06407044fbac09e0e315d|2026-06-15 17:18:15 +0530||before essl
+537c8a2f2f9737638ed7653f01bb1fe2eef380c0|2026-06-15 16:27:47 +0530||docs: update README for improved clarity and structure
+52a6ed6caf34389e77667f20cc89db70cbeaec32|2026-06-15 16:24:29 +0530||docs: update README with project overview, setup instructions, and features
+6e6040e46d024a84e3bd7cc2afcb30a85fddf77d|2026-06-15 16:18:16 +0530||feat: enhance attendance and dashboard features
+ec5166806b72eeba9e6c9a080ce6b7b07951d365|2026-06-15 16:17:57 +0530||Refactor Payslip and Profile components for improved data handling and UI consistency
+2662466894e010efcc8195dad8928f695bf18cc1|2026-06-15 10:15:46 +0530||Merge branch
+9dd77e4e635116a2896400fd87fcc7ab75db8fb2|2026-06-15 10:11:33 +0530||added backend
+d905dc76d127cb40376e7b8239e6f855343afc15|2026-06-12 12:51:38 +0530||Start repository
+44d8e7fb8e1212e2fc709e50d164d22c77b61257|2026-06-12 12:18:39 +0530||Remove project title and badge from README
+c96625f3a236a59344027df94f4d3ce81ac60ddb|2026-06-12 12:16:46 +0530||Start repository

@@ -1,19 +1,17 @@
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.models import AttendancePolicy
 from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
-    def __init__(self, policy: AttendancePolicy, shift=None, holiday_dates=None, weekly_off_policy=None, monthly_records=None):
+    def __init__(self, policy, shift=None, holiday_dates=None, weekly_off=None, monthly_records=None):
         self.policy = policy
         self.shift = shift
         self.holiday_dates = holiday_dates or []
-        self.weekly_off_policy = weekly_off_policy
+        self.weekly_off = weekly_off
         self.monthly_records = monthly_records or []
         
         # Cache monthly aggregates per employee
         self.monthly_late_counts = {}
-        self.monthly_permission_used = {}
 
     async def _load_monthly_aggregates(self, emp_id: str, month_str: str):
         """Load aggregates for the month up to now, if not already cached."""
@@ -21,70 +19,112 @@ class PolicyEngine:
         if key in self.monthly_late_counts:
             return
 
-        # Use the injected monthly records instead of querying the database
         records = self.monthly_records
-
         late_count = sum(1 for r in records if r.get("lateMinutes", 0) > 0)
-        permission_used = sum(r.get("permissionHoursUsed", 0.0) for r in records)
-
         self.monthly_late_counts[key] = late_count
-        self.monthly_permission_used[key] = permission_used
 
-    def _increment_late(self, emp_id: str, month_str: str) -> float:
-        """Increment late count and return LOP days (0.5 or 1.0) if threshold hit."""
-        key = f"{emp_id}_{month_str}"
-        self.monthly_late_counts[key] += 1
-        count = self.monthly_late_counts[key]
+    def evaluate_holiday(self, ist_date: datetime) -> bool:
+        """Check if the date is a holiday."""
+        return any(
+            (isinstance(hd, dict) and str(hd.get("holidayDate")) == ist_date.strftime("%Y-%m-%d"))
+            or (getattr(hd, "holidayDate", None) and str(hd.holidayDate) == ist_date.strftime("%Y-%m-%d"))
+            for hd in self.holiday_dates
+        )
 
-        if count == self.policy.lateHalfDayThreshold:
-            return 0.5
-        elif count == self.policy.lateFullDayThreshold:
-            return 1.0 - 0.5 # Since 0.5 was already deducted at lateHalfDayThreshold, deduct another 0.5. Wait.
-            # Actually, total deduction is 1 day. If we return the delta deduction:
-            # return 0.5
-        elif count > self.policy.lateFullDayThreshold:
-            if (count - self.policy.lateFullDayThreshold) % self.policy.lateIncrementThreshold == 0:
-                return 0.5
-        return 0.0
+    def evaluate_weekoff(self) -> bool:
+        """Check if the date is a weekly off using the injected boolean."""
+        return bool(self.weekly_off)
 
-    def _add_permission(self, emp_id: str, month_str: str, hours: float) -> tuple[float, float]:
+    def calculate_late_minutes(self, in_time: datetime | None) -> float:
+        """Calculate minutes late based strictly on shift start time."""
+        if not in_time:
+            return 0.0
+        return compare_time_with_policy(in_time, self.shift.startTime)
+
+    def calculate_early_out_minutes(self, out_time: datetime | None) -> float:
+        """Calculate minutes early out based strictly on shift end time."""
+        if not out_time:
+            return 0.0
+        diff = compare_time_with_policy(out_time, self.shift.endTime)
+        return max(0.0, -diff)
+
+    def calculate_effective_work_hours(self, in_time: datetime | None, out_time: datetime | None) -> float:
         """
-        Add permission hours. 
-        Returns (permission_used_today, excess_lop_hours_generated_today)
+        Calculate total effective working hours.
+        Placeholder for future break deductions.
         """
-        key = f"{emp_id}_{month_str}"
-        current_used = self.monthly_permission_used[key]
+        if not in_time or not out_time:
+            return 0.0
+        delta = out_time - in_time
+        return max(0.0, delta.total_seconds() / 3600.0)
+
+    def evaluate_late(self, late_minutes: float, emp_id: str, month_str: str) -> dict:
+        """Evaluate late arrival penalties and limits."""
+        res = {"status": "Present", "lateMinutes": 0, "lateCount": self.monthly_late_counts.get(f"{emp_id}_{month_str}", 0)}
         
-        # We need to track total excess. 
-        # Example: Limit = 1.0
-        # Previously used = 1.0
-        # Today requested = 2.0. Excess = 2.0.
-        
-        available = max(0.0, self.policy.monthlyPermissionHours - current_used)
-        used_today = min(available, hours)
-        excess_today = hours - used_today
-        
-        self.monthly_permission_used[key] += hours
-        
-        # Check if excess triggers LOP (4 hours = Half Day, 8 hours = Full Day)
-        # We need to know previous excess to see if we cross a boundary.
-        prev_excess = max(0.0, current_used - self.policy.monthlyPermissionHours)
-        new_excess = prev_excess + excess_today
-        
-        lop_deduction = 0.0
-        # If we cross 4 hours (Half Day)
-        if prev_excess < self.policy.lopHalfDayHours <= new_excess:
-            lop_deduction += (self.policy.lopHalfDayHours) # e.g. 4 hours worth of LOP
+        if late_minutes <= self.policy.graceInMinutes:
+            return res
             
-        # If we cross 8 hours (Full Day)
-        if prev_excess < self.policy.lopFullDayHours <= new_excess:
-            lop_deduction += (self.policy.lopFullDayHours - self.policy.lopHalfDayHours)
+        if late_minutes <= self.policy.lateInThresholdMinutes:
+            res["lateMinutes"] = int(late_minutes)
             
-        return used_today, excess_today # Actually, let's just return the raw hours. LOP can be calculated directly.
+            # Increment late count
+            key = f"{emp_id}_{month_str}"
+            self.monthly_late_counts[key] += 1
+            res["lateCount"] = self.monthly_late_counts[key]
+        else:
+            # Beyond late threshold
+            res["lateMinutes"] = int(late_minutes)
+            res["status"] = "Late Beyond Threshold"
+            
+        return res
+
+    def evaluate_early_out(self, early_out_minutes: float) -> dict:
+        """Evaluate early departure penalties."""
+        res = {"earlyOutMinutes": 0, "status": "Present"}
+        
+        if early_out_minutes <= self.policy.graceOutMinutes:
+            return res
+            
+        if early_out_minutes <= self.policy.earlyOutThresholdMinutes:
+            res["earlyOutMinutes"] = int(early_out_minutes)
+            res["status"] = "Early Out"
+        else:
+            res["earlyOutMinutes"] = int(early_out_minutes)
+            res["status"] = "Early Out Beyond Threshold"
+            
+        return res
+
+    def evaluate_day_status(self, effective_hours: float) -> str:
+        """Determine Half Day / Full Day / Absent purely based on working hours."""
+        if effective_hours >= self.policy.minHoursForFullDay:
+            return "Present"
+        elif effective_hours >= self.policy.minHoursForHalfDay:
+            return "Half Day"
+        elif effective_hours <= self.policy.absentHoursThreshold:
+            return "Absent"
+        else:
+            # Between absent and half day, default to Absent
+            return "Absent"
+
+    def calculate_lop(self, metrics: dict, day_status: str, late_status: str, early_out_status: str) -> None:
+        """Calculate LOP based on day status and threshold violations."""
+        if day_status == "Half Day":
+            metrics["halfDayCount"] += 0.5
+            metrics["lopHours"] += self.policy.lopHalfDayHours
+        elif day_status == "Absent":
+            metrics["lopHours"] += self.policy.lopFullDayHours
+        
+        # Override for late/early out if they had enough hours but broke timing rules
+        if day_status == "Present":
+            if late_status == "Late Beyond Threshold" or early_out_status == "Early Out Beyond Threshold":
+                metrics["status"] = "Half Day"
+                metrics["halfDayCount"] += 0.5
+                metrics["lopHours"] += self.policy.lopHalfDayHours
 
     async def evaluate_attendance(self, emp_id: str, date_val: datetime, in_time: datetime | None, out_time: datetime | None) -> dict:
         """
-        Evaluates attendance and returns a dict with the new metrics.
+        Main orchestration method for the engine.
         """
         ist_date = to_ist(date_val)
         month_str = ist_date.strftime("%Y-%m")
@@ -92,82 +132,56 @@ class PolicyEngine:
 
         metrics = {
             "lateMinutes": 0,
-            "lateCount": 0,
-            "permissionHoursUsed": 0.0,
-            "permissionHoursExceeded": 0.0,
+            "lateCount": self.monthly_late_counts.get(f"{emp_id}_{month_str}", 0),
+            "earlyOutMinutes": 0,
             "lopHours": 0.0,
             "halfDayCount": 0.0,
+            "effectiveHours": 0.0,
             "status": "Absent"
         }
 
-        # Check for Holiday Date match first
-        is_holiday = any(
-            isinstance(hd, dict) and str(hd.get("holidayDate")) == ist_date.strftime("%Y-%m-%d")
-            or getattr(hd, "holidayDate", None) and str(hd.holidayDate) == ist_date.strftime("%Y-%m-%d")
-            for hd in self.holiday_dates
-        )
-
-        if is_holiday:
+        # 1. Evaluate Holiday
+        if self.evaluate_holiday(ist_date):
             metrics["status"] = "Holiday"
-            # In Phase 7: Do not implement Worked-on-Holiday yet, so just return
             return metrics
+            
+        # 2. Evaluate Week Off
+        is_weekoff = self.evaluate_weekoff()
 
+        # 3. Absent Check
         if not in_time:
-            metrics["status"] = "Absent"
+            if is_weekoff:
+                metrics["status"] = "Week Off"
+            else:
+                metrics["status"] = "Absent"
+                # If absent on a normal day, do they get LOP?
+                metrics["lopHours"] += self.policy.lopFullDayHours
             return metrics
 
-        # Determine shift start based on weekday using Resolved Shift
-        shift_start_str = getattr(self.shift, "startTime", getattr(self.policy, "shiftStartTime", "10:00:00"))
+        # 4. Effective Work Hours
+        effective_hours = self.calculate_effective_work_hours(in_time, out_time)
+        metrics["effectiveHours"] = round(effective_hours, 2)
         
-        # In the future, this Saturday logic will be driven by Weekly Off Policy and Shift combination.
-        # For now, fallback to policy if shift lacks it
-        if ist_date.weekday() == 5:
-            shift_end_str = getattr(self.shift, "saturdayEndTime", getattr(self.policy, "saturdayShiftEndTime", "17:30:00"))
+        # 5. Late Evaluation
+        late_minutes = self.calculate_late_minutes(in_time)
+        late_eval = self.evaluate_late(late_minutes, emp_id, month_str)
+        metrics["lateMinutes"] = late_eval["lateMinutes"]
+        metrics["lateCount"] = late_eval["lateCount"]
+        
+        # 6. Early Out Evaluation
+        early_out_minutes = self.calculate_early_out_minutes(out_time)
+        early_eval = self.evaluate_early_out(early_out_minutes)
+        metrics["earlyOutMinutes"] = early_eval["earlyOutMinutes"]
+        
+        # 7. Day Status
+        if out_time:
+            day_status = self.evaluate_day_status(effective_hours)
+            metrics["status"] = day_status
+            self.calculate_lop(metrics, day_status, late_eval["status"], early_eval["status"])
         else:
-            shift_end_str = getattr(self.shift, "endTime", getattr(self.policy, "shiftEndTime", "18:30:00"))
-
-        late_diff = compare_time_with_policy(in_time, shift_start_str)
-
-        if late_diff <= self.policy.graceMinutes:
-            metrics["status"] = "Present"
-        elif late_diff <= self.policy.lateEndMinute:
-            metrics["status"] = "Present"
-            metrics["lateMinutes"] = int(late_diff)
-            
-            # Increment late count
-            deduction_days = self._increment_late(emp_id, month_str)
-            metrics["lateCount"] = self.monthly_late_counts[f"{emp_id}_{month_str}"]
-            metrics["halfDayCount"] += deduction_days
-            metrics["lopHours"] += (deduction_days * 8.0) # Assuming 8 hours = 1 day
-        elif late_diff <= self.policy.latePermissionEndMinute:
-            metrics["status"] = "Present" # Or Late Permission Required
-            metrics["lateMinutes"] = int(late_diff)
-            
-            # Need permission. Let's assume late minutes converted to hours.
-            perm_hours = late_diff / 60.0
-            used, excess = self._add_permission(emp_id, month_str, perm_hours)
-            metrics["permissionHoursUsed"] = used
-            metrics["permissionHoursExceeded"] = excess
-            
-            # If excess triggers LOP, it's aggregated. 
-            # We will just record the excess, and the payroll system or a separate aggregation will handle it,
-            # or we calculate it here. For simplicity, let's just add excess directly to lopHours.
-            metrics["lopHours"] += excess
-        else:
-            # After half day cutoff or beyond permission
-            half_day_diff = compare_time_with_policy(in_time, self.policy.halfDayCutoffTime)
-            if half_day_diff >= 0:
-                metrics["status"] = "Half Day"
-                metrics["halfDayCount"] += 0.5
-            else:
-                metrics["status"] = "Present"
-                metrics["lateMinutes"] = int(late_diff)
-
-        # If they left early? (Could check out_time vs shift_end_str)
-        # Not explicitly requested in Phase 1, but good to have.
-
-        # If no out punch
-        if not out_time:
             metrics["status"] = "Present (No Out)"
+            
+        if is_weekoff:
+            metrics["status"] = "Week Off (Present)"
 
         return metrics

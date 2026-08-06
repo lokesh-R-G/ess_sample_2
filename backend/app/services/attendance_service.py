@@ -110,7 +110,13 @@ async def build_daily_summaries(db, logs):
         if not ctx or not ctx.get("policy"):
             continue
 
-        engine = PolicyEngine(policy=ctx["policy"], holiday_dates=ctx["holidayDates"], monthly_records=monthly_records)
+        engine = PolicyEngine(
+            shift=ctx.get("shift"),
+            policy=ctx.get("policy"),
+            holiday_dates=ctx.get("holidayDates"),
+            weekly_off=ctx.get("weeklyOff"),
+            monthly_records=monthly_records
+        )
 
         items.sort(key=lambda x: x["timestamp"])
         timestamps = [x["timestamp"] for x in items]
@@ -255,6 +261,10 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         if ctx and ctx.get("holidayDates"):
             holiday_dates = ctx["holidayDates"]
             
+        weekly_off = False
+        if ctx and "weeklyOff" in ctx:
+            weekly_off = ctx["weeklyOff"]
+            
         holiday_dict = {}
         for hd in holiday_dates:
             d_val = hd.get("holidayDate") if isinstance(hd, dict) else getattr(hd, "holidayDate", None)
@@ -268,13 +278,13 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
                 rec = record_dict[date_str]
                 # Apply priority logic
                 if rec.get("source") != "override":
-                    if current_date_ist.weekday() == 6:
+                    if resolver.resolve_weekoff(current_date_ist):
                         rec["status"] = "weekoff"
                     elif date_str in holiday_dict:
                         rec["status"] = "holiday"
                 filled_records.append(rec)
             else:
-                if current_date_ist.weekday() == 6:
+                if resolver.resolve_weekoff(current_date_ist):
                     status = "weekoff"
                 elif date_str in holiday_dict:
                     status = "holiday"
