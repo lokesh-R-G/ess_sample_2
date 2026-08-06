@@ -2,7 +2,7 @@ import { api } from '../lib/api';
 
 export const organizationApi = {
   getCompanies: async () => {
-    return await api.get('/v2/organization/companys/?limit=500');
+    return await api.get('/v2/organization/companies/?limit=500');
   },
   getBranches: async (companyId?: string) => {
     return await api.get('/v2/organization/branches/?limit=500' + (companyId ? `&companyId=${companyId}` : ''));

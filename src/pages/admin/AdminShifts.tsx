@@ -46,8 +46,10 @@ export const AdminShifts: React.FC = () => {
     if (!editingShift) return;
     try {
       setIsSaving(true);
-      if (editingShift._id) {
-        await updateShiftV2(editingShift._id, editingShift);
+      console.log("Saving Shift Payload:", JSON.stringify(editingShift, null, 2));
+      const shiftId = (editingShift as any).id || editingShift._id;
+      if (shiftId) {
+        await updateShiftV2(shiftId, editingShift);
       } else {
         await createShiftV2(editingShift);
       }
@@ -86,11 +88,15 @@ export const AdminShifts: React.FC = () => {
       {!editingShift ? (
         <div className="grid grid-cols-1 gap-4">
           {shifts.map(s => (
-            <GlassCard key={s._id} className="p-4 flex items-center justify-between">
+            <GlassCard key={(s as any).id || s._id} className="p-4 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-medium text-lg">{s.name}</h3>
                   <StatusBadge status="info" label={s.shiftCode} />
+                  <StatusBadge 
+                    status="success" 
+                    label={policies.find(p => ((p as any).id || p._id) === s.attendancePolicyId)?.name || 'Unknown Policy'} 
+                  />
                 </div>
                 <p className="text-sm text-neutral-500">{s.startTime} - {s.endTime}</p>
                 <div className="mt-2 flex gap-2">
@@ -100,7 +106,7 @@ export const AdminShifts: React.FC = () => {
               </div>
               <div className="flex gap-2">
                 <AnimatedButton variant="secondary" icon={Edit2} onClick={() => setEditingShift(s)}>Edit</AnimatedButton>
-                {s._id && <AnimatedButton variant="danger" icon={Trash2} onClick={() => handleDelete(s._id!)}>Delete</AnimatedButton>}
+                {((s as any).id || s._id) && <AnimatedButton variant="danger" icon={Trash2} onClick={() => handleDelete((s as any).id || s._id)}>Delete</AnimatedButton>}
               </div>
             </GlassCard>
           ))}
@@ -108,7 +114,7 @@ export const AdminShifts: React.FC = () => {
       ) : (
         <GlassCard className="p-6 space-y-6">
           <div className="flex justify-between items-center border-b pb-4">
-            <h2 className="text-xl font-bold">{editingShift._id ? 'Edit Shift' : 'Create Shift'}</h2>
+            <h2 className="text-xl font-bold">{((editingShift as any).id || editingShift._id) ? 'Edit Shift' : 'Create Shift'}</h2>
             <div className="flex gap-2">
               <AnimatedButton variant="secondary" onClick={() => setEditingShift(null)}>Cancel</AnimatedButton>
               <AnimatedButton icon={Save} onClick={handleSave} loading={isSaving}>Save Shift</AnimatedButton>
@@ -128,9 +134,10 @@ export const AdminShifts: React.FC = () => {
                 onChange={e => handleChange('attendancePolicyId', e.target.value)}
               >
                 <option value="">Select a Policy</option>
-                {policies.map(p => (
-                  <option key={p._id} value={p._id}>{p.name}</option>
-                ))}
+                {policies.map(p => {
+                  const policyId = (p as any).id || p._id;
+                  return <option key={policyId} value={policyId}>{p.name}</option>;
+                })}
               </select>
             </div>
           </div>
