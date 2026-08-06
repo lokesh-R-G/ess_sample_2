@@ -46,6 +46,7 @@ from app.scheduler.routes.router import router as v2_scheduler_router
 from app.report_generator.routes.router import router as v2_report_router
 from app.pdf_service.routes.router import router as v2_pdf_router
 from app.email_service.routes.router import router as v2_email_router
+from app.approval.routes.router import router as v2_approval_router
 from app.core.config import get_settings
 from app.db.mongo import init_indexes
 from app.scheduler.scheduler import init_scheduler
@@ -152,3 +153,4 @@ app.include_router(v2_scheduler_router, prefix="/api/v2/scheduler")
 app.include_router(v2_report_router, prefix="/api/v2/report")
 app.include_router(v2_pdf_router, prefix="/api/v2/pdf")
 app.include_router(v2_email_router, prefix="/api/v2/email")
+app.include_router(v2_approval_router, prefix="/api/v2/approval")

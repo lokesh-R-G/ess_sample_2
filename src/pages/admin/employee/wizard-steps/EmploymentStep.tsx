@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Select } from '../../../../components/ui';
 import { organizationApi } from '../../../../services/organization.api';
+import { employeeApi } from '../../../../services/employeeApi';
 
 interface EmploymentStepProps {
   data: any;
@@ -14,6 +15,7 @@ export default function EmploymentStep({ data, onChange, errors = {} }: Employme
   const [departments, setDepartments] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   useEffect(() => {
     fetchMasters();
@@ -21,18 +23,20 @@ export default function EmploymentStep({ data, onChange, errors = {} }: Employme
 
   const fetchMasters = async () => {
     try {
-      const [compRes, branchRes, deptRes, desigRes, shiftRes] = await Promise.all([
+      const [compRes, branchRes, deptRes, desigRes, shiftRes, empRes] = await Promise.all([
         organizationApi.getCompanies(),
         organizationApi.getBranches(),
         organizationApi.getDepartments(),
         organizationApi.getDesignations(),
-        organizationApi.getShifts()
+        organizationApi.getShifts(),
+        employeeApi.getEmployees()
       ]);
       setCompanies(compRes?.data || compRes || []);
       setBranches(branchRes?.data || branchRes || []);
       setDepartments(deptRes?.data || deptRes || []);
       setDesignations(desigRes?.data || desigRes || []);
       setShifts(shiftRes?.data || shiftRes || []);
+      setEmployees(empRes?.data || empRes || []);
     } catch (e) {
       console.error("Failed to load organization masters", e);
     }
@@ -91,6 +95,35 @@ export default function EmploymentStep({ data, onChange, errors = {} }: Employme
           ]}
           required
         />
+        
+        <Select
+          label="Reporting Manager"
+          value={data.reportingManagerEmployeeId || ''}
+          onChange={(e) => handleChange('reportingManagerEmployeeId', e.target.value)}
+          options={[
+            { value: '', label: 'Select Manager (Optional)' },
+            ...employees.filter(emp => {
+               // Only show employees in the same company & department who are managers, OR at least just show anyone in department for now
+               return emp.id !== data.employeeId; // Exclude self
+            }).map(emp => ({ 
+              value: emp.id || emp._id, 
+              label: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})` 
+            }))
+          ]}
+        />
+        
+        <div className="flex items-center gap-2 mt-8">
+          <input 
+            type="checkbox" 
+            id="isReportingManager" 
+            checked={data.isReportingManager || false} 
+            onChange={(e) => handleChange('isReportingManager', e.target.checked)}
+            className="w-4 h-4 text-blue-600 rounded border-neutral-300 focus:ring-blue-500"
+          />
+          <label htmlFor="isReportingManager" className="text-sm font-medium text-neutral-700">
+            This employee is a Reporting Manager
+          </label>
+        </div>
         
         <Input
           label="Date of Joining"

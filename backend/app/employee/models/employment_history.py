@@ -11,7 +11,8 @@ class EmploymentHistoryModel(BaseModel):
     designationId: Optional[str] = None
     dateOfJoining: Optional[datetime] = None
     employmentType: Optional[str] = None
-    reportingManagerId: Optional[str] = None
+    reportingManagerEmployeeId: Optional[str] = None
+    isReportingManager: bool = False
     shiftId: Optional[str] = None
     noticePeriodDays: int = 0
     probationPeriodDays: int = 0

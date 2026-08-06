@@ -140,6 +140,34 @@ class AttendanceContextResolver:
         # 4. Resolve Weekly Off
         today_schedule = self.resolve_today_schedule(weekly_off_policy, target_date)
         print(f"Today Schedule : {today_schedule['dayType']}")
+        
+        # 5. Resolve Approvals for Phase 7
+        target_iso = target_date.isoformat()
+        # In a real implementation we might check range overlap. Here we check exact match on date string or isoformat
+        # for simplicity since requestData structure can vary by approvalType.
+        approvals_cursor = self.db.approvals.find({
+            "employeeId": emp_id,
+            "status": "APPROVED"
+        })
+        approvals = await approvals_cursor.to_list(length=None)
+        
+        # Filter for today
+        today_approvals = []
+        for app in approvals:
+            rd = app.get("requestData", {})
+            # If Leave, check fromDate/toDate overlap, else check date or punchTime
+            # Simplistic check for demo:
+            d1 = rd.get("date", "")
+            d2 = rd.get("punchTime", "")
+            d3_from = rd.get("fromDate", "")
+            d3_to = rd.get("toDate", "")
+            
+            if target_iso in d1 or target_iso in d2:
+                today_approvals.append(app)
+            elif d3_from and d3_to and d3_from <= target_iso <= d3_to:
+                today_approvals.append(app)
+
+        print(f"Approvals resolved : {len(today_approvals)}")
         print("Policy Engine Executed")
 
         return {
@@ -151,5 +179,6 @@ class AttendanceContextResolver:
             "branch": branch_id,
             "holidayCalendar": calendar_id,
             "holidayDates": holiday_dates,
-            "todaySchedule": today_schedule
+            "todaySchedule": today_schedule,
+            "approvedRequests": today_approvals
         }

@@ -3,12 +3,13 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
-    def __init__(self, policy, shift=None, holiday_dates=None, today_schedule=None, monthly_records=None):
+    def __init__(self, policy, shift=None, holiday_dates=None, today_schedule=None, monthly_records=None, approved_requests=None):
         self.policy = policy
         self.shift = shift
         self.holiday_dates = holiday_dates or []
         self.today_schedule = today_schedule or {"dayType": "WORKING", "startTime": None, "endTime": None}
         self.monthly_records = monthly_records or []
+        self.approved_requests = approved_requests or []
         
         # Cache monthly aggregates per employee
         self.monthly_late_counts = {}
@@ -146,6 +147,15 @@ class PolicyEngine:
             "status": "Absent"
         }
 
+        # Phase 7: Check Approvals Override
+        for req in self.approved_requests:
+            if req.get("approvalType") == "Leave":
+                metrics["status"] = "Leave"
+                return metrics
+            elif req.get("approvalType") == "On Duty":
+                metrics["status"] = "On Duty"
+                return metrics
+                
         # 1. Evaluate Holiday
         if self.evaluate_holiday(ist_date):
             metrics["status"] = "Holiday"

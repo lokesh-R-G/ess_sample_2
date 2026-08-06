@@ -10,6 +10,7 @@ import {
 
 export const employeeApi = {
   // Base Employee
+  getEmployees: () => api.get('/v2/employee/employees/'),
   getEmployee: (id: string) => api.get(`/v2/employee/employees/${id}`),
   createEmployee: (data: any) => api.post('/v2/employee/employees/', data),
   updateEmployee: (id: string, data: any) => api.put(`/v2/employee/employees/${id}`, data),

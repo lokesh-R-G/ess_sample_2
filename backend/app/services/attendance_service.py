@@ -139,6 +139,10 @@ async def build_daily_summaries(db, logs):
         summary = {
             "empId": empId,
             "date": date_val.isoformat(),
+            "shiftId": str(getattr(ctx.get("shift"), "id", getattr(ctx.get("shift"), "_id", None))) if ctx.get("shift") else None,
+            "attendancePolicyId": str(getattr(ctx.get("policy"), "id", getattr(ctx.get("policy"), "_id", None))) if ctx.get("policy") else None,
+            "weeklyOffPolicyId": str(getattr(ctx.get("weeklyOffPolicy"), "id", getattr(ctx.get("weeklyOffPolicy"), "_id", None))) if ctx.get("weeklyOffPolicy") else None,
+            "todaySchedule": ctx.get("todaySchedule"),
             "inTime": in_time.isoformat(),
             "outTime": out_time.isoformat() if out_time else None,
             "workHours": work_hours,
