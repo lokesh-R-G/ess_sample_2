@@ -2,16 +2,32 @@ from typing import Optional, List, Dict
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-class WeeklyOffDayRule(BaseModel):
-    dayOfWeek: int # 0=Monday, 6=Sunday
-    weekNumbers: List[int] # [1, 2, 3, 4, 5] means every week, [1, 3] means 1st and 3rd week
+from enum import Enum
+
+class DayType(str, Enum):
+    WORKING = "WORKING"
+    WEEKOFF = "WEEKOFF"
+    CUTOFF = "CUTOFF"
+
+class DaySchedule(BaseModel):
+    enabled: bool = True
+    dayType: DayType = DayType.WORKING
+    startTime: Optional[str] = None
+    endTime: Optional[str] = None
+    remarks: Optional[str] = None
 
 class WeeklyOffPolicyModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     name: str
     description: Optional[str] = None
     
-    rules: List[WeeklyOffDayRule] = []
+    monday: DaySchedule = Field(default_factory=DaySchedule)
+    tuesday: DaySchedule = Field(default_factory=DaySchedule)
+    wednesday: DaySchedule = Field(default_factory=DaySchedule)
+    thursday: DaySchedule = Field(default_factory=DaySchedule)
+    friday: DaySchedule = Field(default_factory=DaySchedule)
+    saturday: DaySchedule = Field(default_factory=DaySchedule)
+    sunday: DaySchedule = Field(default_factory=lambda: DaySchedule(dayType=DayType.WEEKOFF))
     
     # Hierarchy & Versioning
     status: str = "Active"

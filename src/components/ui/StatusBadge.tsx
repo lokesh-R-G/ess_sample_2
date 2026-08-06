@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-type StatusType = 'success' | 'warning' | 'error' | 'info' | 'purple' | 'default';
+type StatusType = 'success' | 'warning' | 'error' | 'info' | 'purple' | 'default' | 'WORKING' | 'WEEKOFF' | 'CUTOFF' | string;
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -11,7 +11,7 @@ interface StatusBadgeProps {
   animated?: boolean;
 }
 
-const statusStyles: Record<StatusType, { bg: string; text: string; border: string; dot: string }> = {
+const statusStyles: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   success: {
     bg: 'bg-emerald-50',
     text: 'text-emerald-700',
@@ -48,6 +48,24 @@ const statusStyles: Record<StatusType, { bg: string; text: string; border: strin
     border: 'border-neutral-300',
     dot: 'bg-neutral-500',
   },
+  WORKING: {
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  WEEKOFF: {
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    border: 'border-red-200',
+    dot: 'bg-red-500',
+  },
+  CUTOFF: {
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    border: 'border-amber-200',
+    dot: 'bg-amber-500',
+  },
 };
 
 const sizes = {
@@ -63,7 +81,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   size = 'md',
   animated = true,
 }) => {
-  const styles = statusStyles[status];
+  const styles = statusStyles[status] ?? statusStyles['default'];
 
   return (
     <motion.span

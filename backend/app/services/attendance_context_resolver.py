@@ -3,7 +3,9 @@ from datetime import datetime, date
 from app.holiday_calendar.repositories.holiday_calendar_repository import HolidayCalendarRepository, HolidayDateRepository
 from app.employee.repositories.employee_repository import EmployeeRepository
 from app.attendance_policy.repositories.attendance_policy_repository import AttendancePolicyRepository
+from app.attendance_policy.repositories.weekly_off_policy_repository import WeeklyOffPolicyRepository
 from app.organization.repositories.shift_repository import ShiftRepository
+from app.attendance_policy.models.weekly_off_policy import DayType
 
 class AttendanceContextResolver:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -12,16 +14,38 @@ class AttendanceContextResolver:
         self.holiday_date_repo = HolidayDateRepository(db)
         self.employee_repo = EmployeeRepository(db)
         self.policy_repo = AttendancePolicyRepository(db)
+        self.weekly_off_repo = WeeklyOffPolicyRepository(db)
         self.shift_repo = ShiftRepository(db)
 
-    def resolve_weekoff(self, target_date: date) -> bool:
+    def resolve_today_schedule(self, weekly_off_policy, target_date: date) -> dict:
         """
-        Temporary implementation.
-        TODO:
-        Replace with:
-        Employee -> Employment -> Branch -> WeeklyOffPolicy
+        Resolves the specific DaySchedule for the target_date from the WeeklyOffPolicy.
+        Returns a dict: {"dayType": ..., "startTime": ..., "endTime": ...}
         """
-        return target_date.weekday() == 6
+        if not weekly_off_policy:
+            return {"dayType": DayType.WORKING, "startTime": None, "endTime": None}
+            
+        day_mapping = {
+            0: weekly_off_policy.monday,
+            1: weekly_off_policy.tuesday,
+            2: weekly_off_policy.wednesday,
+            3: weekly_off_policy.thursday,
+            4: weekly_off_policy.friday,
+            5: weekly_off_policy.saturday,
+            6: weekly_off_policy.sunday,
+        }
+        
+        weekday = target_date.weekday()
+        day_schedule = day_mapping.get(weekday)
+        
+        if not day_schedule or not day_schedule.enabled:
+            return {"dayType": DayType.WORKING, "startTime": None, "endTime": None}
+            
+        return {
+            "dayType": day_schedule.dayType.value,
+            "startTime": day_schedule.startTime,
+            "endTime": day_schedule.endTime
+        }
 
     async def resolve_context(self, emp_id: str, target_date: date):
         """
@@ -61,12 +85,15 @@ class AttendanceContextResolver:
         # 2. Resolve Shift
         shift = None
         policy = None
+        weekly_off_policy = None
         if shift_id:
             shift = await self.shift_repo.get_by_id(shift_id)
             if shift:
                 print(f"Shift : {shift.name}")
                 if getattr(shift, "attendancePolicyId", None):
                     policy = await self.policy_repo.get_by_id(shift.attendancePolicyId)
+                if getattr(shift, "weeklyOffPolicyId", None):
+                    weekly_off_policy = await self.weekly_off_repo.get_by_id(shift.weeklyOffPolicyId)
             
         if not shift:
             print("Shift Missing")
@@ -111,8 +138,8 @@ class AttendanceContextResolver:
         print(f"Holiday Calendar : {calendar_name}")
 
         # 4. Resolve Weekly Off
-        weekly_off = self.resolve_weekoff(target_date)
-        print(f"Weekly Off : {weekly_off}")
+        today_schedule = self.resolve_today_schedule(weekly_off_policy, target_date)
+        print(f"Today Schedule : {today_schedule['dayType']}")
         print("Policy Engine Executed")
 
         return {
@@ -120,8 +147,9 @@ class AttendanceContextResolver:
             "employment": employment_doc,
             "shift": shift,
             "policy": policy,
+            "weeklyOffPolicy": weekly_off_policy,
             "branch": branch_id,
             "holidayCalendar": calendar_id,
             "holidayDates": holiday_dates,
-            "weeklyOff": weekly_off
+            "todaySchedule": today_schedule
         }

@@ -7,6 +7,7 @@ class ShiftCreate(BaseModel):
     name: str
     description: Optional[str] = None
     attendancePolicyId: str
+    weeklyOffPolicyId: Optional[str] = None
     
     startTime: str          # HH:MM format
     endTime: str            # HH:MM format
@@ -26,6 +27,7 @@ class ShiftUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     attendancePolicyId: Optional[str] = None
+    weeklyOffPolicyId: Optional[str] = None
     
     startTime: Optional[str] = None
     endTime: Optional[str] = None
@@ -49,6 +51,7 @@ class ShiftResponse(BaseModel):
     name: str
     description: Optional[str] = None
     attendancePolicyId: str
+    weeklyOffPolicyId: Optional[str] = None
     
     startTime: str
     endTime: str

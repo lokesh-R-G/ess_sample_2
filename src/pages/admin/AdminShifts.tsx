@@ -4,10 +4,12 @@ import { Clock, Save, Edit2, Trash2, Plus, Calendar } from 'lucide-react';
 import { GlassCard, AnimatedButton, Input, StatusBadge } from '../../components/ui';
 import { ShiftV2, getShiftsV2, createShiftV2, updateShiftV2, deleteShiftV2 } from '../../services/shiftService';
 import { AttendancePolicyV2, getAttendancePoliciesV2 } from '../../services/policyService';
+import { WeeklyOffPolicy, getWeeklyOffPolicies } from '../../services/weeklyOffService';
 
 export const AdminShifts: React.FC = () => {
   const [shifts, setShifts] = useState<ShiftV2[]>([]);
   const [policies, setPolicies] = useState<AttendancePolicyV2[]>([]);
+  const [weeklyOffPolicies, setWeeklyOffPolicies] = useState<WeeklyOffPolicy[]>([]);
   const [editingShift, setEditingShift] = useState<ShiftV2 | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -17,12 +19,14 @@ export const AdminShifts: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [shiftsData, policiesData] = await Promise.all([
+      const [shiftsData, policiesData, weeklyOffData] = await Promise.all([
         getShiftsV2(),
-        getAttendancePoliciesV2()
+        getAttendancePoliciesV2(),
+        getWeeklyOffPolicies()
       ]);
       setShifts(shiftsData);
       setPolicies(policiesData);
+      setWeeklyOffPolicies(weeklyOffData);
     } catch (err) {
       console.error('Failed to load data', err);
     }
@@ -34,6 +38,7 @@ export const AdminShifts: React.FC = () => {
       name: '',
       description: '',
       attendancePolicyId: '',
+      weeklyOffPolicyId: '',
       startTime: '10:00:00',
       endTime: '18:30:00',
       autoPunchLunchOut: false,
@@ -97,6 +102,10 @@ export const AdminShifts: React.FC = () => {
                     status="success" 
                     label={policies.find(p => ((p as any).id || p._id) === s.attendancePolicyId)?.name || 'Unknown Policy'} 
                   />
+                  <StatusBadge 
+                    status="warning" 
+                    label={weeklyOffPolicies.find(w => ((w as any).id || w._id) === s.weeklyOffPolicyId)?.policyName || weeklyOffPolicies.find(w => ((w as any).id || w._id) === s.weeklyOffPolicyId)?.name || 'No Weekly Off Policy'} 
+                  />
                 </div>
                 <p className="text-sm text-neutral-500">{s.startTime} - {s.endTime}</p>
                 <div className="mt-2 flex gap-2">
@@ -137,6 +146,22 @@ export const AdminShifts: React.FC = () => {
                 {policies.map(p => {
                   const policyId = (p as any).id || p._id;
                   return <option key={policyId} value={policyId}>{p.name}</option>;
+                })}
+              </select>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-neutral-700">Weekly Off Policy</label>
+              <select
+                className="w-full rounded-lg border-neutral-300 bg-white/50 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                value={editingShift.weeklyOffPolicyId || ''}
+                onChange={e => handleChange('weeklyOffPolicyId', e.target.value)}
+              >
+                <option value="">Select a Policy</option>
+                {weeklyOffPolicies.map(w => {
+                  const wId = (w as any).id || w._id;
+                  const wName = w.policyName || w.name;
+                  return <option key={wId} value={wId}>{wName}</option>;
                 })}
               </select>
             </div>

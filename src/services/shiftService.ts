@@ -6,6 +6,7 @@ export interface ShiftV2 {
   name: string;
   description?: string;
   attendancePolicyId: string;
+  weeklyOffPolicyId?: string;
   
   startTime: string;
   endTime: string;

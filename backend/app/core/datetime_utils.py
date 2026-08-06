@@ -25,15 +25,19 @@ def parse_essl_datetime(dt_str: str) -> datetime:
 
 def compare_time_with_policy(actual: datetime, policy_time_str: str) -> float:
     """
-    Compare an actual datetime (converted to IST internally) against a policy time 'HH:MM:SS'.
+    Compare an actual datetime (converted to IST internally) against a policy time 'HH:MM:SS' or 'HH:MM'.
     Returns the difference in minutes.
     Positive means actual is AFTER policy time (e.g., late).
     Negative means actual is BEFORE policy time.
     """
     actual_ist = to_ist(actual)
     
-    # parse policy time
-    h, m, s = map(int, policy_time_str.split(':'))
+    # parse policy time (handle HH:MM and HH:MM:SS)
+    parts = policy_time_str.split(':')
+    h = int(parts[0])
+    m = int(parts[1])
+    s = int(parts[2]) if len(parts) > 2 else 0
+    
     policy_dt = actual_ist.replace(hour=h, minute=m, second=s, microsecond=0)
     
     diff = (actual_ist - policy_dt).total_seconds() / 60.0

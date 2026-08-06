@@ -3,11 +3,11 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
-    def __init__(self, policy, shift=None, holiday_dates=None, weekly_off=None, monthly_records=None):
+    def __init__(self, policy, shift=None, holiday_dates=None, today_schedule=None, monthly_records=None):
         self.policy = policy
         self.shift = shift
         self.holiday_dates = holiday_dates or []
-        self.weekly_off = weekly_off
+        self.today_schedule = today_schedule or {"dayType": "WORKING", "startTime": None, "endTime": None}
         self.monthly_records = monthly_records or []
         
         # Cache monthly aggregates per employee
@@ -31,21 +31,27 @@ class PolicyEngine:
             for hd in self.holiday_dates
         )
 
-    def evaluate_weekoff(self) -> bool:
-        """Check if the date is a weekly off using the injected boolean."""
-        return bool(self.weekly_off)
-
     def calculate_late_minutes(self, in_time: datetime | None) -> float:
-        """Calculate minutes late based strictly on shift start time."""
+        """Calculate minutes late based strictly on shift/schedule start time."""
         if not in_time:
             return 0.0
-        return compare_time_with_policy(in_time, self.shift.startTime)
+            
+        start_time_str = self.shift.startTime
+        if self.today_schedule.get("dayType") == "CUTOFF" and self.today_schedule.get("startTime"):
+            start_time_str = self.today_schedule["startTime"]
+            
+        return compare_time_with_policy(in_time, start_time_str)
 
     def calculate_early_out_minutes(self, out_time: datetime | None) -> float:
-        """Calculate minutes early out based strictly on shift end time."""
+        """Calculate minutes early out based strictly on shift/schedule end time."""
         if not out_time:
             return 0.0
-        diff = compare_time_with_policy(out_time, self.shift.endTime)
+            
+        end_time_str = self.shift.endTime
+        if self.today_schedule.get("dayType") == "CUTOFF" and self.today_schedule.get("endTime"):
+            end_time_str = self.today_schedule["endTime"]
+            
+        diff = compare_time_with_policy(out_time, end_time_str)
         return max(0.0, -diff)
 
     def calculate_effective_work_hours(self, in_time: datetime | None, out_time: datetime | None) -> float:
@@ -145,16 +151,16 @@ class PolicyEngine:
             metrics["status"] = "Holiday"
             return metrics
             
-        # 2. Evaluate Week Off
-        is_weekoff = self.evaluate_weekoff()
+        # 2. Evaluate Week Off / Day Type
+        day_type = self.today_schedule.get("dayType", "WORKING")
 
         # 3. Absent Check
         if not in_time:
-            if is_weekoff:
+            if day_type == "WEEKOFF":
                 metrics["status"] = "Week Off"
             else:
                 metrics["status"] = "Absent"
-                # If absent on a normal day, do they get LOP?
+                # If absent on a normal or cutoff day, do they get LOP?
                 metrics["lopHours"] += self.policy.lopFullDayHours
             return metrics
 
@@ -162,26 +168,28 @@ class PolicyEngine:
         effective_hours = self.calculate_effective_work_hours(in_time, out_time)
         metrics["effectiveHours"] = round(effective_hours, 2)
         
-        # 5. Late Evaluation
+        # 5. Handle WEEKOFF with punch (Week Off Worked)
+        if day_type == "WEEKOFF":
+            metrics["status"] = "Week Off Worked"
+            return metrics
+        
+        # 6. Late Evaluation
         late_minutes = self.calculate_late_minutes(in_time)
         late_eval = self.evaluate_late(late_minutes, emp_id, month_str)
         metrics["lateMinutes"] = late_eval["lateMinutes"]
         metrics["lateCount"] = late_eval["lateCount"]
         
-        # 6. Early Out Evaluation
+        # 7. Early Out Evaluation
         early_out_minutes = self.calculate_early_out_minutes(out_time)
         early_eval = self.evaluate_early_out(early_out_minutes)
         metrics["earlyOutMinutes"] = early_eval["earlyOutMinutes"]
         
-        # 7. Day Status
+        # 8. Day Status
         if out_time:
             day_status = self.evaluate_day_status(effective_hours)
             metrics["status"] = day_status
             self.calculate_lop(metrics, day_status, late_eval["status"], early_eval["status"])
         else:
             metrics["status"] = "Present (No Out)"
-            
-        if is_weekoff:
-            metrics["status"] = "Week Off (Present)"
 
         return metrics

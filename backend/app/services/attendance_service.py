@@ -114,7 +114,7 @@ async def build_daily_summaries(db, logs):
             shift=ctx.get("shift"),
             policy=ctx.get("policy"),
             holiday_dates=ctx.get("holidayDates"),
-            weekly_off=ctx.get("weeklyOff"),
+            today_schedule=ctx.get("todaySchedule"),
             monthly_records=monthly_records
         )
 
@@ -261,9 +261,9 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         if ctx and ctx.get("holidayDates"):
             holiday_dates = ctx["holidayDates"]
             
-        weekly_off = False
-        if ctx and "weeklyOff" in ctx:
-            weekly_off = ctx["weeklyOff"]
+        weekly_off_policy = None
+        if ctx and "weeklyOffPolicy" in ctx:
+            weekly_off_policy = ctx["weeklyOffPolicy"]
             
         holiday_dict = {}
         for hd in holiday_dates:
@@ -278,18 +278,20 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
                 rec = record_dict[date_str]
                 # Apply priority logic
                 if rec.get("source") != "override":
-                    if resolver.resolve_weekoff(current_date_ist):
-                        rec["status"] = "weekoff"
+                    today_sched = resolver.resolve_today_schedule(weekly_off_policy, current_date_ist)
+                    if today_sched.get("dayType") == "WEEKOFF":
+                        rec["status"] = "Week Off Worked" if rec.get("inTime") else "Week Off"
                     elif date_str in holiday_dict:
-                        rec["status"] = "holiday"
+                        rec["status"] = "Holiday"
                 filled_records.append(rec)
             else:
-                if resolver.resolve_weekoff(current_date_ist):
-                    status = "weekoff"
+                today_sched = resolver.resolve_today_schedule(weekly_off_policy, current_date_ist)
+                if today_sched.get("dayType") == "WEEKOFF":
+                    status = "Week Off"
                 elif date_str in holiday_dict:
-                    status = "holiday"
+                    status = "Holiday"
                 else:
-                    status = "absent"
+                    status = "Absent"
                     
                 filled_records.append({
                     "empId": emp_id,

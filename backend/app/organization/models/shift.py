@@ -16,6 +16,7 @@ class ShiftModel(BaseModel):
     
     # Relationships
     attendancePolicyId: str
+    weeklyOffPolicyId: Optional[str] = None
     
     # Standard Timings
     startTime: str

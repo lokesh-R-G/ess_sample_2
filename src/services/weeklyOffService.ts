@@ -1,15 +1,26 @@
 import { api } from '../lib/api';
 
-export interface WeeklyOffDayRule {
-  dayOfWeek: number;
-  weekNumbers: number[];
+export interface DaySchedule {
+  enabled: boolean;
+  dayType: 'WORKING' | 'WEEKOFF' | 'CUTOFF';
+  startTime?: string | null;
+  endTime?: string | null;
+  remarks?: string | null;
 }
 
 export interface WeeklyOffPolicy {
   _id?: string;
-  name: string;
+  id?: string;
+  name?: string;
+  policyName?: string;
   description?: string;
-  rules: WeeklyOffDayRule[];
+  monday?: DaySchedule;
+  tuesday?: DaySchedule;
+  wednesday?: DaySchedule;
+  thursday?: DaySchedule;
+  friday?: DaySchedule;
+  saturday?: DaySchedule;
+  sunday?: DaySchedule;
   status?: string;
   isCurrent?: boolean;
 }
