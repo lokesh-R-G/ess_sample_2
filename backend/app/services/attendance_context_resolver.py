@@ -31,34 +31,60 @@ class AttendanceContextResolver:
         3. Resolve Holiday Calendar and Dates for Branch
         4. Resolve Weekly Off (Temporary Sunday Resolver)
         """
-        # 1. Resolve Employment
-        employee = await self.employee_repo.get_by_employee_id(emp_id)
+        print(f"\nEmployee Code : {emp_id}")
+
+        # 1. Resolve Employment using Employee Code
+        employee = await self.employee_repo.get_by_employee_code(emp_id)
         if not employee:
+            print("Employee Missing")
+            print("Attendance Skipped")
             return None
+            
+        print(f"Employee UUID : {employee.employeeId}")
 
         employment_doc = await self.db.employee_employment_histories.find_one({
-            "employeeId": emp_id,
+            "employeeId": employee.employeeId,
             "isCurrent": True,
             "deletedAt": None
         })
         
-        branch_id = employment_doc.get("branchId") if employment_doc else None
-        shift_id = employment_doc.get("shiftId") if employment_doc else None
+        if not employment_doc:
+            print("Employment Missing")
+            print("Attendance Skipped")
+            return None
+            
+        print("Employment : FOUND")
+        
+        branch_id = employment_doc.get("branchId")
+        shift_id = employment_doc.get("shiftId")
 
         # 2. Resolve Shift
         shift = None
         policy = None
         if shift_id:
             shift = await self.shift_repo.get_by_id(shift_id)
-            if shift and getattr(shift, "attendancePolicyId", None):
-                policy = await self.policy_repo.get_by_id(shift.attendancePolicyId)
+            if shift:
+                print(f"Shift : {shift.name}")
+                if getattr(shift, "attendancePolicyId", None):
+                    policy = await self.policy_repo.get_by_id(shift.attendancePolicyId)
+            
+        if not shift:
+            print("Shift Missing")
+            print("Attendance Skipped")
+            return None
 
-        # Fallback to active policy if not found from shift
+        # Do NOT fallback to global policy. Shift is the source of truth.
         if not policy:
-            policy = await self.policy_repo.get_active_policy()
+            print("Attendance Policy Missing")
+            print("Attendance Skipped")
+            return None
+            
+        print(f"Attendance Policy : {policy.name}")
 
         # 3. Resolve Holiday Calendar
         holiday_dates = []
+        calendar_id = None
+        calendar_name = "None"
         if branch_id:
             # Get active calendar for branch matching the target year
             calendar_cursor = await self.db.holiday_calendars.find({
@@ -71,8 +97,9 @@ class AttendanceContextResolver:
             if calendar_cursor:
                 calendar = calendar_cursor[0]
                 calendar_id = str(calendar["_id"])
+                calendar_name = calendar.get("name", calendar_id)
                 
-                # 3. Resolve Holiday Dates
+                # Resolve Holiday Dates
                 dates_cursor = await self.db.holiday_dates.find({
                     "calendarId": calendar_id,
                     "status": "Active",
@@ -80,9 +107,13 @@ class AttendanceContextResolver:
                 }).to_list(length=None)
                 
                 holiday_dates = dates_cursor
+                
+        print(f"Holiday Calendar : {calendar_name}")
 
         # 4. Resolve Weekly Off
         weekly_off = self.resolve_weekoff(target_date)
+        print(f"Weekly Off : {weekly_off}")
+        print("Policy Engine Executed")
 
         return {
             "employee": employee,
@@ -90,7 +121,7 @@ class AttendanceContextResolver:
             "shift": shift,
             "policy": policy,
             "branch": branch_id,
-            "holidayCalendar": calendar_id if branch_id and calendar_cursor else None,
+            "holidayCalendar": calendar_id,
             "holidayDates": holiday_dates,
             "weeklyOff": weekly_off
         }
