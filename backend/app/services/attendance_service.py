@@ -67,97 +67,114 @@ from app.core.datetime_utils import to_utc, to_ist, get_current_ist
 
 from app.services.attendance_context_resolver import AttendanceContextResolver
 
-async def build_daily_summaries(db, logs):
+async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_date: datetime | None = None):
     grouped = defaultdict(list)
-
     import pytz
+    from datetime import timedelta
     ist = pytz.timezone("Asia/Kolkata")
     
     for log in logs:
         if isinstance(log["timestamp"], str):
             log["timestamp"] = datetime.fromisoformat(log["timestamp"].replace("Z", "+00:00"))
         elif getattr(log["timestamp"], "tzinfo", None) is None:
-            # Naive datetime from PyMongo is UTC
             log["timestamp"] = log["timestamp"].replace(tzinfo=timezone.utc).astimezone(ist)
         else:
-            # Ensure it is in IST
             log["timestamp"] = log["timestamp"].astimezone(ist)
             
         date_key = log["timestamp"].date()
         grouped[(log["empId"], date_key)].append(log)
 
-    summaries = []
-    
+    # Determine processing boundaries
+    emp_ids = list(set([k[0] for k in grouped.keys()]))
+    if not emp_ids:
+        # If no logs but we need to process, we need emp_ids. Since we don't have them, return []
+        return []
+        
+    dates_in_logs = [k[1] for k in grouped.keys()]
+    process_from = from_date.date() if from_date else min(dates_in_logs)
+    process_to = to_date.date() if to_date else max(dates_in_logs)
+
     resolver = AttendanceContextResolver(db)
     
-    # Pre-fetch monthly aggregates for this batch (for simplicity, we'll fetch all attendance for the affected months and empIds)
-    emp_ids = list(set([k[0] for k in grouped.keys()]))
-    months = list(set([k[1].strftime("%Y-%m") for k in grouped.keys()]))
+    # Pre-fetch monthly aggregates for this batch
+    months = set()
+    d = process_from
+    while d <= process_to:
+        months.add(d.strftime("%Y-%m"))
+        d += timedelta(days=1)
     
-    # Query monthly records to pass into the engine (No DB queries in engine)
     monthly_records = []
     if emp_ids and months:
-        # Match any of the months
-        month_regex = "^(" + "|".join(months) + ")"
+        month_regex = "^(" + "|".join(list(months)) + ")"
         cursor = db.attendance.find({
             "empId": {"$in": emp_ids},
             "date": {"$regex": month_regex}
         })
         monthly_records = await cursor.to_list(length=None)
 
-    for (empId, date_val), items in grouped.items():
-        ctx = await resolver.resolve_context(empId, date_val)
-        if not ctx or not ctx.get("policy"):
-            continue
+    summaries = []
 
-        engine = PolicyEngine(
-            shift=ctx.get("shift"),
-            policy=ctx.get("policy"),
-            holiday_dates=ctx.get("holidayDates"),
-            today_schedule=ctx.get("todaySchedule"),
-            monthly_records=monthly_records
-        )
+    for empId in emp_ids:
+        current_date = process_from
+        while current_date <= process_to:
+            items = grouped.get((empId, current_date), [])
+            
+            ctx = await resolver.resolve_context(empId, current_date)
+            if not ctx or not ctx.get("policy"):
+                current_date += timedelta(days=1)
+                continue
 
-        items.sort(key=lambda x: x["timestamp"])
-        timestamps = [x["timestamp"] for x in items]
-        fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
+            engine = PolicyEngine(
+                shift=ctx.get("shift"),
+                policy=ctx.get("policy"),
+                holiday_dates=ctx.get("holidayDates"),
+                today_schedule=ctx.get("todaySchedule"),
+                monthly_records=monthly_records,
+                approved_requests=ctx.get("approvedRequests", [])
+            )
 
-        in_time = timestamps[0]
-        out_time = timestamps[-1] if len(timestamps) > 1 else None
+            in_time = None
+            out_time = None
+            fingerprints = []
+            
+            if items:
+                items.sort(key=lambda x: x["timestamp"])
+                timestamps = [x["timestamp"] for x in items]
+                fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
+                in_time = timestamps[0]
+                out_time = timestamps[-1] if len(timestamps) > 1 else None
 
-        # Evaluate attendance using policy engine
-        # Note: date_val is currently a naive date from the log's timestamp (which is UTC or IST?).
-        # Wait, the logs' timestamps from eSSL are parsed as IST using datetime_utils if they came from essl_service.
-        # Let's ensure we just pass them as is, because they are timezone aware.
-        # Actually, in build_raw_log_document we might have naive datetimes if we aren't careful.
-        # Let's assume in_time and out_time are proper datetimes.
-        metrics = await engine.evaluate_attendance(empId, datetime.combine(date_val, datetime.min.time()), in_time, out_time)
+            # Phase 6 & 8 Integration: Evaluate every day, even without punches
+            metrics = engine.evaluate_attendance(empId, datetime.combine(current_date, datetime.min.time()), in_time, out_time)
 
-        # Work hours calculated strictly as diff
-        work_hours = (out_time - in_time).total_seconds() / 3600 if len(timestamps) > 1 else 0
+            work_hours = (out_time - in_time).total_seconds() / 3600 if (in_time and out_time and len(items) > 1) else 0
 
-        summary = {
-            "empId": empId,
-            "date": date_val.isoformat(),
-            "shiftId": str(getattr(ctx.get("shift"), "id", getattr(ctx.get("shift"), "_id", None))) if ctx.get("shift") else None,
-            "attendancePolicyId": str(getattr(ctx.get("policy"), "id", getattr(ctx.get("policy"), "_id", None))) if ctx.get("policy") else None,
-            "weeklyOffPolicyId": str(getattr(ctx.get("weeklyOffPolicy"), "id", getattr(ctx.get("weeklyOffPolicy"), "_id", None))) if ctx.get("weeklyOffPolicy") else None,
-            "todaySchedule": ctx.get("todaySchedule"),
-            "inTime": in_time.isoformat(),
-            "outTime": out_time.isoformat() if out_time else None,
-            "workHours": work_hours,
-            "status": metrics["status"],
-            "lateMinutes": metrics.get("lateMinutes", 0),
-            "lateCount": metrics.get("lateCount", 0),
-            "permissionHoursUsed": metrics.get("permissionHoursUsed", 0.0),
-            "permissionHoursExceeded": metrics.get("permissionHoursExceeded", 0.0),
-            "lopHours": metrics.get("lopHours", 0.0),
-            "halfDayCount": metrics.get("halfDayCount", 0.0),
-            "sourceLogFingerprints": fingerprints,
-            "policyVersion": "v0.1",
-            "timezone": "Asia/Kolkata"
-        }
-        summaries.append(summary)
+            # Phase 7: Snapshot integration
+            summary = {
+                "empId": empId,
+                "date": current_date.isoformat(),
+                "shiftId": str(getattr(ctx.get("shift"), "id", getattr(ctx.get("shift"), "_id", None))) if ctx.get("shift") else None,
+                "attendancePolicyId": str(getattr(ctx.get("policy"), "id", getattr(ctx.get("policy"), "_id", None))) if ctx.get("policy") else None,
+                "weeklyOffPolicyId": str(getattr(ctx.get("weeklyOffPolicy"), "id", getattr(ctx.get("weeklyOffPolicy"), "_id", None))) if ctx.get("weeklyOffPolicy") else None,
+                "holidayCalendarId": ctx.get("holidayCalendar"),
+                "todaySchedule": ctx.get("todaySchedule"),
+                "inTime": in_time.isoformat() if in_time else None,
+                "outTime": out_time.isoformat() if out_time else None,
+                "workHours": work_hours,
+                "status": metrics["status"],
+                "lateMinutes": metrics.get("lateMinutes", 0),
+                "lateCount": metrics.get("lateCount", 0),
+                "permissionHoursUsed": metrics.get("permissionHoursUsed", 0.0),
+                "permissionHoursExceeded": metrics.get("permissionHoursExceeded", 0.0),
+                "lopHours": metrics.get("lopHours", 0.0),
+                "halfDayCount": metrics.get("halfDayCount", 0.0),
+                "sourceLogFingerprints": fingerprints,
+                "engineVersion": "v0.2",
+                "processedAt": datetime.now(timezone.utc).isoformat(),
+                "timezone": "Asia/Kolkata"
+            }
+            summaries.append(summary)
+            current_date += timedelta(days=1)
 
     return summaries
 

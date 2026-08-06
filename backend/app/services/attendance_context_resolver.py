@@ -23,7 +23,8 @@ class AttendanceContextResolver:
         Returns a dict: {"dayType": ..., "startTime": ..., "endTime": ...}
         """
         if not weekly_off_policy:
-            return {"dayType": DayType.WORKING, "startTime": None, "endTime": None}
+            # Fallback to WORKING only if NO policy is configured on the shift
+            return {"dayType": "WORKING", "startTime": None, "endTime": None}
             
         day_mapping = {
             0: weekly_off_policy.monday,
@@ -39,7 +40,7 @@ class AttendanceContextResolver:
         day_schedule = day_mapping.get(weekday)
         
         if not day_schedule or not day_schedule.enabled:
-            return {"dayType": DayType.WORKING, "startTime": None, "endTime": None}
+            return {"dayType": "WORKING", "startTime": None, "endTime": None}
             
         return {
             "dayType": day_schedule.dayType.value,
@@ -94,6 +95,8 @@ class AttendanceContextResolver:
                     policy = await self.policy_repo.get_by_id(shift.attendancePolicyId)
                 if getattr(shift, "weeklyOffPolicyId", None):
                     weekly_off_policy = await self.weekly_off_repo.get_by_id(shift.weeklyOffPolicyId)
+                    if not weekly_off_policy:
+                        raise ValueError(f"Shift configured with weeklyOffPolicyId {shift.weeklyOffPolicyId} but policy not found")
             
         if not shift:
             print("Shift Missing")

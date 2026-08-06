@@ -84,7 +84,7 @@ class AttendanceProcessor:
                 
                 # Execute Engine - Phase 8 Integration point
                 # For Phase 7: approved_requests injection will happen here
-                metrics = await engine.evaluate_attendance(emp_id, start_dt, in_time, out_time)
+                metrics = engine.evaluate_attendance(emp_id, start_dt, in_time, out_time)
 
                 # Snapshot the canonical data
                 summary = {

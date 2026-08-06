@@ -42,7 +42,7 @@ async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetim
     sync_batch_id = str(uuid4())
 
     raw_result = await upsert_raw_logs(db, raw_records, sync_batch_id)
-    summaries = await build_daily_summaries(db, raw_records)
+    summaries = await build_daily_summaries(db, raw_records, from_date, to_date)
     attendance_upserted = await upsert_daily_attendance(db, summaries)
 
     return SyncResponse(
@@ -88,7 +88,7 @@ async def sync_user(db, emp_id: str, from_date: Optional[datetime] = None, to_da
 
         print("✅ Records inserted into DB")
 
-        summaries = await build_daily_summaries(db, parsed_data)
+        summaries = await build_daily_summaries(db, parsed_data, from_date, to_date)
         #attendance_upserted = await upsert_daily_attendance(db, summaries)
         if not summaries:
             summaries = []

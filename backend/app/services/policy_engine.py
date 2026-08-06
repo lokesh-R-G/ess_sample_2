@@ -1,5 +1,5 @@
 from datetime import datetime
-from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from app.core.datetime_utils import to_ist, compare_time_with_policy
 
 class PolicyEngine:
@@ -14,7 +14,7 @@ class PolicyEngine:
         # Cache monthly aggregates per employee
         self.monthly_late_counts = {}
 
-    async def _load_monthly_aggregates(self, emp_id: str, month_str: str):
+    def _load_monthly_aggregates(self, emp_id: str, month_str: str):
         """Load aggregates for the month up to now, if not already cached."""
         key = f"{emp_id}_{month_str}"
         if key in self.monthly_late_counts:
@@ -104,9 +104,23 @@ class PolicyEngine:
 
     def evaluate_day_status(self, effective_hours: float) -> str:
         """Determine Half Day / Full Day / Absent purely based on working hours."""
-        if effective_hours >= self.policy.minHoursForFullDay:
+        # Calculate expected shift hours
+        expected_hours = 9.0
+        if self.shift and self.shift.startTime and self.shift.endTime:
+            # Parse times to calculate diff
+            try:
+                start_dt = datetime.strptime(self.shift.startTime, "%H:%M")
+                end_dt = datetime.strptime(self.shift.endTime, "%H:%M")
+                expected_hours = (end_dt - start_dt).total_seconds() / 3600.0
+            except ValueError:
+                pass
+                
+        req_full = min(self.policy.minHoursForFullDay, expected_hours)
+        req_half = min(self.policy.minHoursForHalfDay, expected_hours / 2.0)
+        
+        if effective_hours >= req_full:
             return "Present"
-        elif effective_hours >= self.policy.minHoursForHalfDay:
+        elif effective_hours >= req_half:
             return "Half Day"
         elif effective_hours <= self.policy.absentHoursThreshold:
             return "Absent"
@@ -129,13 +143,19 @@ class PolicyEngine:
                 metrics["halfDayCount"] += 0.5
                 metrics["lopHours"] += self.policy.lopHalfDayHours
 
-    async def evaluate_attendance(self, emp_id: str, date_val: datetime, in_time: datetime | None, out_time: datetime | None) -> dict:
+    def evaluate_attendance(self, emp_id: str, date_val: datetime, in_time: datetime | None, out_time: datetime | None) -> dict:
         """
         Main orchestration method for the engine.
         """
         ist_date = to_ist(date_val)
         month_str = ist_date.strftime("%Y-%m")
-        await self._load_monthly_aggregates(emp_id, month_str)
+        self._load_monthly_aggregates(emp_id, month_str)
+        
+        # Override Shift timings if it's a CUTOFF day
+        day_type = self.today_schedule.get("dayType", "WORKING")
+        if day_type == "CUTOFF" and self.shift:
+            self.shift.startTime = self.today_schedule.get("startTime", self.shift.startTime)
+            self.shift.endTime = self.today_schedule.get("endTime", self.shift.endTime)
 
         metrics = {
             "lateMinutes": 0,
@@ -161,28 +181,25 @@ class PolicyEngine:
             metrics["status"] = "Holiday"
             return metrics
             
-        # 2. Evaluate Week Off / Day Type
-        day_type = self.today_schedule.get("dayType", "WORKING")
+        # 2. Evaluate Week Off
+        if day_type == "WEEKOFF":
+            if not in_time:
+                metrics["status"] = "Week Off"
+            else:
+                metrics["status"] = "Week Off Worked"
+            return metrics
 
         # 3. Absent Check
         if not in_time:
-            if day_type == "WEEKOFF":
-                metrics["status"] = "Week Off"
-            else:
-                metrics["status"] = "Absent"
-                # If absent on a normal or cutoff day, do they get LOP?
-                metrics["lopHours"] += self.policy.lopFullDayHours
+            metrics["status"] = "Absent"
+            metrics["lopHours"] += self.policy.lopFullDayHours
             return metrics
 
         # 4. Effective Work Hours
         effective_hours = self.calculate_effective_work_hours(in_time, out_time)
         metrics["effectiveHours"] = round(effective_hours, 2)
         
-        # 5. Handle WEEKOFF with punch (Week Off Worked)
-        if day_type == "WEEKOFF":
-            metrics["status"] = "Week Off Worked"
-            return metrics
-        
+
         # 6. Late Evaluation
         late_minutes = self.calculate_late_minutes(in_time)
         late_eval = self.evaluate_late(late_minutes, emp_id, month_str)
