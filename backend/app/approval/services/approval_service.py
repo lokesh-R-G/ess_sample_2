@@ -35,6 +35,12 @@ class ApprovalService:
         if action == "APPROVE":
             approval.status = "APPROVED"
             
+            # Resolve employeeCode
+            employee = await self.db.employees.find_one({"employeeId": approval.employeeId})
+            if not employee or not employee.get("employeeCode"):
+                raise HTTPException(status_code=400, detail="Employee or employeeCode not found")
+            emp_code = employee.get("employeeCode")
+            
             # Phase 7: Generate synthetic logs for Miss Punch / Mobile Punch
             if approval.approvalType in ["Miss Punch", "Mobile Punch"]:
                 punch_time_str = approval.requestData.get("punchTime", self._utc_now().isoformat())
@@ -42,7 +48,7 @@ class ApprovalService:
                 
                 synthetic_log = {
                     "fingerprint": f"APPROVAL_{approval_id}",
-                    "empId": approval.employeeId,
+                    "empId": emp_code,
                     "timestamp": punch_time,
                     "source": "approval",
                     "deviceSn": "APPROVAL_ENGINE",
@@ -65,6 +71,7 @@ class ApprovalService:
             
             await dirty_queue.push(
                 employee_id=approval.employeeId,
+                employee_code=emp_code,
                 from_date=target_from,
                 to_date=target_to,
                 reason=f"Approval {approval.approvalType} APPROVED",

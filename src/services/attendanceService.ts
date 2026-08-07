@@ -44,8 +44,6 @@ export async function getAttendanceForEmployee(empId: string, fromDate?: string,
 export interface RecalculateRequestPayload {
   fromDate: string;
   toDate: string;
-  employeeId?: string | null;
-  branchId?: string | null;
   force: boolean;
 }
 

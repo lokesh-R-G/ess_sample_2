@@ -12,31 +12,12 @@ export default function ManualRecalculation() {
   const [formData, setFormData] = useState<RecalculateRequestPayload>({
     fromDate: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
     toDate: format(new Date(), 'yyyy-MM-dd'),
-    employeeId: '',
-    branchId: '',
     force: true
   });
   
-  const [branches, setBranches] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
   const [result, setResult] = useState<RecalculateResponse | null>(null);
 
-  useEffect(() => {
-    fetchMasters();
-  }, []);
 
-  const fetchMasters = async () => {
-    try {
-      const [branchRes, empRes] = await Promise.all([
-        organizationApi.getBranches(),
-        employeeApi.getEmployees()
-      ]);
-      setBranches(branchRes?.data || branchRes || []);
-      setEmployees(empRes?.data || empRes || []);
-    } catch (e) {
-      console.error("Failed to load masters", e);
-    }
-  };
 
   const handleShortcut = (shortcut: string) => {
     const today = new Date();
@@ -90,9 +71,6 @@ export default function ManualRecalculation() {
         toDate: formData.toDate,
         force: formData.force
       };
-      
-      if (formData.branchId) payload.branchId = formData.branchId;
-      if (formData.employeeId) payload.employeeId = formData.employeeId;
       
       const res = await recalculateAttendance(payload);
       const data = res?.data || res;
@@ -155,30 +133,6 @@ export default function ManualRecalculation() {
                 required
                 value={formData.toDate}
                 onChange={(e) => setFormData({...formData, toDate: e.target.value})}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Target Branch (Optional)"
-                value={formData.branchId || ''}
-                onChange={(e) => setFormData({...formData, branchId: e.target.value, employeeId: ''})}
-                options={[
-                  { value: '', label: 'All Branches' },
-                  ...branches.map(b => ({ value: b._id || b.id, label: b.name }))
-                ]}
-              />
-              <Select
-                label="Target Employee (Optional)"
-                value={formData.employeeId || ''}
-                onChange={(e) => setFormData({...formData, employeeId: e.target.value, branchId: ''})}
-                options={[
-                  { value: '', label: 'All Employees' },
-                  ...employees.map(emp => ({ 
-                    value: emp.id || emp._id, 
-                    label: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})` 
-                  }))
-                ]}
               />
             </div>
             

@@ -12,12 +12,13 @@ class DirtyQueueService:
     def _utc_now(self):
         return datetime.now(timezone.utc)
 
-    async def push(self, employee_id: str, from_date: str, to_date: str, reason: str, trigger: str):
+    async def push(self, employee_id: str, employee_code: str, from_date: str, to_date: str, reason: str, trigger: str):
         """Push a new record to the dirty queue."""
         dirty_id = str(uuid.uuid4())
         model = AttendanceDirtyQueueModel(
             dirtyId=dirty_id,
             employeeId=employee_id,
+            employeeCode=employee_code,
             fromDate=from_date,
             toDate=to_date,
             reason=reason,

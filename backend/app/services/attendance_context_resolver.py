@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from app.holiday_calendar.repositories.holiday_calendar_repository import HolidayCalendarRepository, HolidayDateRepository
 from app.employee.repositories.employee_repository import EmployeeRepository
 from app.attendance_policy.repositories.attendance_policy_repository import AttendancePolicyRepository
@@ -149,7 +149,7 @@ class AttendanceContextResolver:
         # In a real implementation we might check range overlap. Here we check exact match on date string or isoformat
         # for simplicity since requestData structure can vary by approvalType.
         approvals_cursor = self.db.approvals.find({
-            "employeeId": emp_id,
+            "employeeId": employee.employeeId,
             "status": "APPROVED"
         })
         approvals = await approvals_cursor.to_list(length=None)
@@ -178,6 +178,23 @@ class AttendanceContextResolver:
             "date": {"$regex": f"^{month_str}"}
         })
         monthly_records = await monthly_cursor.to_list(length=None)
+        
+        # Calculate monthlyLateCount
+        monthly_late_count = sum(
+            1 for r in monthly_records 
+            if r.get("lateMinutes", 0) > 0 and r.get("status") not in ["Holiday", "Week Off", "Leave", "On Duty", "Permission"]
+        )
+
+        # 7. Resolve Raw Punches for Target Date
+        next_date = target_date + timedelta(days=1)
+        start_dt = datetime.combine(target_date, datetime.min.time())
+        end_dt = datetime.combine(next_date, datetime.min.time())
+        
+        logs_cursor = self.db.attendance_logs.find({
+            "empId": emp_id,
+            "timestamp": {"$gte": start_dt, "$lt": end_dt}
+        }).sort([("timestamp", 1)])
+        raw_punches = await logs_cursor.to_list(length=None)
 
         print("Policy Engine Executed")
 
@@ -192,5 +209,8 @@ class AttendanceContextResolver:
             "holidayDates": holiday_dates,
             "todaySchedule": today_schedule,
             "approvedRequests": today_approvals,
-            "monthlyRecords": monthly_records
+            "monthlyRecords": monthly_records,
+            "monthlyLateCount": monthly_late_count,
+            "rawPunches": raw_punches,
+            "targetDate": target_date
         }

@@ -51,9 +51,14 @@ async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetim
     fd_iso = from_date.isoformat() if from_date else datetime.now(timezone.utc).isoformat()
     td_iso = to_date.isoformat() if to_date else datetime.now(timezone.utc).isoformat()
     
-    for emp_id in emp_ids:
+    for emp_code in emp_ids:
+        emp = await db.employees.find_one({"employeeCode": emp_code})
+        if not emp:
+            continue
+            
         await dirty_queue.push(
-            employee_id=emp_id,
+            employee_id=emp["employeeId"],
+            employee_code=emp_code,
             from_date=fd_iso,
             to_date=td_iso,
             reason="eSSL Sync logs received",
@@ -108,8 +113,12 @@ async def sync_user(db, emp_id: str, from_date: Optional[datetime] = None, to_da
         fd_iso = from_date.isoformat() if from_date else datetime.now(timezone.utc).isoformat()
         td_iso = to_date.isoformat() if to_date else datetime.now(timezone.utc).isoformat()
         
+        emp_record = await db.employees.find_one({"employeeCode": emp_id})
+        emp_uuid = emp_record["employeeId"] if emp_record else emp_id
+        
         await dirty_queue.push(
-            employee_id=emp_id,
+            employee_id=emp_uuid,
+            employee_code=emp_id,
             from_date=fd_iso,
             to_date=td_iso,
             reason="eSSL Sync User logs received",

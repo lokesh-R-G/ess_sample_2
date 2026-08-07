@@ -21,6 +21,9 @@ class AttendancePolicyModel(BaseModel):
     # Penalties
     lateInThresholdMinutes: int = 15
     earlyOutThresholdMinutes: int = 15
+    lateIncrementThreshold: int = 3
+    lateHalfDayThreshold: int = 3
+    lateFullDayThreshold: int = 6
     
     # Hierarchy & Versioning
     status: str = "Active"
