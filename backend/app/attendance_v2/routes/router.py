@@ -15,6 +15,7 @@ from app.attendance_v2.routes.attendance_exception_routes import router as atten
 from app.attendance_v2.routes.attendance_replay_queue_routes import router as attendance_replay_queue_router
 from app.attendance_v2.routes.attendance_engine_health_routes import router as attendance_engine_health_router
 from app.attendance_v2.routes.attendance_closing_routes import router as attendance_closing_router
+from app.attendance_v2.routes.attendance_recalculate_routes import router as attendance_recalculate_router
 
 attendance_v2_router = APIRouter()
 attendance_v2_router.include_router(attendance_router)
@@ -33,3 +34,4 @@ attendance_v2_router.include_router(attendance_exception_router)
 attendance_v2_router.include_router(attendance_replay_queue_router)
 attendance_v2_router.include_router(attendance_engine_health_router)
 attendance_v2_router.include_router(attendance_closing_router)
+attendance_v2_router.include_router(attendance_recalculate_router)

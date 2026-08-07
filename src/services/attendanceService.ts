@@ -40,3 +40,28 @@ export async function getAttendanceForEmployee(empId: string, fromDate?: string,
   const query = searchParams.toString();
   return api.get<AttendanceResponse>(`/v1/attendance/${empId}/${query ? `?${query}` : ''}`);
 }
+
+export interface RecalculateRequestPayload {
+  fromDate: string;
+  toDate: string;
+  employeeId?: string | null;
+  branchId?: string | null;
+  force: boolean;
+}
+
+export interface RecalculateResponse {
+  success: boolean;
+  engineVersion: string;
+  fromDate: string;
+  toDate: string;
+  employeesProcessed: number;
+  daysProcessed: number;
+  attendanceRecordsCreated: number;
+  attendanceRecordsUpdated: number;
+  durationMs: number;
+  errors: any[];
+}
+
+export async function recalculateAttendance(payload: RecalculateRequestPayload) {
+  return api.post<RecalculateResponse>('/v2/attendance/recalculate', payload);
+}

@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.approval.repositories.approval_repository import ApprovalRepository
 from app.approval.models.approval import ApprovalModel
 from app.approval.schemas.approval import ApprovalSubmit, ApprovalAction
+from app.attendance_v2.services.dirty_queue_service import DirtyQueueService
 import uuid
 
 class ApprovalService:
@@ -34,10 +35,8 @@ class ApprovalService:
         if action == "APPROVE":
             approval.status = "APPROVED"
             
-            # Phase 7: Generate synthetic logs for Miss Punch / Mobile Punch / Remote Attendance
-            if approval.approvalType in ["Miss Punch", "Mobile Punch", "Remote Attendance"]:
-                # The requestData must contain the punch time. Example: {"punchTime": "2026-08-01T09:00:00Z"}
-                # For demo safety, we parse it or default to now.
+            # Phase 7: Generate synthetic logs for Miss Punch / Mobile Punch
+            if approval.approvalType in ["Miss Punch", "Mobile Punch"]:
                 punch_time_str = approval.requestData.get("punchTime", self._utc_now().isoformat())
                 punch_time = datetime.fromisoformat(punch_time_str.replace("Z", "+00:00"))
                 
@@ -56,6 +55,22 @@ class ApprovalService:
                     upsert=True
                 )
                 
+            # Queue for attendance processing
+            dirty_queue = DirtyQueueService(self.db)
+            
+            # Determine processing range based on approval type
+            # Leaves/OD might have fromDate and toDate
+            target_from = approval.requestData.get("fromDate", approval.requestData.get("date", approval.requestData.get("punchTime", self._utc_now().isoformat())))
+            target_to = approval.requestData.get("toDate", target_from)
+            
+            await dirty_queue.push(
+                employee_id=approval.employeeId,
+                from_date=target_from,
+                to_date=target_to,
+                reason=f"Approval {approval.approvalType} APPROVED",
+                trigger="APPROVAL"
+            )
+            
         elif action == "REJECT":
             approval.status = "REJECTED"
         elif action == "WITHDRAW":

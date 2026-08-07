@@ -175,6 +175,9 @@ class PolicyEngine:
             elif req.get("approvalType") == "On Duty":
                 metrics["status"] = "On Duty"
                 return metrics
+            elif req.get("approvalType") == "Permission":
+                metrics["status"] = "Permission"
+                return metrics
                 
         # 1. Evaluate Holiday
         if self.evaluate_holiday(ist_date):

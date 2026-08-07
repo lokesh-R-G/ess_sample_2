@@ -8,7 +8,8 @@ import logging
 from pymongo.errors import DuplicateKeyError
 
 from app.models import SyncResponse
-from app.services.attendance_service import build_daily_summaries, upsert_daily_attendance, upsert_raw_logs
+from app.services.attendance_service import upsert_raw_logs
+from app.attendance_v2.services.dirty_queue_service import DirtyQueueService
 from app.services.essl_service import build_essl_client
 
 
@@ -42,16 +43,30 @@ async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetim
     sync_batch_id = str(uuid4())
 
     raw_result = await upsert_raw_logs(db, raw_records, sync_batch_id)
-    summaries = await build_daily_summaries(db, raw_records, from_date, to_date)
-    attendance_upserted = await upsert_daily_attendance(db, summaries)
+    
+    # Extract unique empIds and push to Dirty Queue instead of evaluating inline
+    emp_ids = list(set([r.get("empId") for r in raw_records if r.get("empId")]))
+    dirty_queue = DirtyQueueService(db)
+    
+    fd_iso = from_date.isoformat() if from_date else datetime.now(timezone.utc).isoformat()
+    td_iso = to_date.isoformat() if to_date else datetime.now(timezone.utc).isoformat()
+    
+    for emp_id in emp_ids:
+        await dirty_queue.push(
+            employee_id=emp_id,
+            from_date=fd_iso,
+            to_date=td_iso,
+            reason="eSSL Sync logs received",
+            trigger="ESSL_SYNC"
+        )
 
     return SyncResponse(
         rawInserted=raw_result["inserted"],
         rawUpdated=raw_result["updated"],
-        attendanceUpserted=attendance_upserted,
+        attendanceUpserted=0,
         dateRange={
-            "fromDate": from_date.isoformat() if from_date else None,
-            "toDate": to_date.isoformat() if to_date else None,
+            "fromDate": fd_iso,
+            "toDate": td_iso,
         },
     )
 
@@ -88,12 +103,20 @@ async def sync_user(db, emp_id: str, from_date: Optional[datetime] = None, to_da
 
         print("✅ Records inserted into DB")
 
-        summaries = await build_daily_summaries(db, parsed_data, from_date, to_date)
-        #attendance_upserted = await upsert_daily_attendance(db, summaries)
-        if not summaries:
-            summaries = []
-
-        attendance_upserted = await upsert_daily_attendance(db, summaries)
+        # Phase 6: Push to Dirty Queue instead of building summaries inline
+        dirty_queue = DirtyQueueService(db)
+        fd_iso = from_date.isoformat() if from_date else datetime.now(timezone.utc).isoformat()
+        td_iso = to_date.isoformat() if to_date else datetime.now(timezone.utc).isoformat()
+        
+        await dirty_queue.push(
+            employee_id=emp_id,
+            from_date=fd_iso,
+            to_date=td_iso,
+            reason="eSSL Sync User logs received",
+            trigger="ESSL_SYNC"
+        )
+        
+        attendance_upserted = 0
         raw_user = await db.users.find_one({"empId": emp_id})
         user = DictAttrWrapper(raw_user)
         user.lastSyncAt = datetime.now(timezone.utc)

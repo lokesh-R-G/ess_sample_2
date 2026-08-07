@@ -171,6 +171,14 @@ class AttendanceContextResolver:
                 today_approvals.append(app)
 
         print(f"Approvals resolved : {len(today_approvals)}")
+        # 6. Resolve Monthly Records for Late/Early Out Aggregation
+        month_str = target_date.strftime("%Y-%m")
+        monthly_cursor = self.db.attendance.find({
+            "empId": emp_id,
+            "date": {"$regex": f"^{month_str}"}
+        })
+        monthly_records = await monthly_cursor.to_list(length=None)
+
         print("Policy Engine Executed")
 
         return {
@@ -183,5 +191,6 @@ class AttendanceContextResolver:
             "holidayCalendar": calendar_id,
             "holidayDates": holiday_dates,
             "todaySchedule": today_schedule,
-            "approvedRequests": today_approvals
+            "approvedRequests": today_approvals,
+            "monthlyRecords": monthly_records
         }
