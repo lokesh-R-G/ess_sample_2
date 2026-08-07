@@ -35,6 +35,9 @@ export const AdminAttendancePolicy: React.FC = () => {
       lopFullDayHours: 8.0,
       lateInThresholdMinutes: 15,
       earlyOutThresholdMinutes: 15,
+      lateIncrementThreshold: 3,
+      lateHalfDayThreshold: 3,
+      lateFullDayThreshold: 6,
     });
   };
 
@@ -128,6 +131,13 @@ export const AdminAttendancePolicy: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <Input type="number" label="Late In Threshold (Minutes)" value={editingPolicy.lateInThresholdMinutes} onChange={e => handleChange('lateInThresholdMinutes', Number(e.target.value))} />
             <Input type="number" label="Early Out Threshold (Minutes)" value={editingPolicy.earlyOutThresholdMinutes} onChange={e => handleChange('earlyOutThresholdMinutes', Number(e.target.value))} />
+          </div>
+
+          <h3 className="text-lg font-semibold flex items-center gap-2 mt-4"><AlertTriangle className="w-5 h-5 text-red-500"/> Monthly Late Rules</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <Input type="number" min="1" label="Late Increment Threshold" value={editingPolicy.lateIncrementThreshold} onChange={e => handleChange('lateIncrementThreshold', Number(e.target.value))} />
+            <Input type="number" min="1" label="Late Half Day Threshold" value={editingPolicy.lateHalfDayThreshold} onChange={e => handleChange('lateHalfDayThreshold', Number(e.target.value))} />
+            <Input type="number" min="1" label="Late Full Day Threshold" value={editingPolicy.lateFullDayThreshold} onChange={e => handleChange('lateFullDayThreshold', Number(e.target.value))} />
           </div>
 
           <h3 className="text-lg font-semibold flex items-center gap-2 mt-4"><Settings className="w-5 h-5 text-purple-500"/> Hour Thresholds</h3>

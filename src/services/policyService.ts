@@ -40,6 +40,9 @@ export interface AttendancePolicyV2 {
   lopFullDayHours: number;
   lateInThresholdMinutes: number;
   earlyOutThresholdMinutes: number;
+  lateIncrementThreshold: number;
+  lateHalfDayThreshold: number;
+  lateFullDayThreshold: number;
   status?: string;
   isCurrent?: boolean;
 }

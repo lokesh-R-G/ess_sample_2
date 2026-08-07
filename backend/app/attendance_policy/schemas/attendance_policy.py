@@ -14,6 +14,9 @@ class AttendancePolicyCreate(BaseModel):
     lopFullDayHours: float = 8.0
     lateInThresholdMinutes: int = 15
     earlyOutThresholdMinutes: int = 15
+    lateIncrementThreshold: int = 3
+    lateHalfDayThreshold: int = 3
+    lateFullDayThreshold: int = 6
     effectiveFrom: Optional[datetime] = None
     effectiveTo: Optional[datetime] = None
 
@@ -29,6 +32,9 @@ class AttendancePolicyUpdate(BaseModel):
     lopFullDayHours: Optional[float] = None
     lateInThresholdMinutes: Optional[int] = None
     earlyOutThresholdMinutes: Optional[int] = None
+    lateIncrementThreshold: Optional[int] = None
+    lateHalfDayThreshold: Optional[int] = None
+    lateFullDayThreshold: Optional[int] = None
     status: Optional[str] = None
     isCurrent: Optional[bool] = None
     effectiveFrom: Optional[datetime] = None
