@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.db.mongo import get_database
 from app.dependencies import get_current_user
 from app.services.attendance_service import get_attendance_for_employee, infer_attendance_status
+from app.core.serialize import serialize_mongo_doc
 
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
@@ -21,6 +22,7 @@ async def my_attendance(
     db = get_database()
     records = await get_attendance_for_employee(db, current_user["empId"], fromDate, toDate)
     records_with_status = [{**r, "status": infer_attendance_status(r)} for r in records]
+    records_with_status = serialize_mongo_doc(records_with_status)
     return {"empId": current_user["empId"], "records": records_with_status}
 
 
@@ -37,4 +39,5 @@ async def attendance_by_employee(
     db = get_database()
     records = await get_attendance_for_employee(db, emp_id, fromDate, toDate)
     records_with_status = [{**r, "status": infer_attendance_status(r)} for r in records]
+    records_with_status = serialize_mongo_doc(records_with_status)
     return {"empId": emp_id, "records": records_with_status}

@@ -3,21 +3,44 @@ import { api } from '../lib/api';
 export interface AttendanceRecord {
   empId: string;
   date: string;
-  firstIn?: string | null;
-  lastOut?: string | null;
   inTime?: string | null;
   outTime?: string | null;
-  punchCount?: number;
-  workedMinutes?: number;
   workHours?: number;
   status: 'present' | 'absent' | 'leave' | 'weekoff' | 'od' | 'partial' | string;
-  sourceLogFingerprints?: string[];
   lateMinutes?: number;
   lateCount?: number;
-  permissionHoursUsed?: number;
-  permissionHoursExceeded?: number;
   lopHours?: number;
   halfDayCount?: number;
+  
+  // V2 Specific fields
+  scheduleType?: string;
+  scheduleSource?: string;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
+  lopReason?: string | null;
+  monthlyLateCount?: number;
+  breakDuration?: number;
+  virtualBreakApplied?: boolean;
+  lateIncrementApplied?: boolean;
+  engineVersion?: string;
+  processedAt?: string;
+  
+  // Snapshots
+  shiftSnapshot?: any;
+  attendancePolicySnapshot?: any;
+  weeklyOffSnapshot?: any;
+  holidaySnapshot?: any;
+  approvalSnapshot?: any[];
+  rawAttendanceLogIds?: string[];
+  
+  // Legacy fields (optional if backend still supplies them, but frontend won't rely on them for logic)
+  firstIn?: string | null;
+  lastOut?: string | null;
+  punchCount?: number;
+  workedMinutes?: number;
+  permissionHoursUsed?: number;
+  permissionHoursExceeded?: number;
+  sourceLogFingerprints?: string[];
 }
 
 export interface AttendanceResponse {
