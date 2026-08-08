@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from app.core.datetime_utils import to_ist, compare_time_with_policy
+from app.core.datetime_utils import to_ist, compare_time_with_policy, IST
 
 class PolicyEngine:
     def __init__(self, context: dict):
@@ -15,20 +15,83 @@ class PolicyEngine:
         self.monthly_late_count = context.get("monthlyLateCount", 0)
         self.target_date = context.get("targetDate")
         
-        # Override Shift timings if it's a CUTOFF day
-        day_type = self.today_schedule.get("dayType", "WORKING")
-        if day_type == "CUTOFF" and self.shift:
-            self.shift.startTime = self.today_schedule.get("startTime", self.shift.startTime)
-            self.shift.endTime = self.today_schedule.get("endTime", self.shift.endTime)
+        # Determine canonical schedule
+        self.schedule = self._calculate_expected_schedule()
 
     def _get_shift_datetime(self, time_str: str) -> datetime | None:
         if not time_str or not self.target_date:
             return None
         try:
             dt = datetime.strptime(time_str, "%H:%M").time()
-            return to_ist(datetime.combine(self.target_date, dt))
+            # Treat configured schedule times as local IST wall-clock time
+            return datetime.combine(self.target_date, dt).replace(tzinfo=IST)
         except ValueError:
             return None
+
+    def _calculate_expected_schedule(self) -> dict:
+        """
+        Single source of truth for the expected schedule.
+        Calculates working duration based on the currently evaluated schedule (WORKING or CUTOFF).
+        WEEKOFF returns None for timings.
+        """
+        day_type = self.today_schedule.get("dayType", "WORKING")
+        
+        start_str = None
+        end_str = None
+        source = "Shift"
+        break_start = None
+        break_end = None
+
+        if day_type == "WEEKOFF":
+            source = "WeeklyOffPolicy"
+        elif day_type == "CUTOFF" and self.today_schedule.get("startTime") and self.today_schedule.get("endTime"):
+            start_str = self.today_schedule.get("startTime")
+            end_str = self.today_schedule.get("endTime")
+            source = "WeeklyOffPolicy"
+            # CUTOFF only uses breaks if explicitly configured, but our UI currently doesn't define CUTOFF breaks.
+            # As per requirements, do not artificially inherit Shift break if it makes CUTOFF wrong.
+            # We will inherit ONLY if the shift break is strictly within the CUTOFF window.
+            b_s = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
+            b_e = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
+            c_s = self._get_shift_datetime(start_str)
+            c_e = self._get_shift_datetime(end_str)
+            if b_s and b_e and c_s and c_e:
+                if b_s >= c_s and b_e <= c_e:
+                    break_start = b_s
+                    break_end = b_e
+        else:
+            # WORKING or CUTOFF fallback
+            start_str = getattr(self.shift, "startTime", None)
+            end_str = getattr(self.shift, "endTime", None)
+            source = "Shift"
+            break_start = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
+            break_end = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
+            day_type = "WORKING" # Ensure fallback forces WORKING
+
+        start_dt = self._get_shift_datetime(start_str)
+        end_dt = self._get_shift_datetime(end_str)
+        
+        break_duration_hours = 0.0
+        if break_start and break_end:
+            break_duration_hours = (break_end - break_start).total_seconds() / 3600.0
+                
+        expected_hours = 0.0
+        if start_dt and end_dt:
+            expected_hours = (end_dt - start_dt).total_seconds() / 3600.0
+            expected_hours = max(0.0, expected_hours - break_duration_hours)
+            
+        return {
+            "scheduleType": day_type,
+            "scheduleSource": source,
+            "actualStartTime": start_str,
+            "actualEndTime": end_str,
+            "actualStartDt": start_dt,
+            "actualEndDt": end_dt,
+            "breakStartDt": break_start,
+            "breakEndDt": break_end,
+            "breakDurationHours": break_duration_hours,
+            "expectedWorkingHours": expected_hours
+        }
 
     def _is_holiday(self) -> bool:
         if not self.target_date:
@@ -77,7 +140,13 @@ class PolicyEngine:
             "halfDayCount": 0.0,
             "status": "Absent",
             "inTime": None,
-            "outTime": None
+            "outTime": None,
+            
+            # Phase 10.2
+            "scheduleType": self.schedule["scheduleType"],
+            "scheduleSource": self.schedule["scheduleSource"],
+            "actualStartTime": self.schedule["actualStartTime"],
+            "actualEndTime": self.schedule["actualEndTime"]
         }
         
         # 1. Leave / OD Override Check
@@ -120,8 +189,8 @@ class PolicyEngine:
                 effective_seconds += (end - start).total_seconds()
                 
         # Break Logic
-        break_start = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
-        break_end = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
+        break_start = self.schedule["breakStartDt"]
+        break_end = self.schedule["breakEndDt"]
         
         if break_start and break_end:
             break_seconds = (break_end - break_start).total_seconds()
@@ -132,7 +201,7 @@ class PolicyEngine:
             if not punched_out_for_lunch and out_time and out_time > break_end and in_time < break_start:
                 # Scenario B: Virtual Break Generation
                 metrics["virtualBreakApplied"] = True
-                metrics["breakDuration"] = break_seconds / 3600.0
+                metrics["breakDuration"] = self.schedule["breakDurationHours"]
                 effective_seconds = max(0, effective_seconds - break_seconds)
                 
             # Lunch Absence Detection
@@ -152,18 +221,20 @@ class PolicyEngine:
             if not out_time:
                 metrics["status"] = "Present (No Out)"
             else:
-                # Calculate expected hours
-                expected_hours = 9.0
-                if self.shift and self.shift.startTime and self.shift.endTime:
-                    start_dt = self._get_shift_datetime(self.shift.startTime)
-                    end_dt = self._get_shift_datetime(self.shift.endTime)
-                    if start_dt and end_dt:
-                        expected_hours = (end_dt - start_dt).total_seconds() / 3600.0
-                        if break_start and break_end:
-                            expected_hours -= (break_end - break_start).total_seconds() / 3600.0
-
-                req_full = min(getattr(self.policy, "minHoursForFullDay", 8.0), expected_hours)
-                req_half = min(getattr(self.policy, "minHoursForHalfDay", 4.0), expected_hours / 2.0)
+                expected_hours = self.schedule["expectedWorkingHours"]
+                # Determine the allowable shortages from the base shift to treat CUTOFF as a complete day
+                base_expected = 9.0
+                if self.shift and getattr(self.shift, "startTime", None) and getattr(self.shift, "endTime", None):
+                    base_start = self._get_shift_datetime(self.shift.startTime)
+                    base_end = self._get_shift_datetime(self.shift.endTime)
+                    if base_start and base_end:
+                        base_expected = (base_end - base_start).total_seconds() / 3600.0
+                        
+                allowable_full_shortage = max(0.0, base_expected - getattr(self.policy, "minHoursForFullDay", 8.0))
+                
+                req_full = max(0.0, expected_hours - allowable_full_shortage)
+                # req_half should roughly be half of the expected hours for a complete day interpretation
+                req_half = expected_hours / 2.0
                 
                 if metrics["effectiveHours"] >= req_full:
                     metrics["status"] = "Present"
@@ -179,7 +250,7 @@ class PolicyEngine:
 
         # Late / Early Out evaluation
         if in_time and metrics["status"] == "Present":
-            expected_in = self._get_shift_datetime(self.shift.startTime) if self.shift else None
+            expected_in = self.schedule["actualStartDt"]
             # Permission Overrides
             for p in approval_intervals:
                 if expected_in and p["start"] <= expected_in <= p["end"]:
@@ -217,7 +288,7 @@ class PolicyEngine:
 
             # Early out Logic
             if out_time:
-                expected_out = self._get_shift_datetime(self.shift.endTime) if self.shift else None
+                expected_out = self.schedule["actualEndDt"]
                 for p in approval_intervals:
                     if expected_out and p["start"] <= expected_out <= p["end"]:
                         expected_out = p["start"]

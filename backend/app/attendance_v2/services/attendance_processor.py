@@ -102,6 +102,12 @@ class AttendanceProcessor:
                     "monthlyLateCount": ctx.get("monthlyLateCount", 0),
                     "lopReason": metrics.get("lopReason", None),
                     
+                    # Phase 10.2 fields
+                    "scheduleSource": metrics.get("scheduleSource", "Unknown"),
+                    "scheduleType": metrics.get("scheduleType", "WORKING"),
+                    "actualStartTime": metrics.get("actualStartTime", None),
+                    "actualEndTime": metrics.get("actualEndTime", None),
+                    
                     "engineVersion": "v2",
                     "processedAt": self._utc_now().isoformat(),
                     "processedBy": "ATTENDANCE_PROCESSOR",
