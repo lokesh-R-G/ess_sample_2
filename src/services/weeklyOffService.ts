@@ -11,6 +11,7 @@ export interface DaySchedule {
 export interface WeeklyOffPolicy {
   _id?: string;
   id?: string;
+  weeklyOffPolicyCode?: string;
   name?: string;
   policyName?: string;
   description?: string;
@@ -23,6 +24,9 @@ export interface WeeklyOffPolicy {
   sunday?: DaySchedule;
   status?: string;
   isCurrent?: boolean;
+  version?: number;
+  effectiveFrom?: string;
+  effectiveTo?: string;
 }
 
 export async function getWeeklyOffPolicies(): Promise<WeeklyOffPolicy[]> {

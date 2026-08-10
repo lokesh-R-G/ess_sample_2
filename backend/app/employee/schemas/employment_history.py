@@ -13,6 +13,9 @@ class EmploymentHistoryCreate(BaseModel):
     reportingManagerEmployeeId: Optional[str] = None
     isReportingManager: bool = False
     shiftId: Optional[str] = None
+    shiftCode: Optional[str] = None
+    attendancePolicyCode: Optional[str] = None
+    weeklyOffPolicyCode: Optional[str] = None
     noticePeriodDays: int = 0
     probationPeriodDays: int = 0
     effectiveFrom: Optional[datetime] = None
@@ -28,6 +31,9 @@ class EmploymentHistoryUpdate(BaseModel):
     reportingManagerEmployeeId: Optional[str] = None
     isReportingManager: Optional[bool] = None
     shiftId: Optional[str] = None
+    shiftCode: Optional[str] = None
+    attendancePolicyCode: Optional[str] = None
+    weeklyOffPolicyCode: Optional[str] = None
     noticePeriodDays: Optional[int] = None
     probationPeriodDays: Optional[int] = None
     effectiveFrom: Optional[datetime] = None

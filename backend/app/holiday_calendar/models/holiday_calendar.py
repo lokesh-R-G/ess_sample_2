@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 class HolidayCalendarModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
+    holidayCalendarCode: Optional[str] = None
     calendarId: Optional[str] = None
     name: str
     description: Optional[str] = None
@@ -13,6 +14,8 @@ class HolidayCalendarModel(BaseModel):
     effectiveTo: Optional[datetime] = None
     
     # Hierarchy & Versioning
+    version: int = 1
+    isCurrent: bool = True
     status: str = "Active"
     
     # Audit
@@ -25,6 +28,7 @@ class HolidayCalendarModel(BaseModel):
 
 class HolidayDateModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
+    holidayCode: Optional[str] = None
     holidayId: Optional[str] = None
     calendarId: str
     holidayDate: date
@@ -32,6 +36,11 @@ class HolidayDateModel(BaseModel):
     holidayType: str = "Mandatory" # Mandatory, Restricted, Optional, Branch, Festival, National
     isRecurring: bool = False
     remarks: Optional[str] = None
+    
+    version: int = 1
+    isCurrent: bool = True
+    effectiveFrom: Optional[datetime] = None
+    effectiveTo: Optional[datetime] = None
     
     status: str = "Active"
     createdAt: Optional[datetime] = None

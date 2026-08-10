@@ -18,6 +18,7 @@ class DaySchedule(BaseModel):
 
 class WeeklyOffPolicyModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
+    weeklyOffPolicyCode: Optional[str] = None
     name: str
     description: Optional[str] = None
     
@@ -30,6 +31,7 @@ class WeeklyOffPolicyModel(BaseModel):
     sunday: DaySchedule = Field(default_factory=lambda: DaySchedule(dayType=DayType.WEEKOFF))
     
     # Hierarchy & Versioning
+    version: int = 1
     status: str = "Active"
     isCurrent: bool = True
     effectiveFrom: Optional[datetime] = None

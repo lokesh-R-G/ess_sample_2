@@ -5,6 +5,7 @@ from datetime import datetime
 from app.attendance_policy.models.weekly_off_policy import DaySchedule
 
 class WeeklyOffPolicyCreate(BaseModel):
+    weeklyOffPolicyCode: str
     name: str
     description: Optional[str] = None
     monday: Optional[DaySchedule] = None
@@ -34,6 +35,7 @@ class WeeklyOffPolicyUpdate(BaseModel):
 
 class WeeklyOffPolicyResponse(WeeklyOffPolicyCreate):
     id: str
+    version: int
     status: str
     isCurrent: bool
     createdAt: Optional[datetime] = None

@@ -21,10 +21,18 @@ async def get_policy(policy_id: str, db: AsyncIOMotorDatabase = Depends(get_data
         raise HTTPException(status_code=404, detail="Policy not found")
     return policy
 
+@router.get("/history/{code}", response_model=List[AttendancePolicyResponse])
+async def get_policy_history(code: str, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
+    service = AttendancePolicyService(db)
+    return await service.get_history(code)
+
 @router.post("/", response_model=AttendancePolicyResponse)
 async def create_policy(data: AttendancePolicyCreate, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
     service = AttendancePolicyService(db)
-    return await service.create(data, current_user_id=user["empId"])
+    try:
+        return await service.create(data, current_user_id=user["empId"])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/{policy_id}", response_model=AttendancePolicyResponse)
 async def update_policy(policy_id: str, data: AttendancePolicyUpdate, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):

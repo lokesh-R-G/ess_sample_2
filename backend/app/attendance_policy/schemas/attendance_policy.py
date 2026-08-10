@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class AttendancePolicyCreate(BaseModel):
+    attendancePolicyCode: str
     name: str
     description: Optional[str] = None
     graceInMinutes: int = 0
@@ -42,6 +43,7 @@ class AttendancePolicyUpdate(BaseModel):
 
 class AttendancePolicyResponse(AttendancePolicyCreate):
     id: str
+    version: int
     status: str
     isCurrent: bool
     createdAt: Optional[datetime] = None

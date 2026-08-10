@@ -79,6 +79,16 @@ class AttendanceProcessor:
                     "employeeCode": employee_code,
                     "empId": employee_code, # For backward compatibility with existing APIs
                     "date": current_date.isoformat(),
+                    # Exact Identity Snapshot
+                    "shiftCode": getattr(ctx.get("shift"), "shiftCode", None) if ctx.get("shift") else None,
+                    "shiftVersion": getattr(ctx.get("shift"), "version", None) if ctx.get("shift") else None,
+                    "attendancePolicyCode": getattr(ctx.get("policy"), "attendancePolicyCode", None) if ctx.get("policy") else None,
+                    "attendancePolicyVersion": getattr(ctx.get("policy"), "version", None) if ctx.get("policy") else None,
+                    "weeklyOffPolicyCode": getattr(ctx.get("weeklyOffPolicy"), "weeklyOffPolicyCode", None) if ctx.get("weeklyOffPolicy") else None,
+                    "weeklyOffPolicyVersion": getattr(ctx.get("weeklyOffPolicy"), "version", None) if ctx.get("weeklyOffPolicy") else None,
+                    "holidayCalendarCode": getattr(ctx.get("holidayCalendar"), "holidayCalendarCode", None) if hasattr(ctx.get("holidayCalendar"), "holidayCalendarCode") else None,
+                    "holidayCalendarVersion": getattr(ctx.get("holidayCalendar"), "version", None) if hasattr(ctx.get("holidayCalendar"), "version") else None,
+                    
                     "shiftSnapshot": ctx.get("shift").dict() if hasattr(ctx.get("shift"), "dict") else ctx.get("shift"),
                     "attendancePolicySnapshot": ctx.get("policy").dict() if hasattr(ctx.get("policy"), "dict") else ctx.get("policy"),
                     "weeklyOffSnapshot": ctx.get("weeklyOffPolicy").dict() if hasattr(ctx.get("weeklyOffPolicy"), "dict") else ctx.get("weeklyOffPolicy"),

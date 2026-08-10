@@ -6,6 +6,7 @@ from app.attendance_policy.repositories.attendance_policy_repository import Atte
 from app.attendance_policy.repositories.weekly_off_policy_repository import WeeklyOffPolicyRepository
 from app.organization.repositories.shift_repository import ShiftRepository
 from app.attendance_policy.models.weekly_off_policy import DayType
+from datetime import timezone
 
 class AttendanceContextResolver:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -82,21 +83,42 @@ class AttendanceContextResolver:
         
         branch_id = employment_doc.get("branchId")
         shift_id = employment_doc.get("shiftId")
+        shift_code = employment_doc.get("shiftCode")
 
         # 2. Resolve Shift
         shift = None
         policy = None
         weekly_off_policy = None
-        if shift_id:
+        target_dt_utc = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
+        
+        if shift_code:
+            shift = await self.shift_repo.get_by_code_and_date("shiftCode", shift_code, target_dt_utc)
+        if not shift and shift_id:
             shift = await self.shift_repo.get_by_id(shift_id)
-            if shift:
-                print(f"Shift : {shift.name}")
-                if getattr(shift, "attendancePolicyId", None):
-                    policy = await self.policy_repo.get_by_id(shift.attendancePolicyId)
-                if getattr(shift, "weeklyOffPolicyId", None):
-                    weekly_off_policy = await self.weekly_off_repo.get_by_id(shift.weeklyOffPolicyId)
-                    if not weekly_off_policy:
-                        raise ValueError(f"Shift configured with weeklyOffPolicyId {shift.weeklyOffPolicyId} but policy not found")
+            
+        if shift:
+            print(f"Shift : {shift.name}")
+            
+            # Resolve Attendance Policy
+            att_pol_code = getattr(shift, "attendancePolicyCode", None)
+            att_pol_id = getattr(shift, "attendancePolicyId", None)
+            
+            if att_pol_code:
+                policy = await self.policy_repo.get_by_code_and_date("attendancePolicyCode", att_pol_code, target_dt_utc)
+            if not policy and att_pol_id:
+                policy = await self.policy_repo.get_by_id(att_pol_id)
+                
+            # Resolve Weekly Off Policy
+            wo_pol_code = getattr(shift, "weeklyOffPolicyCode", None)
+            wo_pol_id = getattr(shift, "weeklyOffPolicyId", None)
+            
+            if wo_pol_code:
+                weekly_off_policy = await self.weekly_off_repo.get_by_code_and_date("weeklyOffPolicyCode", wo_pol_code, target_dt_utc)
+            if not weekly_off_policy and wo_pol_id:
+                weekly_off_policy = await self.weekly_off_repo.get_by_id(wo_pol_id)
+                
+            if not weekly_off_policy and wo_pol_id:
+                raise ValueError(f"Shift configured with weeklyOffPolicyId {wo_pol_id} but policy not found")
             
         if not shift:
             print("Shift Missing")
@@ -116,13 +138,26 @@ class AttendanceContextResolver:
         calendar_id = None
         calendar_name = "None"
         if branch_id:
-            # Get active calendar for branch matching the target year
+            # Get active calendar for branch matching the target year and effective date
             calendar_cursor = await self.db.holiday_calendars.find({
                 "branchId": branch_id,
-                "status": "Active",
                 "deletedAt": None,
-                "year": target_date.year
-            }).to_list(length=1)
+                "year": target_date.year,
+                "effectiveFrom": {"$lte": target_dt_utc},
+                "$or": [
+                    {"effectiveTo": None},
+                    {"effectiveTo": {"$gt": target_dt_utc}}
+                ]
+            }).sort([("version", -1)]).to_list(length=1)
+            
+            if not calendar_cursor:
+                # Fallback to the old logic just in case migration hasn't stamped effectiveFrom
+                calendar_cursor = await self.db.holiday_calendars.find({
+                    "branchId": branch_id,
+                    "status": "Active",
+                    "deletedAt": None,
+                    "year": target_date.year
+                }).to_list(length=1)
             
             if calendar_cursor:
                 calendar = calendar_cursor[0]
@@ -132,10 +167,21 @@ class AttendanceContextResolver:
                 # Resolve Holiday Dates
                 dates_cursor = await self.db.holiday_dates.find({
                     "calendarId": calendar_id,
-                    "status": "Active",
-                    "deletedAt": None
-                }).to_list(length=None)
+                    "deletedAt": None,
+                    "effectiveFrom": {"$lte": target_dt_utc},
+                    "$or": [
+                        {"effectiveTo": None},
+                        {"effectiveTo": {"$gt": target_dt_utc}}
+                    ]
+                }).sort([("version", -1)]).to_list(length=None)
                 
+                if not dates_cursor:
+                    dates_cursor = await self.db.holiday_dates.find({
+                        "calendarId": calendar_id,
+                        "status": "Active",
+                        "deletedAt": None
+                    }).to_list(length=None)
+                    
                 holiday_dates = dates_cursor
                 
         print(f"Holiday Calendar : {calendar_name}")

@@ -29,6 +29,7 @@ export async function updateAttendancePolicy(policy: AttendancePolicy) {
 // V2 Attendance Policy (Assigned to Shifts)
 export interface AttendancePolicyV2 {
   _id?: string;
+  attendancePolicyCode?: string;
   name: string;
   description?: string;
   graceInMinutes: number;
@@ -45,6 +46,9 @@ export interface AttendancePolicyV2 {
   lateFullDayThreshold: number;
   status?: string;
   isCurrent?: boolean;
+  version?: number;
+  effectiveFrom?: string;
+  effectiveTo?: string;
 }
 
 export async function getAttendancePoliciesV2(): Promise<AttendancePolicyV2[]> {

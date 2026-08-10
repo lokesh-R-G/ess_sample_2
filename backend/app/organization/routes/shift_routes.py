@@ -31,6 +31,10 @@ async def get_all(
 async def get_by_id(id: str, controller: ShiftController = Depends(get_controller), user: dict = Depends(get_current_user)):
     return await controller.get_by_id(id)
 
+@router.get("/history/{code}", response_model=List[ShiftResponse])
+async def get_history(code: str, controller: ShiftController = Depends(get_controller), user: dict = Depends(get_current_user)):
+    return await controller.get_history(code)
+
 @router.put("/{id}", response_model=ShiftResponse)
 async def update(id: str, data: ShiftUpdate, controller: ShiftController = Depends(get_controller), user: dict = Depends(get_current_user)):
     return await controller.update(id, data, user.get("empId"))

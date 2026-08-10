@@ -8,6 +8,8 @@ export const AdminAttendancePolicy: React.FC = () => {
   const [policies, setPolicies] = useState<AttendancePolicyV2[]>([]);
   const [editingPolicy, setEditingPolicy] = useState<AttendancePolicyV2 | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedCodeHistory, setSelectedCodeHistory] = useState<AttendancePolicyV2[]>([]);
 
   useEffect(() => {
     loadPolicies();
@@ -24,6 +26,7 @@ export const AdminAttendancePolicy: React.FC = () => {
 
   const handleCreateNew = () => {
     setEditingPolicy({
+      attendancePolicyCode: '',
       name: 'New Policy',
       description: '',
       graceInMinutes: 0,
@@ -48,12 +51,18 @@ export const AdminAttendancePolicy: React.FC = () => {
       if (editingPolicy._id) {
         await updateAttendancePolicyV2(editingPolicy._id, editingPolicy);
       } else {
+        if (!editingPolicy.attendancePolicyCode) {
+            alert("Code is required");
+            setIsSaving(false);
+            return;
+        }
         await createAttendancePolicyV2(editingPolicy);
       }
       setEditingPolicy(null);
       await loadPolicies();
-    } catch (err) {
-      console.error('Failed to save policy');
+    } catch (err: any) {
+      alert(err.message || 'Failed to save policy');
+      console.error('Failed to save policy', err);
     } finally {
       setIsSaving(false);
     }
@@ -74,6 +83,26 @@ export const AdminAttendancePolicy: React.FC = () => {
     setEditingPolicy({ ...editingPolicy, [field]: value });
   };
 
+  const handleOpenHistory = async (code: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      // Fetch history for this code
+      const res = await fetch(`/api/v2/attendance-policy/attendancePolicys/history/${code}`, {
+          headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+          const data = await res.json();
+          setSelectedCodeHistory(data || []);
+          setHistoryModalOpen(true);
+      } else {
+          // Fallback if history endpoint is missing
+          alert("Could not fetch history");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -88,9 +117,14 @@ export const AdminAttendancePolicy: React.FC = () => {
 
       {!editingPolicy ? (
         <div className="grid grid-cols-1 gap-4">
-          {policies.map(p => (
+          {policies.filter(p => p.isCurrent !== false).map(p => (
             <GlassCard key={p._id} className="p-4 flex items-center justify-between">
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-sm bg-neutral-100 px-2 py-0.5 rounded">{p.attendancePolicyCode}</span>
+                  <StatusBadge status="Active" label={`v${p.version || 1}`} />
+                  {p.isCurrent !== false && <StatusBadge status="success" label="Current" />}
+                </div>
                 <h3 className="font-medium text-lg">{p.name}</h3>
                 <p className="text-sm text-neutral-500">{p.description || 'No description'}</p>
                 <div className="mt-2 flex gap-2">
@@ -100,6 +134,7 @@ export const AdminAttendancePolicy: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <AnimatedButton variant="secondary" onClick={() => handleOpenHistory(p.attendancePolicyCode || '')}>History</AnimatedButton>
                 <AnimatedButton variant="secondary" icon={Edit2} onClick={() => setEditingPolicy(p)}>Edit</AnimatedButton>
                 {p._id && <AnimatedButton variant="danger" icon={Trash2} onClick={() => handleDelete(p._id!)}>Delete</AnimatedButton>}
               </div>
@@ -116,7 +151,8 @@ export const AdminAttendancePolicy: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            <Input label="Policy Code" value={editingPolicy.attendancePolicyCode || ''} onChange={e => handleChange('attendancePolicyCode', e.target.value)} disabled={!!editingPolicy._id} required />
             <Input label="Policy Name" value={editingPolicy.name} onChange={e => handleChange('name', e.target.value)} />
             <Input label="Description" value={editingPolicy.description || ''} onChange={e => handleChange('description', e.target.value)} />
           </div>
@@ -149,6 +185,41 @@ export const AdminAttendancePolicy: React.FC = () => {
             <Input type="number" step="0.5" label="LOP Full Day Hours" value={editingPolicy.lopFullDayHours} onChange={e => handleChange('lopFullDayHours', Number(e.target.value))} />
           </div>
         </GlassCard>
+      )}
+
+      {historyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Version History</h3>
+              <button onClick={() => setHistoryModalOpen(false)} className="text-gray-500 hover:text-gray-700">Close</button>
+            </div>
+            <div className="p-6">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b text-sm text-neutral-500">
+                    <th className="py-2">Version</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2">Effective From</th>
+                    <th className="py-2">Effective To</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedCodeHistory.map(v => (
+                    <tr key={v._id} className="border-b last:border-0 text-sm">
+                      <td className="py-3">v{v.version}</td>
+                      <td className="py-3">
+                        {v.isCurrent ? <StatusBadge status="success" label="Current" /> : <StatusBadge status="neutral" label="Historical" />}
+                      </td>
+                      <td className="py-3">{v.effectiveFrom ? new Date(v.effectiveFrom).toLocaleDateString() : '-'}</td>
+                      <td className="py-3">{v.effectiveTo ? new Date(v.effectiveTo).toLocaleDateString() : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

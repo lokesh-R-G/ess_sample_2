@@ -14,6 +14,9 @@ class AttendancePolicyService:
         return await self.repo.get_by_id(policy_id)
 
     async def create(self, data: AttendancePolicyCreate, current_user_id: str) -> dict:
+        exists = await self.repo.collection.find_one({"attendancePolicyCode": data.attendancePolicyCode, "deletedAt": None})
+        if exists:
+            raise ValueError(f"Attendance Policy with code {data.attendancePolicyCode} already exists.")
         return await self.repo.create(data.model_dump(exclude_unset=True), created_by=current_user_id)
 
     async def update(self, policy_id: str, data: AttendancePolicyUpdate, current_user_id: str) -> Optional[dict]:
@@ -22,3 +25,7 @@ class AttendancePolicyService:
 
     async def delete(self, policy_id: str, current_user_id: str) -> bool:
         return await self.repo.soft_delete(policy_id, deleted_by=current_user_id)
+
+    async def get_history(self, code: str) -> List[dict]:
+        cursor = self.repo.collection.find({"attendancePolicyCode": code, "deletedAt": None}).sort("version", -1)
+        return [self.repo._format_doc(doc) async for doc in cursor]

@@ -17,14 +17,20 @@ class HolidayCalendarService:
         return await self.calendar_repo.get_by_id(calendar_id)
 
     async def create(self, data: HolidayCalendarCreate, current_user_id: str) -> dict:
+        exists = await self.calendar_repo.collection.find_one({"holidayCalendarCode": data.holidayCalendarCode, "deletedAt": None})
+        if exists:
+            raise ValueError(f"Holiday Calendar with code {data.holidayCalendarCode} already exists.")
         return await self.calendar_repo.create(data.model_dump(exclude_unset=True), created_by=current_user_id)
 
     async def update(self, calendar_id: str, data: HolidayCalendarUpdate, current_user_id: str) -> Optional[dict]:
-        update_data = data.model_dump(exclude_unset=True)
-        return await self.calendar_repo.update(calendar_id, update_data, updated_by=current_user_id)
+        return await self.calendar_repo.update(calendar_id, data.model_dump(exclude_unset=True), updated_by=current_user_id)
 
     async def delete(self, calendar_id: str, current_user_id: str) -> bool:
         return await self.calendar_repo.soft_delete(calendar_id, deleted_by=current_user_id)
+
+    async def get_history(self, code: str) -> List[dict]:
+        cursor = self.calendar_repo.collection.find({"holidayCalendarCode": code, "deletedAt": None}).sort("version", -1)
+        return [self.calendar_repo._format_doc(doc) async for doc in cursor]
 
     # Dates management
     async def get_dates(self, calendar_id: str) -> List[dict]:
@@ -33,6 +39,10 @@ class HolidayCalendarService:
         return [self.date_repo.model_class(**self.date_repo._prepare_doc(doc)) for doc in docs]
 
     async def add_date(self, calendar_id: str, data: HolidayDateCreate, current_user_id: str) -> dict:
+        exists = await self.date_repo.collection.find_one({"holidayCode": data.holidayCode, "deletedAt": None})
+        if exists:
+            raise ValueError(f"Holiday with code {data.holidayCode} already exists.")
+        
         dump = data.model_dump(exclude_unset=True)
         dump["calendarId"] = calendar_id
         # ensure date is stored as datetime so mongo handles it well
@@ -48,3 +58,8 @@ class HolidayCalendarService:
 
     async def delete_date(self, date_id: str, current_user_id: str) -> bool:
         return await self.date_repo.soft_delete(date_id, deleted_by=current_user_id)
+
+    async def get_date_history(self, code: str) -> List[dict]:
+        cursor = self.date_repo.collection.find({"holidayCode": code, "deletedAt": None}).sort("version", -1)
+        docs = await cursor.to_list(length=None)
+        return [self.date_repo.model_class(**self.date_repo._prepare_doc(doc)) for doc in docs]

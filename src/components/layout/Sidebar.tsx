@@ -45,6 +45,7 @@ const adminNavItems: NavItem[] = [
   //{ path: '/admin/branches', label: 'Branches', icon: Building2, adminOnly: true },    
   { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true },
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true },
+  { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true },
   { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true },
   { path: '/admin/weekly-off-policy', label: 'Weekly Off', icon: Settings, adminOnly: true },
   { path: '/admin/approvals', label: 'Approvals', icon: FileText, adminOnly: true },

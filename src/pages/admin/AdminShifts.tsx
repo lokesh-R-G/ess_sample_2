@@ -12,6 +12,8 @@ export const AdminShifts: React.FC = () => {
   const [weeklyOffPolicies, setWeeklyOffPolicies] = useState<WeeklyOffPolicy[]>([]);
   const [editingShift, setEditingShift] = useState<ShiftV2 | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedCodeHistory, setSelectedCodeHistory] = useState<ShiftV2[]>([]);
 
   useEffect(() => {
     loadData();
@@ -56,11 +58,17 @@ export const AdminShifts: React.FC = () => {
       if (shiftId) {
         await updateShiftV2(shiftId, editingShift);
       } else {
+        if (!editingShift.shiftCode) {
+            alert("Code is required");
+            setIsSaving(false);
+            return;
+        }
         await createShiftV2(editingShift);
       }
       setEditingShift(null);
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
+      alert(err.message || 'Failed to save shift');
       console.error('Failed to save shift', err);
     } finally {
       setIsSaving(false);
@@ -82,6 +90,24 @@ export const AdminShifts: React.FC = () => {
     setEditingShift({ ...editingShift, [field]: value });
   };
 
+  const handleOpenHistory = async (code: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/v2/shift/history/${code}`, {
+          headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+          const data = await res.json();
+          setSelectedCodeHistory(data || []);
+          setHistoryModalOpen(true);
+      } else {
+          alert("Could not fetch history");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-4 mt-4">
       <div className="flex items-center justify-end">
@@ -92,12 +118,16 @@ export const AdminShifts: React.FC = () => {
 
       {!editingShift ? (
         <div className="grid grid-cols-1 gap-4">
-          {shifts.map(s => (
+          {shifts.filter(s => s.isCurrent !== false).map(s => (
             <GlassCard key={(s as any).id || s._id} className="p-4 flex items-center justify-between">
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-sm bg-neutral-100 px-2 py-0.5 rounded">{s.shiftCode}</span>
+                  <StatusBadge status="Active" label={`v${s.version || 1}`} />
+                  {s.isCurrent !== false && <StatusBadge status="success" label="Current" />}
+                </div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-medium text-lg">{s.name}</h3>
-                  <StatusBadge status="info" label={s.shiftCode} />
                   <StatusBadge 
                     status="success" 
                     label={policies.find(p => ((p as any).id || p._id) === s.attendancePolicyId)?.name || 'Unknown Policy'} 
@@ -114,6 +144,7 @@ export const AdminShifts: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <AnimatedButton variant="secondary" onClick={() => handleOpenHistory(s.shiftCode || '')}>History</AnimatedButton>
                 <AnimatedButton variant="secondary" icon={Edit2} onClick={() => setEditingShift(s)}>Edit</AnimatedButton>
                 {((s as any).id || s._id) && <AnimatedButton variant="danger" icon={Trash2} onClick={() => handleDelete((s as any).id || s._id)}>Delete</AnimatedButton>}
               </div>
@@ -131,7 +162,7 @@ export const AdminShifts: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Shift Code" value={editingShift.shiftCode} onChange={e => handleChange('shiftCode', e.target.value)} />
+            <Input label="Shift Code" value={editingShift.shiftCode} onChange={e => handleChange('shiftCode', e.target.value)} disabled={!!((editingShift as any).id || editingShift._id)} required />
             <Input label="Name" value={editingShift.name} onChange={e => handleChange('name', e.target.value)} />
             <Input label="Description" value={editingShift.description || ''} onChange={e => handleChange('description', e.target.value)} />
             
@@ -195,6 +226,41 @@ export const AdminShifts: React.FC = () => {
             </div>
           </div>
         </GlassCard>
+      )}
+
+      {historyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Version History</h3>
+              <button onClick={() => setHistoryModalOpen(false)} className="text-gray-500 hover:text-gray-700">Close</button>
+            </div>
+            <div className="p-6">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b text-sm text-neutral-500">
+                    <th className="py-2">Version</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2">Effective From</th>
+                    <th className="py-2">Effective To</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedCodeHistory.map(v => (
+                    <tr key={v._id || (v as any).id} className="border-b last:border-0 text-sm">
+                      <td className="py-3">v{v.version}</td>
+                      <td className="py-3">
+                        {v.isCurrent ? <StatusBadge status="success" label="Current" /> : <StatusBadge status="neutral" label="Historical" />}
+                      </td>
+                      <td className="py-3">{v.effectiveFrom ? new Date(v.effectiveFrom).toLocaleDateString() : '-'}</td>
+                      <td className="py-3">{v.effectiveTo ? new Date(v.effectiveTo).toLocaleDateString() : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

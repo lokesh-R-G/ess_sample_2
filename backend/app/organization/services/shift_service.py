@@ -29,3 +29,7 @@ class ShiftService:
     async def delete(self, id: str, user_id: str = None) -> bool:
         # Future: Check if any Employee is assigned to this Shift
         return await self.repo.soft_delete(id, user_id)
+
+    async def get_history(self, code: str) -> List[dict]:
+        cursor = self.repo.collection.find({"shiftCode": code, "deletedAt": None}).sort("version", -1)
+        return [self.repo._format_doc(doc) async for doc in cursor]

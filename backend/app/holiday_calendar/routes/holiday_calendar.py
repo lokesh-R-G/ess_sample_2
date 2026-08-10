@@ -24,10 +24,18 @@ async def get_calendar(calendar_id: str, db: AsyncIOMotorDatabase = Depends(get_
         raise HTTPException(status_code=404, detail="Calendar not found")
     return calendar
 
+@router.get("/history/{code}", response_model=List[HolidayCalendarResponse])
+async def get_calendar_history(code: str, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
+    service = HolidayCalendarService(db)
+    return await service.get_history(code)
+
 @router.post("/", response_model=HolidayCalendarResponse)
 async def create_calendar(data: HolidayCalendarCreate, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
     service = HolidayCalendarService(db)
-    return await service.create(data, current_user_id=user["empId"])
+    try:
+        return await service.create(data, current_user_id=user["empId"])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/{calendar_id}", response_model=HolidayCalendarResponse)
 async def update_calendar(calendar_id: str, data: HolidayCalendarUpdate, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
@@ -51,10 +59,18 @@ async def get_calendar_dates(calendar_id: str, db: AsyncIOMotorDatabase = Depend
     service = HolidayCalendarService(db)
     return await service.get_dates(calendar_id)
 
+@router.get("/{calendar_id}/dates/history/{code}", response_model=List[HolidayDateResponse])
+async def get_date_history(calendar_id: str, code: str, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
+    service = HolidayCalendarService(db)
+    return await service.get_date_history(code)
+
 @router.post("/{calendar_id}/dates", response_model=HolidayDateResponse)
 async def create_calendar_date(calendar_id: str, data: HolidayDateCreate, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):
     service = HolidayCalendarService(db)
-    return await service.add_date(calendar_id, data, current_user_id=user["empId"])
+    try:
+        return await service.add_date(calendar_id, data, current_user_id=user["empId"])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/{calendar_id}/dates/{date_id}", response_model=HolidayDateResponse)
 async def update_calendar_date(calendar_id: str, date_id: str, data: HolidayDateUpdate, db: AsyncIOMotorDatabase = Depends(get_database), user=Depends(get_current_user)):

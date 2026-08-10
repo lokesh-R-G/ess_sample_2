@@ -3,6 +3,7 @@ from pydantic import BaseModel, model_validator
 from datetime import datetime, date
 
 class HolidayCalendarCreate(BaseModel):
+    holidayCalendarCode: str
     name: str
     description: Optional[str] = None
     year: int
@@ -35,6 +36,8 @@ class HolidayCalendarUpdate(BaseModel):
 
 class HolidayCalendarResponse(HolidayCalendarCreate):
     id: str
+    version: int = 1
+    isCurrent: bool = True
     calendarId: Optional[str] = None
     branchName: Optional[str] = None
     branchCode: Optional[str] = None
@@ -51,6 +54,7 @@ class PaginatedHolidayCalendarResponse(BaseModel):
     totalPages: int = 1
 
 class HolidayDateCreate(BaseModel):
+    holidayCode: str
     holidayDate: date
     holidayName: str
     holidayType: str = "Mandatory"
@@ -67,6 +71,8 @@ class HolidayDateUpdate(BaseModel):
 
 class HolidayDateResponse(HolidayDateCreate):
     id: str
+    version: int = 1
+    isCurrent: bool = True
     calendarId: str
     holidayId: Optional[str] = None
     status: str

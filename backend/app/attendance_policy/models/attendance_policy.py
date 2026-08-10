@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 class AttendancePolicyModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
+    attendancePolicyCode: Optional[str] = None
     name: str
     description: Optional[str] = None
     
@@ -26,6 +27,7 @@ class AttendancePolicyModel(BaseModel):
     lateFullDayThreshold: int = 6
     
     # Hierarchy & Versioning
+    version: int = 1
     status: str = "Active"
     isCurrent: bool = True
     effectiveFrom: Optional[datetime] = None

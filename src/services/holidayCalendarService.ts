@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 export interface HolidayDate {
   id?: string;
   _id?: string;
+  holidayCode?: string;
   calendarId?: string;
   holidayDate: string; // YYYY-MM-DD
   holidayName: string;
@@ -10,11 +11,14 @@ export interface HolidayDate {
   isRecurring?: boolean;
   remarks?: string;
   status?: string;
+  version?: number;
+  isCurrent?: boolean;
 }
 
 export interface HolidayCalendar {
   id?: string;
   _id?: string;
+  holidayCalendarCode?: string;
   name: string;
   description?: string;
   year: number;
@@ -25,6 +29,8 @@ export interface HolidayCalendar {
   effectiveTo?: string;
   status?: string;
   holidayCount?: number;
+  version?: number;
+  isCurrent?: boolean;
 }
 
 export async function getHolidayCalendars(): Promise<HolidayCalendar[]> {

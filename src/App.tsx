@@ -21,6 +21,7 @@ import SalaryPreviewPage from './pages/admin/payroll/SalaryPreviewPage';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import ManualRecalculation from './pages/admin/attendance/ManualRecalculation';
+import HistoricalCorrections from './pages/admin/attendance/HistoricalCorrections';
 import AdminAttendancePolicy from './pages/admin/AdminAttendancePolicy';
 import AdminOrganization from './pages/admin/AdminOrganization';
 import AdminLayout from './components/layout/AdminLayout';
@@ -105,6 +106,7 @@ function AppRoutes() {
           <Route path="branches" element={<AdminBranches />} />
           <Route path="attendance" element={<AdminAttendance />} />
           <Route path="attendance/recalculate" element={<ManualRecalculation />} />
+          <Route path="attendance/historical-corrections" element={<HistoricalCorrections />} />
           <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
           <Route path="weekly-off-policy" element={<AdminWeeklyOffPolicy />} />
           <Route path="organization" element={<AdminOrganization />} />
