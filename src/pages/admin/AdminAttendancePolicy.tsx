@@ -41,6 +41,12 @@ export const AdminAttendancePolicy: React.FC = () => {
       lateIncrementThreshold: 3,
       lateHalfDayThreshold: 3,
       lateFullDayThreshold: 6,
+      permissionMinutes: 60,
+      permissionPerMonth: 2,
+      monthlyPermissionHours: 1.0,
+      permissionExcessCarryForward: true,
+      permissionLopThresholdMinutes: 240,
+      permissionLopValue: 0.5,
     });
   };
 
@@ -183,6 +189,19 @@ export const AdminAttendancePolicy: React.FC = () => {
             <Input type="number" step="0.5" label="Absent Hours Threshold" value={editingPolicy.absentHoursThreshold} onChange={e => handleChange('absentHoursThreshold', Number(e.target.value))} />
             <Input type="number" step="0.5" label="LOP Half Day Hours" value={editingPolicy.lopHalfDayHours} onChange={e => handleChange('lopHalfDayHours', Number(e.target.value))} />
             <Input type="number" step="0.5" label="LOP Full Day Hours" value={editingPolicy.lopFullDayHours} onChange={e => handleChange('lopFullDayHours', Number(e.target.value))} />
+          </div>
+
+          <h3 className="text-lg font-semibold flex items-center gap-2 mt-4"><Clock className="w-5 h-5 text-indigo-500"/> Permission Rules</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <Input type="number" label="Max Mins per Request" value={editingPolicy.permissionMinutes || 60} onChange={e => handleChange('permissionMinutes', Number(e.target.value))} />
+            <Input type="number" label="Max Count per Month" value={editingPolicy.permissionPerMonth || 2} onChange={e => handleChange('permissionPerMonth', Number(e.target.value))} />
+            <Input type="number" step="0.5" label="Free Monthly Hours" value={editingPolicy.monthlyPermissionHours || 1.0} onChange={e => handleChange('monthlyPermissionHours', Number(e.target.value))} />
+            <Input type="number" label="LOP Threshold (Mins)" value={editingPolicy.permissionLopThresholdMinutes || 240} onChange={e => handleChange('permissionLopThresholdMinutes', Number(e.target.value))} />
+            <Input type="number" step="0.5" label="LOP Value (Days)" value={editingPolicy.permissionLopValue || 0.5} onChange={e => handleChange('permissionLopValue', Number(e.target.value))} />
+            <div className="flex items-center gap-2 pt-8">
+              <input type="checkbox" id="carryForward" className="w-4 h-4" checked={editingPolicy.permissionExcessCarryForward !== false} onChange={e => handleChange('permissionExcessCarryForward', e.target.checked)} />
+              <label htmlFor="carryForward" className="text-sm font-medium">Enable Excess Carry-Forward</label>
+            </div>
           </div>
         </GlassCard>
       )}

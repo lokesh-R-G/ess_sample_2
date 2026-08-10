@@ -24,7 +24,7 @@ class ApprovalService:
             remarks=data.remarks,
             createdAt=self._utc_now()
         )
-        return await self.repo.create(model)
+        return await self.repo.create(model.model_dump(by_alias=True, exclude_none=True))
 
     async def execute_action(self, approval_id: str, action_data: ApprovalAction) -> ApprovalModel:
         approval = await self.repo.get_by_id(approval_id)
@@ -92,7 +92,7 @@ class ApprovalService:
         if action_data.remarks:
             approval.remarks = action_data.remarks
             
-        updated = await self.repo.update(approval_id, approval)
+        updated = await self.repo.update(approval_id, approval.model_dump(by_alias=True, exclude={"id"}))
         return updated
 
     async def get_manager_inbox(self, manager_emp_id: str, status: str = None):

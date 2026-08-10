@@ -60,13 +60,21 @@ export const AdminLeaveApprovals: React.FC = () => {
                       <div className="text-xs text-neutral-500">{req.employeeId}</div>
                     </td>
                     <td className="py-3 px-4 font-medium text-neutral-700">
-                      {req.workflowType === 'MISS_PUNCH' ? 'Miss Punch' : req.workflowType}
+                      {req.workflowType === 'MISS_PUNCH' ? 'Miss Punch' : 
+                       req.workflowType === 'PERMISSION' ? 'Permission' :
+                       req.workflowType === 'ON_DUTY' ? 'On Duty' : req.workflowType}
                     </td>
                     <td className="py-3 px-4 text-neutral-600">
                       {req.workflowType === 'MISS_PUNCH' && req.details ? (
                         <>
                           <div className="font-medium">{req.details.date} ({req.details.type === 'MISSING_IN' ? 'In' : 'Out'})</div>
                           <div className="text-xs">Time: {new Date(req.details.time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true})}</div>
+                          <div className="text-xs italic">"{req.details.reason}"</div>
+                        </>
+                      ) : (req.workflowType === 'PERMISSION' || req.workflowType === 'ON_DUTY') && req.details ? (
+                        <>
+                          <div className="font-medium">{req.details.date || req.details.fromDate}</div>
+                          {req.details.fromTime && <div className="text-xs">Time: {req.details.fromTime} to {req.details.toTime}</div>}
                           <div className="text-xs italic">"{req.details.reason}"</div>
                         </>
                       ) : (

@@ -13,11 +13,21 @@ class AttendancePolicyCreate(BaseModel):
     absentHoursThreshold: float = 2.0
     lopHalfDayHours: float = 4.0
     lopFullDayHours: float = 8.0
+    
+    # Penalties
     lateInThresholdMinutes: int = 15
     earlyOutThresholdMinutes: int = 15
     lateIncrementThreshold: int = 3
     lateHalfDayThreshold: int = 3
     lateFullDayThreshold: int = 6
+
+    # Permission Rules
+    permissionMinutes: int = 60
+    permissionPerMonth: int = 2
+    monthlyPermissionHours: float = 1.0
+    permissionExcessCarryForward: bool = True
+    permissionLopThresholdMinutes: int = 240
+    permissionLopValue: float = 0.5
     effectiveFrom: Optional[datetime] = None
     effectiveTo: Optional[datetime] = None
 
@@ -31,11 +41,21 @@ class AttendancePolicyUpdate(BaseModel):
     absentHoursThreshold: Optional[float] = None
     lopHalfDayHours: Optional[float] = None
     lopFullDayHours: Optional[float] = None
+    
+    # Penalties
     lateInThresholdMinutes: Optional[int] = None
     earlyOutThresholdMinutes: Optional[int] = None
     lateIncrementThreshold: Optional[int] = None
     lateHalfDayThreshold: Optional[int] = None
     lateFullDayThreshold: Optional[int] = None
+    
+    # Permission Rules
+    permissionMinutes: Optional[int] = None
+    permissionPerMonth: Optional[int] = None
+    monthlyPermissionHours: Optional[float] = None
+    permissionExcessCarryForward: Optional[bool] = None
+    permissionLopThresholdMinutes: Optional[int] = None
+    permissionLopValue: Optional[float] = None
     status: Optional[str] = None
     isCurrent: Optional[bool] = None
     effectiveFrom: Optional[datetime] = None

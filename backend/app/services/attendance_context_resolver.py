@@ -65,6 +65,13 @@ class AttendanceContextResolver:
             print("Employee Missing")
             print("Attendance Skipped")
             return None
+
+        # Resolve ledger
+        from app.attendance_v2.services.permission_ledger_service import PermissionLedgerService
+        ledger_service = PermissionLedgerService(self.db)
+        month_str = target_date.strftime("%Y-%m")
+        # Ensure we pass employee.employeeId for ledger calculation if it uses UUID
+        permission_ledger = await ledger_service.get_or_calculate_ledger(employee.employeeId, month_str)
             
         print(f"Employee UUID : {employee.employeeId}")
 
@@ -204,16 +211,38 @@ class AttendanceContextResolver:
         today_approvals = []
         for app in approvals:
             rd = app.get("requestData", {})
-            # If Leave, check fromDate/toDate overlap, else check date or punchTime
-            # Simplistic check for demo:
             d1 = rd.get("date", "")
             d2 = rd.get("punchTime", "")
             d3_from = rd.get("fromDate", "")
             d3_to = rd.get("toDate", "")
             
-            if target_iso in d1 or target_iso in d2:
-                today_approvals.append(app)
-            elif d3_from and d3_to and d3_from <= target_iso <= d3_to:
+            # Helper to parse any date string to a date object
+            def parse_date(d_str):
+                if not d_str: return None
+                try:
+                    # Handles YYYY-MM-DD and ISO formats up to the 'T'
+                    return datetime.fromisoformat(d_str.replace("Z", "+00:00")).date()
+                except:
+                    # Fallback for simple date strings
+                    if len(d_str) >= 10:
+                        try:
+                            return datetime.strptime(d_str[:10], "%Y-%m-%d").date()
+                        except:
+                            pass
+                return None
+
+            match = False
+            p_d1 = parse_date(d1)
+            p_d2 = parse_date(d2)
+            if (p_d1 and p_d1 == target_date) or (p_d2 and p_d2 == target_date):
+                match = True
+            else:
+                p_from = parse_date(d3_from)
+                p_to = parse_date(d3_to)
+                if p_from and p_to and p_from <= target_date <= p_to:
+                    match = True
+            
+            if match:
                 today_approvals.append(app)
 
         print(f"Approvals resolved : {len(today_approvals)}")
@@ -258,5 +287,6 @@ class AttendanceContextResolver:
             "monthlyRecords": monthly_records,
             "monthlyLateCount": monthly_late_count,
             "rawPunches": raw_punches,
+            "permissionLedger": permission_ledger,
             "targetDate": target_date
         }

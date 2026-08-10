@@ -94,7 +94,7 @@ class AttendanceProcessor:
                     "weeklyOffSnapshot": ctx.get("weeklyOffPolicy").dict() if hasattr(ctx.get("weeklyOffPolicy"), "dict") else ctx.get("weeklyOffPolicy"),
                     "holidaySnapshot": ctx.get("holidayDates"),
                     "todaySchedule": ctx.get("todaySchedule"),
-                    "approvalSnapshot": ctx.get("approvedRequests", []),
+                    "approvalSnapshot": metrics.get("approvalSnapshot", []),
                     "rawAttendanceLogIds": [str(l["_id"]) for l in ctx.get("rawPunches", [])],
                     "inTime": metrics.get("inTime"),
                     "outTime": metrics.get("outTime"),
@@ -111,6 +111,13 @@ class AttendanceProcessor:
                     "lateIncrementApplied": metrics.get("lateIncrementApplied", False),
                     "monthlyLateCount": ctx.get("monthlyLateCount", 0),
                     "lopReason": metrics.get("lopReason", None),
+                    
+                    # Phase 10.3 (Permission Ledger fields)
+                    "permissionFreeAllowance": ctx.get("permissionLedger", {}).get("freeAllowanceMinutes", 0),
+                    "permissionConsumed": ctx.get("permissionLedger", {}).get("consumedMinutes", 0),
+                    "permissionCurrentExcess": ctx.get("permissionLedger", {}).get("currentExcessMinutes", 0),
+                    "permissionAccumulatedExcess": ctx.get("permissionLedger", {}).get("accumulatedExcessMinutes", 0),
+                    "permissionLopGenerated": ctx.get("permissionLedger", {}).get("lopGenerated", 0),
                     
                     # Phase 10.2 fields
                     "scheduleSource": metrics.get("scheduleSource", "Unknown"),

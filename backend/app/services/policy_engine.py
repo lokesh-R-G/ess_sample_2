@@ -104,17 +104,50 @@ class PolicyEngine:
 
     def _normalize_working_intervals(self) -> list:
         intervals = []
-        logs = self.raw_punches
-        for i in range(0, len(logs), 2):
-            in_time = to_ist(logs[i]["timestamp"])
-            out_time = to_ist(logs[i+1]["timestamp"]) if i+1 < len(logs) else None
-            intervals.append((in_time, out_time))
+        if not self.raw_punches:
+            return intervals
+            
+        # 1. Sort purely chronologically
+        logs = sorted(self.raw_punches, key=lambda x: to_ist(x["timestamp"]))
+        
+        # 2. State machine
+        current_in = None
+        threshold_minutes = 5.0
+        
+        for log in logs:
+            punch = to_ist(log["timestamp"])
+            if current_in is None:
+                # Check if this IN is actually a duplicate of the LAST OUT
+                if intervals:
+                    last_out = intervals[-1][1]
+                    if last_out and (punch - last_out).total_seconds() / 60.0 <= threshold_minutes:
+                        # It's a duplicate OUT. Extend the last interval's OUT to this punch.
+                        intervals[-1] = (intervals[-1][0], punch)
+                        continue
+                current_in = punch
+            else:
+                diff_mins = (punch - current_in).total_seconds() / 60.0
+                if diff_mins <= threshold_minutes:
+                    # Duplicate IN. Ignore.
+                    pass
+                else:
+                    # It's an OUT punch
+                    intervals.append((current_in, punch))
+                    current_in = None
+                    
+        # If there's a trailing unclosed IN
+        if current_in is not None:
+            intervals.append((current_in, None))
+            
         return intervals
 
     def _normalize_approval_intervals(self) -> list:
         intervals = []
+        self.approval_snapshot = []
+        
         for req in self.approved_requests:
-            if req.get("approvalType") == "Permission":
+            app_type = req.get("approvalType")
+            if app_type in ["Permission", "On Duty"]:
                 rd = req.get("requestData", {})
                 from_time_str = rd.get("fromTime")
                 to_time_str = rd.get("toTime")
@@ -122,8 +155,32 @@ class PolicyEngine:
                 if from_time_str and to_time_str:
                     start = self._get_shift_datetime(from_time_str)
                     end = self._get_shift_datetime(to_time_str)
+                    
                     if start and end:
-                        intervals.append({"start": start, "end": end, "type": "Permission"})
+                        req_mins = (end - start).total_seconds() / 60.0
+                        allowed_mins = req_mins
+                        excess_mins = 0.0
+                        
+                        if app_type == "Permission":
+                            max_per_request = getattr(self.policy, "permissionMinutes", 60)
+                            if req_mins > max_per_request:
+                                allowed_mins = max_per_request
+                                excess_mins = req_mins - max_per_request
+                                # Limit the interval used for Late In forgiveness
+                                end = start + timedelta(minutes=allowed_mins)
+                                
+                        intervals.append({"start": start, "end": end, "type": app_type})
+                        
+                        self.approval_snapshot.append({
+                            "approvalId": str(req.get("_id", "")),
+                            "approvalType": app_type,
+                            "status": req.get("status"),
+                            "fromTime": from_time_str,
+                            "toTime": to_time_str,
+                            "requestedMinutes": req_mins,
+                            "allowedMinutes": allowed_mins,
+                            "excessMinutes": excess_mins
+                        })
         return intervals
 
     def evaluate_attendance(self) -> dict:
@@ -146,12 +203,20 @@ class PolicyEngine:
             "scheduleType": self.schedule["scheduleType"],
             "scheduleSource": self.schedule["scheduleSource"],
             "actualStartTime": self.schedule["actualStartTime"],
-            "actualEndTime": self.schedule["actualEndTime"]
+            "actualEndTime": self.schedule["actualEndTime"],
+            
+            # Phase 10.3 / M2.1
+            "approvalSnapshot": []
         }
         
         # 1. Leave / OD Override Check
         for req in self.approved_requests:
             if req.get("approvalType") in ["Leave", "On Duty"]:
+                rd = req.get("requestData", {})
+                # If it has specific times, it's a partial-day approval (interval), so do not override the whole day.
+                if rd.get("fromTime") and rd.get("toTime"):
+                    continue
+                    
                 metrics["status"] = req.get("approvalType")
                 return metrics
                 
@@ -165,6 +230,10 @@ class PolicyEngine:
             metrics["status"] = "Week Off" if not self.raw_punches else "Week Off Worked"
             return metrics
 
+        # Normalization of Approvals (must be called before early returns to populate snapshot)
+        approval_intervals = self._normalize_approval_intervals()
+        metrics["approvalSnapshot"] = self.approval_snapshot
+
         # 4. Absent Check
         if not self.raw_punches:
             metrics["status"] = "Absent"
@@ -172,9 +241,7 @@ class PolicyEngine:
             metrics["lopReason"] = "Missing Punches"
             return metrics
 
-        # Normalization
         working_intervals = self._normalize_working_intervals()
-        approval_intervals = self._normalize_approval_intervals()
         
         in_time = working_intervals[0][0]
         out_time = working_intervals[-1][1]
@@ -304,4 +371,5 @@ class PolicyEngine:
                                 metrics["lopReason"] = "Early Out Beyond Threshold"
                                 metrics["halfDayCount"] += 0.5
 
+        metrics["approvalSnapshot"] = self.approval_snapshot
         return metrics

@@ -17,6 +17,7 @@ from app.attendance_v2.routes.attendance_engine_health_routes import router as a
 from app.attendance_v2.routes.attendance_closing_routes import router as attendance_closing_router
 from app.attendance_v2.routes.attendance_recalculate_routes import router as attendance_recalculate_router
 from app.attendance_v2.routes.correction_log_routes import router as correction_log_router
+from app.attendance_v2.routes.permission_ledger_routes import router as permission_ledger_router
 
 attendance_v2_router = APIRouter()
 attendance_v2_router.include_router(attendance_router)
@@ -37,3 +38,4 @@ attendance_v2_router.include_router(attendance_engine_health_router)
 attendance_v2_router.include_router(attendance_closing_router)
 attendance_v2_router.include_router(attendance_recalculate_router)
 attendance_v2_router.include_router(correction_log_router)
+attendance_v2_router.include_router(permission_ledger_router)

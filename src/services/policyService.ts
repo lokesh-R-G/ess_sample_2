@@ -44,6 +44,15 @@ export interface AttendancePolicyV2 {
   lateIncrementThreshold: number;
   lateHalfDayThreshold: number;
   lateFullDayThreshold: number;
+  
+  // Permission Rules
+  permissionMinutes?: number;
+  permissionPerMonth?: number;
+  monthlyPermissionHours?: number;
+  permissionExcessCarryForward?: boolean;
+  permissionLopThresholdMinutes?: number;
+  permissionLopValue?: number;
+  
   status?: string;
   isCurrent?: boolean;
   version?: number;

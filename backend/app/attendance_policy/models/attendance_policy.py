@@ -26,6 +26,14 @@ class AttendancePolicyModel(BaseModel):
     lateHalfDayThreshold: int = 3
     lateFullDayThreshold: int = 6
     
+    # Permission Rules
+    permissionMinutes: int = 60
+    permissionPerMonth: int = 2
+    monthlyPermissionHours: float = 1.0
+    permissionExcessCarryForward: bool = True
+    permissionLopThresholdMinutes: int = 240
+    permissionLopValue: float = 0.5
+    
     # Hierarchy & Versioning
     version: int = 1
     status: str = "Active"
