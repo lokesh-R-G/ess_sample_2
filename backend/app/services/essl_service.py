@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from app.core.datetime_utils import IST
+from app.core.datetime_utils import IST, to_ist, get_current_ist
 from typing import Any
 from zeep import Client, Settings as ZeepSettings
 from zeep.helpers import serialize_object
@@ -189,14 +189,21 @@ class EsslClient:
         print(f"   From: {from_date}, To: {to_date}")
 
         try:
-            now = datetime.now(timezone.utc)
+            now_ist = get_current_ist()
 
-            # Fix future date issue
-            if not from_date or from_date > now:
-                from_date = now.replace(hour=0, minute=0, second=0)
+            # Fix future date issue by normalizing everything to IST
+            if from_date:
+                from_date = to_ist(from_date)
+            else:
+                from_date = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+                
+            if from_date > now_ist:
+                from_date = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
 
             if not to_date:
-                to_date = now
+                to_date = now_ist
+            else:
+                to_date = to_ist(to_date)
 
             response = self._client.service.GetTransactionsLog(
                 FromDateTime=from_date.strftime("%Y-%m-%d %H:%M:%S"),

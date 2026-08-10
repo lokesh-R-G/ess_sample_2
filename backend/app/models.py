@@ -151,3 +151,14 @@ class AttendancePolicy(BaseModel):
     lateIncrementThreshold: int = 4
     lopHalfDayHours: float = 4.0
     lopFullDayHours: float = 8.0
+
+class SchedulerJobConfig(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    jobKey: str  # ESSL_SHORT_SYNC, ESSL_RECOVERY_SYNC, ATTENDANCE_CALCULATION
+    enabled: bool = True
+    frequencyMinutes: int
+    lookbackDays: int
+    timezone: str = "Asia/Kolkata"
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+    updatedBy: str | None = None
