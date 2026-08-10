@@ -68,6 +68,7 @@ async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetim
     return SyncResponse(
         rawInserted=raw_result["inserted"],
         rawUpdated=raw_result["updated"],
+        rawMatched=raw_result.get("matched", 0),
         attendanceUpserted=0,
         dateRange={
             "fromDate": fd_iso,
@@ -138,6 +139,7 @@ async def sync_user(db, emp_id: str, from_date: Optional[datetime] = None, to_da
             "empId": emp_id,
             "rawInserted": inserted,
             "rawUpdated": 0,
+            "rawMatched": len(parsed_data) - inserted,
             "attendanceUpserted": attendance_upserted,
             "lastSyncAt": user.lastSyncAt,
         }

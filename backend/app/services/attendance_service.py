@@ -201,25 +201,28 @@ def infer_attendance_status(record: dict) -> str:
 async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[str, int]:
     inserted = 0
     updated = 0
+    matched = 0
 
     for record in records:
         document = build_raw_log_document(record, sync_batch_id)
         try:
             result = await db.attendance_logs.update_one(
                 {"fingerprint": document["fingerprint"]},
-                {"$set": document},
+                {"$setOnInsert": document},
                 upsert=True,
             )
             if result.upserted_id is not None:
                 inserted += 1
             elif result.modified_count > 0:
                 updated += 1
+            else:
+                matched += 1
         except Exception as e:
             # log but continue on duplicate or other errors
             pass
 
-    print(f"   Raw logs: inserted={inserted}, updated={updated}")
-    return {"inserted": inserted, "updated": updated}
+    print(f"   Raw logs: inserted={inserted}, matched_existing={matched}, modified={updated}")
+    return {"inserted": inserted, "updated": updated, "matched": matched}
 
 
 async def upsert_daily_attendance(db, summaries: list[dict]) -> int:

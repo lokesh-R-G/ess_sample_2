@@ -131,6 +131,7 @@ class SyncRequest(BaseModel):
 class SyncResponse(BaseModel):
     rawInserted: int
     rawUpdated: int
+    rawMatched: int = 0
     attendanceUpserted: int
     dateRange: dict[str, str | None]
 
