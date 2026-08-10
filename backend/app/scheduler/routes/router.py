@@ -7,7 +7,7 @@ from app.dependencies import require_roles, get_current_user
 from app.models import SchedulerJobConfig
 from app.scheduler.scheduler import update_job_schedule
 
-router = APIRouter(prefix="/scheduler", tags=["Scheduler Engine"])
+router = APIRouter(tags=["Scheduler Engine"])
 
 class SchedulerConfigUpdate(BaseModel):
     enabled: bool

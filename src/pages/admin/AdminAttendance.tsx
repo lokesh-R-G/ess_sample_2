@@ -92,7 +92,7 @@ export const AdminAttendance: React.FC = () => {
     setError(null);
     
     try {
-      const res = await api.post<any>('/v2/attendance/attendance/recalculate', { fromDate, toDate, force: true });
+      const res = await api.post<any>('/v2/attendance/recalculate', { fromDate, toDate, force: true });
       setRecalcResult(res);
     } catch (e: any) {
       setError(`Recalculation failed: ${e.message}`);
@@ -114,7 +114,7 @@ export const AdminAttendance: React.FC = () => {
       setSyncResult(sRes);
       
       // Step 2: Recalculate
-      const rRes = await api.post<any>('/v2/attendance/attendance/recalculate', { fromDate, toDate, force: true });
+      const rRes = await api.post<any>('/v2/attendance/recalculate', { fromDate, toDate, force: true });
       setRecalcResult(rRes);
     } catch (e: any) {
       setError(`Combined operation failed: ${e.message}`);

@@ -8,7 +8,7 @@ from app.db.mongo import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.attendance_v2.services.attendance_processor import AttendanceProcessor
 
-router = APIRouter(prefix="/attendance", tags=["Attendance V2 Recalculation"])
+router = APIRouter(tags=["Attendance V2 Recalculation"])
 
 class RecalculateRequest(BaseModel):
     fromDate: str
