@@ -65,7 +65,7 @@ export const LeaveManagement: React.FC = () => {
     loadAllData();
   }, [user]);
 
-  // V1 Leave Submission
+  // V2 Leave Submission
   const handleLeaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -74,8 +74,7 @@ export const LeaveManagement: React.FC = () => {
         leaveType: leaveFormData.leaveType,
         fromDate: leaveFormData.fromDate,
         toDate: leaveFormData.toDate,
-        reason: leaveFormData.reason,
-        odLocation: ''
+        reason: leaveFormData.reason
       });
       await loadAllData();
       setShowLeaveModal(false);
@@ -221,15 +220,15 @@ export const LeaveManagement: React.FC = () => {
                 </div>
               </GlassCard>
               <GlassCard className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Leave Applications (V1)</h3>
+                <h3 className="text-lg font-semibold mb-4">Leave Applications</h3>
                 <div className="space-y-3">
                   {leaveApplications.map((app) => (
                     <div key={app.id || app._id} className="flex justify-between items-center p-4 bg-neutral-50 rounded-xl border border-neutral-200">
                       <div>
-                        <div className="font-medium">{app.leaveType || 'Leave'} <StatusBadge status={statusColors[app.status]} label={app.status} size="sm" /></div>
-                        <div className="text-sm text-neutral-500">{app.fromDate} to {app.toDate}</div>
+                        <div className="font-medium">{app.requestData?.leaveType || 'Leave'} <StatusBadge status={statusColors[app.status]} label={app.status} size="sm" /></div>
+                        <div className="text-sm text-neutral-500">{app.requestData?.fromDate} to {app.requestData?.toDate}</div>
                       </div>
-                      <div className="text-xs text-neutral-400">{app.appliedOn}</div>
+                      <div className="text-xs text-neutral-400">{new Date(app.createdAt || Date.now()).toLocaleDateString()}</div>
                     </div>
                   ))}
                 </div>
@@ -425,12 +424,12 @@ export const LeaveManagement: React.FC = () => {
       </div>
 
       {/* Leave Modal */}
-      <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Apply Leave (V1)" size="md">
+      <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Apply Leave" size="md">
         <form onSubmit={handleLeaveSubmit} className="space-y-4">
           <Select label="Leave Type" options={[
-            {value: 'annual', label: 'Annual Leave'},
-            {value: 'sick', label: 'Sick Leave'},
-            {value: 'casual', label: 'Casual Leave'}
+            {value: 'SL', label: 'Sick Leave (SL)'},
+            {value: 'CL', label: 'Casual Leave (CL)'},
+            {value: 'EL', label: 'Earned Leave (EL)'}
           ]} value={leaveFormData.leaveType} onChange={e => setLeaveFormData({...leaveFormData, leaveType: e.target.value})} required />
           <div className="grid grid-cols-2 gap-4">
             <Input label="From Date" type="date" value={leaveFormData.fromDate} onChange={e => setLeaveFormData({...leaveFormData, fromDate: e.target.value})} required />

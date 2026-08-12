@@ -243,6 +243,18 @@ class AttendanceContextResolver:
                     match = True
             
             if match:
+                # If Leave, fetch allocation
+                if app.get("approvalType") == "Leave":
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger_service = LeaveLedgerService(self.db)
+                    alloc = await ledger_service.get_daily_allocation(
+                        emp_id=employee.employeeId, 
+                        target_date_str=target_date.isoformat(), 
+                        approval_id=str(app.get("_id"))
+                    )
+                    if alloc:
+                        app["leaveAllocation"] = alloc
+                        
                 today_approvals.append(app)
 
         print(f"Approvals resolved : {len(today_approvals)}")

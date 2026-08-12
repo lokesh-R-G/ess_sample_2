@@ -97,23 +97,6 @@ class ApprovalService:
                     upsert=True
                 )
                 
-            # Queue for attendance processing
-            dirty_queue = DirtyQueueService(self.db)
-            
-            # Determine processing range based on approval type
-            # Leaves/OD might have fromDate and toDate
-            target_from = approval.requestData.get("fromDate", approval.requestData.get("date", approval.requestData.get("punchTime", self._utc_now().isoformat())))
-            target_to = approval.requestData.get("toDate", target_from)
-            
-            await dirty_queue.push(
-                employee_id=approval.employeeId,
-                employee_code=emp_code,
-                from_date=target_from,
-                to_date=target_to,
-                reason=f"Approval {approval.approvalType} APPROVED",
-                trigger="APPROVAL"
-            )
-            
         elif action == "REJECT":
             approval.status = "REJECTED"
         elif action == "WITHDRAW":
@@ -129,9 +112,40 @@ class ApprovalService:
             approval.remarks = action_data.remarks
             
         updated = await self.repo.update(approval_id, approval.model_dump(by_alias=True, exclude={"id"}))
+        
+        # After update, run specialized ledger logic & dirty queueing
         if updated:
+            if action == "APPROVE":
+                if approval.approvalType == "Leave":
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger = LeaveLedgerService(self.db)
+                    await ledger.commit_approval(approval_id)
+            elif action == "CANCEL":
+                if approval.approvalType == "Leave":
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger = LeaveLedgerService(self.db)
+                    await ledger.rollback_approval(approval_id)
+                    
+            # Queue for attendance processing on APPROVE or CANCEL
+            if action in ["APPROVE", "CANCEL"]:
+                from app.attendance_v2.services.dirty_queue_service import DirtyQueueService
+                dirty_queue = DirtyQueueService(self.db)
+                
+                target_from = approval.requestData.get("fromDate", approval.requestData.get("date", approval.requestData.get("punchTime", self._utc_now().isoformat())))
+                target_to = approval.requestData.get("toDate", target_from)
+                
+                await dirty_queue.push(
+                    employee_id=approval.employeeId,
+                    employee_code=emp_code,
+                    from_date=target_from,
+                    to_date=target_to,
+                    reason=f"Approval {approval.approvalType} {action}",
+                    trigger="APPROVAL"
+                )
+                
             enriched = await self._enrich_approvals_with_employee_info([updated])
             return enriched[0]
+            
         return updated
 
     async def _enrich_approvals_with_employee_info(self, approvals):

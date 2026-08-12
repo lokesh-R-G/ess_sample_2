@@ -235,6 +235,8 @@ class PolicyEngine:
         # 1. Leave / OD Override Check
         is_full_day_override = False
         override_status = None
+        leave_allocation = None
+        
         for req in self.approved_requests:
             if req.get("approvalType") in ["Leave", "On Duty"]:
                 rd = req.get("requestData", {})
@@ -244,6 +246,8 @@ class PolicyEngine:
                     
                 is_full_day_override = True
                 override_status = req.get("approvalType")
+                if override_status == "Leave":
+                    leave_allocation = req.get("leaveAllocation")
                 break
                 
         # 2. Holiday Check
@@ -422,8 +426,14 @@ class PolicyEngine:
         # Force Full-Day Override Rules
         if is_full_day_override:
             metrics["status"] = override_status
-            metrics["lopHours"] = 0.0
-            metrics["lopReason"] = None
+            if override_status == "Leave" and leave_allocation:
+                metrics["lopHours"] = leave_allocation["lop"] * (self.schedule["expectedWorkingHours"] or 8.0)
+                metrics["lopReason"] = "Insufficient Leave Balance" if leave_allocation["lop"] > 0 else None
+                metrics["leaveLopDays"] = leave_allocation["lop"]
+            else:
+                metrics["lopHours"] = 0.0
+                metrics["lopReason"] = None
+                
             expected = self.schedule.get("expectedWorkingHours", 0.0)
             if metrics["effectiveHours"] < expected:
                 metrics["effectiveHours"] = expected

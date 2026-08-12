@@ -32,6 +32,20 @@ DEFAULT_JOBS = [
         "frequencyMinutes": 1440,  # 1 day
         "lookbackDays": 2,
         "timezone": "Asia/Kolkata"
+    },
+    {
+        "jobKey": "DAILY_LEAVE_ELIGIBILITY",
+        "enabled": True,
+        "frequencyMinutes": 1440,  # 1 day
+        "lookbackDays": 0,
+        "timezone": "Asia/Kolkata"
+    },
+    {
+        "jobKey": "ANNUAL_LEAVE_RESET",
+        "enabled": True,
+        "frequencyMinutes": 1440,  # 1 day (but logic checks if it's Jan 1)
+        "lookbackDays": 0,
+        "timezone": "Asia/Kolkata"
     }
 ]
 
@@ -99,10 +113,105 @@ async def run_attendance_calculation():
     except Exception as e:
         logger.error(f"ATTENDANCE_CALCULATION failed: {e}")
 
+async def run_daily_leave_eligibility_check():
+    import logging
+    logger = logging.getLogger("scheduler")
+    logger.info("Running DAILY_LEAVE_ELIGIBILITY")
+    db = get_database()
+    
+    # Run daily to check 1 year DOJ
+    today = datetime.now(timezone.utc).date()
+    cursor = db.employees.find({"dateOfJoining": {"$exists": True}})
+    
+    async for emp in cursor:
+        doj_str = emp.get("dateOfJoining")
+        if not doj_str: continue
+        try:
+            doj = datetime.strptime(doj_str, "%Y-%m-%d").date()
+        except Exception:
+            continue
+            
+        # Check if today is exactly their 1st anniversary
+        if today.year - doj.year == 1 and today.month == doj.month and today.day == doj.day:
+            from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+            ledger_svc = LeaveLedgerService(db)
+            emp_id = emp.get("employeeId")
+            emp_code = emp.get("employeeCode", "UNKNOWN")
+            
+            for lt in ["SL", "CL", "EL"]:
+                await ledger_svc.get_or_create_ledger(emp_id, emp_code, today.year, lt)
+                
+async def run_annual_leave_reset():
+    import logging
+    logger = logging.getLogger("scheduler")
+    logger.info("Running ANNUAL_LEAVE_RESET")
+    db = get_database()
+    
+    today = datetime.now(timezone.utc).date()
+    if today.month != 1 or today.day != 1:
+        return
+        
+    prev_year = today.year - 1
+    cursor = db.leave_ledgers.find({"calendarYear": prev_year})
+    
+    now = datetime.now(timezone.utc)
+    async for ledger in cursor:
+        emp_id = ledger.get("employeeId")
+        emp_code = ledger.get("employeeCode")
+        lt = ledger.get("leaveType")
+        prev_balance = ledger.get("availableBalance", 0.0)
+        
+        carried = 0.0
+        expired = 0.0
+        if lt == "EL":
+            carried = prev_balance
+        else:
+            expired = prev_balance
+            
+        await db.leave_ledgers.update_one(
+            {"_id": ledger["_id"]},
+            {"$set": {"expired": expired, "updatedAt": now}}
+        )
+        
+        doj_str = None
+        emp = await db.employees.find_one({"employeeId": emp_id})
+        if emp: doj_str = emp.get("dateOfJoining")
+        
+        credited = 12.0
+        if doj_str:
+            doj = datetime.strptime(doj_str, "%Y-%m-%d").date()
+            if today.year == doj.year + 1:
+                credited = max(0.0, 12.0 - doj.month)
+            elif today.year <= doj.year:
+                credited = 0.0
+                
+        new_ledger = {
+            "employeeId": emp_id,
+            "employeeCode": emp_code,
+            "calendarYear": today.year,
+            "leaveType": lt,
+            "openingBalance": credited + carried,
+            "annualEntitlement": 12.0,
+            "anniversaryEntitlement": 0.0,
+            "carriedForward": carried,
+            "credited": credited,
+            "consumed": 0.0,
+            "availableBalance": credited + carried,
+            "expired": 0.0,
+            "lopDays": 0.0,
+            "version": 1,
+            "createdAt": now,
+            "updatedAt": now,
+            "allocations": []
+        }
+        await db.leave_ledgers.insert_one(new_ledger)
+
 JOB_MAPPING = {
     "ESSL_SHORT_SYNC": run_essl_short_sync,
     "ESSL_RECOVERY_SYNC": run_essl_recovery_sync,
-    "ATTENDANCE_CALCULATION": run_attendance_calculation
+    "ATTENDANCE_CALCULATION": run_attendance_calculation,
+    "DAILY_LEAVE_ELIGIBILITY": run_daily_leave_eligibility_check,
+    "ANNUAL_LEAVE_RESET": run_annual_leave_reset
 }
 
 async def initialize_jobs():

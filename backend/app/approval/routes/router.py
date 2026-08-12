@@ -57,6 +57,26 @@ async def get_manager_inbox(
 ):
     return await controller.get_manager_inbox(manager_employee_id, status)
     
+@router.get("/inbox/employee/me", response_model=List[ApprovalResponse])
+async def get_my_employee_requests(
+    status: Optional[str] = Query(None), 
+    controller: ApprovalController = Depends(get_controller), 
+    user: dict = Depends(get_current_user)
+):
+    emp_uuid = user.get("employeeId")
+    if not emp_uuid:
+        emp_code = user.get("empId")
+        if emp_code:
+            emp_doc = await controller.service.db.employees.find_one({"employeeCode": emp_code})
+            if emp_doc:
+                emp_uuid = emp_doc.get("employeeId")
+                
+    if not emp_uuid:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Could not resolve employee UUID")
+        
+    return await controller.get_employee_requests(emp_uuid, status)
+    
 @router.get("/inbox/employee/{emp_id}", response_model=List[ApprovalResponse])
 async def get_employee_requests(
     emp_id: str, 

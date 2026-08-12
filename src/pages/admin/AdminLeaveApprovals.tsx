@@ -70,6 +70,9 @@ export const AdminLeaveApprovals: React.FC = () => {
                             {req.requestData.date || req.requestData.fromDate || ''} 
                             {req.requestData.toDate && req.requestData.toDate !== req.requestData.fromDate ? ` to ${req.requestData.toDate}` : ''}
                           </div>
+                          {req.requestData.leaveType && (
+                             <div className="text-xs font-semibold text-primary-600">{req.requestData.leaveType}</div>
+                          )}
                           {req.requestData.punchTime && (
                              <div className="text-xs">Punch Time: {new Date(req.requestData.punchTime).toLocaleString()}</div>
                           )}

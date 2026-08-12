@@ -9,7 +9,7 @@ from app.db.mongo import get_database
 from app.dependencies import get_current_user, require_roles
 
 
-router = APIRouter(prefix="/leave", tags=["leave"])
+router = APIRouter(prefix="/deprecated_leave", tags=["leave_deprecated"])
 
 
 @router.get("/me/")
