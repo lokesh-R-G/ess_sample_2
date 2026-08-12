@@ -22,7 +22,10 @@ class PolicyEngine:
         if not time_str or not self.target_date:
             return None
         try:
-            dt = datetime.strptime(time_str, "%H:%M").time()
+            if time_str.count(":") == 2:
+                dt = datetime.strptime(time_str, "%H:%M:%S").time()
+            else:
+                dt = datetime.strptime(time_str, "%H:%M").time()
             # Treat configured schedule times as local IST wall-clock time
             return datetime.combine(self.target_date, dt).replace(tzinfo=IST)
         except ValueError:
@@ -147,38 +150,54 @@ class PolicyEngine:
         
         for req in self.approved_requests:
             app_type = req.get("approvalType")
-            if app_type in ["Permission", "On Duty"]:
+            if app_type in ["Permission", "On Duty", "Leave", "Miss Punch", "Mobile Punch"]:
                 rd = req.get("requestData", {})
                 from_time_str = rd.get("fromTime")
                 to_time_str = rd.get("toTime")
                 
-                if from_time_str and to_time_str:
+                if app_type in ["On Duty", "Leave"] and not (from_time_str and to_time_str):
+                    self.approval_snapshot.append({
+                        "approvalId": str(req.get("_id", "")),
+                        "approvalType": app_type,
+                        "status": req.get("status"),
+                        "fromDate": rd.get("fromDate", rd.get("date")),
+                        "toDate": rd.get("toDate", rd.get("date")),
+                        "fullDay": True,
+                        "requestedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
+                        "appliedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
+                        "excessMinutes": 0.0
+                    })
+                elif from_time_str and to_time_str:
                     start = self._get_shift_datetime(from_time_str)
                     end = self._get_shift_datetime(to_time_str)
                     
                     if start and end:
                         req_mins = (end - start).total_seconds() / 60.0
-                        allowed_mins = req_mins
+                        applied_mins = req_mins
                         excess_mins = 0.0
                         
                         if app_type == "Permission":
                             max_per_request = getattr(self.policy, "permissionMinutes", 60)
                             if req_mins > max_per_request:
-                                allowed_mins = max_per_request
+                                applied_mins = max_per_request
                                 excess_mins = req_mins - max_per_request
                                 # Limit the interval used for Late In forgiveness
-                                end = start + timedelta(minutes=allowed_mins)
+                                end = start + timedelta(minutes=applied_mins)
                                 
-                        intervals.append({"start": start, "end": end, "type": app_type})
+                        if app_type in ["Permission", "On Duty"]:
+                            intervals.append({"start": start, "end": end, "type": app_type})
                         
                         self.approval_snapshot.append({
                             "approvalId": str(req.get("_id", "")),
                             "approvalType": app_type,
                             "status": req.get("status"),
+                            "fromDate": rd.get("fromDate", rd.get("date")),
+                            "toDate": rd.get("toDate", rd.get("date")),
                             "fromTime": from_time_str,
                             "toTime": to_time_str,
+                            "fullDay": False,
                             "requestedMinutes": req_mins,
-                            "allowedMinutes": allowed_mins,
+                            "appliedMinutes": applied_mins,
                             "excessMinutes": excess_mins
                         })
         return intervals
@@ -209,7 +228,13 @@ class PolicyEngine:
             "approvalSnapshot": []
         }
         
+        # Normalization of Approvals (must be called before early returns to populate snapshot)
+        approval_intervals = self._normalize_approval_intervals()
+        metrics["approvalSnapshot"] = self.approval_snapshot
+        
         # 1. Leave / OD Override Check
+        is_full_day_override = False
+        override_status = None
         for req in self.approved_requests:
             if req.get("approvalType") in ["Leave", "On Duty"]:
                 rd = req.get("requestData", {})
@@ -217,25 +242,22 @@ class PolicyEngine:
                 if rd.get("fromTime") and rd.get("toTime"):
                     continue
                     
-                metrics["status"] = req.get("approvalType")
-                return metrics
+                is_full_day_override = True
+                override_status = req.get("approvalType")
+                break
                 
         # 2. Holiday Check
-        if self._is_holiday():
+        if not is_full_day_override and self._is_holiday():
             metrics["status"] = "Holiday"
             return metrics
             
         # 3. Week Off Check
-        if self.today_schedule.get("dayType") == "WEEKOFF":
+        if not is_full_day_override and self.today_schedule.get("dayType") == "WEEKOFF":
             metrics["status"] = "Week Off" if not self.raw_punches else "Week Off Worked"
             return metrics
 
-        # Normalization of Approvals (must be called before early returns to populate snapshot)
-        approval_intervals = self._normalize_approval_intervals()
-        metrics["approvalSnapshot"] = self.approval_snapshot
-
         # 4. Absent Check
-        if not self.raw_punches:
+        if not self.raw_punches and not is_full_day_override:
             metrics["status"] = "Absent"
             metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
             metrics["lopReason"] = "Missing Punches"
@@ -243,8 +265,8 @@ class PolicyEngine:
 
         working_intervals = self._normalize_working_intervals()
         
-        in_time = working_intervals[0][0]
-        out_time = working_intervals[-1][1]
+        in_time = working_intervals[0][0] if working_intervals else None
+        out_time = working_intervals[-1][1] if working_intervals else None
 
         metrics["inTime"] = in_time.isoformat() if in_time else None
         metrics["outTime"] = out_time.isoformat() if out_time else None
@@ -276,7 +298,7 @@ class PolicyEngine:
                 metrics["status"] = "Half Day"
                 metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
                 metrics["lopReason"] = "Missing Second Half"
-            elif in_time >= break_end:
+            elif in_time and in_time >= break_end:
                 metrics["status"] = "Half Day"
                 metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
                 metrics["lopReason"] = "Missing First Half"
@@ -370,6 +392,15 @@ class PolicyEngine:
                                 metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
                                 metrics["lopReason"] = "Early Out Beyond Threshold"
                                 metrics["halfDayCount"] += 0.5
-
+                                    
+        # Force Full-Day Override Rules
+        if is_full_day_override:
+            metrics["status"] = override_status
+            metrics["lopHours"] = 0.0
+            metrics["lopReason"] = None
+            expected = self.schedule.get("expectedWorkingHours", 0.0)
+            if metrics["effectiveHours"] < expected:
+                metrics["effectiveHours"] = expected
+                
         metrics["approvalSnapshot"] = self.approval_snapshot
         return metrics
