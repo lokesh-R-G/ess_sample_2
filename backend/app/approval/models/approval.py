@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 class ApprovalModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
+    employeeCode: Optional[str] = None
+    employeeName: Optional[str] = None
     reportingManagerEmployeeId: Optional[str] = None
     approvalType: str
     status: str = "PENDING"

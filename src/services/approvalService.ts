@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api, getStoredUser } from '../lib/api';
 
 export interface PolicyLimits {
   permissionMinutes: number;
@@ -33,6 +33,8 @@ export interface ApprovalSubmitPayload {
 export interface ApprovalResponse {
   id: string;
   employeeId: string;
+  employeeCode?: string;
+  employeeName?: string;
   reportingManagerEmployeeId?: string;
   approvalType: string;
   status: string;
@@ -55,5 +57,16 @@ export const approvalService = {
   getMyRequests: async (empId: string, status?: string): Promise<ApprovalResponse[]> => {
     const params = status ? `?status=${status}` : '';
     return api.get<ApprovalResponse[]>(`/v2/approval/inbox/employee/${empId}${params}`);
+  },
+
+  getManagerInbox: async (status?: string): Promise<ApprovalResponse[]> => {
+    const params = status ? `?status=${status}` : '';
+    return api.get<ApprovalResponse[]>(`/v2/approval/inbox/manager/me${params}`);
+  },
+
+  executeAction: async (approvalId: string, action: 'APPROVE' | 'REJECT' | 'CANCEL', remarks?: string): Promise<ApprovalResponse> => {
+    const user = getStoredUser<{ employeeId?: string, empId?: string }>();
+    const actedBy = user?.employeeId || user?.empId || 'unknown';
+    return api.post<ApprovalResponse>(`/v2/approval/${approvalId}/action`, { action, remarks, actedBy });
   }
 };

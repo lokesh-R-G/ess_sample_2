@@ -15,9 +15,45 @@ class ApprovalService:
         return datetime.now(timezone.utc)
 
     async def submit_request(self, data: ApprovalSubmit) -> ApprovalModel:
+        # Resolve the actual reporting manager securely
+        from bson import ObjectId
+        
+        emp_hist = await self.db.employee_employment_histories.find_one({
+            "employeeId": data.employeeId,
+            "isCurrent": True,
+            "deletedAt": None
+        })
+        
+        if not emp_hist:
+            raise HTTPException(status_code=400, detail="Employee employment history not found")
+            
+        manager_ref = emp_hist.get("reportingManagerEmployeeId") or emp_hist.get("reportingManagerId")
+        if not manager_ref:
+            raise HTTPException(status_code=400, detail="Reporting manager not mapped for this employee")
+            
+        manager_uuid = None
+        
+        # Check if it's an ObjectId (from V1 wizard)
+        if isinstance(manager_ref, str) and len(manager_ref) == 24:
+            try:
+                manager_doc = await self.db.employees.find_one({"_id": ObjectId(manager_ref)})
+                if manager_doc:
+                    manager_uuid = manager_doc.get("employeeId")
+            except Exception:
+                pass
+        
+        # If not resolved via ObjectId, maybe it's already a UUID or we just query by employeeId
+        if not manager_uuid:
+            manager_doc = await self.db.employees.find_one({"employeeId": manager_ref})
+            if manager_doc:
+                manager_uuid = manager_doc.get("employeeId")
+                
+        if not manager_uuid:
+            raise HTTPException(status_code=400, detail="Reporting manager identity could not be resolved")
+
         model = ApprovalModel(
             employeeId=data.employeeId,
-            reportingManagerEmployeeId=data.reportingManagerEmployeeId,
+            reportingManagerEmployeeId=manager_uuid,
             approvalType=data.approvalType,
             status="PENDING",
             requestData=data.requestData,
@@ -93,10 +129,43 @@ class ApprovalService:
             approval.remarks = action_data.remarks
             
         updated = await self.repo.update(approval_id, approval.model_dump(by_alias=True, exclude={"id"}))
+        if updated:
+            enriched = await self._enrich_approvals_with_employee_info([updated])
+            return enriched[0]
         return updated
 
-    async def get_manager_inbox(self, manager_emp_id: str, status: str = None):
-        return await self.repo.get_by_manager(manager_emp_id, status)
+    async def _enrich_approvals_with_employee_info(self, approvals):
+        if not approvals:
+            return approvals
+            
+        emp_ids = list(set(a.employeeId for a in approvals))
+        employees_cursor = self.db.employees.find({"employeeId": {"$in": emp_ids}})
+        employees = await employees_cursor.to_list(None)
+        emp_map = {e.get("employeeId"): e for e in employees}
+        
+        personals_cursor = self.db.employee_personals.find({"employeeId": {"$in": emp_ids}, "isCurrent": True})
+        personals = await personals_cursor.to_list(None)
+        personal_map = {p.get("employeeId"): p for p in personals}
+        
+        for a in approvals:
+            emp = emp_map.get(a.employeeId)
+            if emp:
+                a.employeeCode = emp.get("employeeCode")
+            
+            personal = personal_map.get(a.employeeId)
+            if personal and (personal.get("firstName") or personal.get("lastName")):
+                first = personal.get("firstName", "")
+                last = personal.get("lastName", "")
+                a.employeeName = f"{first} {last}".strip()
+            elif a.employeeCode:
+                a.employeeName = a.employeeCode
+                
+        return approvals
+
+    async def get_manager_inbox(self, manager_employee_id: str, status: str = None):
+        approvals = await self.repo.get_by_manager(manager_employee_id, status)
+        return await self._enrich_approvals_with_employee_info(approvals)
         
     async def get_employee_requests(self, emp_id: str, status: str = None):
-        return await self.repo.get_by_employee(emp_id, status)
+        approvals = await self.repo.get_by_employee(emp_id, status)
+        return await self._enrich_approvals_with_employee_info(approvals)

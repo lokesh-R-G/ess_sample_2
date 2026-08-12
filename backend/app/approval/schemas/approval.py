@@ -17,6 +17,8 @@ class ApprovalAction(BaseModel):
 class ApprovalResponse(BaseModel):
     id: str
     employeeId: str
+    employeeCode: Optional[str] = None
+    employeeName: Optional[str] = None
     reportingManagerEmployeeId: Optional[str] = None
     approvalType: str
     status: str

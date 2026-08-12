@@ -15,8 +15,8 @@ class ApprovalController:
     async def execute_action(self, approval_id: str, action: ApprovalAction) -> ApprovalModel:
         return await self.service.execute_action(approval_id, action)
 
-    async def get_manager_inbox(self, manager_emp_id: str, status: Optional[str] = None) -> List[ApprovalModel]:
-        return await self.service.get_manager_inbox(manager_manager_id=manager_emp_id, status=status)
+    async def get_manager_inbox(self, manager_employee_id: str, status: Optional[str] = None) -> List[ApprovalModel]:
+        return await self.service.get_manager_inbox(manager_employee_id=manager_employee_id, status=status)
     
     async def get_employee_requests(self, emp_id: str, status: Optional[str] = None) -> List[ApprovalModel]:
         return await self.service.get_employee_requests(emp_id, status)

@@ -15,7 +15,7 @@ class ActionRequest(BaseModel):
 @router.get("/pending/", response_model=List[Dict[str, Any]])
 async def get_pending_workflows(user: UserResponse = Depends(get_current_user)):
     db = get_database()
-    return await workflow_service.get_pending_workflows(db, user.empId)
+    return await workflow_service.get_pending_workflows(db, user.get("empId"))
 
 @router.post("/{workflow_id}/action/", response_model=Workflow)
 async def process_workflow_action(
@@ -30,7 +30,7 @@ async def process_workflow_action(
     if not wf_doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
         
-    if wf_doc.get("currentApproverId") != user.empId:
+    if wf_doc.get("currentApproverId") != user.get("empId"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to approve this workflow")
         
     if action_req.action not in ["APPROVED", "REJECTED", "RETURNED"]:
@@ -40,6 +40,6 @@ async def process_workflow_action(
         db=db,
         workflow_id=workflow_id,
         action=action_req.action,
-        acted_by=user.empId,
+        acted_by=user.get("empId"),
         remarks=action_req.remarks
     )
