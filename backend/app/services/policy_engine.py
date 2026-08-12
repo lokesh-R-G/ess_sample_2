@@ -339,54 +339,80 @@ class PolicyEngine:
 
         # Late / Early Out evaluation
         if in_time and metrics["status"] == "Present":
-            expected_in = self.schedule["actualStartDt"]
+            original_expected_in = self.schedule["actualStartDt"]
+            adjusted_expected_in = original_expected_in
+            
             # Permission Overrides
             for p in approval_intervals:
-                if expected_in and p["start"] <= expected_in <= p["end"]:
-                    expected_in = p["end"]
+                if adjusted_expected_in and p["start"] <= adjusted_expected_in <= p["end"]:
+                    adjusted_expected_in = p["end"]
 
-            if expected_in and in_time > expected_in:
-                late_mins = (in_time - expected_in).total_seconds() / 60.0
-                if late_mins > getattr(self.policy, "graceInMinutes", 0):
-                    if late_mins > getattr(self.policy, "lateInThresholdMinutes", 15):
-                        metrics["lateMinutes"] = int(late_mins)
-                        
-                        # Late Increment Rules
-                        current_lates = self.monthly_late_count + 1
-                        metrics["lateCount"] = current_lates
-                        metrics["lateIncrementApplied"] = True
-                        
-                        full_threshold = getattr(self.policy, "lateFullDayThreshold", None)
-                        half_threshold = getattr(self.policy, "lateHalfDayThreshold", None)
-                        inc_threshold = getattr(self.policy, "lateIncrementThreshold", None)
-                        
-                        if full_threshold and current_lates >= full_threshold:
-                            metrics["status"] = "Absent"
-                            metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
-                            metrics["lopReason"] = "Late Full Day Threshold Reached"
-                        elif half_threshold and current_lates >= half_threshold:
-                            metrics["status"] = "Half Day"
-                            metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
-                            metrics["lopReason"] = "Late Half Day Threshold Reached"
-                            metrics["halfDayCount"] += 0.5
-                        elif inc_threshold and current_lates % inc_threshold == 0:
-                            metrics["status"] = "Half Day"
-                            metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
-                            metrics["lopReason"] = "Late Increment Threshold Reached"
-                            metrics["halfDayCount"] += 0.5
+            raw_late_mins = 0.0
+            if original_expected_in and in_time > original_expected_in:
+                raw_late_mins = (in_time - original_expected_in).total_seconds() / 60.0
+                
+            effective_late_mins = 0.0
+            if adjusted_expected_in and in_time > adjusted_expected_in:
+                effective_late_mins = (in_time - adjusted_expected_in).total_seconds() / 60.0
+                
+            late_occurrence = False
+            if raw_late_mins > getattr(self.policy, "graceInMinutes", 0):
+                if raw_late_mins > getattr(self.policy, "lateInThresholdMinutes", 15):
+                    late_occurrence = True
+                    
+            if late_occurrence:
+                metrics["lateMinutes"] = int(effective_late_mins)
+                
+                # Late Increment Rules
+                current_lates = self.monthly_late_count + 1
+                metrics["lateCount"] = current_lates
+                metrics["lateIncrementApplied"] = True
+                
+                full_threshold = getattr(self.policy, "lateFullDayThreshold", None)
+                half_threshold = getattr(self.policy, "lateHalfDayThreshold", None)
+                inc_threshold = getattr(self.policy, "lateIncrementThreshold", None)
+                
+                if full_threshold and current_lates >= full_threshold:
+                    metrics["status"] = "Absent"
+                    metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
+                    metrics["lopReason"] = "Late Full Day Threshold Reached"
+                elif half_threshold and current_lates >= half_threshold:
+                    metrics["status"] = "Half Day"
+                    metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                    metrics["lopReason"] = "Late Half Day Threshold Reached"
+                    metrics["halfDayCount"] += 0.5
+                elif inc_threshold and current_lates % inc_threshold == 0:
+                    metrics["status"] = "Half Day"
+                    metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                    metrics["lopReason"] = "Late Increment Threshold Reached"
+                    metrics["halfDayCount"] += 0.5
 
             # Early out Logic
             if out_time:
-                expected_out = self.schedule["actualEndDt"]
+                original_expected_out = self.schedule["actualEndDt"]
+                adjusted_expected_out = original_expected_out
+                
                 for p in approval_intervals:
-                    if expected_out and p["start"] <= expected_out <= p["end"]:
-                        expected_out = p["start"]
+                    if adjusted_expected_out and p["start"] <= adjusted_expected_out <= p["end"]:
+                        adjusted_expected_out = p["start"]
 
-                if expected_out and out_time < expected_out:
-                    early_mins = (expected_out - out_time).total_seconds() / 60.0
-                    if early_mins > getattr(self.policy, "graceOutMinutes", 0):
-                        if early_mins > getattr(self.policy, "earlyOutThresholdMinutes", 15):
-                            metrics["earlyOutMinutes"] = int(early_mins)
+                raw_early_mins = 0.0
+                if original_expected_out and out_time < original_expected_out:
+                    raw_early_mins = (original_expected_out - out_time).total_seconds() / 60.0
+                    
+                effective_early_mins = 0.0
+                if adjusted_expected_out and out_time < adjusted_expected_out:
+                    effective_early_mins = (adjusted_expected_out - out_time).total_seconds() / 60.0
+                    
+                early_occurrence = False
+                if raw_early_mins > getattr(self.policy, "graceOutMinutes", 0):
+                    if raw_early_mins > getattr(self.policy, "earlyOutThresholdMinutes", 15):
+                        early_occurrence = True
+                        
+                if early_occurrence:
+                    metrics["earlyOutMinutes"] = int(effective_early_mins)
+                    if effective_early_mins > getattr(self.policy, "graceOutMinutes", 0):
+                        if effective_early_mins > getattr(self.policy, "earlyOutThresholdMinutes", 15):
                             if metrics["status"] == "Present":
                                 metrics["status"] = "Half Day"
                                 metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
