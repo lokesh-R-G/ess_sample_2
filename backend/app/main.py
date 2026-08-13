@@ -12,6 +12,7 @@ from app.auth.forgot_password.routes.router import router as forgot_password_rou
 from app.api.routes.health import router as health_router
 from app.api.routes.leave import router as leave_router
 from app.api.routes.dashboard_v2 import router as dashboard_v2_router
+from app.api.routes.profile_v2 import router as profile_v2_router
 from app.api.routes.leave_v2 import router as leave_v2_router
 from app.api.routes.payslip import router as payslip_router
 from app.api.routes.profile import router as profile_router
@@ -130,6 +131,7 @@ app.include_router(v2_salary_router, prefix="/api/v2/salary")
 app.include_router(v2_policy_router, prefix="/api/v2/attendance-policy")
 app.include_router(v2_permission_router, prefix="/api/v2/permission")
 app.include_router(v2_attendance_router, prefix="/api/v2/attendance")
+app.include_router(profile_v2_router, prefix="/api/v2/employees")
 app.include_router(dashboard_v2_router, prefix="/api/v2")
 app.include_router(leave_v2_router, prefix="/api")
 from app.api.routes.leave_policy_v2 import router as leave_policy_v2_router

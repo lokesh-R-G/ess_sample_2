@@ -12,30 +12,55 @@ export interface LoginResponse {
 }
 
 export interface UserProfile {
-  empId: string;
-  employeeId?: string | null;
-  employeeCode?: string | null;
-  role: 'Employee' | 'Admin';
-  firstLogin: boolean;
-  name?: string;
-  designation?: string;
-  department?: string;
-  branch?: string;
-  email?: string;
-  phone?: string;
-  joiningDate?: string;
-  employeeType?: string;
-  reportingTo?: string;
-  address?: string;
-  bankDetails?: {
-    bankName?: string;
-    accountNumber?: string;
-    ifscCode?: string;
+  personal: {
+    employeeId?: string;
+    employeeCode?: string;
+    firstName?: string;
+    lastName?: string;
+    dob?: string;
+    gender?: string;
+    bloodGroup?: string;
+    maritalStatus?: string;
   };
-  emergencyContact?: {
+  contact: {
+    mobilePhone?: string;
+    personalEmail?: string;
+    workEmail?: string;
+  };
+  address: {
+    currentAddressLine1?: string;
+    currentCity?: string;
+    currentState?: string;
+    currentCountry?: string;
+    currentPincode?: string;
+  };
+  emergencyContact: {
     name?: string;
     relationship?: string;
     phone?: string;
+  };
+  bank: {
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    accountType?: string;
+  };
+  employment: {
+    dateOfJoining?: string;
+    organization?: string;
+    branch?: string;
+    department?: string;
+    designation?: string;
+    reportingManager?: string;
+    employmentType?: string;
+    status?: string;
+  };
+  permissions: {
+    canEditMobile: boolean;
+    canEditAddress: boolean;
+    canEditBank: boolean;
+    canEditEmergencyContact: boolean;
+    canEditEmployment: boolean;
   };
 }
 
@@ -54,11 +79,11 @@ export async function getCurrentUser() {
 }
 
 export async function getProfile() {
-  return api.get<UserProfile>('/v1/profile/me/');
+  return api.get<UserProfile>('/v2/employees/me/profile/');
 }
 
 export async function updateProfile(data: any) {
-  return api.put<UserProfile>('/v1/profile/me/', data);
+  return api.patch<UserProfile>('/v2/employees/me/profile/', data);
 }
 
 export function logout() {
