@@ -1,0 +1,2772 @@
+[
+  {
+    "path": "/openapi.json",
+    "method": "GET",
+    "name": "openapi"
+  },
+  {
+    "path": "/docs",
+    "method": "GET",
+    "name": "swagger_ui_html"
+  },
+  {
+    "path": "/docs/oauth2-redirect",
+    "method": "GET",
+    "name": "swagger_ui_redirect"
+  },
+  {
+    "path": "/redoc",
+    "method": "GET",
+    "name": "redoc_html"
+  },
+  {
+    "path": "/api/v1/health/",
+    "method": "GET",
+    "name": "health"
+  },
+  {
+    "path": "/api/v1/auth/login/",
+    "method": "POST",
+    "name": "login"
+  },
+  {
+    "path": "/api/v1/auth/change-password/",
+    "method": "POST",
+    "name": "update_password"
+  },
+  {
+    "path": "/api/v1/auth/me/",
+    "method": "GET",
+    "name": "me"
+  },
+  {
+    "path": "/api/v1/auth/forgot-password/",
+    "method": "POST",
+    "name": "forgot_password"
+  },
+  {
+    "path": "/api/v1/auth/verify-reset-otp/",
+    "method": "POST",
+    "name": "verify_reset_otp"
+  },
+  {
+    "path": "/api/v1/auth/reset-password/",
+    "method": "POST",
+    "name": "reset_password"
+  },
+  {
+    "path": "/api/v1/profile/me/",
+    "method": "GET",
+    "name": "me"
+  },
+  {
+    "path": "/api/v1/profile/me/",
+    "method": "PUT",
+    "name": "update_profile"
+  },
+  {
+    "path": "/api/v1/profile/{emp_id}/",
+    "method": "PUT",
+    "name": "admin_update_profile"
+  },
+  {
+    "path": "/api/v1/dashboard/me/",
+    "method": "GET",
+    "name": "me"
+  },
+  {
+    "path": "/api/v1/attendance/me/",
+    "method": "GET",
+    "name": "my_attendance"
+  },
+  {
+    "path": "/api/v1/attendance/{emp_id}/",
+    "method": "GET",
+    "name": "attendance_by_employee"
+  },
+  {
+    "path": "/api/v1/deprecated_leave/me/",
+    "method": "GET",
+    "name": "my_leave_requests"
+  },
+  {
+    "path": "/api/v1/deprecated_leave/me/",
+    "method": "POST",
+    "name": "create_leave_request"
+  },
+  {
+    "path": "/api/v1/deprecated_leave/pending/",
+    "method": "GET",
+    "name": "pending_leaves"
+  },
+  {
+    "path": "/api/v1/deprecated_leave/{req_id}/approve/",
+    "method": "POST",
+    "name": "approve_leave"
+  },
+  {
+    "path": "/api/v1/deprecated_leave/{req_id}/reject/",
+    "method": "POST",
+    "name": "reject_leave"
+  },
+  {
+    "path": "/api/v1/payslip/me/",
+    "method": "GET",
+    "name": "my_payslips"
+  },
+  {
+    "path": "/api/v1/admin/summary/",
+    "method": "GET",
+    "name": "summary"
+  },
+  {
+    "path": "/api/v1/admin/invite-employee/",
+    "method": "POST",
+    "name": "invite_employee"
+  },
+  {
+    "path": "/api/v1/admin/create-user/",
+    "method": "POST",
+    "name": "create_user"
+  },
+  {
+    "path": "/api/v1/admin/users/",
+    "method": "GET",
+    "name": "get_users"
+  },
+  {
+    "path": "/api/v1/admin/users/{emp_id}/status/",
+    "method": "PUT",
+    "name": "update_user_status"
+  },
+  {
+    "path": "/api/v1/admin/essl-config/{branch}/",
+    "method": "PUT",
+    "name": "update_essl_config"
+  },
+  {
+    "path": "/api/v1/admin/attendance-summary/",
+    "method": "GET",
+    "name": "get_attendance_summary"
+  },
+  {
+    "path": "/api/v1/sync/essl/",
+    "method": "POST",
+    "name": "sync_essl"
+  },
+  {
+    "path": "/api/v1/sync/my-data/",
+    "method": "POST",
+    "name": "sync_my_data"
+  },
+  {
+    "path": "/api/v1/policy/attendance/",
+    "method": "GET",
+    "name": "get_policy"
+  },
+  {
+    "path": "/api/v1/policy/attendance/",
+    "method": "PUT",
+    "name": "update_policy"
+  },
+  {
+    "path": "/api/v1/workflows/pending/",
+    "method": "GET",
+    "name": "get_pending_workflows"
+  },
+  {
+    "path": "/api/v1/workflows/{workflow_id}/action/",
+    "method": "POST",
+    "name": "process_workflow_action"
+  },
+  {
+    "path": "/api/v1/miss-punch/",
+    "method": "POST",
+    "name": "create_request"
+  },
+  {
+    "path": "/api/v1/miss-punch/me/",
+    "method": "GET",
+    "name": "get_my_requests"
+  },
+  {
+    "path": "/api/v2/organization/organizations/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/organizations/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/organizations/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/organizations/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/organizations/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/companies/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/companies/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/companies/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/companies/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/companies/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/branches/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/branches/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/branches/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/branches/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/branches/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/departments/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/departments/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/departments/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/departments/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/departments/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/designations/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/designations/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/designations/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/designations/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/designations/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/roles/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/roles/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/roles/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/roles/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/roles/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/shifts/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/shifts/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/shifts/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/shifts/history/{code}",
+    "method": "GET",
+    "name": "get_history"
+  },
+  {
+    "path": "/api/v2/organization/shifts/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/shifts/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/essl-machines/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/essl-machines/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/essl-machines/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/essl-machines/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/essl-machines/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/salary-components/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/salary-components/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/salary-components/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/salary-components/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/salary-components/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/salary-structures/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/organization/salary-structures/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/organization/salary-structures/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/organization/salary-structures/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/organization/salary-structures/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/organization/search/",
+    "method": "GET",
+    "name": "global_search"
+  },
+  {
+    "path": "/api/v2/employee/employees/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employees/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employees/directory/",
+    "method": "GET",
+    "name": "get_directory"
+  },
+  {
+    "path": "/api/v2/employee/employees/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employees/{id}/history",
+    "method": "GET",
+    "name": "get_history"
+  },
+  {
+    "path": "/api/v2/employee/employees/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employees/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeePersonals/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeePersonals/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeePersonals/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeePersonals/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeePersonals/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeContacts/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeContacts/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeContacts/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeContacts/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeContacts/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeAddresss/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeAddresss/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeAddresss/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeAddresss/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeAddresss/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeBanks/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeBanks/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeBanks/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeBanks/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeBanks/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeEmergencyContacts/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeEmergencyContacts/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeEmergencyContacts/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeEmergencyContacts/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeEmergencyContacts/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeFamilys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeFamilys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeFamilys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeFamilys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeFamilys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeEducations/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeEducations/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeEducations/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeEducations/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeEducations/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeExperiences/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeExperiences/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeExperiences/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeExperiences/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeExperiences/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeDocuments/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeDocuments/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeDocuments/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeDocuments/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeDocuments/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employmentHistorys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employmentHistorys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employmentHistorys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employmentHistorys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employmentHistorys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeShiftAssignments/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeShiftAssignments/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeShiftAssignments/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeShiftAssignments/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeShiftAssignments/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeRoleAssignments/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeRoleAssignments/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeRoleAssignments/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeRoleAssignments/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeRoleAssignments/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeReportings/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeReportings/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeReportings/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeReportings/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeReportings/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeProbations/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeProbations/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeProbations/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeProbations/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeProbations/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeConfirmations/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeConfirmations/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeConfirmations/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeConfirmations/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeConfirmations/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeExits/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeExits/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeExits/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeExits/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeExits/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeeGovernmentIds/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeeGovernmentIds/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeeGovernmentIds/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeeGovernmentIds/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeeGovernmentIds/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/employee/employeePayrollConfigs/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/employee/employeePayrollConfigs/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/employee/employeePayrollConfigs/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/employee/employeePayrollConfigs/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/employee/employeePayrollConfigs/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryComponents/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryComponents/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryComponents/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryComponents/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryComponents/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructures/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructures/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructures/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructures/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructures/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureVersions/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureVersions/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureVersions/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureVersions/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureVersions/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureComponents/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureComponents/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureComponents/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureComponents/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryStructureComponents/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryRules/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryRules/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryRules/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryRules/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryRules/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryPolicys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryPolicys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryPolicys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryPolicys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryPolicys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalarys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalarys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalarys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalarys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalarys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryComponents/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryComponents/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryComponents/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryComponents/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryComponents/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryRevisions/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryRevisions/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryRevisions/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryRevisions/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryRevisions/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryHistorys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryHistorys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryHistorys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryHistorys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/employeeSalaryHistorys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/salaryGrades/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/salaryGrades/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/salaryGrades/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/salaryGrades/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/salaryGrades/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/payGroups/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/payGroups/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/payGroups/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/payGroups/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/payGroups/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/salary/costCenters/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/salary/costCenters/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/salary/costCenters/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/salary/costCenters/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/salary/costCenters/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance-policy/attendancePolicys/",
+    "method": "GET",
+    "name": "get_all_policies"
+  },
+  {
+    "path": "/api/v2/attendance-policy/attendancePolicys/{policy_id}",
+    "method": "GET",
+    "name": "get_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/attendancePolicys/history/{code}",
+    "method": "GET",
+    "name": "get_policy_history"
+  },
+  {
+    "path": "/api/v2/attendance-policy/attendancePolicys/",
+    "method": "POST",
+    "name": "create_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/attendancePolicys/{policy_id}",
+    "method": "PUT",
+    "name": "update_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/attendancePolicys/{policy_id}",
+    "method": "DELETE",
+    "name": "delete_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/weekly-off-policy/",
+    "method": "GET",
+    "name": "get_all_policies"
+  },
+  {
+    "path": "/api/v2/attendance-policy/weekly-off-policy/{policy_id}",
+    "method": "GET",
+    "name": "get_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/weekly-off-policy/history/{code}",
+    "method": "GET",
+    "name": "get_policy_history"
+  },
+  {
+    "path": "/api/v2/attendance-policy/weekly-off-policy/",
+    "method": "POST",
+    "name": "create_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/weekly-off-policy/{policy_id}",
+    "method": "PUT",
+    "name": "update_policy"
+  },
+  {
+    "path": "/api/v2/attendance-policy/weekly-off-policy/{policy_id}",
+    "method": "DELETE",
+    "name": "delete_policy"
+  },
+  {
+    "path": "/api/v2/permission/permissionRequests/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionRequests/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionRequests/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionRequests/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionRequests/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/permissionApprovals/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionApprovals/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionApprovals/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionApprovals/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionApprovals/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/permissionBalances/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionBalances/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionBalances/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionBalances/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionBalances/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/permissionUsages/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionUsages/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionUsages/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionUsages/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionUsages/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/permissionOverflows/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionOverflows/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionOverflows/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionOverflows/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionOverflows/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/permissionHistorys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionHistorys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionHistorys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionHistorys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionHistorys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/permissionAttachments/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/permissionAttachments/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/permissionAttachments/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/permissionAttachments/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/permissionAttachments/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/graceRequests/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/graceRequests/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/graceRequests/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/graceRequests/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/graceRequests/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/graceApprovals/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/graceApprovals/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/graceApprovals/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/graceApprovals/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/graceApprovals/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/permission/graceBalance/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/permission/graceBalance/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/permission/graceBalance/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/permission/graceBalance/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/permission/graceBalance/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendances/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendances/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendances/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendances/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendances/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceLogs/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceLogs/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceLogs/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceLogs/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceLogs/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/dailyAttendances/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/dailyAttendances/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/dailyAttendances/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/dailyAttendances/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/dailyAttendances/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/monthlyAttendances/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/monthlyAttendances/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/monthlyAttendances/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/monthlyAttendances/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/monthlyAttendances/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/lateLogs/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/lateLogs/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/lateLogs/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/lateLogs/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/lateLogs/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/graceLogs/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/graceLogs/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/graceLogs/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/graceLogs/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/graceLogs/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceAdjustments/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceAdjustments/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceAdjustments/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceAdjustments/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceAdjustments/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceHistorys/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceHistorys/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceHistorys/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceHistorys/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceHistorys/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalculations/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalculations/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalculations/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalculations/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalculations/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalendar/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalendar/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalendar/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalendar/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceCalendar/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceSummary/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceSummary/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceSummary/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceSummary/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceSummary/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/leaveConversionLedger/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/leaveConversionLedger/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/leaveConversionLedger/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/leaveConversionLedger/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/leaveConversionLedger/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceException/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceException/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceException/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceException/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceException/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceReplayQueue/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceReplayQueue/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceReplayQueue/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceReplayQueue/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceReplayQueue/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceEngineHealth/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceEngineHealth/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceEngineHealth/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceEngineHealth/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/attendanceEngineHealth/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/close/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/attendance/close/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/attendance/close/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/attendance/close/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/attendance/close/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/attendance/recalculate",
+    "method": "POST",
+    "name": "recalculate_attendance"
+  },
+  {
+    "path": "/api/v2/attendance/correction-logs/",
+    "method": "GET",
+    "name": "get_all_logs"
+  },
+  {
+    "path": "/api/v2/attendance/correction-logs/entity/{entity_code}",
+    "method": "GET",
+    "name": "get_entity_history"
+  },
+  {
+    "path": "/api/v2/attendance/correction-logs/apply",
+    "method": "POST",
+    "name": "apply_historical_correction"
+  },
+  {
+    "path": "/api/v2/attendance/permission-ledger/me",
+    "method": "GET",
+    "name": "get_my_ledger"
+  },
+  {
+    "path": "/api/v2/leave/balances",
+    "method": "GET",
+    "name": "get_leave_balances"
+  },
+  {
+    "path": "/api/v2/leave-policies",
+    "method": "GET",
+    "name": "list_policies"
+  },
+  {
+    "path": "/api/v2/leave-policies/active",
+    "method": "GET",
+    "name": "get_active_policy"
+  },
+  {
+    "path": "/api/v2/leave-policies",
+    "method": "POST",
+    "name": "create_policy"
+  },
+  {
+    "path": "/api/v2/leave-policies/{policy_code}",
+    "method": "GET",
+    "name": "get_policy"
+  },
+  {
+    "path": "/api/v2/leave-policies/{policy_code}/history",
+    "method": "GET",
+    "name": "get_policy_history"
+  },
+  {
+    "path": "/api/v2/leave/leaveBalance/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveBalance/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveBalance/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveBalance/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveBalance/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveLedger/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveLedger/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveLedger/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveLedger/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveLedger/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveApplication/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveApplication/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveApplication/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveApplication/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveApplication/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveApproval/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveApproval/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveApproval/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveApproval/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveApproval/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveHistory/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveHistory/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveHistory/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveHistory/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveHistory/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveAdjustment/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveAdjustment/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveAdjustment/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveAdjustment/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveAdjustment/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveCancellation/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveCancellation/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveCancellation/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveCancellation/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveCancellation/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveAttachment/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveAttachment/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveAttachment/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveAttachment/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveAttachment/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveEncashment/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveEncashment/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveEncashment/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveEncashment/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveEncashment/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/compOffBalance/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/compOffBalance/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/compOffBalance/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/compOffBalance/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/compOffBalance/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/compOffLedger/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/compOffLedger/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/compOffLedger/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/compOffLedger/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/compOffLedger/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveCalendar/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveCalendar/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveCalendar/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveCalendar/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveCalendar/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveSummary/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveSummary/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveSummary/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveSummary/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveSummary/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/attendancePenaltyLedgerProcessing/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/attendancePenaltyLedgerProcessing/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/attendancePenaltyLedgerProcessing/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/attendancePenaltyLedgerProcessing/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/attendancePenaltyLedgerProcessing/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/leaveReservation/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/leaveReservation/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/leaveReservation/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/leaveReservation/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/leaveReservation/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/close/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/leave/close/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/leave/close/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/leave/close/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/leave/close/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/leave/dashboard/",
+    "method": "GET",
+    "name": "dashboard"
+  },
+  {
+    "path": "/api/v2/payroll-policy/payroll-policy/activate",
+    "method": "POST",
+    "name": "activate_policy"
+  },
+  {
+    "path": "/api/v2/deduction-policy/deduction-policy/activate",
+    "method": "POST",
+    "name": "activate_policy"
+  },
+  {
+    "path": "/api/v2/reimbursement-policy/reimbursement-policy/activate",
+    "method": "POST",
+    "name": "activate_policy"
+  },
+  {
+    "path": "/api/v2/payroll/payroll-settings/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/payroll/payroll-settings/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/payroll/payroll-settings/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/payroll/payroll-settings/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/payroll/payroll-settings/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/payroll/pf-rules/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/payroll/pf-rules/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/payroll/pf-rules/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/payroll/pf-rules/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/payroll/pf-rules/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/payroll/esi-rules/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/payroll/esi-rules/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/payroll/esi-rules/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/payroll/esi-rules/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/payroll/esi-rules/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/payroll/pt-rules/",
+    "method": "POST",
+    "name": "create"
+  },
+  {
+    "path": "/api/v2/payroll/pt-rules/",
+    "method": "GET",
+    "name": "get_all"
+  },
+  {
+    "path": "/api/v2/payroll/pt-rules/{id}",
+    "method": "GET",
+    "name": "get_by_id"
+  },
+  {
+    "path": "/api/v2/payroll/pt-rules/{id}",
+    "method": "PUT",
+    "name": "update"
+  },
+  {
+    "path": "/api/v2/payroll/pt-rules/{id}",
+    "method": "DELETE",
+    "name": "delete"
+  },
+  {
+    "path": "/api/v2/payroll/calculate-preview/",
+    "method": "POST",
+    "name": "calculate_preview"
+  },
+  {
+    "path": "/api/v2/payroll/calculate-gross",
+    "method": "POST",
+    "name": "calculate_gross_only"
+  },
+  {
+    "path": "/api/v2/payroll/assign/",
+    "method": "POST",
+    "name": "assign_salary"
+  },
+  {
+    "path": "/api/v2/payroll/process",
+    "method": "POST",
+    "name": "process_payroll"
+  },
+  {
+    "path": "/api/v2/payroll/lock",
+    "method": "POST",
+    "name": "lock_payroll"
+  },
+  {
+    "path": "/api/v2/deduction/deduction/manual-entry",
+    "method": "POST",
+    "name": "manual_entry"
+  },
+  {
+    "path": "/api/v2/deduction/deduction/calculate",
+    "method": "POST",
+    "name": "calculate_deductions"
+  },
+  {
+    "path": "/api/v2/reimbursement/reimbursement/process-trip-sheet",
+    "method": "POST",
+    "name": "process_trip"
+  },
+  {
+    "path": "/api/v2/payslip/payslip/generate",
+    "method": "POST",
+    "name": "generate_payslips"
+  },
+  {
+    "path": "/api/v2/payslip/payslip/publish",
+    "method": "POST",
+    "name": "publish_payslips"
+  },
+  {
+    "path": "/api/v2/payslip/payslip/regenerate",
+    "method": "POST",
+    "name": "regenerate_payslip"
+  },
+  {
+    "path": "/api/v2/payslip/payslip/email",
+    "method": "POST",
+    "name": "email_payslip"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/",
+    "method": "GET",
+    "name": "get_all_calendars"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}",
+    "method": "GET",
+    "name": "get_calendar"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/history/{code}",
+    "method": "GET",
+    "name": "get_calendar_history"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/",
+    "method": "POST",
+    "name": "create_calendar"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}",
+    "method": "PUT",
+    "name": "update_calendar"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}",
+    "method": "DELETE",
+    "name": "delete_calendar"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}/dates",
+    "method": "GET",
+    "name": "get_calendar_dates"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}/dates/history/{code}",
+    "method": "GET",
+    "name": "get_date_history"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}/dates",
+    "method": "POST",
+    "name": "create_calendar_date"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}/dates/{date_id}",
+    "method": "PUT",
+    "name": "update_calendar_date"
+  },
+  {
+    "path": "/api/v2/holiday/holiday-calendar/{calendar_id}/dates/{date_id}",
+    "method": "DELETE",
+    "name": "delete_calendar_date"
+  },
+  {
+    "path": "/api/v2/compliance/compliance/pf/register",
+    "method": "POST",
+    "name": "register_pf"
+  },
+  {
+    "path": "/api/v2/compliance/compliance/pt/register",
+    "method": "POST",
+    "name": "register_pt"
+  },
+  {
+    "path": "/api/v2/workflow/workflow/start",
+    "method": "POST",
+    "name": "start_workflow"
+  },
+  {
+    "path": "/api/v2/audit/audit/logs",
+    "method": "GET",
+    "name": "get_logs"
+  },
+  {
+    "path": "/api/v2/ess/ess/dashboard",
+    "method": "GET",
+    "name": "ess_dashboard"
+  },
+  {
+    "path": "/api/v2/ess/ess/payslips",
+    "method": "GET",
+    "name": "ess_payslips"
+  },
+  {
+    "path": "/api/v2/mss/mss/dashboard",
+    "method": "GET",
+    "name": "mss_dashboard"
+  },
+  {
+    "path": "/api/v2/mss/mss/approvals",
+    "method": "GET",
+    "name": "mss_approvals"
+  },
+  {
+    "path": "/api/v2/organization-policy/organization-policy/create",
+    "method": "POST",
+    "name": "create_org_policy"
+  },
+  {
+    "path": "/api/v2/organization-policy/organization-policy/publish",
+    "method": "POST",
+    "name": "publish_org_policy"
+  },
+  {
+    "path": "/api/v2/calendar/calendar/company",
+    "method": "GET",
+    "name": "get_company_calendar"
+  },
+  {
+    "path": "/api/v2/scheduler/config",
+    "method": "GET",
+    "name": "get_scheduler_config"
+  },
+  {
+    "path": "/api/v2/scheduler/config/{job_key}",
+    "method": "PUT",
+    "name": "update_scheduler_config"
+  },
+  {
+    "path": "/api/v2/report/report/attendance",
+    "method": "GET",
+    "name": "generate_attendance_report"
+  },
+  {
+    "path": "/api/v2/pdf/pdf/generate",
+    "method": "POST",
+    "name": "generate_pdf"
+  },
+  {
+    "path": "/api/v2/email/email/send-test",
+    "method": "POST",
+    "name": "send_test_email"
+  },
+  {
+    "path": "/api/v2/approval/",
+    "method": "POST",
+    "name": "submit_approval"
+  },
+  {
+    "path": "/api/v2/approval/{approval_id}/action",
+    "method": "POST",
+    "name": "execute_action"
+  },
+  {
+    "path": "/api/v2/approval/inbox/manager/me",
+    "method": "GET",
+    "name": "get_my_manager_inbox"
+  },
+  {
+    "path": "/api/v2/approval/inbox/manager/{manager_employee_id}",
+    "method": "GET",
+    "name": "get_manager_inbox"
+  },
+  {
+    "path": "/api/v2/approval/inbox/employee/me",
+    "method": "GET",
+    "name": "get_my_employee_requests"
+  },
+  {
+    "path": "/api/v2/approval/inbox/employee/{emp_id}",
+    "method": "GET",
+    "name": "get_employee_requests"
+  }
+]

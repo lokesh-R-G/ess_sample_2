@@ -181,7 +181,7 @@ async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_
 def infer_attendance_status(record: dict) -> str:
     status = record.get("status")
     # Support both V1 (lowercase) and V2 (capitalized) status types
-    if status in {"present", "absent", "leave", "weekoff", "od", "partial", "On Duty", "Absent", "Holiday", "Week Off", "Week Off Worked", "Half Day", "Present"}:
+    if status in {"present", "absent", "leave", "weekoff", "od", "partial", "On Duty", "Absent", "Holiday", "Week Off", "Week Off Worked", "Half Day", "Present", "Leave"}:
         return status
 
     # check common timestamp fields used by daily summaries
