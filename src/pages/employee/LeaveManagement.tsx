@@ -6,6 +6,7 @@ import { DashboardLayout } from '../../components/layout';
 import { DonutChart } from '../../components/charts';
 import { createLeaveRequest, getLeaveData, LeaveApplication, LeaveBalanceItem } from '../../services/leaveService';
 import { approvalService, PermissionLedger, ApprovalResponse } from '../../services/approvalService';
+import { getActiveLeavePolicyV2, LeaveTypeConfig } from '../../services/leavePolicyService';
 import { useAuth } from '../../context/AuthContext';
 
 export const LeaveManagement: React.FC = () => {
@@ -29,6 +30,9 @@ export const LeaveManagement: React.FC = () => {
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Dynamic Leave Types
+  const [leaveTypes, setLeaveTypes] = useState<LeaveTypeConfig[]>([]);
 
   // Form Data
   const [leaveFormData, setLeaveFormData] = useState({ leaveType: '', fromDate: '', toDate: '', reason: '' });
@@ -47,12 +51,19 @@ export const LeaveManagement: React.FC = () => {
       
       // Load V2 Approvals & Ledger
       if (user?.employeeId) {
-        const [ledgerRes, approvalsRes] = await Promise.all([
+        const [ledgerRes, approvalsRes, policyRes] = await Promise.all([
           approvalService.getPermissionLedger().catch(() => null),
-          approvalService.getMyRequests(user.employeeId)
+          approvalService.getMyRequests(user.employeeId),
+          getActiveLeavePolicyV2().catch(() => null)
         ]);
         setPermissionLedger(ledgerRes);
         setApprovalRequests(approvalsRes);
+        if (policyRes) {
+          setLeaveTypes(policyRes.leaveTypes.filter(lt => lt.enabled));
+        } else {
+          // Fallback if no active policy is found
+          setLeaveTypes([]);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load data');
@@ -65,11 +76,12 @@ export const LeaveManagement: React.FC = () => {
     loadAllData();
   }, [user]);
 
-  // V2 Leave Submission
   const handleLeaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (!user?.employeeId) throw new Error("Employee ID missing");
       await createLeaveRequest({
+        employeeId: user.employeeId,
         requestType: 'leave',
         leaveType: leaveFormData.leaveType,
         fromDate: leaveFormData.fromDate,
@@ -426,11 +438,9 @@ export const LeaveManagement: React.FC = () => {
       {/* Leave Modal */}
       <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="Apply Leave" size="md">
         <form onSubmit={handleLeaveSubmit} className="space-y-4">
-          <Select label="Leave Type" options={[
-            {value: 'SL', label: 'Sick Leave (SL)'},
-            {value: 'CL', label: 'Casual Leave (CL)'},
-            {value: 'EL', label: 'Earned Leave (EL)'}
-          ]} value={leaveFormData.leaveType} onChange={e => setLeaveFormData({...leaveFormData, leaveType: e.target.value})} required />
+          <Select label="Leave Type" options={
+            leaveTypes.map(lt => ({value: lt.code, label: `${lt.name} (${lt.code})`}))
+          } value={leaveFormData.leaveType} onChange={e => setLeaveFormData({...leaveFormData, leaveType: e.target.value})} required />
           <div className="grid grid-cols-2 gap-4">
             <Input label="From Date" type="date" value={leaveFormData.fromDate} onChange={e => setLeaveFormData({...leaveFormData, fromDate: e.target.value})} required />
             <Input label="To Date" type="date" value={leaveFormData.toDate} onChange={e => setLeaveFormData({...leaveFormData, toDate: e.target.value})} required />

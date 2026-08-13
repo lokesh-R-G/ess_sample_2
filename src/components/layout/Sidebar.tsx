@@ -47,6 +47,7 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true },
   { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true },
   { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true },
+  { path: '/admin/leave-policy', label: 'Leave Policy', icon: Settings, adminOnly: true },
   { path: '/admin/weekly-off-policy', label: 'Weekly Off', icon: Settings, adminOnly: true },
   { path: '/admin/approvals', label: 'Approvals', icon: FileText, adminOnly: true },
   { path: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },

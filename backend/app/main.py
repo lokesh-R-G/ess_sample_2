@@ -25,7 +25,6 @@ from app.salary.routes.router import salary_router as v2_salary_router
 from app.attendance_policy.routes.router import attendance_policy_router as v2_policy_router
 from app.permission.routes.router import permission_router as v2_permission_router
 from app.attendance_v2.routes.router import attendance_v2_router as v2_attendance_router
-from app.leave_policy.routes.router import leave_policy_router as v2_leave_policy_router
 from app.leave.routes.router import leave_router as v2_leave_router
 from app.payroll_policy.routes.router import router as v2_payroll_policy_router
 from app.deduction_policy.routes.router import router as v2_deduction_policy_router
@@ -133,7 +132,8 @@ app.include_router(v2_policy_router, prefix="/api/v2/attendance-policy")
 app.include_router(v2_permission_router, prefix="/api/v2/permission")
 app.include_router(v2_attendance_router, prefix="/api/v2/attendance")
 app.include_router(leave_v2_router, prefix="/api")
-app.include_router(v2_leave_policy_router, prefix="/api/v2/leave-policy")
+from app.api.routes.leave_policy_v2 import router as leave_policy_v2_router
+app.include_router(leave_policy_v2_router, prefix="/api")
 app.include_router(v2_leave_router, prefix="/api/v2/leave")
 app.include_router(v2_payroll_policy_router, prefix="/api/v2/payroll-policy")
 app.include_router(v2_deduction_policy_router, prefix="/api/v2/deduction-policy")

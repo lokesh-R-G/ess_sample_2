@@ -29,6 +29,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import EmployeeWizard from './pages/admin/employee/EmployeeWizard';
 import AdminWeeklyOffPolicy from './pages/admin/AdminWeeklyOffPolicy';
 import AdminShifts from './pages/admin/AdminShifts';
+import LeavePolicySettings from './pages/admin/LeavePolicySettings';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -108,6 +109,7 @@ function AppRoutes() {
           <Route path="attendance/recalculate" element={<ManualRecalculation />} />
           <Route path="attendance/historical-corrections" element={<HistoricalCorrections />} />
           <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
+          <Route path="leave-policy" element={<LeavePolicySettings />} />
           <Route path="weekly-off-policy" element={<AdminWeeklyOffPolicy />} />
           <Route path="organization" element={<AdminOrganization />} />
           <Route path="approvals" element={<Navigate to="/admin/leave-approvals" replace />} />

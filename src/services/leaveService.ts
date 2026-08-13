@@ -44,6 +44,7 @@ export async function getLeaveData() {
 }
 
 export async function createLeaveRequest(payload: {
+  employeeId: string;
   requestType: 'leave' | 'od';
   leaveType: string;
   fromDate: string;
@@ -52,6 +53,7 @@ export async function createLeaveRequest(payload: {
   odLocation?: string;
 }) {
   return api.post<{ _id: string }>('/v2/approval/', {
+    employeeId: payload.employeeId,
     approvalType: 'Leave',
     requestData: {
       leaveType: payload.leaveType,
