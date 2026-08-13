@@ -13,6 +13,9 @@ export interface DashboardSummary {
     leaveBalance: number;
     currentSalary: number;
     workingHours: number;
+    pendingApprovals: number;
+    late: number;
+    lop: number;
   };
   attendance: Array<{
     date: string;
@@ -35,5 +38,5 @@ export interface DashboardSummary {
 }
 
 export async function getDashboardSummary() {
-  return api.get<DashboardSummary>('/v1/dashboard/me/');
+  return api.get<DashboardSummary>('/v2/dashboard/me/');
 }

@@ -133,12 +133,26 @@ async def run_daily_leave_eligibility_check():
             
         # Check if today is exactly their 1st anniversary
         if today.year - doj.year == 1 and today.month == doj.month and today.day == doj.day:
+            # Fetch dynamic leave types
             from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
             ledger_svc = LeaveLedgerService(db)
             emp_id = emp.get("employeeId")
             emp_code = emp.get("employeeCode", "UNKNOWN")
             
-            for lt in ["SL", "CL", "EL"]:
+            # Find active leave policy
+            policy_query = {
+                "deletedAt": None,
+                "isCurrent": True,
+                "effectiveFrom": {"$lte": datetime.now(timezone.utc)},
+            }
+            docs = await db.leave_policies.find(policy_query).sort([("version", -1)]).to_list(length=1)
+            
+            leave_types = []
+            if docs:
+                policy = docs[0]
+                leave_types = [t.get("code") for t in policy.get("leaveTypes", []) if t.get("enabled", True)]
+            
+            for lt in leave_types:
                 await ledger_svc.get_or_create_ledger(emp_id, emp_code, today.year, lt)
                 
 async def run_annual_leave_reset():
@@ -175,36 +189,50 @@ async def run_annual_leave_reset():
         
         doj_str = None
         emp = await db.employees.find_one({"employeeId": emp_id})
-        if emp: doj_str = emp.get("dateOfJoining")
         
         credited = 12.0
-        if doj_str:
-            doj = datetime.strptime(doj_str, "%Y-%m-%d").date()
-            if today.year == doj.year + 1:
-                credited = max(0.0, 12.0 - doj.month)
-            elif today.year <= doj.year:
-                credited = 0.0
-                
-        new_ledger = {
+        max_cf = 12.0
+        
+        # We can dynamically resolve the credited amount from the policy via get_or_create_ledger
+        # But for annual reset, the next time get_or_create_ledger runs it will calculate proration.
+        # So we can just set credited to the policy entitlement.
+        policy_code = ledger.get("policyCode")
+        policy_version = ledger.get("policyVersion")
+        if policy_code:
+            policy = await db.leave_policies.find_one({"policyCode": policy_code, "version": policy_version})
+            if policy:
+                type_config = next((t for t in policy.get("leaveTypes", []) if t.get("code") == lt), None)
+                if type_config:
+                    credited = type_config.get("annualEntitlement", 12.0)
+                    if type_config.get("carryForwardAllowed"):
+                        max_cf = type_config.get("maxCarryForward", max_cf)
+                    else:
+                        carried = 0.0
+
+        if carried > max_cf:
+            expired += (carried - max_cf)
+            carried = max_cf
+            
+        new_balance = credited + carried
+        
+        await db.leave_ledgers.insert_one({
             "employeeId": emp_id,
             "employeeCode": emp_code,
-            "calendarYear": today.year,
             "leaveType": lt,
-            "openingBalance": credited + carried,
-            "annualEntitlement": 12.0,
-            "anniversaryEntitlement": 0.0,
+            "calendarYear": today.year,
+            "policyCode": policy_code,
+            "policyVersion": policy_version,
+            "annualEntitlement": credited,
+            "openingBalance": credited,
             "carriedForward": carried,
             "credited": credited,
             "consumed": 0.0,
-            "availableBalance": credited + carried,
+            "availableBalance": new_balance,
             "expired": 0.0,
-            "lopDays": 0.0,
-            "version": 1,
+            "allocations": [],
             "createdAt": now,
-            "updatedAt": now,
-            "allocations": []
-        }
-        await db.leave_ledgers.insert_one(new_ledger)
+            "updatedAt": now
+        })
 
 JOB_MAPPING = {
     "ESSL_SHORT_SYNC": run_essl_short_sync,

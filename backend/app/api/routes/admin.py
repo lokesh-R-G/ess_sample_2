@@ -22,22 +22,30 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.get("/summary/")
 async def summary(_admin=Depends(require_roles("Admin"))):
     db = get_database()
-    total_employees = await db.users.count_documents({})
-    active_employees = await db.users.count_documents({"isActive": {"$ne": False}})
-    recent_employees = await db.users.find({}, {"_id": 0, "empId": 1, "name": 1, "designation": 1, "role": 1, "isActive": 1}).sort("createdAt", -1).limit(5).to_list(length=None)
+    total_employees = await db.employees.count_documents({})
+    active_employees = await db.employees.count_documents({"status": "Active"})
+    recent_employees = await db.employees.find({}, {"_id": 0}).sort("createdAt", -1).limit(5).to_list(length=None)
     branches = await db.branches.find({}, {"_id": 0}).to_list(length=None)
+    
+    # Restrict to last 3 months to avoid fetching everything
+    now_utc = datetime.now(timezone.utc)
+    
+    # Fetch all for trend - this could be optimized, but ok for now
     attendance_rows = await db.attendance.find({}, {"_id": 0}).to_list(length=None)
 
     monthly_counts: dict[str, dict[str, int]] = {}
+    from app.services.attendance_service import infer_attendance_status
     for row in attendance_rows:
         date_value = row.get("date")
         if isinstance(date_value, str) and len(date_value) >= 7:
             month_key = date_value[:7]
             if month_key not in monthly_counts:
                 monthly_counts[month_key] = {"present": 0, "absent": 0}
-            if row.get("status") == "present":
+            
+            st = infer_attendance_status(row).lower()
+            if "present" in st:
                 monthly_counts[month_key]["present"] += 1
-            elif row.get("status") == "absent":
+            elif st == "absent":
                 monthly_counts[month_key]["absent"] += 1
 
     months = list(monthly_counts.keys())
@@ -58,12 +66,13 @@ async def summary(_admin=Depends(require_roles("Admin"))):
 
     normalized_employees = []
     for employee in recent_employees:
+        name = f"{employee.get('firstName', '')} {employee.get('lastName', '')}".strip()
         normalized_employees.append(
             {
-                "id": employee.get("empId"),
-                "name": employee.get("name") or employee.get("empId") or "Unknown",
+                "id": employee.get("employeeCode") or employee.get("employeeId"),
+                "name": name or "Unknown",
                 "designation": employee.get("designation") or "Unknown",
-                "status": "active" if employee.get("isActive", True) else "inactive",
+                "status": "active" if employee.get("status") == "Active" else "inactive",
             }
         )
         
@@ -312,12 +321,13 @@ async def get_attendance_summary(_admin=Depends(require_roles("Admin"))):
     od_count = 0
     
     for r in records:
-        status = r.get("status", "").lower()
-        if status == "present":
+        from app.services.attendance_service import infer_attendance_status
+        status = infer_attendance_status(r).lower()
+        if "present" in status:
             present_count += 1
         elif status == "absent":
             absent_count += 1
-        elif status in ["od", "leave"]:
+        elif status in ["od", "leave", "on duty", "holiday", "weekoff", "week off"]:
             od_count += 1
             
     return {

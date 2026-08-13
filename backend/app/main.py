@@ -7,11 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.attendance import router as attendance_router
 from app.api.routes.admin import router as admin_router
-from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.auth import router as auth_router
 from app.auth.forgot_password.routes.router import router as forgot_password_router
 from app.api.routes.health import router as health_router
 from app.api.routes.leave import router as leave_router
+from app.api.routes.dashboard_v2 import router as dashboard_v2_router
 from app.api.routes.leave_v2 import router as leave_v2_router
 from app.api.routes.payslip import router as payslip_router
 from app.api.routes.profile import router as profile_router
@@ -116,7 +116,6 @@ app.include_router(health_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(forgot_password_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
-app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")
 app.include_router(leave_router, prefix="/api/v1")
 app.include_router(payslip_router, prefix="/api/v1")
@@ -131,6 +130,7 @@ app.include_router(v2_salary_router, prefix="/api/v2/salary")
 app.include_router(v2_policy_router, prefix="/api/v2/attendance-policy")
 app.include_router(v2_permission_router, prefix="/api/v2/permission")
 app.include_router(v2_attendance_router, prefix="/api/v2/attendance")
+app.include_router(dashboard_v2_router, prefix="/api/v2")
 app.include_router(leave_v2_router, prefix="/api")
 from app.api.routes.leave_policy_v2 import router as leave_policy_v2_router
 app.include_router(leave_policy_v2_router, prefix="/api")
