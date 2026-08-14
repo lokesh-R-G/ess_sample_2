@@ -135,7 +135,8 @@ export const AdminOrganization: React.FC = () => {
                 { value: 'Formula', label: 'Formula' }
               ], required: true },
               { key: 'percentageValue', label: 'Percentage Value (%)', type: 'number' },
-              { key: 'percentageDerivedFrom', label: 'Derived From (e.g. Gross Salary)', type: 'text' },
+              { key: 'percentageDerivedFromComponentId', label: 'Derived From Component', type: 'lookup', entity: 'SalaryComponent' },
+              { key: 'isBasicComponent', label: 'Is Basic Component', type: 'checkbox' },
               { key: 'isTaxable', label: 'Taxable', type: 'checkbox' },
               { key: 'pfApplicable', label: 'PF Applicable', type: 'checkbox' },
               { key: 'esiApplicable', label: 'ESI Applicable', type: 'checkbox' }

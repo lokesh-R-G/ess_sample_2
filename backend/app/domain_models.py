@@ -183,6 +183,8 @@ class SalaryComponent(BaseModel):
     componentType: Optional[Literal["Earning", "Deduction"]] = None
     calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = "Flat"
     percentageValue: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
+    # Deprecated string-based field
     percentageDerivedFrom: Optional[str] = None
     defaultFormula: Optional[str] = None
     isTaxable: bool = True
@@ -208,6 +210,7 @@ class SalaryComponent(BaseModel):
     isStatutory: bool = False
     isEmployerContribution: bool = False
     isEmployeeContribution: bool = False
+    isBasicComponent: bool = False
     
     displayOrder: int = 1
     isActive: bool = True
@@ -247,6 +250,18 @@ class EmployeeSalaryComponent(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
     salaryComponentId: str
+    componentCode: Optional[str] = None
+    componentName: str
+    componentType: Optional[str] = None
+    calculationMethod: Optional[str] = None
+    percentage: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
+    includeInGross: bool = True
+    attendanceDependent: bool = True
+    pfApplicable: bool = False
+    esiApplicable: bool = False
+    ptApplicable: bool = False
+    isBasicComponent: bool = False
     monthlyAmount: float
     annualAmount: float
     formulaUsed: Optional[str] = None

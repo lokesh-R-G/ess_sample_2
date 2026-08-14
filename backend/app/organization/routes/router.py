@@ -14,10 +14,7 @@ from app.domain_models import SalaryComponent
 from app.organization.schemas.salary_component import SalaryComponentCreate, SalaryComponentUpdate, SalaryComponentResponse
 
 
-salary_component_router = create_generic_router(
-    prefix="/salary-components", tag="Salary Component", collection_name="salary_components",
-    model_class=SalaryComponent, create_schema=SalaryComponentCreate, update_schema=SalaryComponentUpdate, response_schema=SalaryComponentResponse
-)
+from app.organization.routes.salary_component_routes import router as salary_component_router
 
 organization_router = APIRouter()
 organization_router.include_router(org_entity_router)

@@ -38,32 +38,96 @@ class SalaryCalculationEngine:
         pt_slabs: Optional[List[ProfessionalTaxSlab]] = None
     ) -> Dict[str, Any]:
         
-        # 1. Calculate Earnings
+        # 1. Calculate Earnings (Dependency Resolution)
+        
+        # Build a lookup for components and dependency graph
+        components_by_id = {str(sc.get("_id") or sc.get("id")): sc for sc in structure_components}
+        in_degree = {k: 0 for k in components_by_id}
+        adj_list = {k: [] for k in components_by_id}
+        
+        # We need a fallback if no ID is present (e.g. preview mode with new components)
+        components_by_name = {sc.get("name"): sc for sc in structure_components}
+        
+        basic_comp_id = None
+        for cid, sc in components_by_id.items():
+            if sc.get("isBasicComponent"):
+                if basic_comp_id:
+                    raise ValueError("Multiple Basic components detected in structure.")
+                basic_comp_id = cid
+            
+            calc_method = sc.get("calculationMethod", "Flat")
+            if calc_method in ("Percentage", "Formula"):
+                parent_id = sc.get("percentageDerivedFromComponentId")
+                if parent_id and parent_id in components_by_id:
+                    adj_list[parent_id].append(cid)
+                    in_degree[cid] += 1
+                elif not parent_id:
+                    # Fallback for old configs: try to find by name
+                    parent_name = sc.get("percentageDerivedFrom")
+                    if parent_name and parent_name in components_by_name:
+                        p_id = str(components_by_name[parent_name].get("_id") or components_by_name[parent_name].get("id"))
+                        adj_list[p_id].append(cid)
+                        in_degree[cid] += 1
+                    elif basic_comp_id: # fallback to basic if not specified
+                        adj_list[basic_comp_id].append(cid)
+                        in_degree[cid] += 1
+                        
+        if not basic_comp_id:
+            # Fallback to name-based if isBasicComponent is not set anywhere
+            for cid, sc in components_by_id.items():
+                if sc.get("name", "").lower() == "basic":
+                    basic_comp_id = cid
+                    break
+        
+        # Topological Sort using Kahn's algorithm
+        queue = [cid for cid, deg in in_degree.items() if deg == 0]
+        sorted_order = []
+        
+        while queue:
+            curr = queue.pop(0)
+            sorted_order.append(curr)
+            for neighbor in adj_list[curr]:
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+                    
+        if len(sorted_order) != len(components_by_id):
+            raise ValueError("Circular dependency detected in salary components configuration.")
+            
+        calculated_amounts = {}
         earnings = []
-        for sc in structure_components:
+        
+        for cid in sorted_order:
+            sc = components_by_id[cid]
             name = sc.get("name", "Unknown")
             calc_method = sc.get("calculationMethod", "Flat")
             amount = 0.0
             formula_used = ""
-
-            if name.lower() == "basic":
+            
+            if cid == basic_comp_id:
                 amount = basic_salary
                 formula_used = "Base Input"
-            elif calc_method == "Percentage":
+            elif calc_method in ("Percentage", "Formula"):
                 perc = sc.get("percentageValue", 0.0)
-                amount = basic_salary * (perc / 100.0)
-                formula_used = f"{perc}% of Basic"
-            elif calc_method == "Formula":
-                # Currently treating 'Formula' as percentage of Basic for simplicity
-                # if there is a 'defaultFormula' we could evaluate it, but falling back to basic percentage.
-                perc = sc.get("percentageValue", 0.0)
-                amount = basic_salary * (perc / 100.0)
-                formula_used = sc.get("defaultFormula") or f"{perc}% of Basic"
+                parent_id = sc.get("percentageDerivedFromComponentId")
+                if not parent_id:
+                    # Fallback resolution
+                    parent_name = sc.get("percentageDerivedFrom")
+                    if parent_name and parent_name in components_by_name:
+                        parent_id = str(components_by_name[parent_name].get("_id") or components_by_name[parent_name].get("id"))
+                    else:
+                        parent_id = basic_comp_id
+                        
+                parent_amount = calculated_amounts.get(parent_id, 0.0)
+                parent_name_ref = components_by_id.get(parent_id, {}).get("name", "Unknown")
+                amount = parent_amount * (perc / 100.0)
+                formula_used = sc.get("defaultFormula") or f"{perc}% of {parent_name_ref}"
             else:
-                # Flat or otherwise
                 amount = sc.get("amount") or sc.get("monthlyAmount") or 0.0
                 formula_used = "Flat"
-
+                
+            calculated_amounts[cid] = amount
+            
             # Create an instance matching what PayrollCalculationEngine expects
             c_dict = sc.copy()
             c_dict["amount"] = amount
@@ -76,6 +140,7 @@ class SalaryCalculationEngine:
             c_dict["esiApplicable"] = c_dict.get("esiApplicable", False)
             c_dict["ptApplicable"] = c_dict.get("ptApplicable", False)
             c_dict["componentType"] = c_dict.get("componentType", "Earning")
+            c_dict["isBasicComponent"] = (cid == basic_comp_id)
 
             earnings.append(c_dict)
 
