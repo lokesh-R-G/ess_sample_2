@@ -172,8 +172,15 @@ async def invite_employee(
     if existing_user:
         raise HTTPException(status_code=409, detail="An ESS user with this Employee Code already exists")
 
-    # 4. Email uniqueness check
-    email = payload.email.strip().lower()
+    # 4. Resolve Canonical Email for delivery (Fail early if missing)
+    from app.employee.services.email_resolver import get_employee_personal_email
+    try:
+        delivery_email = await get_employee_personal_email(db, payload.employeeId)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Legacy Email check for users collection
+    email = payload.email.strip().lower() if payload.email else delivery_email
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     existing_email = await db.users.find_one({"email": email})
@@ -219,7 +226,7 @@ async def invite_employee(
             "temporary_password": temp_password,
             "login_url": "http://localhost:5173/login",
         }
-        asyncio.create_task(email_service.send_welcome_email(email, context))
+        asyncio.create_task(email_service.send_welcome_email(delivery_email, context))
         email_sent = True
     except Exception as exc:
         # Log failure but keep the user created

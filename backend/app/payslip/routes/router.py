@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from app.db.mongo import get_database
 from app.email_service.services.email_service import EmailService
 from pydantic import BaseModel
@@ -43,8 +43,15 @@ async def email_payslip(payslipId: str, background_tasks: BackgroundTasks, db = 
     # For now, we simulate finding the employee and triggering the email.
     email_service = EmailService(db)
     
-    # Mocking recipient and context for now
-    recipient = "employee@enterprise-hrms.com"
+    # Mocking employee retrieval from payslip
+    emp_id = "mock_employee_id" 
+    from app.employee.services.email_resolver import get_employee_personal_email
+    try:
+        recipient = await get_employee_personal_email(db, emp_id)
+    except ValueError as e:
+        # In a mock, we might fallback just to test, but business rule says strictly fail:
+        raise HTTPException(status_code=400, detail=str(e))
+
     context = {
         "employee_name": "Test Employee",
         "payroll_month": "Current Month",

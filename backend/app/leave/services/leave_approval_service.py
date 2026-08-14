@@ -33,23 +33,27 @@ class LeaveApprovalService:
         if updated_approval:
             status = getattr(updated_approval, "status", None)
             if status in ["Approved", "Rejected"]:
-                # In a real implementation, find employee email based on employee_id
+                # Fetch employee email based on employee_id
                 emp_id = getattr(updated_approval, "employeeId", "unknown")
-                contact_email = f"{emp_id}@enterprise-hrms.com" 
-                context = {
-                    "leave_type": "Leave Request",
-                    "start_date": "N/A", # Needs real start_date from LeaveApplication
-                    "end_date": "N/A",
-                    "remarks": getattr(updated_approval, "remarks", "None"),
-                    "reason": getattr(updated_approval, "remarks", "Please contact your manager.")
-                }
-                asyncio.create_task(
-                    self.email_service.send_leave_status_email(
-                        recipient=contact_email, 
-                        status=status, 
-                        context=context
+                from app.employee.services.email_resolver import get_employee_personal_email
+                try:
+                    contact_email = await get_employee_personal_email(self.db, emp_id)
+                    context = {
+                        "leave_type": "Leave Request",
+                        "start_date": "N/A", # Needs real start_date from LeaveApplication
+                        "end_date": "N/A",
+                        "remarks": getattr(updated_approval, "remarks", "None"),
+                        "reason": getattr(updated_approval, "remarks", "Please contact your manager.")
+                    }
+                    asyncio.create_task(
+                        self.email_service.send_leave_status_email(
+                            recipient=contact_email, 
+                            status=status, 
+                            context=context
+                        )
                     )
-                )
+                except ValueError as e:
+                    print(f"[LeaveApprovalService] Cannot send leave status email: {e}")
                 
         return updated_approval
         

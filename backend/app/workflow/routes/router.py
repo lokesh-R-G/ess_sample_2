@@ -18,6 +18,7 @@ async def start_workflow(req: StartWorkflowReq, background_tasks: BackgroundTask
     """
     email_service = EmailService(db)
     # Mocking recipient and context for now
+    # MANAGER/APPROVER RECIPIENT - Kept as organizational email source, not personalEmail.
     approver_email = f"manager_of_{req.requesterId}@enterprise-hrms.com"
     context = {
         "workflow_type": req.entityType,

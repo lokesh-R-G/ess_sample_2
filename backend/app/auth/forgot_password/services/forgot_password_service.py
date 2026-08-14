@@ -16,14 +16,18 @@ class ForgotPasswordService:
         self.email_service = EmailService(db)
 
     async def _find_employee(self, identifier: str) -> dict | None:
-        employee = await self.db.employees.find_one({
+        # Resolve identity from IAM/Users (supports username, empId, email)
+        user = await self.db.users.find_one({
             "$or": [
                 {"employeeId": identifier},
-                {"officialEmail": identifier},
-                {"personalEmail": identifier}
+                {"empId": identifier},
+                {"username": identifier},
+                {"email": identifier}
             ]
         })
-        return employee
+        if user and user.get("employeeId"):
+            return await self.db.employees.find_one({"employeeId": user["employeeId"]})
+        return None
 
     async def request_password_reset(self, identifier: str):
         employee = await self._find_employee(identifier)
@@ -32,8 +36,12 @@ class ForgotPasswordService:
             return {"message": "If an account exists, a password reset link has been sent."}
 
         emp_id = employee.get("employeeId")
-        email = employee.get("officialEmail") or employee.get("personalEmail")
-        if not email:
+        
+        from app.employee.services.email_resolver import get_employee_personal_email
+        try:
+            email = await get_employee_personal_email(self.db, emp_id)
+        except ValueError as e:
+            print(f"[ForgotPasswordService] Request Reset failed: {e}")
             return {"message": "If an account exists, a password reset link has been sent."}
 
         # Rate Limiting: Max 5 requests per hour
@@ -148,14 +156,14 @@ class ForgotPasswordService:
         })
 
         # Send notification email
-        employee = await self.db.employees.find_one({"employeeId": emp_id})
-        contact_email = None
-        if employee:
-            contact_email = employee.get("officialEmail") or employee.get("personalEmail")
-        
-        if not contact_email:
-            contact_email = f"{emp_id}@enterprise-hrms.com"
+        from app.employee.services.email_resolver import get_employee_personal_email
+        try:
+            contact_email = await get_employee_personal_email(self.db, emp_id)
+        except ValueError as e:
+            print(f"[ForgotPasswordService] Cannot send password changed notification: {e}")
+            return {"message": "Password reset successfully"}
 
+        employee = await self.db.employee_personals.find_one({"employeeId": emp_id, "isCurrent": True})
         context = {
             "employee_name": employee.get("firstName", emp_id) if employee else emp_id,
             "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
