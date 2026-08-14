@@ -13,10 +13,10 @@ class AttendancePolicyService:
     async def get_by_id(self, policy_id: str) -> Optional[dict]:
         return await self.repo.get_by_id(policy_id)
 
-    async def create(self, data: AttendancePolicyCreate, current_user_id: str) -> dict:
+    async def create(self, data: AttendancePolicyCreate, current_user_id: str):
         exists = await self.repo.collection.find_one({"attendancePolicyCode": data.attendancePolicyCode, "deletedAt": None})
         if exists:
-            raise ValueError(f"Attendance Policy with code {data.attendancePolicyCode} already exists.")
+            return await self.repo.upsert_by_field("attendancePolicyCode", data.attendancePolicyCode, data.model_dump(exclude_unset=True), user_id=current_user_id)
         return await self.repo.create(data.model_dump(exclude_unset=True), created_by=current_user_id)
 
     async def update(self, policy_id: str, data: AttendancePolicyUpdate, current_user_id: str) -> Optional[dict]:

@@ -28,7 +28,9 @@ class BaseRepository(Generic[T]):
         data["status"] = data.get("status", "Active")
         data["version"] = 1
         data["isCurrent"] = True
-        data["effectiveFrom"] = now
+        data["effectiveFrom"] = data.get("effectiveFrom") or now
+        if data["effectiveFrom"].tzinfo is None:
+            data["effectiveFrom"] = data["effectiveFrom"].replace(tzinfo=timezone.utc)
         data["effectiveTo"] = None
         
         result = await self.collection.insert_one(data)
@@ -51,7 +53,17 @@ class BaseRepository(Generic[T]):
                 
                 if current_doc:
                     new_effective_from = data.get("effectiveFrom")
-                    if not new_effective_from:
+                    
+                    current_eff = current_doc.get("effectiveFrom")
+                    if current_eff and current_eff.tzinfo is None:
+                        current_eff = current_eff.replace(tzinfo=timezone.utc)
+                        
+                    if new_effective_from:
+                        if new_effective_from.tzinfo is None:
+                            new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
+                        if current_eff and new_effective_from <= current_eff:
+                            new_effective_from = now
+                    else:
                         new_effective_from = now
                         
                     # Mark current as false
@@ -78,7 +90,9 @@ class BaseRepository(Generic[T]):
                     data["createdBy"] = user_id
                     data["version"] = 1
                     data["isCurrent"] = True
-                    data["effectiveFrom"] = now
+                    data["effectiveFrom"] = data.get("effectiveFrom") or now
+                    if data["effectiveFrom"].tzinfo is None:
+                        data["effectiveFrom"] = data["effectiveFrom"].replace(tzinfo=timezone.utc)
                     data["effectiveTo"] = None
                     
                     result = await self.collection.insert_one(data, session=session)
@@ -173,7 +187,17 @@ class BaseRepository(Generic[T]):
                     return None
                     
                 new_effective_from = data.get("effectiveFrom")
-                if not new_effective_from:
+                
+                current_eff = current_doc.get("effectiveFrom")
+                if current_eff and current_eff.tzinfo is None:
+                    current_eff = current_eff.replace(tzinfo=timezone.utc)
+                    
+                if new_effective_from:
+                    if new_effective_from.tzinfo is None:
+                        new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
+                    if current_eff and new_effective_from <= current_eff:
+                        new_effective_from = now
+                else:
                     new_effective_from = now
                 
                 await self.collection.update_one(
