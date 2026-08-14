@@ -376,20 +376,27 @@ class PolicyEngine:
                 half_threshold = getattr(self.policy, "lateHalfDayThreshold", None)
                 inc_threshold = getattr(self.policy, "lateIncrementThreshold", None)
                 
+                # 1. Status Progression (independent of LOP)
                 if full_threshold and current_lates >= full_threshold:
                     metrics["status"] = "Absent"
-                    metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
-                    metrics["lopReason"] = "Late Full Day Threshold Reached"
                 elif half_threshold and current_lates >= half_threshold:
                     metrics["status"] = "Half Day"
-                    metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
-                    metrics["lopReason"] = "Late Half Day Threshold Reached"
-                    metrics["halfDayCount"] += 0.5
-                elif inc_threshold and current_lates % inc_threshold == 0:
-                    metrics["status"] = "Half Day"
-                    metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
-                    metrics["lopReason"] = "Late Increment Threshold Reached"
-                    metrics["halfDayCount"] += 0.5
+
+                # 2. LOP Penalty Generation
+                if inc_threshold:
+                    if current_lates % inc_threshold == 0:
+                        metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                        metrics["lopReason"] = "Late Increment Threshold Reached"
+                        metrics["halfDayCount"] += 0.5
+                else:
+                    # Fallback to one-time penalty if increment is disabled
+                    if full_threshold and current_lates == full_threshold:
+                        metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
+                        metrics["lopReason"] = "Late Full Day Threshold Reached"
+                    elif half_threshold and current_lates == half_threshold:
+                        metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                        metrics["lopReason"] = "Late Half Day Threshold Reached"
+                        metrics["halfDayCount"] += 0.5
 
             # Early out Logic
             if out_time:
