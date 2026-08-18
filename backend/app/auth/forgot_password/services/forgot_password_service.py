@@ -15,34 +15,37 @@ class ForgotPasswordService:
         self.otp_repo = OtpRepository(db)
         self.email_service = EmailService(db)
 
-    async def _find_employee(self, identifier: str) -> dict | None:
-        # Resolve identity from IAM/Users (supports username, empId, email)
+    async def _find_employee(self, employeeCode: str) -> dict | None:
+        # Strictly resolve identity from IAM/Users using only employeeCode (stored as empId or employeeId)
         user = await self.db.users.find_one({
             "$or": [
-                {"employeeId": identifier},
-                {"empId": identifier},
-                {"username": identifier},
-                {"email": identifier}
+                {"employeeId": employeeCode},
+                {"empId": employeeCode}
             ]
         })
         if user and user.get("employeeId"):
             return await self.db.employees.find_one({"employeeId": user["employeeId"]})
         return None
 
-    async def request_password_reset(self, identifier: str):
-        employee = await self._find_employee(identifier)
+    async def request_password_reset(self, employeeCode: str, email: str):
+        generic_error_msg = "The employee code or email is invalid."
+        
+        employee = await self._find_employee(employeeCode)
         if not employee:
             # Silently return success to prevent user enumeration
-            return {"message": "If an account exists, a password reset link has been sent."}
+            return {"message": generic_error_msg}
 
         emp_id = employee.get("employeeId")
         
         from app.employee.services.email_resolver import get_employee_personal_email
         try:
-            email = await get_employee_personal_email(self.db, emp_id)
+            canonical_email = await get_employee_personal_email(self.db, emp_id)
         except ValueError as e:
             print(f"[ForgotPasswordService] Request Reset failed: {e}")
-            return {"message": "If an account exists, a password reset link has been sent."}
+            return {"message": generic_error_msg}
+            
+        if email.strip().lower() != canonical_email:
+            return {"message": generic_error_msg}
 
         # Rate Limiting: Max 5 requests per hour
         one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
@@ -84,10 +87,31 @@ class ForgotPasswordService:
 
         return {"message": "If an account exists, a password reset link has been sent."}
 
-    async def verify_otp(self, employee_id: str, otp: str):
-        otp_doc = await self.otp_repo.find_active_otp(employee_id)
+    async def verify_otp(self, employeeCode: str, email: str, otp: str):
+        generic_error_msg = "The employee code or email is invalid."
+        
+        employee = await self._find_employee(employeeCode)
+        if not employee:
+            raise HTTPException(status_code=400, detail=generic_error_msg)
+
+        emp_id = employee.get("employeeId")
+        
+        from app.employee.services.email_resolver import get_employee_personal_email
+        try:
+            canonical_email = await get_employee_personal_email(self.db, emp_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=generic_error_msg)
+            
+        if email.strip().lower() != canonical_email:
+            raise HTTPException(status_code=400, detail=generic_error_msg)
+
+        otp_doc = await self.otp_repo.find_active_otp(emp_id)
         if not otp_doc:
             raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+        # Double check email matches OTP doc (case-insensitive)
+        if otp_doc.email.strip().lower() != canonical_email:
+             raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
         if otp_doc.attemptCount >= otp_doc.maxAttempts:
             await self.otp_repo.mark_used(str(otp_doc.id))
@@ -102,13 +126,13 @@ class ForgotPasswordService:
 
         # Generate a temporary reset token valid for 15 minutes
         token = create_access_token(
-            {"empId": employee_id, "purpose": "password_reset", "otpId": str(otp_doc.id)},
+            {"empId": emp_id, "purpose": "password_reset", "otpId": str(otp_doc.id)},
             expires_delta=timedelta(minutes=15)
         )
 
         return {"message": "OTP verified successfully", "resetToken": token}
 
-    async def reset_password(self, reset_token: str, new_password: str, confirm_password: str):
+    async def reset_password(self, employeeCode: str, reset_token: str, new_password: str, confirm_password: str):
         if new_password != confirm_password:
             raise HTTPException(status_code=400, detail="Passwords do not match")
 
@@ -119,10 +143,17 @@ class ForgotPasswordService:
             payload = decode_access_token(reset_token)
             if payload.get("purpose") != "password_reset":
                 raise HTTPException(status_code=400, detail="Invalid token purpose")
-            emp_id = payload.get("empId")
+            token_emp_id = payload.get("empId")
             otp_id = payload.get("otpId")
         except Exception:
             raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+        # Validate employeeCode ownership of the token
+        employee = await self._find_employee(employeeCode)
+        if not employee or employee.get("employeeId") != token_emp_id:
+            raise HTTPException(status_code=400, detail="Invalid employee code for this reset transaction")
+            
+        emp_id = token_emp_id
 
         # Check if OTP was already used
         otp_doc = await self.db.password_reset_otps.find_one({"_id": otp_id, "used": False, "verified": True})
@@ -134,7 +165,7 @@ class ForgotPasswordService:
 
         # Update User
         await self.db.users.update_one(
-            {"empId": emp_id},
+            {"employeeId": emp_id},
             {
                 "$set": {
                     "passwordHash": new_hash,

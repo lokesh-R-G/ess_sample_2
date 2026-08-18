@@ -23,7 +23,7 @@ class OtpRepository(BaseRepository[PasswordResetOtpModel]):
             sort=[("createdAt", pymongo.DESCENDING)]
         )
         if doc:
-            return PasswordResetOtpModel(**doc)
+            return PasswordResetOtpModel(**self._prepare_doc(doc))
         return None
 
     async def increment_attempts(self, otp_id: str):

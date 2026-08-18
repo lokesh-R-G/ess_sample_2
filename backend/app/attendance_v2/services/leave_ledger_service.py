@@ -28,7 +28,6 @@ class LeaveLedgerService:
         # Query active policy
         query = {
             "deletedAt": None,
-            "isCurrent": True,
             "effectiveFrom": {"$lte": target_date},
             "$or": [
                 {"effectiveTo": None},

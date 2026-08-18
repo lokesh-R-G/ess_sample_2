@@ -30,13 +30,13 @@ async def get_leave_balances(current_user=Depends(get_current_user)):
     ledger_svc = LeaveLedgerService(db)
     
     now = datetime.now(timezone.utc)
+    target_date = now
     query = {
         "deletedAt": None,
-        "isCurrent": True,
-        "effectiveFrom": {"$lte": now},
+        "effectiveFrom": {"$lte": target_date},
         "$or": [
             {"effectiveTo": None},
-            {"effectiveTo": {"$gt": now}}
+            {"effectiveTo": {"$gt": target_date}}
         ]
     }
     

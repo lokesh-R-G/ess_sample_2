@@ -26,8 +26,8 @@ class BaseRepository(Generic[T]):
         data["createdBy"] = created_by
         data["updatedBy"] = created_by
         data["status"] = data.get("status", "Active")
-        data["version"] = 1
-        data["isCurrent"] = True
+        data["version"] = data.get("version", 1)
+        data["isCurrent"] = data.get("isCurrent", True)
         data["effectiveFrom"] = data.get("effectiveFrom") or now
         if data["effectiveFrom"].tzinfo is None:
             data["effectiveFrom"] = data["effectiveFrom"].replace(tzinfo=timezone.utc)

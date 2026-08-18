@@ -89,3 +89,14 @@ export async function updateProfile(data: any) {
 export function logout() {
   clearAuthStorage();
 }
+
+export const authApi = {
+  forgotPassword: (employeeCode: string, email: string) => 
+    api.post<{ message: string }>('/v1/auth/forgot-password/', { employeeCode, email }),
+    
+  verifyResetOtp: (employeeCode: string, email: string, otp: string) =>
+    api.post<{ message: string; resetToken: string }>('/v1/auth/verify-reset-otp/', { employeeCode, email, otp }),
+    
+  resetPassword: (employeeCode: string, resetToken: string, newPassword: string, confirmPassword: string) =>
+    api.post<{ message: string }>('/v1/auth/reset-password/', { employeeCode, resetToken, newPassword, confirmPassword }),
+};

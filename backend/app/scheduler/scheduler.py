@@ -140,10 +140,14 @@ async def run_daily_leave_eligibility_check():
             emp_code = emp.get("employeeCode", "UNKNOWN")
             
             # Find active leave policy
+            now = datetime.now(timezone.utc)
             policy_query = {
                 "deletedAt": None,
-                "isCurrent": True,
-                "effectiveFrom": {"$lte": datetime.now(timezone.utc)},
+                "effectiveFrom": {"$lte": now},
+                "$or": [
+                    {"effectiveTo": None},
+                    {"effectiveTo": {"$gt": now}}
+                ]
             }
             docs = await db.leave_policies.find(policy_query).sort([("version", -1)]).to_list(length=1)
             

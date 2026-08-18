@@ -288,13 +288,17 @@ class PayrollSettings(RuleBase):
     roundOffMethod: Literal["Nearest Rupee", "Nearest 10", "None"] = "Nearest Rupee"
     payrollStartDate: int = 1 # day of month
     payrollEndDate: int = 31  # day of month (or last day)
+    employeeSubmissionCutoffDay: int = 25 # day of month
+    managerApprovalCutoffDay: int = 28 # day of month
+    payrollLockDate: int = 5 # day of month
+    payslipGenerationDate: int = 7 # day of month
     lockPayrollAfterProcessing: bool = True
     allowRetroPayroll: bool = False
     defaultPayrollCalendar: str = "Standard"
     defaultSalaryCalculationMethod: Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"] = "Calendar Days"
     defaultCurrencySymbol: str = "₹"
-    payrollLockDate: int = 5 # day of month
-    payslipGenerationDate: int = 7 # day of month
+    bankExportFormat: Literal["CSV", "PDF", "Both"] = "CSV"
+    payslipPublicationBehavior: Literal["Manual", "Automatic On Lock"] = "Manual"
 
 class PFRule(RuleBase):
     id: Optional[str] = Field(default=None, alias="_id")
@@ -388,7 +392,7 @@ class PayrollCycle(BaseModel):
     name: str
     startDate: datetime
     endDate: datetime
-    processingStatus: Literal["Draft", "Processing", "Completed"] = "Draft"
+    processingStatus: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
 
 class Payroll(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
@@ -398,6 +402,12 @@ class Payroll(BaseModel):
     grossDeductions: float = 0.0
     netPay: float = 0.0
     status: Literal["Generated", "Paid"] = "Generated"
+    version: int = 1
+    isActive: bool = True
+    previousVersionId: Optional[str] = None
+    recalculatedBy: Optional[str] = None
+    recalculationReason: Optional[str] = None
+    payloadSnapshot: dict = Field(default_factory=dict)
 
 class PayrollLineItem(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
@@ -418,6 +428,9 @@ class Payslip(BaseModel):
     cycleId: str
     generatedDate: datetime
     pdfUrl: Optional[str] = None
+    payrollVersion: int = 1
+    status: Literal["GENERATED", "PUBLISHED", "REVOKED"] = "GENERATED"
+    publishedAt: Optional[datetime] = None
     payloadSnapshot: dict = Field(default_factory=dict)
 
 # ==========================================

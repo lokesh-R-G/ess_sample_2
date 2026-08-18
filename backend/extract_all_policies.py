@@ -16,7 +16,7 @@ async def f():
         print("permissionPerMonth:", p.get("permissionPerMonth"))
         print("monthlyPermissionHours:", p.get("monthlyPermissionHours"))
         print("permissionExcessCarryForward:", p.get("permissionExcessCarryForward"))
-        print("permissionLopThresholdMinutes:", p.get("permissionLopThresholdMinutes"))
+        print("permissionLopThresholdMinutes:", p.get("permissionLopThresholdMinutes"))                                             
         print("permissionLopValue:", p.get("permissionLopValue"))
         print("minHoursForFullDay:", p.get("minHoursForFullDay"))
         print("minHoursForHalfDay:", p.get("minHoursForHalfDay"))

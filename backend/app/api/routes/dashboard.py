@@ -84,7 +84,6 @@ async def me(current_user=Depends(get_current_user)):
     
     policy_query = {
         "deletedAt": None,
-        "isCurrent": True,
         "effectiveFrom": {"$lte": now},
         "$or": [{"effectiveTo": None}, {"effectiveTo": {"$gt": now}}]
     }

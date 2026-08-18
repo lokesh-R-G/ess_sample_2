@@ -47,19 +47,65 @@ async def create_policy(data: LeavePolicyCreate, current_user=Depends(get_curren
     db = get_database()
     repo = LeavePolicyRepository(db)
     
-    exists = await repo.exists({"policyCode": data.policyCode})
-    if exists:
-        return await repo.upsert_by_field("policyCode", data.policyCode, data.dict(), user_id=current_user.get("sub"))
+    # Check if any version of this policy exists
+    latest_docs = await repo.collection.find({"policyCode": data.policyCode}).sort([("version", -1)]).to_list(1)
     
-    return await repo.create(data.dict(), created_by=current_user.get("sub"))
+    doc_dict = data.dict()
+    now_utc = datetime.now(timezone.utc)
+    
+    if latest_docs:
+        old_doc = latest_docs[0]
+        new_version = old_doc.get("version", 1) + 1
+        
+        # Mark the currently active one (if any) as not current and set effectiveTo
+        active_docs = await repo.collection.find({"policyCode": data.policyCode, "isCurrent": True}).to_list(None)
+        for act in active_docs:
+            await repo.collection.update_one(
+                {"_id": act["_id"]},
+                {"$set": {
+                    "isCurrent": False,
+                    "effectiveTo": data.effectiveFrom,
+                    "updatedAt": now_utc,
+                    "updatedBy": current_user.get("sub")
+                }}
+            )
+            
+        doc_dict["version"] = new_version
+    else:
+        doc_dict["version"] = 1
+        
+    doc_dict["isCurrent"] = True
+    doc_dict["effectiveTo"] = None
+    doc_dict["status"] = "Active"
+    
+    return await repo.create(doc_dict, created_by=current_user.get("sub"))
 
 @router.get("/{policy_code}", response_model=LeavePolicyResponse)
-async def get_policy(policy_code: str, current_user=Depends(get_current_user)):
+async def get_policy(policy_code: str, target_date: str = Query(None), current_user=Depends(get_current_user)):
     db = get_database()
     repo = LeavePolicyRepository(db)
-    docs = await repo.collection.find({"policyCode": policy_code, "isCurrent": True, "deletedAt": None}).to_list(length=1)
+    
+    if target_date:
+        try:
+            target = datetime.fromisoformat(target_date.replace('Z', '+00:00'))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid target_date format")
+    else:
+        target = datetime.now(timezone.utc)
+        
+    query = {
+        "policyCode": policy_code,
+        "deletedAt": None,
+        "effectiveFrom": {"$lte": target},
+        "$or": [
+            {"effectiveTo": None},
+            {"effectiveTo": {"$gt": target}}
+        ]
+    }
+    
+    docs = await repo.collection.find(query).sort([("version", -1)]).to_list(length=1)
     if not docs:
-        raise HTTPException(status_code=404, detail="Policy not found")
+        raise HTTPException(status_code=404, detail="Policy not found for the given date")
     doc = docs[0]
     doc["id"] = str(doc.pop("_id"))
     return doc

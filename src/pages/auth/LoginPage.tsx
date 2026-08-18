@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { BackgroundParticles, AnimatedButton } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import ForgotPasswordModal from '../../components/auth/ForgotPasswordModal';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [formData, setFormData] = useState({ employeeId: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -80,7 +82,7 @@ export const LoginPage: React.FC = () => {
 
             <motion.div className="flex items-center justify-between" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
               <span className="text-sm text-neutral-500">Use your Employee ID and password to sign in.</span>
-              <button type="button" className="text-sm text-primary-500 hover:text-primary-600 transition-colors">Forgot Password?</button>
+              <button type="button" onClick={() => setIsForgotModalOpen(true)} className="text-sm text-primary-500 hover:text-primary-600 transition-colors">Forgot Password?</button>
             </motion.div>
 
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -105,6 +107,11 @@ export const LoginPage: React.FC = () => {
           Powered by <span className="text-primary-500 font-medium">IDS Pvt Ltd</span> | Enterprise HRMS v2.0
         </motion.p>
       </motion.div>
+
+      <ForgotPasswordModal 
+        isOpen={isForgotModalOpen} 
+        onClose={() => setIsForgotModalOpen(false)} 
+      />
     </div>
   );
 };

@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from app.db.mongo import get_database
 from app.dependencies import get_current_user
-from app.core.datetime_utils import get_current_ist
+from app.core.datetime_utils import get_current_ist, to_utc
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard_v2"])
 
@@ -39,6 +39,7 @@ async def get_dashboard_me(current_user=Depends(get_current_user)):
     now = get_current_ist()
     first_day_of_month_str = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).strftime("%Y-%m-%d")
     today_str = now.strftime("%Y-%m-%d")
+    now_utc = to_utc(now)
 
     # 2. Attendance Statistics (Exclusively from persisted V2 records)
     # The dashboard MUST NOT infer, recalculate, or default absent based on null punches.
@@ -99,8 +100,11 @@ async def get_dashboard_me(current_user=Depends(get_current_user)):
     # Get active policy to determine enabled leave types
     policy_query = {
         "deletedAt": None,
-        "isCurrent": True,
-        "effectiveFrom": {"$lte": datetime.now(timezone.utc)}
+        "effectiveFrom": {"$lte": now_utc},
+        "$or": [
+            {"effectiveTo": None},
+            {"effectiveTo": {"$gt": now_utc}}
+        ]
     }
     docs = await db.leave_policies.find(policy_query).sort([("version", -1)]).to_list(length=1)
     
