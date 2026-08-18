@@ -72,8 +72,17 @@ class PayrollProcessor:
         gender = emp_personal.get("gender", "Any")
         pt = PayrollCalculationEngine.calculateProfessionalTax(monthly_gross, pt_slabs, gender)
 
+        # 4.5 Fetch Eligible Reimbursements
+        reimbursements_cursor = self.db.reimbursement_claims.find({
+            "employeeId": employee_id,
+            "status": "PAYROLL_ELIGIBLE",
+            "deletedAt": None
+        })
+        reimbursements = [doc async for doc in reimbursements_cursor]
+        total_reimbursements = sum(r.get("calculatedAmount", 0.0) for r in reimbursements)
+
         total_deductions = PayrollCalculationEngine.calculateEmployeeDeduction(pf_result, esi_result, pt)
-        net_pay = PayrollCalculationEngine.calculateTakeHome(monthly_gross, total_deductions)
+        net_pay = PayrollCalculationEngine.calculateTakeHome(monthly_gross, total_deductions) + total_reimbursements
 
         # 5. Handle Immutability and Recalculation
         current_payroll_doc = await self.db.payrolls.find_one({
@@ -109,6 +118,8 @@ class PayrollProcessor:
             "statutoryChoice": emp_choice,
             "recalculatedBy": recalculated_by,
             "recalculationReason": reason,
+            "reimbursementsTotal": total_reimbursements,
+            "reimbursementIds": [str(r["_id"]) for r in reimbursements],
             "calculatedAt": datetime.utcnow().isoformat()
         }
 
@@ -150,8 +161,29 @@ class PayrollProcessor:
         if pt > 0:
             line_items.append(PayrollLineItem(payrollId=payroll.id, componentId="pt", itemType="Deduction", amount=pt, description="Professional Tax").model_dump(by_alias=True, exclude_none=True))
             
+        for r in reimbursements:
+            line_items.append(PayrollLineItem(
+                payrollId=payroll.id, 
+                componentId=f"reimb_{r['_id']}", 
+                itemType="Earning", 
+                amount=r.get("calculatedAmount", 0.0), 
+                description=f"Reimbursement: {r.get('claimType', 'General')}"
+            ).model_dump(by_alias=True, exclude_none=True))
+
         if line_items:
             await self.db.payroll_line_items.insert_many(line_items)
+            
+        # 9. Update Reimbursement Statuses
+        if reimbursements:
+            reimb_ids = [r["_id"] for r in reimbursements]
+            await self.db.reimbursement_claims.update_many(
+                {"_id": {"$in": reimb_ids}},
+                {"$set": {
+                    "status": "PAYROLL_INCLUDED",
+                    "payrollCycleId": cycle_id,
+                    "payrollStatus": "INCLUDED"
+                }}
+            )
 
         # Also insert Audit Log
         if recalculated_by:

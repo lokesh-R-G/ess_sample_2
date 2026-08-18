@@ -34,6 +34,7 @@ const employeeNavItems: NavItem[] = [
   { path: '/attendance', label: 'Attendance', icon: Calendar },
   { path: '/leave', label: 'Leave Management', icon: FileText },
   { path: '/payslip', label: 'Payslip', icon: Receipt },
+  { path: '/reimbursements', label: 'Reimbursements & Claims', icon: Receipt },
   { path: '/profile', label: 'Profile', icon: User },
 ];
 
@@ -48,8 +49,10 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true },
   { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true },
   { path: '/admin/leave-policy', label: 'Leave Policy', icon: Settings, adminOnly: true },
+  { path: '/admin/reimbursement-policy', label: 'Reimb. Policy', icon: Settings, adminOnly: true },
   { path: '/admin/weekly-off-policy', label: 'Weekly Off', icon: Settings, adminOnly: true },
-  { path: '/admin/approvals', label: 'Approvals', icon: FileText, adminOnly: true },
+  { path: '/admin/approvals', label: 'Leave Approvals', icon: FileText, adminOnly: true },
+  { path: '/admin/reimbursement-approvals', label: 'Reimbursement Approvals', icon: Receipt, adminOnly: true },
   { path: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },
 ];
 

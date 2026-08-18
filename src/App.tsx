@@ -11,9 +11,11 @@ import Attendance from './pages/employee/Attendance';
 import LeaveManagement from './pages/employee/LeaveManagement';
 import Payslip from './pages/employee/Payslip';
 import Profile from './pages/employee/Profile';
+import Reimbursements from './pages/employee/Reimbursements';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEmployees from './pages/admin/AdminEmployees';
 import AdminLeaveApprovals from './pages/admin/AdminLeaveApprovals';
+import AdminReimbursementApprovals from './pages/admin/AdminReimbursementApprovals';
 import AdminHolidays from './pages/admin/AdminHolidays';
 import AdminSync from './pages/admin/AdminSync';
 import AdminPayrollRules from './pages/admin/payroll/AdminPayrollRules';
@@ -33,6 +35,7 @@ import EmployeeWizard from './pages/admin/employee/EmployeeWizard';
 import AdminWeeklyOffPolicy from './pages/admin/AdminWeeklyOffPolicy';
 import AdminShifts from './pages/admin/AdminShifts';
 import LeavePolicySettings from './pages/admin/LeavePolicySettings';
+import ReimbursementPolicySettings from './pages/admin/ReimbursementPolicySettings';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -97,12 +100,21 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/reimbursements"
+          element={
+            <ProtectedRoute>
+              <Reimbursements />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/admin" element={<ProtectedRoute allowRoles={['Admin']}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminDashboard />} />
           <Route path="employees" element={<AdminEmployees />} />
           <Route path="employees/new" element={<EmployeeWizard />} />
           <Route path="employees/edit/:id" element={<EmployeeWizard />} />
           <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
+          <Route path="reimbursement-approvals" element={<AdminReimbursementApprovals />} />
           <Route path="holidays" element={<AdminHolidays />} />
           <Route path="sync" element={<AdminSync />} />
           <Route path="payroll" element={<AdminPayrollRules />} />
@@ -116,6 +128,7 @@ function AppRoutes() {
           <Route path="attendance/historical-corrections" element={<HistoricalCorrections />} />
           <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
           <Route path="leave-policy" element={<LeavePolicySettings />} />
+          <Route path="reimbursement-policy" element={<ReimbursementPolicySettings />} />
           <Route path="weekly-off-policy" element={<AdminWeeklyOffPolicy />} />
           <Route path="organization" element={<AdminOrganization />} />
           <Route path="approvals" element={<Navigate to="/admin/leave-approvals" replace />} />

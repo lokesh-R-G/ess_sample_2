@@ -3,7 +3,10 @@ from app.db.mongo import get_database
 from app.reimbursement_policy.services.activation_service import PolicyActivationService
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/reimbursement-policy", tags=["Reimbursement Policy"])
+from app.reimbursement_policy.routes.trip_allowance_policy_routes import router as trip_allowance_router
+
+router = APIRouter(tags=["Reimbursement Policy"])
+router.include_router(trip_allowance_router)
 
 class ActivationRequest(BaseModel):
     configData: dict

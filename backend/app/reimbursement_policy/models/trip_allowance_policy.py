@@ -2,21 +2,15 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-class TripSheetModel(BaseModel):
+class TripAllowancePolicyModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
-    claimId: str
-    tripDate: str  # YYYY-MM-DD
-    fromLocation: str
-    toLocation: str
-    tripType: str  # "One Way", "Round Trip"
-    
-    startOdometer: float
-    endOdometer: float
-    claimedDistance: float
-    calculatedDistance: float
-    
+    companyId: str
     ratePerKm: float
-    calculatedAmount: float
+    allowedTripTypes: list[str] = ["One Way", "Round Trip"]
+    
+    effectiveFrom: str  # YYYY-MM-DD
+    effectiveTo: Optional[str] = None
+    isActive: bool = True
     
     # Audit
     createdAt: Optional[datetime] = None
