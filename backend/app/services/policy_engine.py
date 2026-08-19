@@ -99,10 +99,17 @@ class PolicyEngine:
     def _is_holiday(self) -> bool:
         if not self.target_date:
             return False
+            
+        target_str = self.target_date.strftime("%Y-%m-%d")
         for hd in self.holiday_dates:
             hd_date = hd.get("holidayDate") if isinstance(hd, dict) else getattr(hd, "holidayDate", None)
-            if str(hd_date) == self.target_date.strftime("%Y-%m-%d"):
+            
+            if hasattr(hd_date, "strftime"):
+                if hd_date.strftime("%Y-%m-%d") == target_str:
+                    return True
+            elif str(hd_date)[:10] == target_str:
                 return True
+                
         return False
 
     def _normalize_working_intervals(self) -> list:

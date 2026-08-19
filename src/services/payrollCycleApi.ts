@@ -23,7 +23,11 @@ export const payrollCycleApi = {
   },
 
   calculatePayroll: async (cycleId: string): Promise<any> => {
-    return api.post<any>(`/payrollRun/cycles/${cycleId}/process`, {});
+    return api.post<any>(`/v2/payroll/cycles/${cycleId}/calculate`, {});
+  },
+  
+  publishCycle: async (cycleId: string): Promise<any> => {
+    return api.post<any>(`/v2/payroll/cycles/${cycleId}/publish`, {});
   },
   
   recalculateEmployee: async (cycleId: string, employeeId: string, reason: string): Promise<any> => {

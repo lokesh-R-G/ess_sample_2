@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.domain_models import Payslip, Payroll
+from app.email_service.services.email_service import EmailService
 
 class PayslipService:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -57,6 +58,10 @@ class PayslipService:
         if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED"]:
             raise ValueError("Cycle must be finalized before publishing payslips")
 
+        # Get all payslips for this cycle
+        payslips_cursor = self.db.payslips.find({"cycleId": cycle_id, "status": "GENERATED"})
+        payslips_to_publish = [doc async for doc in payslips_cursor]
+
         # Update payslips status
         result = await self.db.payslips.update_many(
             {"cycleId": cycle_id, "status": "GENERATED"},
@@ -68,7 +73,36 @@ class PayslipService:
             {"$set": {"processingStatus": "PUBLISHED"}}
         )
         
-        # Here we would integrate with the centralized personal email resolver to dispatch emails
-        # ...
+        # Integrate with the centralized personal email resolver to dispatch emails
+        email_service = EmailService(self.db)
+        import asyncio
+        
+        async def send_emails():
+            for ps in payslips_to_publish:
+                emp_id = ps.get("employeeId")
+                emp = await self.db.employees.find_one({"_id": ObjectId(emp_id)})
+                if not emp:
+                    continue
+                emp_personal = await self.db.employee_personal.find_one({"employeeId": emp_id})
+                
+                personal_email = None
+                if emp_personal and emp_personal.get("contactInfo"):
+                    personal_email = emp_personal["contactInfo"].get("personalEmail")
+                
+                email = personal_email or emp.get("email")
+                
+                if email:
+                    context = {
+                        "payrollMonth": cycle.get("name", "Current Month"),
+                        "employeeName": f"{emp.get('firstName', '')} {emp.get('lastName', '')}".strip(),
+                        "netPay": ps.get("payloadSnapshot", {}).get("netPay", 0)
+                    }
+                    try:
+                        await email_service.send_payslip_email(email, context, [])
+                    except Exception as e:
+                        print(f"Error dispatching payslip to {email}: {e}")
+        
+        # Run email dispatch in background to prevent HTTP timeout
+        asyncio.create_task(send_emails())
         
         return result.modified_count

@@ -67,6 +67,16 @@ export default function AdminPayrollCycles() {
     }
   };
 
+  const handlePublish = async (cycleId: string) => {
+    try {
+      const res = await payrollCycleApi.publishCycle(cycleId);
+      toast.success(`Published payslips! Dispatched ${res.publishedPayslips} emails.`);
+      fetchCycles();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to publish payslips');
+    }
+  };
+
   if (loading) return <div className="p-6 text-center text-neutral-500">Loading Cycles...</div>;
 
   return (
@@ -136,7 +146,7 @@ export default function AdminPayrollCycles() {
                   </>
                 )}
                 {cycle.processingStatus === 'FINALIZED' && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'PUBLISHED')}>Publish Payslips</AnimatedButton>
+                  <AnimatedButton onClick={() => handlePublish(cycle.id)}>Publish Payslips</AnimatedButton>
                 )}
                 {['FINALIZED', 'PUBLISHED'].includes(cycle.processingStatus) && (
                   <AnimatedButton variant="secondary" onClick={() => window.location.href = `/admin/payroll/export/${cycle.id}`}>Bank Export</AnimatedButton>

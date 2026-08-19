@@ -11,6 +11,103 @@ class PayrollProcessor:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
 
+    async def calculate_employee_preview(self, employee_id: str, start_date: datetime, end_date: datetime) -> dict:
+        """
+        Dynamically calculate employee earnings preview without persisting records.
+        """
+        # Fetch employee choice for statutory
+        emp_personal = await self.db.employee_personal.find_one({"employeeId": employee_id}) or {}
+        emp_choice = emp_personal.get("statutoryChoice", {"wantsPf": True, "wantsPension": True, "isFresher": False})
+
+        # Fetch Statutory Rules
+        pf_rule_doc = await self.db.pf_rules.find_one({"status": "Active"})
+        if pf_rule_doc:
+            pf_rule_doc["_id"] = str(pf_rule_doc["_id"])
+        pf_rule = PFRule(**pf_rule_doc) if pf_rule_doc else PFRule()
+        
+        esi_rule_doc = await self.db.esi_rules.find_one({"status": "Active"})
+        if esi_rule_doc:
+            esi_rule_doc["_id"] = str(esi_rule_doc["_id"])
+        esi_rule = ESIRule(**esi_rule_doc) if esi_rule_doc else ESIRule()
+
+        pt_slabs_cursor = self.db.pt_slabs.find({"status": "Active"})
+        pt_slabs = []
+        async for doc in pt_slabs_cursor:
+            doc["_id"] = str(doc["_id"])
+            pt_slabs.append(ProfessionalTaxSlab(**doc))
+
+        # 1. Fetch Salary Snapshot
+        emp_components_cursor = self.db.employee_salary_components.find({
+            "employeeId": employee_id,
+            "status": "Active"
+        })
+        structure_components = []
+        async for comp in emp_components_cursor:
+            comp["_id"] = str(comp["_id"])
+            structure_components.append(comp)
+            
+        if not structure_components:
+            raise ValueError("No active salary components found")
+
+        # 2. Fetch Finalized Attendance
+        attendance_cursor = self.db.attendance.find({
+            "employeeId": employee_id,
+            "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+        })
+        attendance_records = [doc async for doc in attendance_cursor]
+
+        # 3. Aggregate LOP
+        lop_result = LopAggregator.aggregate_lop(attendance_records)
+
+        # 4. Calculation Math
+        total_gross = PayrollCalculationEngine.calculateGross(structure_components)
+        working_days = (end_date - start_date).days + 1
+        
+        monthly_gross = PayrollCalculationEngine.calculateMonthlyGross(total_gross, working_days, lop_result.totalLopDays)
+        prorated_components = PayrollCalculationEngine.splitSalaryComponents(monthly_gross, structure_components)
+
+        pf_gross = PayrollCalculationEngine.calculatePfGross(prorated_components, pf_rule)
+        esi_gross = PayrollCalculationEngine.calculateEsiGross(prorated_components)
+        
+        pf_result = PayrollCalculationEngine.calculatePf(pf_gross, pf_rule, emp_choice)
+        esi_result = PayrollCalculationEngine.calculateEsi(esi_gross, esi_rule)
+        
+        # We need gender for PT, default to Any if missing
+        gender = emp_personal.get("gender", "Any")
+        pt = PayrollCalculationEngine.calculateProfessionalTax(monthly_gross, pt_slabs, gender)
+
+        # 4.5 Fetch Eligible Reimbursements (Not persisting, so we just aggregate them)
+        reimbursements_cursor = self.db.reimbursement_claims.find({
+            "employeeId": employee_id,
+            "status": "PAYROLL_ELIGIBLE",
+            "deletedAt": None
+        })
+        reimbursements = [doc async for doc in reimbursements_cursor]
+        total_reimbursements = sum(r.get("calculatedAmount", 0.0) for r in reimbursements)
+
+        total_deductions = PayrollCalculationEngine.calculateEmployeeDeduction(pf_result, esi_result, pt)
+        net_pay = PayrollCalculationEngine.calculateTakeHome(monthly_gross, total_deductions) + total_reimbursements
+
+        # 6. Build Snapshot (Do NOT persist)
+        snapshot = {
+            "components": prorated_components,
+            "lopBreakdown": lop_result.model_dump(),
+            "pfCalculation": pf_result,
+            "esiCalculation": esi_result,
+            "ptAmount": pt,
+            "workingDays": working_days,
+            "pfGross": pf_gross,
+            "esiGross": esi_gross,
+            "statutoryChoice": emp_choice,
+            "reimbursementsTotal": total_reimbursements,
+            "reimbursementIds": [str(r["_id"]) for r in reimbursements],
+            "calculatedAt": datetime.utcnow().isoformat(),
+            "grossEarnings": monthly_gross,
+            "grossDeductions": total_deductions,
+            "netPay": net_pay
+        }
+        return snapshot
+
     async def process_employee(self, cycle_id: str, employee_id: str, recalculated_by: Optional[str] = None, reason: Optional[str] = None) -> Payroll:
         # Fetch cycle
         cycle_doc = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
@@ -24,13 +121,20 @@ class PayrollProcessor:
 
         # Fetch Statutory Rules
         pf_rule_doc = await self.db.pf_rules.find_one({"status": "Active"})
+        if pf_rule_doc:
+            pf_rule_doc["_id"] = str(pf_rule_doc["_id"])
         pf_rule = PFRule(**pf_rule_doc) if pf_rule_doc else PFRule()
         
         esi_rule_doc = await self.db.esi_rules.find_one({"status": "Active"})
+        if esi_rule_doc:
+            esi_rule_doc["_id"] = str(esi_rule_doc["_id"])
         esi_rule = ESIRule(**esi_rule_doc) if esi_rule_doc else ESIRule()
 
         pt_slabs_cursor = self.db.pt_slabs.find({"status": "Active"})
-        pt_slabs = [ProfessionalTaxSlab(**doc) async for doc in pt_slabs_cursor]
+        pt_slabs = []
+        async for doc in pt_slabs_cursor:
+            doc["_id"] = str(doc["_id"])
+            pt_slabs.append(ProfessionalTaxSlab(**doc))
 
         # 1. Fetch Salary Snapshot
         emp_components_cursor = self.db.employee_salary_components.find({

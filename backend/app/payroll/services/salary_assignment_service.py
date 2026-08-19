@@ -110,7 +110,8 @@ class SalaryAssignmentService:
                 annualAmount=rc.get("amount", 0.0) * 12,
                 formulaUsed=rc.get("formulaUsed", "Flat"),
                 distributionRatio=rc.get("distributionRatio", 0.0),
-                effectiveDate=effective_date
+                effectiveDate=effective_date,
+                status="Active"
             )
             snapshot_records.append(record.model_dump(by_alias=True, exclude_unset=True))
             
