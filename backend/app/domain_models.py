@@ -304,6 +304,8 @@ class PayrollSettings(RuleBase):
 
 class PFRule(RuleBase):
     id: Optional[str] = Field(default=None, alias="_id")
+    policyCode: str = "DEFAULT_PF"
+    isCurrent: bool = True
     pfEnabled: bool = True
     mandatoryBelowGross: float = 15000.0
     optionalAboveGross: float = 15000.0

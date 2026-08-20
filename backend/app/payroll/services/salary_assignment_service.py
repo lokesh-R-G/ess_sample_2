@@ -18,9 +18,12 @@ def clean_mongo_doc(doc: dict) -> dict:
     if "_id" in clean: clean["_id"] = str(clean["_id"])
     return clean
 
+from app.payroll.repositories.pf_rule_repository import PFRuleRepository
+
 class SalaryAssignmentService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
+        self.pf_repo = PFRuleRepository(db)
 
     async def assign_salary(self, payload: dict, user_id: str = None) -> dict:
         employee_id = payload.get("employeeId")
@@ -56,11 +59,19 @@ class SalaryAssignmentService:
                     doc["monthlyAmount"] = custom_comps[cid]
         
         # Fetch actual rules dynamically instead of mocking
-        pf_doc = await self.db["pf_rules"].find_one({"status": "Active"})
-        pf_rule = PFRule(**clean_mongo_doc(pf_doc)) if pf_doc else PFRule(effectiveFrom=datetime.utcnow())
+        target_dt_utc = datetime.utcnow()
+        if payload.get("effectiveDate"):
+            try:
+                target_dt_utc = datetime.fromisoformat(payload["effectiveDate"].replace("Z", "+00:00")).replace(tzinfo=None)
+            except:
+                pass
+
+        pf_rule = await self.pf_repo.resolve_policy_by_date(target_dt_utc)
+        if not pf_rule:
+            pf_rule = PFRule(effectiveFrom=target_dt_utc)
         
         esi_doc = await self.db["esi_rules"].find_one({"status": "Active"})
-        esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=datetime.utcnow())
+        esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=target_dt_utc)
         
         pt_cursor = self.db["pt_slabs"].find({"state": payload.get("ptState", "None")})
         pt_docs = await pt_cursor.to_list(length=None)

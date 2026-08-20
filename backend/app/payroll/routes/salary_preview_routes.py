@@ -96,8 +96,18 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     )
     
     # Check if PF is globally enabled to zero out PF Gross if disabled
-    pf_doc = await db["pf_rules"].find_one({"status": "Active"})
-    if pf_doc and pf_doc.get("pfEnabled", True) is False:
+    from app.payroll.repositories.pf_rule_repository import PFRuleRepository
+    pf_repo = PFRuleRepository(db)
+    
+    target_dt_utc = datetime.utcnow()
+    if req.effectiveDate:
+        try:
+            target_dt_utc = datetime.fromisoformat(req.effectiveDate.replace("Z", "+00:00")).replace(tzinfo=None)
+        except:
+            pass
+
+    pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
+    if pf_rule and pf_rule.pfEnabled is False:
         result["pfGross"] = 0.0
 
     return serialize_mongo(result)
@@ -135,8 +145,9 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     components_docs = serialize_mongo(components_docs_raw)
     
     # 3. Fetch Rules (Mocked for now, assume default rules if none exist)
-    pf_doc = await db["pf_rules"].find_one({"status": "Active"})
-    pf_rule = PFRule(**clean_mongo_doc(pf_doc)) if pf_doc else PFRule(effectiveFrom=datetime.utcnow())
+    pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
+    if not pf_rule:
+        pf_rule = PFRule(effectiveFrom=target_dt_utc)
     
     esi_doc = await db["esi_rules"].find_one({"status": "Active"})
     esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=datetime.utcnow())

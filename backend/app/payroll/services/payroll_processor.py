@@ -7,11 +7,13 @@ from app.domain_models import Payroll, PayrollCycle, PayrollLineItem, PFRule, ES
 from app.payroll.services.lop_aggregator import LopAggregator
 from app.payroll.services.payroll_calculation_service import PayrollCalculationEngine
 from app.salary.repositories.employee_salary_component_repository import EmployeeSalaryComponentRepository
+from app.payroll.repositories.pf_rule_repository import PFRuleRepository
 
 class PayrollProcessor:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.salary_repo = EmployeeSalaryComponentRepository(db)
+        self.pf_repo = PFRuleRepository(db)
 
     async def calculate_employee_preview(self, employee_id: str, start_date: datetime, end_date: datetime) -> dict:
         """
@@ -32,10 +34,9 @@ class PayrollProcessor:
             ]
         }
         
-        pf_rule_doc = await self.db.pf_rules.find_one(policy_query, sort=[("createdAt", -1)])
-        if pf_rule_doc:
-            pf_rule_doc["_id"] = str(pf_rule_doc["_id"])
-        pf_rule = PFRule(**pf_rule_doc) if pf_rule_doc else PFRule()
+        pf_rule = await self.pf_repo.resolve_policy_by_date(start_date)
+        if not pf_rule:
+            raise ValueError(f"No applicable PF policy found for DEFAULT_PF on {start_date.strftime('%Y-%m-%d')}")
         
         esi_rule_doc = await self.db.esi_rules.find_one(policy_query, sort=[("createdAt", -1)])
         if esi_rule_doc:
@@ -134,10 +135,9 @@ class PayrollProcessor:
                 {"effectiveUntil": {"$gt": cycle.startDate}}
             ]
         }
-        pf_rule_doc = await self.db.pf_rules.find_one(policy_query, sort=[("createdAt", -1)])
-        if pf_rule_doc:
-            pf_rule_doc["_id"] = str(pf_rule_doc["_id"])
-        pf_rule = PFRule(**pf_rule_doc) if pf_rule_doc else PFRule()
+        pf_rule = await self.pf_repo.resolve_policy_by_date(cycle.startDate)
+        if not pf_rule:
+            raise ValueError(f"No applicable PF policy found for DEFAULT_PF on {cycle.startDate.strftime('%Y-%m-%d')}")
 
         esi_rule_doc = await self.db.esi_rules.find_one(policy_query, sort=[("createdAt", -1)])
         if esi_rule_doc:
