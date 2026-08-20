@@ -266,8 +266,10 @@ class EmployeeSalaryComponent(BaseModel):
     annualAmount: float
     formulaUsed: Optional[str] = None
     distributionRatio: Optional[float] = None
-    effectiveDate: datetime
+    effectiveFrom: datetime
+    effectiveTo: Optional[datetime] = None
     version: int = 1
+    isCurrent: bool = True
     status: Literal["Active", "Archived"] = "Active"
 
 # ==========================================

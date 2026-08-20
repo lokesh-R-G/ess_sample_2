@@ -60,7 +60,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
       flatComponents.forEach(c => {
         const cid = c._id || c.id;
         if (newCustomComps[cid] === undefined) {
-          newCustomComps[cid] = c.monthlyAmount || c.amount || 0;
+          newCustomComps[cid] = c.monthlyAmount || 0;
           changed = true;
         }
       });
@@ -217,7 +217,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                             key={cid}
                             label={`${c.name} (₹)`}
                             type="number"
-                            value={data.customComponents?.[cid] ?? (c.monthlyAmount || c.amount || '')}
+                            value={data.customComponents?.[cid] ?? (c.monthlyAmount || '')}
                             onChange={(e) => handleCustomComponentChange(cid, Number(e.target.value))}
                           />
                         );

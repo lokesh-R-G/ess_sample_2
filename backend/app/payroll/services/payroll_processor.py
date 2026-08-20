@@ -6,10 +6,12 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.domain_models import Payroll, PayrollCycle, PayrollLineItem, PFRule, ESIRule, ProfessionalTaxSlab
 from app.payroll.services.lop_aggregator import LopAggregator
 from app.payroll.services.payroll_calculation_service import PayrollCalculationEngine
+from app.salary.repositories.employee_salary_component_repository import EmployeeSalaryComponentRepository
 
 class PayrollProcessor:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
+        self.salary_repo = EmployeeSalaryComponentRepository(db)
 
     async def calculate_employee_preview(self, employee_id: str, start_date: datetime, end_date: datetime) -> dict:
         """
@@ -36,15 +38,8 @@ class PayrollProcessor:
             doc["_id"] = str(doc["_id"])
             pt_slabs.append(ProfessionalTaxSlab(**doc))
 
-        # 1. Fetch Salary Snapshot
-        emp_components_cursor = self.db.employee_salary_components.find({
-            "employeeId": employee_id,
-            "status": "Active"
-        })
-        structure_components = []
-        async for comp in emp_components_cursor:
-            comp["_id"] = str(comp["_id"])
-            structure_components.append(comp)
+        # 1. Fetch Salary Snapshot using Resolver
+        structure_components = await self.salary_repo.get_components_by_employee_and_date(employee_id, start_date)
             
         if not structure_components:
             raise ValueError("No active salary components found")
@@ -136,15 +131,8 @@ class PayrollProcessor:
             doc["_id"] = str(doc["_id"])
             pt_slabs.append(ProfessionalTaxSlab(**doc))
 
-        # 1. Fetch Salary Snapshot
-        emp_components_cursor = self.db.employee_salary_components.find({
-            "employeeId": employee_id,
-            "status": "Active"
-        })
-        structure_components = []
-        async for comp in emp_components_cursor:
-            comp["_id"] = str(comp["_id"])
-            structure_components.append(comp)
+        # 1. Fetch Salary Snapshot using Resolver
+        structure_components = await self.salary_repo.get_components_by_employee_and_date(employee_id, cycle.startDate)
             
         if not structure_components:
             raise ValueError("No active salary components found")
@@ -253,7 +241,7 @@ class PayrollProcessor:
                 payrollId=payroll.id,
                 componentId=comp["_id"],
                 itemType="Earning",
-                amount=comp.get("proratedAmount", comp.get("amount", 0.0)),
+                amount=comp.get("proratedAmount", comp.get("monthlyAmount", 0.0)),
                 description=comp.get("name")
             )
             line_items.append(li.model_dump(by_alias=True, exclude_none=True))

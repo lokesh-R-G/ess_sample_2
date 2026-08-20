@@ -123,14 +123,14 @@ class SalaryCalculationEngine:
                 amount = parent_amount * (perc / 100.0)
                 formula_used = sc.get("defaultFormula") or f"{perc}% of {parent_name_ref}"
             else:
-                amount = sc.get("amount") or sc.get("monthlyAmount") or 0.0
+                amount = sc.get("monthlyAmount", 0.0)
                 formula_used = "Flat"
                 
             calculated_amounts[cid] = amount
             
             # Create an instance matching what PayrollCalculationEngine expects
             c_dict = sc.copy()
-            c_dict["amount"] = amount
+            c_dict["monthlyAmount"] = amount
             c_dict["formulaUsed"] = formula_used
             
             # Default missing flags for safety
@@ -157,7 +157,7 @@ class SalaryCalculationEngine:
                 ratio = e.get("distributionRatio", 0.0)
                 distribution_preview.append({
                     "name": e.get("name"),
-                    "amount": e.get("amount", 0.0),
+                    "amount": e.get("monthlyAmount", 0.0),
                     "distributionRatio": ratio,
                     "distributionPercentage": ratio * 100,
                     "attendanceDependent": e.get("attendanceDependent", True)
@@ -169,7 +169,7 @@ class SalaryCalculationEngine:
 
         if calculation_mode == CalculationMode.GROSS_ONLY:
             return {
-                "earnings": [{"name": e["name"], "amount": e["amount"], "formula": e["formulaUsed"]} for e in earnings_with_ratios],
+                "earnings": [{"name": e["name"], "amount": e.get("monthlyAmount", 0.0), "formula": e["formulaUsed"]} for e in earnings_with_ratios],
                 "distribution": distribution_preview,
                 "grossSalary": gross_salary,
                 "pfGross": pf_gross,
@@ -248,7 +248,7 @@ class SalaryCalculationEngine:
             "earnings": [
                 {
                     "name": e["name"],
-                    "amount": e["amount"],
+                    "amount": e.get("monthlyAmount", 0.0),
                     "formula": e["formulaUsed"]
                 } for e in earnings_with_ratios
             ],

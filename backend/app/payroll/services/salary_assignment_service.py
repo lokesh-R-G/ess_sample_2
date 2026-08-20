@@ -87,7 +87,15 @@ class SalaryAssignmentService:
         )
         
         raw_components = preview.get("_rawComponents", [])
-        effective_date = datetime.utcnow()
+        
+        effective_from_raw = payload.get("effectiveFrom")
+        if effective_from_raw:
+            if isinstance(effective_from_raw, str):
+                effective_date = datetime.fromisoformat(effective_from_raw.replace("Z", "+00:00"))
+            else:
+                effective_date = effective_from_raw
+        else:
+            effective_date = datetime.utcnow()
         
         snapshot_records = []
         for rc in raw_components:
@@ -106,20 +114,27 @@ class SalaryAssignmentService:
                 esiApplicable=rc.get("esiApplicable", False),
                 ptApplicable=rc.get("ptApplicable", False),
                 isBasicComponent=rc.get("isBasicComponent", False),
-                monthlyAmount=rc.get("amount", 0.0),
-                annualAmount=rc.get("amount", 0.0) * 12,
+                monthlyAmount=rc.get("amount", rc.get("monthlyAmount", 0.0)),
+                annualAmount=rc.get("amount", rc.get("monthlyAmount", 0.0)) * 12,
                 formulaUsed=rc.get("formulaUsed", "Flat"),
                 distributionRatio=rc.get("distributionRatio", 0.0),
-                effectiveDate=effective_date,
+                effectiveFrom=effective_date,
+                effectiveTo=None,
+                isCurrent=True,
                 status="Active"
             )
             snapshot_records.append(record.model_dump(by_alias=True, exclude_unset=True))
             
         if snapshot_records:
-            # Clear old active ones or mark as archived (soft delete for simplicity we just insert)
+            prev = await self.db["employee_salary_components"].find_one({"employeeId": employee_id}, sort=[("version", -1)])
+            next_version = (prev.get("version", 0) + 1) if prev else 1
+            
+            for record in snapshot_records:
+                record["version"] = next_version
+
             await self.db["employee_salary_components"].update_many(
-                {"employeeId": employee_id, "status": "Active"},
-                {"$set": {"status": "Archived"}}
+                {"employeeId": employee_id, "isCurrent": True},
+                {"$set": {"isCurrent": False, "effectiveTo": effective_date, "status": "Archived"}}
             )
             await self.db["employee_salary_components"].insert_many(snapshot_records)
             
