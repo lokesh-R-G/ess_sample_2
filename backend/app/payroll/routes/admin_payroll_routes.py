@@ -203,9 +203,8 @@ async def delete_deduction(
 
 # 6. CALCULATE PAYROLL
 @router.post("/calculate/{cycle_id}")
-async def calculate_payroll_for_branch(
+async def calculate_payroll_for_company(
     cycle_id: str,
-    branch_id: Optional[str] = Body(None, embed=True),
     company_id: str = Body(..., embed=True),
     db: AsyncIOMotorDatabase = Depends(get_database),
     current_user: AuthUser = Depends(require_roles(["Admin", "Super Admin", "HR"]))
@@ -216,10 +215,8 @@ async def calculate_payroll_for_branch(
     processor = PayrollProcessor(db)
     
     emp_query = {"companyId": company_id, "status": "Active"}
-    if branch_id:
-        emp_query["branchId"] = branch_id
         
-    employees = await db.employees.find(emp_query).to_list(length=1000)
+    employees = await db.employees.find(emp_query).to_list(length=10000)
     
     results = []
     errors = []

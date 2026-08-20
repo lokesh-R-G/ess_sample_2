@@ -26,7 +26,7 @@ const AdminPayrollControl: React.FC = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await api.get('/v2/organizations/companies');
+        const res = await api.get('/v2/organization/companies');
         setCompanies(res.data);
         if (res.data.length > 0) {
           const cid = user?.companyId || res.data[0].companyId;
@@ -74,8 +74,7 @@ const AdminPayrollControl: React.FC = () => {
       if (!selectedCompanyId || !cycleId) return;
       alert("Calculating Payroll... Please wait.");
       const res = await api.post(`/v2/payroll/admin/calculate/${cycleId}`, {
-        company_id: selectedCompanyId,
-        branch_id: branchId || undefined
+        company_id: selectedCompanyId
       });
       alert(`Successfully calculated payroll for ${(res as any).success} employees.`);
       setActiveTab('salary');
@@ -123,20 +122,6 @@ const AdminPayrollControl: React.FC = () => {
             </div>
           )}
 
-          <div className="flex items-center space-x-2 px-3 border-r border-slate-200">
-            <Building2 className="w-4 h-4 text-slate-400" />
-            <select 
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-              className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
-            >
-              <option value="">All Branches</option>
-              {branches.map(b => (
-                <option key={b.branchId} value={b.branchId}>{b.name}</option>
-              ))}
-            </select>
-          </div>
-          
           <div className="flex items-center space-x-2 px-3">
             <CalendarIcon className="w-4 h-4 text-slate-400" />
             <select 
@@ -184,6 +169,20 @@ const AdminPayrollControl: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-3 pr-4">
+            <div className="flex items-center space-x-2 px-3 border-r border-slate-200">
+              <span className="text-xs text-slate-500 font-medium uppercase">Report Filter:</span>
+              <select 
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value)}
+                className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
+              >
+                <option value="">All Branches</option>
+                {branches.map(b => (
+                  <option key={b.branchId} value={b.branchId}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            
             <button 
               onClick={handleCalculate}
               className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors"
