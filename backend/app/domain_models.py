@@ -211,6 +211,7 @@ class SalaryComponent(BaseModel):
     isEmployerContribution: bool = False
     isEmployeeContribution: bool = False
     isBasicComponent: bool = False
+    isReimbursement: bool = False
     
     displayOrder: int = 1
     isActive: bool = True
@@ -403,16 +404,26 @@ class PayrollCycle(BaseModel):
 class Payroll(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     cycleId: str
+    companyId: str
+    branchId: Optional[str] = None
+    payrollCode: Optional[str] = None
     employeeId: str
+    employeeCode: Optional[str] = None
     grossEarnings: float = 0.0
     grossDeductions: float = 0.0
     netPay: float = 0.0
+    pfAmount: float = 0.0
+    esiAmount: float = 0.0
+    ptAmount: float = 0.0
+    reimbursementAmount: float = 0.0
+    lopDays: float = 0.0
     status: Literal["Generated", "Paid"] = "Generated"
     version: int = 1
     isActive: bool = True
     previousVersionId: Optional[str] = None
     recalculatedBy: Optional[str] = None
     recalculationReason: Optional[str] = None
+    calculatedAt: datetime = Field(default_factory=datetime.utcnow)
     payloadSnapshot: dict = Field(default_factory=dict)
 
 class PayrollLineItem(BaseModel):

@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
-from app.dependencies import get_db, get_current_user
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.payroll.services.payroll_cycle_service import PayrollCycleService
 from app.payroll.services.payroll_processor import PayrollProcessor
@@ -19,7 +20,7 @@ class UpdateStatusReq(BaseModel):
     status: str
 
 @router.post("/cycles")
-async def create_cycle(req: CreateCycleReq, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def create_cycle(req: CreateCycleReq, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     service = PayrollCycleService(db)
     try:
         cycle = await service.create_cycle(current_user["companyId"], req.name, req.startDate, req.endDate)
@@ -28,14 +29,14 @@ async def create_cycle(req: CreateCycleReq, db: AsyncIOMotorDatabase = Depends(g
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/cycles")
-async def list_cycles(companyId: Optional[str] = None, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def list_cycles(companyId: Optional[str] = None, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     target_company = companyId if (companyId and current_user.get("role") == "Super Admin") else current_user.get("companyId")
     service = PayrollCycleService(db)
     cycles = await service.list_cycles(target_company)
     return [c.model_dump(by_alias=True) for c in cycles]
 
 @router.patch("/cycles/{cycle_id}/status")
-async def update_cycle_status(cycle_id: str, req: UpdateStatusReq, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def update_cycle_status(cycle_id: str, req: UpdateStatusReq, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     service = PayrollCycleService(db)
     try:
         cycle = await service.update_status(cycle_id, req.status, current_user.get("employeeId"))
@@ -44,7 +45,7 @@ async def update_cycle_status(cycle_id: str, req: UpdateStatusReq, db: AsyncIOMo
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/cycles/{cycle_id}/process")
-async def process_cycle(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def process_cycle(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     service = PayrollCycleService(db)
     processor = PayrollProcessor(db)
     try:
@@ -54,7 +55,7 @@ async def process_cycle(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_db
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/cycles/{cycle_id}/employees/{employee_id}/recalculate")
-async def recalculate_payroll(cycle_id: str, employee_id: str, reason: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def recalculate_payroll(cycle_id: str, employee_id: str, reason: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     processor = PayrollProcessor(db)
     try:
         payroll = await processor.process_employee(cycle_id, employee_id, recalculated_by=current_user.get("employeeId"), reason=reason)
@@ -63,7 +64,7 @@ async def recalculate_payroll(cycle_id: str, employee_id: str, reason: str, db: 
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/cycles/{cycle_id}/export/csv")
-async def export_bank_csv(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def export_bank_csv(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     service = BankExportService(db)
     try:
         csv_content = await service.generate_csv_export(cycle_id, generated_by=current_user.get("employeeId"))
@@ -72,7 +73,7 @@ async def export_bank_csv(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/cycles/{cycle_id}/payrolls")
-async def get_cycle_payrolls(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def get_cycle_payrolls(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
     from bson import ObjectId
     cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
     if not cycle:

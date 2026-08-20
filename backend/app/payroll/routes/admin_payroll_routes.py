@@ -122,7 +122,51 @@ async def get_reimbursements(
         c["branchId"] = emp.get("branchId")
         result.append(c)
         
+    # Also fetch Salary Components marked as isReimbursement=True
+    reimb_components = await db.salary_components.find({"isReimbursement": True, "isActive": True, "deletedAt": None}).to_list(length=1000)
+    reimb_comp_ids = [str(c["_id"]) for c in reimb_components]
+    reimb_comp_map = {str(c["_id"]): c for c in reimb_components}
+    
+    if reimb_comp_ids and employee_ids:
+        # Fetch active assigned components for these employees
+        # Assuming we just fetch the active ones
+        assigned = await db.employee_salary_components.find({
+            "employeeId": {"$in": employee_ids},
+            "componentId": {"$in": reimb_comp_ids},
+            "isActive": True
+        }).to_list(length=5000)
+        
+        for a in assigned:
+            emp = emp_map.get(a["employeeId"], {})
+            comp_def = reimb_comp_map.get(a["componentId"])
+            if not comp_def:
+                continue
+                
+            result.append({
+                "_id": str(a["_id"]),
+                "employeeId": a["employeeId"],
+                "employeeName": f"{emp.get('firstName', '')} {emp.get('lastName', '')}".strip(),
+                "employeeCode": emp.get("employeeCode"),
+                "branchId": emp.get("branchId"),
+                "claimType": "Incentive",
+                "description": comp_def.get("name"),
+                "claimedAmount": a.get("monthlyAmount", 0.0),
+                "calculatedAmount": a.get("monthlyAmount", 0.0),
+                "status": "PAYROLL_ELIGIBLE"
+            })
+
     return result
+
+# 2.5 SALARY COMPONENTS
+@router.get("/salary-components")
+async def get_salary_components(
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: AuthUser = Depends(require_roles(["Admin", "Super Admin", "HR"]))
+):
+    components = await db.salary_components.find({"isActive": True, "deletedAt": None}).to_list(length=1000)
+    for c in components:
+        c["_id"] = str(c["_id"])
+    return components
 
 # 3. DEDUCTIONS (GET)
 @router.get("/deductions")
@@ -432,6 +476,79 @@ async def get_esi_report(
             "totalEsi": esi.get("employeeEsi", 0.0) + esi.get("employerEsi", 0.0)
         })
     return result
+
+# 9.5 REPORTS: BRANCH SUMMARY
+@router.get("/reports/branch-summary/{cycle_id}")
+async def get_branch_summary(
+    cycle_id: str,
+    companyId: str,
+    branchId: Optional[str] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: AuthUser = Depends(require_roles(["Admin", "Super Admin", "HR"]))
+):
+    match_stage = {"cycleId": cycle_id, "isActive": True, "companyId": companyId}
+    if branchId:
+        match_stage["branchId"] = branchId
+
+    pipeline = [
+        {"$match": match_stage},
+        {
+            "$group": {
+                "_id": "$branchId",
+                "employeeCount": {"$sum": 1},
+                "gross": {"$sum": "$grossEarnings"},
+                "reimbursement": {"$sum": "$reimbursementAmount"},
+                "pf": {"$sum": "$pfAmount"},
+                "esi": {"$sum": "$esiAmount"},
+                "tds": {"$sum": "$ptAmount"},
+                "otherDeductions": {"$sum": {"$subtract": ["$grossDeductions", {"$add": ["$pfAmount", "$esiAmount", "$ptAmount"]}]}},
+                "netPay": {"$sum": "$netPay"}
+            }
+        },
+        {
+            "$lookup": {
+                "from": "branches",
+                "localField": "_id",
+                "foreignField": "branchId",
+                "as": "branchInfo"
+            }
+        }
+    ]
+    
+    aggr = await db.payrolls.aggregate(pipeline).to_list(length=100)
+    
+    branches_res = []
+    total = {
+        "employeeCount": 0, "gross": 0.0, "reimbursement": 0.0,
+        "pf": 0.0, "esi": 0.0, "tds": 0.0, "otherDeductions": 0.0, "netPay": 0.0
+    }
+    
+    for row in aggr:
+        b_name = row["branchInfo"][0]["name"] if row.get("branchInfo") and len(row["branchInfo"]) > 0 else row["_id"] or "Unknown"
+        b_summary = {
+            "branchId": row["_id"],
+            "branchName": b_name,
+            "employeeCount": row["employeeCount"],
+            "gross": row["gross"],
+            "reimbursement": row["reimbursement"],
+            "pf": row["pf"],
+            "esi": row["esi"],
+            "tds": row["tds"],
+            "otherDeductions": row["otherDeductions"],
+            "netPay": row["netPay"]
+        }
+        branches_res.append(b_summary)
+        
+        total["employeeCount"] += row["employeeCount"]
+        total["gross"] += row["gross"]
+        total["reimbursement"] += row["reimbursement"]
+        total["pf"] += row["pf"]
+        total["esi"] += row["esi"]
+        total["tds"] += row["tds"]
+        total["otherDeductions"] += row["otherDeductions"]
+        total["netPay"] += row["netPay"]
+
+    return {"branches": branches_res, "companyTotal": total}
 
 # 10. PUBLISH
 @router.post("/publish/{cycle_id}")

@@ -165,6 +165,15 @@ class PayrollProcessor:
 
         core = await self._calculate_core(employee_id, cycle.startDate, cycle.endDate, cycle_id)
         
+        # Fetch Employee Details
+        emp_doc = await self.db.employees.find_one({"employeeId": employee_id})
+        if not emp_doc:
+            raise ValueError(f"Employee {employee_id} not found")
+            
+        company_id = emp_doc.get("companyId", cycle.companyId)
+        branch_id = emp_doc.get("branchId")
+        emp_code = emp_doc.get("employeeCode")
+        
         # Unpack core
         prorated_components = core["prorated_components"]
         pf_result = core["pf_result"]
@@ -219,16 +228,26 @@ class PayrollProcessor:
         # 7. Persist Payroll
         payroll = Payroll(
             cycleId=cycle_id,
+            companyId=company_id,
+            branchId=branch_id,
+            payrollCode=cycle.name,
             employeeId=employee_id,
+            employeeCode=emp_code,
             grossEarnings=monthly_gross,
             grossDeductions=total_deductions,
             netPay=net_pay,
+            pfAmount=pf_result.get("employeePf", 0.0) + pf_result.get("employerPf", 0.0),
+            esiAmount=esi_result.get("employeeEsi", 0.0) + esi_result.get("employerEsi", 0.0),
+            ptAmount=pt,
+            reimbursementAmount=core["total_reimbursements"],
+            lopDays=core["lop_result"].totalLopDays,
             status="Generated",
             version=version,
             isActive=True,
             previousVersionId=previous_version_id,
             recalculatedBy=recalculated_by,
             recalculationReason=reason,
+            calculatedAt=datetime.utcnow(),
             payloadSnapshot=snapshot
         )
         p_doc = payroll.model_dump(by_alias=True, exclude_none=True)

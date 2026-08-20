@@ -14,6 +14,7 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
   const [loading, setLoading] = useState(false);
   const [showDeductionModal, setShowDeductionModal] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [components, setComponents] = useState<any[]>([]);
   
   // Deduction form state
   const [dEmpId, setDEmpId] = useState('');
@@ -27,16 +28,14 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
     setLoading(true);
     try {
       const urlBase = `?cycleId=${cycleId}&companyId=${companyId}` + (branchId ? `&branchId=${branchId}` : '');
-      const [rRes, dRes, eRes] = await Promise.all([
+      const [rRes, dRes, cRes] = await Promise.all([
         api.get(`/v2/payroll/admin/reimbursements${urlBase}`),
         api.get(`/v2/payroll/admin/deductions${urlBase}`),
-        // We need an endpoint for active employees, let's just fetch them or rely on typing?
-        // Let's assume we can fetch them for the modal, but if not we will just type the employee ID for now.
-        // Or wait, we can just fetch from `/v2/organizations/${companyId}/employees` or similar? 
-        // For now, let's leave it as a text input if we don't have the employees list readily available.
+        api.get(`/v2/payroll/admin/salary-components`)
       ]);
       setReimbursements(rRes.data);
       setDeductions(dRes.data);
+      setComponents(cRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -104,6 +103,9 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
 
   const tripSheets = reimbursements.filter(r => r.claimType === 'TripSheet');
   const cashVouchers = reimbursements.filter(r => r.claimType === 'CashVoucher');
+  const incentives = reimbursements.filter(r => r.claimType === 'Incentive');
+
+  const deductionCandidates = components.filter(c => c.componentType === 'Deduction' && !c.isStatutory);
 
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
 
@@ -187,6 +189,40 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
         )}
       </section>
 
+      {/* Reimb: Incentives */}
+      <section>
+        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+           Incentives & Component Reimbursements
+        </h3>
+        {incentives.length === 0 ? (
+          <div className="text-slate-500 bg-slate-50 p-4 rounded-lg text-sm">No incentive components found.</div>
+        ) : (
+          <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+            <table className="min-w-full divide-y divide-slate-300">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Employee</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Component</th>
+                  <th className="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200 text-sm">
+                {incentives.map(r => (
+                  <tr key={r._id}>
+                    <td className="px-3 py-3">
+                      <div className="font-medium text-slate-900">{r.employeeName}</div>
+                      <div className="text-xs text-slate-500">{r.employeeCode}</div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600">{r.description}</td>
+                    <td className="px-3 py-3 text-right font-bold text-slate-900">₹{r.claimedAmount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* Deductions */}
       <section>
         <div className="flex justify-between items-center mb-4">
@@ -247,7 +283,12 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Deduction Type</label>
-                <input required type="text" placeholder="e.g. Loan Repayment, Loss of Asset" value={dType} onChange={e => setDType(e.target.value)} disabled={!!editingId} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500" />
+                <select required value={dType} onChange={e => setDType(e.target.value)} disabled={!!editingId} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500">
+                  <option value="">Select Deduction Type</option>
+                  {deductionCandidates.map(c => (
+                    <option key={c._id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>

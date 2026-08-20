@@ -50,13 +50,15 @@ const LeaveBalanceTab: React.FC<Props> = ({ cycleId, companyId, branchId }) => {
             <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Employee</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">LOP</th>
             {leaveTypes.map(lt => (
-              <th key={lt} className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" colSpan={3}>
-                {lt} (Cr / Av / Bal)
-              </th>
+              <React.Fragment key={lt}>
+                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-100">{lt} Allocated</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-100">{lt} Availed</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-100">{lt} Balance</th>
+              </React.Fragment>
             ))}
-            <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider" colSpan={3}>
-              Total (Cr / Av / Bal)
-            </th>
+            <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider border-l border-slate-200">Total Allocated</th>
+            <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Total Availed</th>
+            <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Total Balance</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-slate-200 text-sm">
@@ -72,14 +74,14 @@ const LeaveBalanceTab: React.FC<Props> = ({ cycleId, companyId, branchId }) => {
                 const ldata = emp.breakdown?.[lt] || { credited: 0, availed: 0, balance: 0 };
                 return (
                   <React.Fragment key={lt}>
-                    <td className="px-4 py-3 text-center text-green-600">{ldata.credited}</td>
-                    <td className="px-4 py-3 text-center text-amber-600">{ldata.availed}</td>
-                    <td className="px-4 py-3 text-center font-medium text-indigo-600">{ldata.balance}</td>
+                    <td className="px-4 py-3 text-center text-green-600 bg-slate-50/30">{ldata.credited}</td>
+                    <td className="px-4 py-3 text-center text-amber-600 bg-slate-50/30">{ldata.availed}</td>
+                    <td className="px-4 py-3 text-center font-medium text-indigo-600 bg-slate-50/30">{ldata.balance}</td>
                   </React.Fragment>
                 );
               })}
               
-              <td className="px-4 py-3 text-center text-green-600 font-semibold bg-slate-50/50 border-l border-slate-100">{emp.totalCredited}</td>
+              <td className="px-4 py-3 text-center text-green-600 font-semibold bg-slate-50/50 border-l border-slate-200">{emp.totalCredited}</td>
               <td className="px-4 py-3 text-center text-amber-600 font-semibold bg-slate-50/50">{emp.totalAvailed}</td>
               <td className="px-4 py-3 text-center text-indigo-700 font-bold bg-slate-50/50">{emp.totalBalance}</td>
             </tr>
