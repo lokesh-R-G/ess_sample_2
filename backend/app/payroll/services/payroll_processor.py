@@ -21,18 +21,28 @@ class PayrollProcessor:
         emp_personal = await self.db.employee_personal.find_one({"employeeId": employee_id}) or {}
         emp_choice = emp_personal.get("statutoryChoice", {"wantsPf": True, "wantsPension": True, "isFresher": False})
 
-        # Fetch Statutory Rules
-        pf_rule_doc = await self.db.pf_rules.find_one({"status": "Active"})
+        # Fetch Statutory Rules (Date-Aware)
+        policy_query = {
+            "effectiveFrom": {"$lte": start_date},
+            "$or": [
+                {"effectiveTo": None},
+                {"effectiveTo": {"$gt": start_date}},
+                {"effectiveUntil": None},
+                {"effectiveUntil": {"$gt": start_date}}
+            ]
+        }
+        
+        pf_rule_doc = await self.db.pf_rules.find_one(policy_query, sort=[("createdAt", -1)])
         if pf_rule_doc:
             pf_rule_doc["_id"] = str(pf_rule_doc["_id"])
         pf_rule = PFRule(**pf_rule_doc) if pf_rule_doc else PFRule()
         
-        esi_rule_doc = await self.db.esi_rules.find_one({"status": "Active"})
+        esi_rule_doc = await self.db.esi_rules.find_one(policy_query, sort=[("createdAt", -1)])
         if esi_rule_doc:
             esi_rule_doc["_id"] = str(esi_rule_doc["_id"])
         esi_rule = ESIRule(**esi_rule_doc) if esi_rule_doc else ESIRule()
 
-        pt_slabs_cursor = self.db.pt_slabs.find({"status": "Active"})
+        pt_slabs_cursor = self.db.pt_slabs.find(policy_query)
         pt_slabs = []
         async for doc in pt_slabs_cursor:
             doc["_id"] = str(doc["_id"])
@@ -114,18 +124,27 @@ class PayrollProcessor:
         emp_personal = await self.db.employee_personal.find_one({"employeeId": employee_id}) or {}
         emp_choice = emp_personal.get("statutoryChoice", {"wantsPf": True, "wantsPension": True, "isFresher": False})
 
-        # Fetch Statutory Rules
-        pf_rule_doc = await self.db.pf_rules.find_one({"status": "Active"})
+        # Fetch Statutory Rules (Date-Aware)
+        policy_query = {
+            "effectiveFrom": {"$lte": cycle.startDate},
+            "$or": [
+                {"effectiveTo": None},
+                {"effectiveTo": {"$gt": cycle.startDate}},
+                {"effectiveUntil": None},
+                {"effectiveUntil": {"$gt": cycle.startDate}}
+            ]
+        }
+        pf_rule_doc = await self.db.pf_rules.find_one(policy_query, sort=[("createdAt", -1)])
         if pf_rule_doc:
             pf_rule_doc["_id"] = str(pf_rule_doc["_id"])
         pf_rule = PFRule(**pf_rule_doc) if pf_rule_doc else PFRule()
-        
-        esi_rule_doc = await self.db.esi_rules.find_one({"status": "Active"})
+
+        esi_rule_doc = await self.db.esi_rules.find_one(policy_query, sort=[("createdAt", -1)])
         if esi_rule_doc:
             esi_rule_doc["_id"] = str(esi_rule_doc["_id"])
         esi_rule = ESIRule(**esi_rule_doc) if esi_rule_doc else ESIRule()
 
-        pt_slabs_cursor = self.db.pt_slabs.find({"status": "Active"})
+        pt_slabs_cursor = self.db.pt_slabs.find(policy_query)
         pt_slabs = []
         async for doc in pt_slabs_cursor:
             doc["_id"] = str(doc["_id"])
