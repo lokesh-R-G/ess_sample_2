@@ -23,6 +23,7 @@ import SalaryPreviewPage from './pages/admin/payroll/SalaryPreviewPage';
 import AdminPayrollCycles from './pages/admin/payroll/AdminPayrollCycles';
 import AdminPayrollReview from './pages/admin/payroll/AdminPayrollReview';
 import AdminBankExport from './pages/admin/payroll/AdminBankExport';
+import AdminPayrollControl from './pages/admin/payroll/AdminPayrollControl';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendanceMonitor from './pages/admin/attendance/AdminAttendanceMonitor';
 import AdminAttendance from './pages/admin/AdminAttendance';
@@ -121,6 +122,7 @@ function AppRoutes() {
           <Route path="payroll" element={<AdminPayrollRules />} />
           <Route path="payroll/preview" element={<SalaryPreviewPage />} />
           <Route path="payroll/cycles" element={<AdminPayrollCycles />} />
+          <Route path="payroll/control" element={<AdminPayrollControl />} />
           <Route path="payroll/review/:cycleId" element={<AdminPayrollReview />} />
           <Route path="payroll/export/:cycleId" element={<AdminBankExport />} />
           <Route path="branches" element={<AdminBranches />} />

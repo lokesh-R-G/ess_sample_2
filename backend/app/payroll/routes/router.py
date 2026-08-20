@@ -9,6 +9,7 @@ from app.payroll.routes.payroll_rules_routes import router as rules_router
 from app.payroll.routes.salary_preview_routes import router as preview_router
 from app.payroll.routes.salary_preview_routes import gross_router
 from app.payroll.routes.salary_assignment_routes import router as assignment_router
+from app.payroll.routes.admin_payroll_routes import router as admin_router
 from app.payroll.services.payroll_processor import PayrollProcessor
 from app.payroll.services.payroll_cycle_service import PayrollCycleService
 from app.payroll.services.payslip_service import PayslipService
@@ -18,6 +19,7 @@ router.include_router(rules_router)
 router.include_router(preview_router)
 router.include_router(gross_router)
 router.include_router(assignment_router)
+router.include_router(admin_router, prefix="/admin", tags=["Admin Payroll"])
 
 # ---------------------------------------------------------
 # EMPLOYEE PREVIEW
