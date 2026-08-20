@@ -29,7 +29,8 @@ class EmployeeService:
             return_document=True
         )
         payload["employeeId"] = str(counter["sequence_value"])
-        payload["employeeCode"] = None
+        payload["employeeCode"] = data.employeeCode
+
         payload["systemAccessEnabled"] = False
         payload["essStatus"] = "Not Invited"
         

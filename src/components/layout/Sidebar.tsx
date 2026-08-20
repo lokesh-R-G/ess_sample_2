@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LogOut,
   Shield,
+  RefreshCw,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,6 +47,7 @@ const adminNavItems: NavItem[] = [
   //{ path: '/admin/branches', label: 'Branches', icon: Building2, adminOnly: true },    
   { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true },
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true },
+  { path: '/admin/attendance/sync', label: 'Attendance Sync Settings', icon: RefreshCw, adminOnly: true },
   { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true },
   { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true },
   { path: '/admin/leave-policy', label: 'Leave Policy', icon: Settings, adminOnly: true },

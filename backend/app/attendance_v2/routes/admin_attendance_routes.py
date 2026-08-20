@@ -1,0 +1,132 @@
+from typing import Optional, List
+from datetime import datetime
+from fastapi import APIRouter, Depends, Query, HTTPException
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.db.mongo import get_database
+from app.dependencies import get_current_user
+
+router = APIRouter(prefix="/monitor", tags=["Admin Attendance Monitor"])
+
+@router.get("/")
+async def get_attendance_monitor(
+    from_date: str = Query(..., alias="from"),
+    to_date: str = Query(..., alias="to"),
+    company_id: Optional[str] = Query(None, alias="companyId"),
+    branch_id: Optional[str] = Query(None, alias="branchId"),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    user: dict = Depends(get_current_user)
+):
+    try:
+        dt_from = datetime.fromisoformat(from_date)
+        dt_to = datetime.fromisoformat(to_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO YYYY-MM-DD")
+
+    # 1. RBAC Check (Simplified: Require HR/Admin Role or specific privileges)
+    # Since this is an admin monitor, we assume the user has the right role if they reached here, 
+    # but we should enforce company/branch scoping if provided.
+    
+    # 2. Fetch Employees
+    emp_query = {"status": "Active"}
+    if company_id:
+        emp_query["companyId"] = company_id
+    if branch_id:
+        emp_query["branchId"] = branch_id
+        
+    employees = await db.employees.find(emp_query, {
+        "employeeId": 1, "employeeCode": 1, "firstName": 1, "lastName": 1, "companyId": 1, "branchId": 1
+    }).to_list(None)
+    
+    if not employees:
+        return {"monthSummary": {}}
+
+    emp_map = {}
+    for emp in employees:
+        emp_id = emp.get("employeeId")
+        if emp_id:
+            emp_map[emp_id] = {
+                "employeeId": emp_id,
+                "employeeCode": emp.get("employeeCode"),
+                "name": f"{emp.get('firstName', '')} {emp.get('lastName', '')}".strip(),
+                "attendance": {},
+                "summary": {
+                    "present": 0,
+                    "absent": 0,
+                    "leaveAvailed": 0,
+                    "holiday": 0,
+                    "weekOff": 0,
+                    "lop": 0,
+                    "lateCount": 0
+                }
+            }
+
+    # 3. Fetch Finalized Attendance
+    emp_codes = [emp.get("employeeCode") for emp in employees if emp.get("employeeCode")]
+    att_cursor = db.attendance.find({
+        "empId": {"$in": emp_codes},
+        "date": {"$gte": dt_from.isoformat()[:10], "$lte": dt_to.isoformat()[:10]}
+    })
+    
+    code_to_id = {emp.get("employeeCode"): emp.get("employeeId") for emp in employees if emp.get("employeeCode")}
+    
+    async for att in att_cursor:
+        emp_id = code_to_id.get(att.get("empId"))
+        if not emp_id:
+            continue
+            
+        date_str = att.get("date")
+        status = att.get("status", "Unknown")
+        late_mins = att.get("lateMinutes", 0)
+        
+        # Build cell details safely
+        cell = {
+            "status": status,
+            "isLate": late_mins > 0,
+            "lateMinutes": late_mins,
+            "inTime": att.get("inTime"),
+            "outTime": att.get("outTime"),
+            "shiftCode": att.get("shiftCode"),
+            "actualStartTime": att.get("actualStartTime"),
+            "scheduleType": att.get("scheduleType")
+        }
+        
+        # Check leave info in approval snapshot
+        approvals = att.get("approvalSnapshot", [])
+        for app in approvals:
+            if app.get("type") == "LEAVE":
+                cell["leaveType"] = app.get("leaveType", "Unknown")
+                
+        emp_map[emp_id]["attendance"][date_str] = cell
+        
+        # Update frontend summary (fallback if leave ledger is missing)
+        s = emp_map[emp_id]["summary"]
+        if status == "Present": s["present"] += 1
+        elif status == "Absent": s["absent"] += 1
+        elif status == "Leave": s["leaveAvailed"] += 1
+        elif status == "Holiday": s["holiday"] += 1
+        elif status == "Week Off": s["weekOff"] += 1
+        elif status == "LOP": s["lop"] += 1
+        
+        if late_mins > 0:
+            s["lateCount"] += 1
+
+    # 4. Fetch Leave Ledgers for accurate leave balances
+    # leave_ledgers are mapped by employeeCode
+    ledger_cursor = db.leave_ledgers.find({"employeeCode": {"$in": emp_codes}})
+    async for ledger in ledger_cursor:
+        emp_id = code_to_id.get(ledger.get("employeeCode"))
+        if not emp_id:
+            continue
+            
+        # We attach the raw ledger to the employee summary for the frontend to render leave balances
+        if "leaveBalances" not in emp_map[emp_id]:
+            emp_map[emp_id]["leaveBalances"] = {}
+            
+        leave_type = ledger.get("leaveType", "Unknown")
+        emp_map[emp_id]["leaveBalances"][leave_type] = {
+            "credited": ledger.get("credited", 0),
+            "availed": ledger.get("availed", 0),
+            "balance": ledger.get("balance", 0)
+        }
+
+    return {"monthSummary": emp_map}

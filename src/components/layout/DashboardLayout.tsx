@@ -21,6 +21,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/admin/payroll': { title: 'Payroll', subtitle: 'Process payroll' },
   '/admin/branches': { title: 'Branch Management', subtitle: 'Manage branches' },
   '/admin/attendance': { title: 'Attendance Monitor', subtitle: 'Monitor all attendance' },
+  '/admin/attendance/sync': { title: 'Attendance Sync', subtitle: 'Manage ESSL Sync Settings' },
   '/admin/approvals': { title: 'Approvals', subtitle: 'Pending approvals' },
   '/admin/settings': { title: 'Settings', subtitle: 'System configuration' },
 };

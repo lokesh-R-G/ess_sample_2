@@ -147,7 +147,7 @@ export default function EmployeeWizard() {
       if (stepIndex === 0) {
         let empId = formData.employeeId;
         if (!empId) {
-          const empRes = await employeeApi.createEmployee({});
+          const empRes = await employeeApi.createEmployee({ employeeCode: formData.employeeCode || undefined });
           empId = empRes._id || empRes.employeeId || empRes.id;
           setFormData((prev: any) => ({ ...prev, employeeId: empId }));
         }

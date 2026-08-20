@@ -24,6 +24,7 @@ import AdminPayrollCycles from './pages/admin/payroll/AdminPayrollCycles';
 import AdminPayrollReview from './pages/admin/payroll/AdminPayrollReview';
 import AdminBankExport from './pages/admin/payroll/AdminBankExport';
 import AdminBranches from './pages/admin/AdminBranches';
+import AdminAttendanceMonitor from './pages/admin/attendance/AdminAttendanceMonitor';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import ManualRecalculation from './pages/admin/attendance/ManualRecalculation';
 import HistoricalCorrections from './pages/admin/attendance/HistoricalCorrections';
@@ -123,7 +124,8 @@ function AppRoutes() {
           <Route path="payroll/review/:cycleId" element={<AdminPayrollReview />} />
           <Route path="payroll/export/:cycleId" element={<AdminBankExport />} />
           <Route path="branches" element={<AdminBranches />} />
-          <Route path="attendance" element={<AdminAttendance />} />
+          <Route path="attendance" element={<AdminAttendanceMonitor />} />
+          <Route path="attendance/sync" element={<AdminAttendance />} />
           <Route path="attendance/recalculate" element={<ManualRecalculation />} />
           <Route path="attendance/historical-corrections" element={<HistoricalCorrections />} />
           <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
