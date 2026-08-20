@@ -73,7 +73,7 @@ class AttendanceContextResolver:
         # Ensure we pass employee.employeeId for ledger calculation if it uses UUID
         permission_ledger = await ledger_service.get_or_calculate_ledger(employee.employeeId, month_str)
             
-        print(f"Employee UUID : {employee.employeeId}")
+        print(f"Employee ID : {employee.employeeId}")
 
         employment_doc = await self.db.employee_employment_histories.find_one({
             "employeeId": employee.employeeId,

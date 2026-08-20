@@ -23,6 +23,10 @@ async def login(payload: LoginRequest):
     db = get_database()
     user = await authenticate_or_provision_user(db, payload.empId, payload.password)
     user_view = serialize_user(user)
+    employee = await db.employees.find_one({"$or": [{"employeeCode": payload.empId}, {"empId": payload.empId}]})
+    if employee:
+        user_view["employeeId"] = employee.get("employeeId")
+        user_view["employeeCode"] = employee.get("employeeCode", payload.empId)
     # If this is the user's first login, kick off a background sync for the last 90 days
     if user_view.get("firstLogin"):
         # mark processing; schedule background sync for last 90 days

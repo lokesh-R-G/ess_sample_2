@@ -31,9 +31,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
     for k, v in list(user.items()):
         if isinstance(v, ObjectId):
             user[k] = str(v)
-    # Supplement with JWT claims for convenience
-    user.setdefault("employeeId", payload.get("employeeId"))
-    user.setdefault("employeeCode", payload.get("employeeCode"))
+    # Fetch authoritative employee mapping
+    employee = await db.employees.find_one({"$or": [{"employeeCode": emp_id}, {"empId": emp_id}]})
+    if employee:
+        user["employeeId"] = employee.get("employeeId")
+        user["employeeCode"] = employee.get("employeeCode", emp_id)
+    else:
+        user.setdefault("employeeId", payload.get("employeeId"))
+        user.setdefault("employeeCode", payload.get("employeeCode"))
+        
     return user
 
 

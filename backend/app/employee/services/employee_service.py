@@ -21,7 +21,14 @@ class EmployeeService:
         
         # Override payload with system defaults for Employee Creation
         payload = data.model_dump(exclude_unset=True)
-        payload["employeeId"] = str(uuid.uuid4())
+        # Phase 8: Atomic generation of 6-digit Employee ID
+        counter = await self.db.identity_counters.find_one_and_update(
+            {"_id": "employeeId"},
+            {"$inc": {"sequence_value": 1}},
+            upsert=True,
+            return_document=True
+        )
+        payload["employeeId"] = str(counter["sequence_value"])
         payload["employeeCode"] = None
         payload["systemAccessEnabled"] = False
         payload["essStatus"] = "Not Invited"
