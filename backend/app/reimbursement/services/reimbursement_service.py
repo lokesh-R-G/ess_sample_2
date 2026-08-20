@@ -12,10 +12,10 @@ class ReimbursementService:
         print(f"DEBUG: get_active_trip_allowance called with company_id={company_id}, date_str={date_str}")
         cursor = self.db.trip_allowance_policies.find({
             "companyId": company_id,
-            "isActive": True,
+            "policyCode": "TRIP_ALL_DEFAULT",
             "effectiveFrom": {"$lte": date_str},
-            "$or": [{"effectiveTo": None}, {"effectiveTo": {"$gte": date_str}}]
-        }).sort("effectiveFrom", -1)
+            "$or": [{"effectiveTo": None}, {"effectiveTo": {"$gt": date_str}}]
+        }).sort("version", -1)
         
         docs = await cursor.to_list(length=1)
         if not docs:

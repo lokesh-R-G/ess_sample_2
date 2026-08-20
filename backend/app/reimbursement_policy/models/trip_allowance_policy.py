@@ -7,10 +7,12 @@ class TripAllowancePolicyModel(BaseModel):
     companyId: str
     ratePerKm: float
     allowedTripTypes: list[str] = ["One Way", "Round Trip"]
+    policyCode: str = "TRIP_ALL_DEFAULT"
+    version: int = 1
+    isCurrent: bool = True
     
     effectiveFrom: str  # YYYY-MM-DD
     effectiveTo: Optional[str] = None
-    isActive: bool = True
     
     # Audit
     createdAt: Optional[datetime] = None

@@ -59,7 +59,8 @@ async def create_policy(
         
     policy_dict["createdAt"] = datetime.datetime.utcnow()
     policy_dict["createdBy"] = current_user.get("employeeId")
-    policy_dict["isActive"] = True
+    policy_dict["isCurrent"] = True
+    policy_dict["version"] = 1
     
     res = await db.trip_allowance_policies.insert_one(policy_dict)
     
@@ -74,14 +75,42 @@ async def update_policy(
     current_user: dict = Depends(get_current_user),
     _role = Depends(require_roles("Admin", "HR"))
 ):
-    update_data["updatedAt"] = datetime.datetime.utcnow()
-    update_data["updatedBy"] = current_user.get("employeeId")
-    
-    res = await db.trip_allowance_policies.update_one(
-        {"_id": ObjectId(policy_id)},
-        {"$set": update_data}
-    )
-    if res.matched_count == 0:
+    existing = await db.trip_allowance_policies.find_one({"_id": ObjectId(policy_id)})
+    if not existing:
         raise HTTPException(status_code=404, detail="Policy not found")
         
-    return {"status": "Success", "message": "Policy updated"}
+    if not existing.get("isCurrent", True):
+        raise HTTPException(status_code=400, detail="Cannot update a historical policy version")
+        
+    new_effective_from = update_data.get("effectiveFrom")
+    if not new_effective_from:
+        raise HTTPException(status_code=400, detail="effectiveFrom is required for policy update")
+        
+    if new_effective_from <= existing.get("effectiveFrom"):
+        raise HTTPException(status_code=400, detail="New version effectiveFrom must be after the current version effectiveFrom")
+        
+    # Archive existing
+    await db.trip_allowance_policies.update_one(
+        {"_id": ObjectId(policy_id)},
+        {"$set": {
+            "isCurrent": False, 
+            "effectiveTo": new_effective_from,
+            "updatedAt": datetime.datetime.utcnow(),
+            "updatedBy": current_user.get("employeeId")
+        }}
+    )
+    
+    # Create new version
+    new_version_doc = dict(existing)
+    del new_version_doc["_id"]
+    new_version_doc.update(update_data)
+    new_version_doc["version"] = existing.get("version", 1) + 1
+    new_version_doc["isCurrent"] = True
+    new_version_doc["effectiveTo"] = None
+    new_version_doc["createdAt"] = datetime.datetime.utcnow()
+    new_version_doc["createdBy"] = current_user.get("employeeId")
+    new_version_doc["updatedAt"] = None
+    new_version_doc["updatedBy"] = None
+    
+    res = await db.trip_allowance_policies.insert_one(new_version_doc)
+    return {"status": "Success", "message": "Policy version updated", "newPolicyId": str(res.inserted_id)}
