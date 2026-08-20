@@ -17,8 +17,8 @@ router = APIRouter()
 @router.get("/leave-balances")
 async def get_leave_balances(
     companyId: str,
+    cycleId: str = Query(..., description="Payroll Cycle ID"),
     branchId: Optional[str] = None,
-    month: str = Query(..., description="YYYY-MM"),
     db: AsyncIOMotorDatabase = Depends(get_database),
     current_user: AuthUser = Depends(require_roles(["Admin", "Super Admin", "HR"]))
 ):

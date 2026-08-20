@@ -13,24 +13,69 @@ const AdminPayrollControl: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'leave' | 'reimbursements' | 'salary' | 'pf' | 'esi' | 'summary'>('reimbursements');
   
-  const [cycleId, setCycleId] = useState<string>('c1'); // In real app, fetch from open cycles
-  const [month, setMonth] = useState<string>('2026-07');
-  const [branchId, setBranchId] = useState<string>('br1');
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [branches, setBranches] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState<string>('');
+  
+  const [cycles, setCycles] = useState<any[]>([]);
+  const [cycleId, setCycleId] = useState<string>('');
+  const [month, setMonth] = useState<string>('');
 
-  // Hardcoded for demo - in real app, these would come from an API
-  const branches = [
-    { id: 'br1', name: 'Chennai HQ' },
-    { id: 'br2', name: 'Salem Branch' },
-    { id: 'br3', name: 'Vijayawada' }
-  ];
+  // Fetch Companies
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const res = await api.get('/v2/organizations/companies');
+        setCompanies(res.data);
+        if (res.data.length > 0) {
+          const cid = user?.companyId || res.data[0].companyId;
+          setSelectedCompanyId(cid);
+        }
+      } catch (err) {
+        console.error("Failed to fetch companies", err);
+      }
+    };
+    fetchCompanies();
+  }, [user]);
+
+  // Fetch Branches & Cycles when Company changes
+  useEffect(() => {
+    const fetchBranchesAndCycles = async () => {
+      if (!selectedCompanyId) return;
+      try {
+        const [bRes, cRes] = await Promise.all([
+          api.get(`/v2/organizations/${selectedCompanyId}/branches`),
+          api.get(`/v2/payroll/cycles?companyId=${selectedCompanyId}`)
+        ]);
+        
+        setBranches(bRes.data);
+        if (bRes.data.length > 0) {
+          setBranchId(bRes.data[0].branchId);
+        }
+
+        setCycles(cRes.data);
+        if (cRes.data.length > 0) {
+          setCycleId(cRes.data[0].id);
+          setMonth(cRes.data[0].period || '');
+        } else {
+          setCycleId('');
+          setMonth('');
+        }
+      } catch (err) {
+        console.error("Failed to fetch branches/cycles", err);
+      }
+    };
+    fetchBranchesAndCycles();
+  }, [selectedCompanyId]);
 
   const handleCalculate = async () => {
     try {
-      if (!user?.companyId) return;
+      if (!selectedCompanyId || !cycleId) return;
       alert("Calculating Payroll... Please wait.");
       const res = await api.post(`/v2/payroll/admin/calculate/${cycleId}`, {
-        company_id: user.companyId,
-        branch_id: branchId
+        company_id: selectedCompanyId,
+        branch_id: branchId || undefined
       });
       alert(`Successfully calculated payroll for ${(res as any).success} employees.`);
       setActiveTab('salary');
@@ -41,11 +86,11 @@ const AdminPayrollControl: React.FC = () => {
 
   const handlePublish = async () => {
     try {
-      if (!user?.companyId) return;
+      if (!selectedCompanyId || !cycleId) return;
       if (!window.confirm("Are you sure you want to publish payslips and send emails?")) return;
       
       const res = await api.post(`/v2/payroll/admin/publish/${cycleId}`, {
-        company_id: user.companyId
+        company_id: selectedCompanyId
       });
       alert(`Successfully published ${(res as any).success} payslips.`);
     } catch (e: any) {
@@ -62,6 +107,22 @@ const AdminPayrollControl: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-4 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+          
+          {user?.role === 'Super Admin' && (
+            <div className="flex items-center space-x-2 px-3 border-r border-slate-200">
+              <Building2 className="w-4 h-4 text-slate-400" />
+              <select 
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
+              >
+                {companies.map(c => (
+                  <option key={c.companyId} value={c.companyId}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="flex items-center space-x-2 px-3 border-r border-slate-200">
             <Building2 className="w-4 h-4 text-slate-400" />
             <select 
@@ -69,20 +130,29 @@ const AdminPayrollControl: React.FC = () => {
               onChange={(e) => setBranchId(e.target.value)}
               className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
             >
+              <option value="">All Branches</option>
               {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
+                <option key={b.branchId} value={b.branchId}>{b.name}</option>
               ))}
             </select>
           </div>
           
           <div className="flex items-center space-x-2 px-3">
             <CalendarIcon className="w-4 h-4 text-slate-400" />
-            <input 
-              type="month" 
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
+            <select 
+              value={cycleId}
+              onChange={(e) => {
+                setCycleId(e.target.value);
+                const c = cycles.find(cyc => cyc.id === e.target.value);
+                if (c) setMonth(c.period);
+              }}
               className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
-            />
+            >
+              <option value="" disabled>Select Cycle</option>
+              {cycles.map(c => (
+                <option key={c.id} value={c.id}>{c.name} ({c.period})</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -132,12 +202,12 @@ const AdminPayrollControl: React.FC = () => {
         </div>
 
         <div className="p-6">
-          {activeTab === 'leave' && <LeaveBalanceTab month={month} branchId={branchId} />}
-          {activeTab === 'reimbursements' && <ReimbursementDeductionTab month={month} branchId={branchId} cycleId={cycleId} />}
-          {activeTab === 'salary' && <SalaryBreakdownTab cycleId={cycleId} branchId={branchId} />}
-          {activeTab === 'pf' && <PfEsiBreakdownTab type="pf" cycleId={cycleId} branchId={branchId} />}
-          {activeTab === 'esi' && <PfEsiBreakdownTab type="esi" cycleId={cycleId} branchId={branchId} />}
-          {activeTab === 'summary' && <BranchSummaryTab cycleId={cycleId} />}
+          {activeTab === 'leave' && <LeaveBalanceTab cycleId={cycleId} companyId={selectedCompanyId} branchId={branchId} />}
+          {activeTab === 'reimbursements' && <ReimbursementDeductionTab companyId={selectedCompanyId} branchId={branchId} cycleId={cycleId} />}
+          {activeTab === 'salary' && <SalaryBreakdownTab cycleId={cycleId} companyId={selectedCompanyId} branchId={branchId} />}
+          {activeTab === 'pf' && <PfEsiBreakdownTab type="pf" cycleId={cycleId} companyId={selectedCompanyId} branchId={branchId} />}
+          {activeTab === 'esi' && <PfEsiBreakdownTab type="esi" cycleId={cycleId} companyId={selectedCompanyId} branchId={branchId} />}
+          {activeTab === 'summary' && <BranchSummaryTab cycleId={cycleId} companyId={selectedCompanyId} branchId={branchId} />}
         </div>
       </div>
     </div>

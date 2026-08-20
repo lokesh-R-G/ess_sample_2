@@ -28,9 +28,10 @@ async def create_cycle(req: CreateCycleReq, db: AsyncIOMotorDatabase = Depends(g
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/cycles")
-async def list_cycles(db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def list_cycles(companyId: Optional[str] = None, db: AsyncIOMotorDatabase = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    target_company = companyId if (companyId and current_user.get("role") == "Super Admin") else current_user.get("companyId")
     service = PayrollCycleService(db)
-    cycles = await service.list_cycles(current_user["companyId"])
+    cycles = await service.list_cycles(target_company)
     return [c.model_dump(by_alias=True) for c in cycles]
 
 @router.patch("/cycles/{cycle_id}/status")
