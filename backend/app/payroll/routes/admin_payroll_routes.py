@@ -137,7 +137,7 @@ async def get_deductions(
     if current_user.role != "Super Admin" and current_user.companyId != companyId:
         raise HTTPException(status_code=403, detail="Unauthorized company access")
 
-    query = {"companyId": companyId, "status": "Active", "deletedAt": None}
+    query = {"companyId": companyId, "status": "Active", "deletedAt": None, "isCurrent": True}
     if branchId:
         query["branchId"] = branchId
     if payrollCycleId:
@@ -175,12 +175,64 @@ async def create_deduction(
     if current_user.role != "Super Admin" and current_user.companyId != payload.companyId:
         raise HTTPException(status_code=403, detail="Unauthorized company access")
         
+    # Check cycle status
+    if payload.payrollCycleId:
+        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(payload.payrollCycleId)})
+        if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
+            raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
+
     payload.createdBy = current_user.employeeId
     
     doc = payload.model_dump(by_alias=True, exclude_none=True)
     res = await db.manual_payroll_adjustments.insert_one(doc)
     doc["_id"] = str(res.inserted_id)
     return doc
+
+# 4.5 DEDUCTIONS (PUT)
+@router.put("/deductions/{deduction_id}")
+async def update_deduction(
+    deduction_id: str,
+    payload: ManualPayrollAdjustment,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: AuthUser = Depends(require_roles(["Admin", "Super Admin", "HR"]))
+):
+    doc = await db.manual_payroll_adjustments.find_one({"_id": ObjectId(deduction_id)})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Not found")
+    if current_user.role != "Super Admin" and current_user.companyId != doc["companyId"]:
+        raise HTTPException(status_code=403, detail="Unauthorized company access")
+
+    cycle_id = doc.get("payrollCycleId")
+    if cycle_id:
+        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
+        if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
+            raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
+
+    # Archive old
+    await db.manual_payroll_adjustments.update_one(
+        {"_id": ObjectId(deduction_id)},
+        {"$set": {
+            "status": "Archived", 
+            "isCurrent": False,
+            "updatedAt": datetime.utcnow(),
+            "updatedBy": current_user.employeeId
+        }}
+    )
+
+    # Insert new version
+    payload.version = doc.get("version", 1) + 1
+    payload.isCurrent = True
+    payload.originalAdjustmentId = doc.get("originalAdjustmentId") or str(doc["_id"])
+    payload.createdBy = doc.get("createdBy")
+    payload.createdAt = doc.get("createdAt")
+    payload.updatedBy = current_user.employeeId
+    payload.updatedAt = datetime.utcnow()
+
+    new_doc = payload.model_dump(by_alias=True, exclude_none=True)
+    new_doc.pop("_id", None)
+    res = await db.manual_payroll_adjustments.insert_one(new_doc)
+    new_doc["_id"] = str(res.inserted_id)
+    return new_doc
 
 # 5. DEDUCTIONS (DELETE)
 @router.delete("/deductions/{deduction_id}")
@@ -195,9 +247,15 @@ async def delete_deduction(
     if current_user.role != "Super Admin" and current_user.companyId != doc["companyId"]:
         raise HTTPException(status_code=403, detail="Unauthorized company access")
         
+    cycle_id = doc.get("payrollCycleId")
+    if cycle_id:
+        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
+        if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
+            raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
+            
     await db.manual_payroll_adjustments.update_one(
         {"_id": ObjectId(deduction_id)},
-        {"$set": {"status": "Deleted", "deletedAt": datetime.utcnow()}}
+        {"$set": {"status": "Deleted", "isCurrent": False, "deletedAt": datetime.utcnow(), "updatedBy": current_user.employeeId}}
     )
     return {"success": True}
 

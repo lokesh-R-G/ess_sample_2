@@ -20,6 +20,7 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
   const [dType, setDType] = useState('');
   const [dAmount, setDAmount] = useState('');
   const [dDesc, setDDesc] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!cycleId || !companyId) return;
@@ -50,7 +51,7 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
   const handleAddDeduction = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post(`/v2/payroll/admin/deductions`, {
+      const payload = {
         companyId,
         branchId: branchId || undefined,
         employeeId: dEmpId,
@@ -58,16 +59,47 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
         deductionType: dType,
         amount: Number(dAmount),
         description: dDesc
-      });
+      };
+
+      if (editingId) {
+        await api.put(`/v2/payroll/admin/deductions/${editingId}`, payload);
+      } else {
+        await api.post(`/v2/payroll/admin/deductions`, payload);
+      }
+      
       setShowDeductionModal(false);
       fetchData();
-      setDEmpId('');
-      setDType('');
-      setDAmount('');
-      setDDesc('');
+      resetForm();
     } catch (err: any) {
-      alert("Failed to add deduction: " + (err.response?.data?.detail || err.message));
+      alert(`Failed to ${editingId ? 'edit' : 'add'} deduction: ` + (err.response?.data?.detail || err.message));
     }
+  };
+
+  const handleDeleteDeduction = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this deduction?")) return;
+    try {
+      await api.delete(`/v2/payroll/admin/deductions/${id}`);
+      fetchData();
+    } catch (err: any) {
+      alert("Failed to delete deduction: " + (err.response?.data?.detail || err.message));
+    }
+  };
+
+  const openEditModal = (d: any) => {
+    setEditingId(d._id);
+    setDEmpId(d.employeeId);
+    setDType(d.deductionType);
+    setDAmount(d.amount.toString());
+    setDDesc(d.description || '');
+    setShowDeductionModal(true);
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setDEmpId('');
+    setDType('');
+    setDAmount('');
+    setDDesc('');
   };
 
   const tripSheets = reimbursements.filter(r => r.claimType === 'TripSheet');
@@ -179,6 +211,7 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Type</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Description</th>
                   <th className="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase">Amount</th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200 text-sm">
@@ -191,6 +224,10 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
                     <td className="px-3 py-3 font-medium text-amber-700">{d.deductionType}</td>
                     <td className="px-3 py-3 text-slate-600">{d.description}</td>
                     <td className="px-3 py-3 text-right font-bold text-red-600">-₹{d.amount}</td>
+                    <td className="px-3 py-3 text-center">
+                      <button onClick={() => openEditModal(d)} className="text-indigo-600 hover:text-indigo-900 mr-3 text-xs font-medium">Edit</button>
+                      <button onClick={() => handleDeleteDeduction(d._id)} className="text-red-600 hover:text-red-900 text-xs font-medium">Delete</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -202,15 +239,15 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
       {showDeductionModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Add Manual Deduction</h3>
+            <h3 className="text-lg font-bold text-slate-900 mb-4">{editingId ? 'Edit Manual Deduction' : 'Add Manual Deduction'}</h3>
             <form onSubmit={handleAddDeduction} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Employee ID (6-digit)</label>
-                <input required type="text" value={dEmpId} onChange={e => setDEmpId(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                <input required type="text" value={dEmpId} onChange={e => setDEmpId(e.target.value)} disabled={!!editingId} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Deduction Type</label>
-                <input required type="text" placeholder="e.g. Loan Repayment, Loss of Asset" value={dType} onChange={e => setDType(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
+                <input required type="text" placeholder="e.g. Loan Repayment, Loss of Asset" value={dType} onChange={e => setDType(e.target.value)} disabled={!!editingId} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100 disabled:text-slate-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>
@@ -221,8 +258,8 @@ const ReimbursementDeductionTab: React.FC<Props> = ({ cycleId, companyId, branch
                 <input type="text" value={dDesc} onChange={e => setDDesc(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" />
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowDeductionModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add Deduction</button>
+                <button type="button" onClick={() => { setShowDeductionModal(false); resetForm(); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{editingId ? 'Save Changes' : 'Add Deduction'}</button>
               </div>
             </form>
           </div>

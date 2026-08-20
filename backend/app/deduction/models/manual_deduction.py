@@ -13,6 +13,9 @@ class ManualPayrollAdjustment(BaseModel):
     amount: float
     description: Optional[str] = None
     status: str = "Active"
+    version: int = 1
+    isCurrent: bool = True
+    originalAdjustmentId: Optional[str] = None
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     updatedAt: datetime = Field(default_factory=datetime.utcnow)
     createdBy: Optional[str] = None
