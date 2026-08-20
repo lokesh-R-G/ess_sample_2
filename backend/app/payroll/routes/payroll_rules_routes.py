@@ -46,10 +46,32 @@ async def get_current_pf_policy(db: AsyncIOMotorDatabase = Depends(get_database)
 
 
 # ESI Rule
-esi_rule_router = create_generic_router(
-    prefix="/esi-rules", tag="ESI Rules", collection_name="esi_rules",
-    model_class=ESIRule, create_schema=ESIRule, update_schema=ESIRule, response_schema=ESIRule
-)
+esi_rule_router = APIRouter(prefix="/esi-rules", tags=["ESI Rules"])
+from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
+
+@esi_rule_router.post("/")
+async def create_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends(get_database)):
+    repo = ESIRuleRepository(db)
+    return await repo.create_initial_policy(payload)
+
+@esi_rule_router.put("/")
+async def update_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends(get_database)):
+    repo = ESIRuleRepository(db)
+    new_effective_from = payload.effectiveFrom
+    if not new_effective_from:
+        raise HTTPException(status_code=400, detail="effectiveFrom is required to update policy version")
+    try:
+        return await repo.update_policy_version(new_effective_from, payload)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@esi_rule_router.get("/current")
+async def get_current_esi_policy(db: AsyncIOMotorDatabase = Depends(get_database)):
+    repo = ESIRuleRepository(db)
+    policy = await repo.get_current_policy()
+    if not policy:
+        raise HTTPException(status_code=404, detail="No active ESI policy found")
+    return policy
 
 # PT Rule
 pt_rule_router = create_generic_router(

@@ -149,8 +149,11 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     if not pf_rule:
         pf_rule = PFRule(effectiveFrom=target_dt_utc)
     
-    esi_doc = await db["esi_rules"].find_one({"status": "Active"})
-    esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=datetime.utcnow())
+    from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
+    esi_repo = ESIRuleRepository(db)
+    esi_rule = await esi_repo.resolve_policy_by_date(target_dt_utc)
+    if not esi_rule:
+        esi_rule = ESIRule(effectiveFrom=target_dt_utc)
     
     pt_cursor = db["pt_slabs"].find({"state": req.ptState})
     pt_docs = await pt_cursor.to_list(length=None)

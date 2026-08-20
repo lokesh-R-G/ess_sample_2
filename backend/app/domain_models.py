@@ -325,6 +325,8 @@ class PFRule(RuleBase):
 
 class ESIRule(RuleBase):
     id: Optional[str] = Field(default=None, alias="_id")
+    policyCode: str = "DEFAULT_ESI"
+    isCurrent: bool = True
     esiEnabled: bool = True
     eligibilityGross: float = 21000.0
     employeePercent: float = 0.75

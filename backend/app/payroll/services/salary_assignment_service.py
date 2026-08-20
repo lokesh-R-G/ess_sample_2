@@ -70,8 +70,11 @@ class SalaryAssignmentService:
         if not pf_rule:
             pf_rule = PFRule(effectiveFrom=target_dt_utc)
         
-        esi_doc = await self.db["esi_rules"].find_one({"status": "Active"})
-        esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=target_dt_utc)
+        from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
+        esi_repo = ESIRuleRepository(self.db)
+        esi_rule = await esi_repo.resolve_policy_by_date(target_dt_utc)
+        if not esi_rule:
+            esi_rule = ESIRule(effectiveFrom=target_dt_utc)
         
         pt_cursor = self.db["pt_slabs"].find({"state": payload.get("ptState", "None")})
         pt_docs = await pt_cursor.to_list(length=None)
