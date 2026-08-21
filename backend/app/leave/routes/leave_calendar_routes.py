@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from app.db.mongo import get_database
-from app.dependencies import get_current_user
+from app.authz import authorize, AuthorizedScope
 from app.leave.controllers.leave_calendar_controller import LeaveCalendarController
 from app.leave.schemas.leave_calendar import LeaveCalendarCreate, LeaveCalendarUpdate, LeaveCalendarResponse
 
@@ -11,8 +11,10 @@ def get_controller(db = Depends(get_database)) -> LeaveCalendarController:
     return LeaveCalendarController(db)
 
 @router.post("/", response_model=LeaveCalendarResponse)
-async def create(data: LeaveCalendarCreate, controller: LeaveCalendarController = Depends(get_controller), user: dict = Depends(get_current_user)):
-    return await controller.create(data, user.get("empId"))
+async def create(data: LeaveCalendarCreate, controller: LeaveCalendarController = Depends(get_controller), authz: AuthorizedScope = Depends(authorize("leave.manage"))):
+    if getattr(data, "employeeId", None):
+        await authz.validate_resource_employee(data.employeeId)
+    return await controller.create(data, authz.employee_id)
 
 @router.get("/")
 async def get_all(
@@ -22,21 +24,32 @@ async def get_all(
     name: Optional[str] = None,
     status: Optional[str] = None,
     controller: LeaveCalendarController = Depends(get_controller),
-    user: dict = Depends(get_current_user)
+    authz: AuthorizedScope = Depends(authorize("leave.read"))
 ):
-    query = {}
+    query = await authz.get_mongo_filter("employeeId")
     if name: query["name"] = name
     if status: query["status"] = status
     return await controller.get_all(query, skip, limit, search)
 
 @router.get("/{id}", response_model=LeaveCalendarResponse)
-async def get_by_id(id: str, controller: LeaveCalendarController = Depends(get_controller), user: dict = Depends(get_current_user)):
-    return await controller.get_by_id(id)
+async def get_by_id(id: str, controller: LeaveCalendarController = Depends(get_controller), authz: AuthorizedScope = Depends(authorize("leave.read"))):
+    doc = await controller.get_by_id(id)
+    if getattr(doc, "employeeId", None):
+        await authz.validate_resource_employee(doc.employeeId)
+    return doc
 
 @router.put("/{id}", response_model=LeaveCalendarResponse)
-async def update(id: str, data: LeaveCalendarUpdate, controller: LeaveCalendarController = Depends(get_controller), user: dict = Depends(get_current_user)):
-    return await controller.update(id, data, user.get("empId"))
+async def update(id: str, data: LeaveCalendarUpdate, controller: LeaveCalendarController = Depends(get_controller), authz: AuthorizedScope = Depends(authorize("leave.manage"))):
+    doc = await controller.get_by_id(id)
+    if getattr(doc, "employeeId", None):
+        await authz.validate_resource_employee(doc.employeeId)
+    if getattr(data, "employeeId", None) and data.employeeId != doc.employeeId:
+        await authz.validate_resource_employee(data.employeeId)
+    return await controller.update(id, data, authz.employee_id)
 
 @router.delete("/{id}")
-async def delete(id: str, controller: LeaveCalendarController = Depends(get_controller), user: dict = Depends(get_current_user)):
-    return await controller.delete(id, user.get("empId"))
+async def delete(id: str, controller: LeaveCalendarController = Depends(get_controller), authz: AuthorizedScope = Depends(authorize("leave.manage"))):
+    doc = await controller.get_by_id(id)
+    if getattr(doc, "employeeId", None):
+        await authz.validate_resource_employee(doc.employeeId)
+    return await controller.delete(id, authz.employee_id)
