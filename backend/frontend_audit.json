@@ -1,0 +1,18 @@
+[
+  {
+    "file": "App.tsx",
+    "role_checks": [],
+    "auth_guards": [
+      "<ProtectedRoute>",
+      "<ProtectedRoute>",
+      "<ProtectedRoute>",
+      "<ProtectedRoute>",
+      "<ProtectedRoute>",
+      "<ProtectedRoute>",
+      "<ProtectedRoute>",
+      "<ProtectedRoute allowRoles={['Admin']}>"
+    ],
+    "api_calls": [],
+    "is_route_file": true
+  }
+]

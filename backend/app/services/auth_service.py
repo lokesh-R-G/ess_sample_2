@@ -19,6 +19,7 @@ def serialize_user(user: dict) -> dict:
     return {
         "empId": user["empId"],
         "role": user.get("role", "Employee"),
+        "roleId": user.get("roleId"),
         "firstLogin": bool(user.get("firstLogin", True)),
     }
 

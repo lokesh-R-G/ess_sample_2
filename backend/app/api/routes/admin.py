@@ -115,7 +115,7 @@ class InviteEmployeeRequest(BaseModel):
     employeeId: str          # V2 UUID — the single trusted identifier from the UI
     employeeCode: str        # HR assigns/confirms this value in the dialog
     email: str               # Personal email for welcome notification
-    role: str = "Employee"
+    roleId: str              # e.g., 'ROLE_EMPLOYEE'
 
 
 
@@ -126,10 +126,15 @@ async def invite_employee(
 ):
     """
     Canonical ESS invitation endpoint.
-    The frontend sends: { employeeId (UUID), employeeCode (HR input), email, role }.
+    The frontend sends: { employeeId (UUID), employeeCode (HR input), email, roleId }.
     The backend is the sole owner of Employee Code assignment and validation.
     """
     db = get_database()
+    
+    # 1. Validate the roleId exists
+    role = await db.roles.find_one({"roleId": payload.roleId, "isActive": True})
+    if not role:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or inactive roleId")
     now = datetime.now(timezone.utc)
 
     from app.employee.repositories.employee_repository import EmployeeRepository
@@ -197,7 +202,8 @@ async def invite_employee(
         "empId": resolved_code,          # Legacy compatibility — login username
         "username": resolved_code,
         "email": email,
-        "role": payload.role,
+        "role": role["name"],            # Legacy string
+        "roleId": payload.roleId,        # DB RBAC assignment
         "passwordHash": hash_password(temp_password),
         "firstLogin": True,
         "isActive": True,

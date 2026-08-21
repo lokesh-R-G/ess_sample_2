@@ -40,6 +40,9 @@ async def login(payload: LoginRequest):
             "employeeId": user_view.get("employeeId"),
             "employeeCode": user_view.get("employeeCode", user_view["empId"]),
             "role": user_view["role"],
+            "roleId": user_view.get("roleId"),
+            "companyId": user.get("companyId"),
+            "branchId": user.get("branchId"),
             "firstLogin": user_view["firstLogin"],
         },
         expires_delta=timedelta(minutes=settings.jwt_expire_minutes),
@@ -50,6 +53,7 @@ async def login(payload: LoginRequest):
         employeeId=user_view.get("employeeId"),
         employeeCode=user_view.get("employeeCode", user_view["empId"]),
         role=user_view["role"],
+        roleId=user_view.get("roleId"),
         firstLogin=user_view["firstLogin"],
         mustChangePassword=user_view["firstLogin"],
     )

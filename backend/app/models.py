@@ -25,7 +25,8 @@ class TokenResponse(BaseModel):
     empId: str
     employeeId: str | None = None
     employeeCode: str | None = None
-    role: RoleType
+    role: RoleType # Legacy fallback
+    roleId: str | None = None
     firstLogin: bool
     mustChangePassword: bool = False
 
