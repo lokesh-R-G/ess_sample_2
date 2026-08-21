@@ -1,8 +1,11 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.dependencies import get_current_user
 from app.db.mongo import get_database
+from app.core.security import decode_access_token
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 class AuthorizationError(HTTPException):
     def __init__(self, detail: str = "Insufficient permissions or out of scope"):
