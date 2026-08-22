@@ -22,7 +22,7 @@ settings = get_settings()
 async def login(payload: LoginRequest):
     db = get_database()
     user = await authenticate_or_provision_user(db, payload.empId, payload.password)
-    user_view = serialize_user(user)
+    user_view = await serialize_user(user, db)
     employee = await db.employees.find_one({"$or": [{"employeeCode": payload.empId}, {"empId": payload.empId}]})
     if employee:
         user_view["employeeId"] = employee.get("employeeId")
@@ -69,6 +69,16 @@ async def update_password(payload: ChangePasswordRequest, current_user=Depends(g
 @router.get("/me/", response_model=UserResponse)
 async def me(current_user=Depends(get_current_user)):
     user_data = dict(current_user)
+    # Resolve human‑readable role name from the DB for legacy compatibility
+    db = get_database()
+    role_name = None
+    if user_data.get("roleId"):
+        role_doc = await db.roles.find_one({"_id": user_data["roleId"]})
+        if role_doc:
+            role_name = role_doc.get("name") or role_doc.get("roleId")
+    # Fallback to existing role field if present, otherwise use role_name
+    if not user_data.get("role") and role_name:
+        user_data["role"] = role_name
     if "_id" in user_data:
         del user_data["_id"]
     return UserResponse(**user_data)

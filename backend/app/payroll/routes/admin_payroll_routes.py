@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.db.mongo import get_database
 from app.dependencies import require_roles, get_current_user
+from app.authz import authorize, AuthorizedScope
 from app.domain_models import AuthUser, PayrollCycle
 from app.deduction.models.manual_deduction import ManualPayrollAdjustment
 from app.payroll.services.payroll_processor import PayrollProcessor
@@ -20,13 +21,11 @@ async def get_leave_balances(
     cycleId: str = Query(..., description="Payroll Cycle ID"),
     branchId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    current_user: AuthUser = Depends(require_roles(["Admin", "Super Admin", "HR"]))
+    authz: AuthorizedScope = Depends(authorize("leave.read"))
 ):
-    # Enforce company scope
-    if current_user.role != "Super Admin" and current_user.companyId != companyId:
-        raise HTTPException(status_code=403, detail="Unauthorized company access")
-        
-    emp_query = {"companyId": companyId, "status": "Active"}
+    emp_query = await authz.get_mongo_filter("employeeId")
+    emp_query["companyId"] = companyId
+    emp_query["status"] = "Active"
     if branchId:
         emp_query["branchId"] = branchId
         

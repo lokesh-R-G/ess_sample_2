@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+# Updated role typing to support any DB‑driven role while preserving legacy literals
+from typing import Literal, Annotated, Any
+
 
 from pydantic import BaseModel, Field, ConfigDict
 
 
-RoleType = Literal["Employee", "Admin"]
+# RoleType is now a simple string to accommodate any role stored in DB
+RoleType = str
+
 
 
 class LoginRequest(BaseModel):
@@ -42,6 +46,7 @@ class UserResponse(BaseModel):
     departmentId: str | None = None
     designationId: str | None = None
     managerId: str | None = None
+    roleId: str | None = None
 
 
 class Company(BaseModel):

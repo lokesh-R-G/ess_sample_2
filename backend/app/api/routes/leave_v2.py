@@ -1,25 +1,24 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, HTTPException
 from datetime import datetime, timezone
 from app.db.mongo import get_database
-from app.dependencies import get_current_user
+from app.authz import authorize, AuthorizedScope
 from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
 
 router = APIRouter(prefix="/v2/leave", tags=["leave_v2"])
 
 @router.get("/balances")
-async def get_leave_balances(current_user=Depends(get_current_user)):
+async def get_leave_balances(
+    employeeId: str = Query(None),
+    authz: AuthorizedScope = Depends(authorize("leave.read"))
+):
     db = get_database()
-    emp_id = current_user.get("employeeId")
-    if not emp_id:
-        emp_code_tok = current_user.get("empId")
-        if emp_code_tok:
-            emp = await db.employees.find_one({"employeeCode": emp_code_tok})
-            if emp:
-                emp_id = emp.get("employeeId")
-                
-    if not emp_id:
-        from fastapi import HTTPException
+    
+    target_emp_id = employeeId or authz.employee_id
+    if not target_emp_id:
         raise HTTPException(status_code=400, detail="Could not resolve employee ID")
+        
+    await authz.validate_resource_employee(target_emp_id)
+    emp_id = target_emp_id
         
     year = datetime.now(timezone.utc).year
     

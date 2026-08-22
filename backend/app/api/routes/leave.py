@@ -2,21 +2,26 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.db.mongo import get_database
-from app.db.mongo import get_database
-from app.dependencies import get_current_user, require_roles
+from app.authz import authorize, AuthorizedScope
 
 
 router = APIRouter(prefix="/deprecated_leave", tags=["leave_deprecated"])
 
 
 @router.get("/me/")
-async def my_leave_requests(current_user=Depends(get_current_user)):
+async def my_leave_requests(authz: AuthorizedScope = Depends(authorize("leave.read"))):
     db = get_database()
-    leave_rows = await db.leave_requests.find({"empId": current_user["empId"]}, {"_id": 0}).sort("createdAt", -1).to_list(length=None)
-    balance_rows = await db.leave_balances.find_one({"empId": current_user["empId"]}, {"_id": 0})
+    emp_id = authz.employee_id
+    if not emp_id:
+        raise HTTPException(status_code=400, detail="Employee ID missing")
+        
+    await authz.validate_resource_employee(emp_id)
+        
+    leave_rows = await db.leave_requests.find({"empId": emp_id}, {"_id": 0}).sort("createdAt", -1).to_list(length=None)
+    balance_rows = await db.leave_balances.find_one({"empId": emp_id}, {"_id": 0})
     return {
         "leaveBalance": balance_rows or {},
         "requests": leave_rows,
@@ -29,11 +34,17 @@ async def my_leave_requests(current_user=Depends(get_current_user)):
 
 
 @router.post("/me/")
-async def create_leave_request(payload: dict, current_user=Depends(get_current_user)):
+async def create_leave_request(payload: dict, authz: AuthorizedScope = Depends(authorize("leave.apply"))):
     db = get_database()
+    emp_id = authz.employee_id
+    if not emp_id:
+        raise HTTPException(status_code=400, detail="Employee ID missing")
+        
+    await authz.validate_resource_employee(emp_id)
+        
     now = datetime.now(timezone.utc)
     document = {
-        "empId": current_user["empId"],
+        "empId": emp_id,
         "requestType": payload.get("requestType", "leave"),
         "leaveType": payload.get("leaveType"),
         "fromDate": payload.get("fromDate"),
@@ -51,9 +62,15 @@ async def create_leave_request(payload: dict, current_user=Depends(get_current_u
 from bson.objectid import ObjectId
 
 @router.get("/pending/")
-async def pending_leaves(_admin=Depends(require_roles("Admin"))):
+async def pending_leaves(authz: AuthorizedScope = Depends(authorize("leave.read"))):
     db = get_database()
-    cursor = db.leave_requests.find({"status": "pending"})
+    # Note: legacy module uses empId instead of employeeId, but filter maps it logically.
+    # We will fetch all pending leaves and then filter manually or rely on mongo_filter.
+    # For now, let's just get the filter, but we know the legacy app uses 'empId'.
+    query = await authz.get_mongo_filter("empId")
+    query["status"] = "pending"
+    
+    cursor = db.leave_requests.find(query)
     requests = await cursor.to_list(length=None)
     for r in requests:
         r["id"] = str(r["_id"])
@@ -63,7 +80,7 @@ async def pending_leaves(_admin=Depends(require_roles("Admin"))):
 from datetime import timedelta
 
 @router.post("/{req_id}/approve/")
-async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
+async def approve_leave(req_id: str, authz: AuthorizedScope = Depends(authorize("leave.approve"))):
     db = get_database()
     now = datetime.now(timezone.utc)
     
@@ -71,6 +88,9 @@ async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
     req = await db.leave_requests.find_one({"_id": ObjectId(req_id)})
     if not req:
         return {"error": "Request not found"}
+
+    if getattr(req, "empId", None):
+        await authz.validate_resource_employee(req.get("empId"))
 
     await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "approved", "updatedAt": now}})
     
@@ -107,7 +127,15 @@ async def approve_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
     return {"success": True}
 
 @router.post("/{req_id}/reject/")
-async def reject_leave(req_id: str, _admin=Depends(require_roles("Admin"))):
+async def reject_leave(req_id: str, authz: AuthorizedScope = Depends(authorize("leave.approve"))):
     db = get_database()
+    
+    req = await db.leave_requests.find_one({"_id": ObjectId(req_id)})
+    if not req:
+        return {"error": "Request not found"}
+
+    if getattr(req, "empId", None):
+        await authz.validate_resource_employee(req.get("empId"))
+        
     await db.leave_requests.update_one({"_id": ObjectId(req_id)}, {"$set": {"status": "rejected", "updatedAt": datetime.now(timezone.utc)}})
     return {"success": True}

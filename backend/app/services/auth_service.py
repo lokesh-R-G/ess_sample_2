@@ -15,11 +15,20 @@ from app.email_service.services.email_service import EmailService
 settings = get_settings()
 
 
-def serialize_user(user: dict) -> dict:
+async def serialize_user(user: dict, db) -> dict:
+    # Resolve roleId from roles collection if not present in the user document
+    role_id = user.get("roleId")
+    if not role_id:
+        role_name = user.get("role")
+        if role_name:
+            # Find role document by name (case‑insensitive match)
+            role_doc = await db.roles.find_one({"name": role_name})
+            if role_doc:
+                role_id = str(role_doc["_id"]) if "_id" in role_doc else role_doc.get("roleId")
     return {
         "empId": user["empId"],
         "role": user.get("role", "Employee"),
-        "roleId": user.get("roleId"),
+        "roleId": role_id,
         "firstLogin": bool(user.get("firstLogin", True)),
     }
 
