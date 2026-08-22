@@ -22,7 +22,7 @@ settings = get_settings()
 async def login(payload: LoginRequest):
     db = get_database()
     user = await authenticate_or_provision_user(db, payload.empId, payload.password)
-    user_view = serialize_user(user)
+    user_view = await serialize_user(user)
     employee = await db.employees.find_one({"$or": [{"employeeCode": payload.empId}, {"empId": payload.empId}]})
     if employee:
         user_view["employeeId"] = employee.get("employeeId")
@@ -40,6 +40,9 @@ async def login(payload: LoginRequest):
             "employeeId": user_view.get("employeeId"),
             "employeeCode": user_view.get("employeeCode", user_view["empId"]),
             "role": user_view["role"],
+            "roleId": user_view.get("roleId"),
+            "companyId": user_view.get("companyId"),
+            "branchId": user_view.get("branchId"),
             "firstLogin": user_view["firstLogin"],
         },
         expires_delta=timedelta(minutes=settings.jwt_expire_minutes),

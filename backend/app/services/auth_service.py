@@ -15,11 +15,15 @@ from app.email_service.services.email_service import EmailService
 settings = get_settings()
 
 
-def serialize_user(user: dict) -> dict:
+async def serialize_user(user: dict) -> dict:
+    """Prepare user dict for token and response, including DB‑driven roleId and scope info."""
     return {
         "empId": user["empId"],
         "role": user.get("role", "Employee"),
+        "roleId": user.get("roleId"),
         "firstLogin": bool(user.get("firstLogin", True)),
+        "companyId": user.get("companyId"),
+        "branchId": user.get("branchId"),
     }
 
 

@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
-RoleType = Literal["Employee", "Admin"]
+RoleType = str  # Legacy role now a plain string
 
 
 class LoginRequest(BaseModel):
@@ -26,6 +26,9 @@ class TokenResponse(BaseModel):
     employeeId: str | None = None
     employeeCode: str | None = None
     role: RoleType
+    roleId: str | None = None
+    companyId: str | None = None
+    branchId: str | None = None
     firstLogin: bool
     mustChangePassword: bool = False
 
@@ -35,6 +38,8 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
     empId: str
     role: RoleType
+    roleId: str | None = None
+    authorizationVersion: int | None = None
     firstLogin: bool
     companyId: str | None = None
     branchId: str | None = None

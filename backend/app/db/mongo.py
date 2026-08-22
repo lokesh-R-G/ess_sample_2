@@ -30,6 +30,14 @@ async def init_indexes() -> None:
     await db.departments.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
     await db.designations.create_index([("departmentId", 1), ("name", 1)], unique=True, sparse=True)
     await db.roles.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
+    # RBAC indexes
+    await db.roles.create_index([("roleId", 1)], unique=True)
+    await db.permissions.create_index([("permissionId", 1)], unique=True)
+    await db.role_permissions.create_index([("roleId", 1), ("permissionId", 1), ("scope", 1)], unique=True)
+    await db.role_permission_history.create_index([("roleId", 1), ("permissionId", 1), ("version", 1)], unique=True)
+    # Users RBAC fields
+    await db.users.create_index([("roleId", 1)])
+    await db.users.create_index([("authorizationVersion", 1)])
     
     # Holiday Calendar V2 Indexes
     await db.holiday_calendars.create_index([("branchId", 1), ("effectiveFrom", 1)], sparse=True)
