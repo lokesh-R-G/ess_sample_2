@@ -13,6 +13,11 @@ if MONGO_URI:
     db = client[DB_NAME]
 else:
     # Simple async in‑memory mock collections
+    class SimpleCursor:
+        def __init__(self, data):
+            self.data = data
+        async def to_list(self, length=None):
+            return self.data
     class _InMemoryCollection:
         def __init__(self):
             self.store = {}
@@ -31,6 +36,14 @@ else:
                 if all(doc.get(k) == v for k, v in filter.items()):
                     return doc
             return None
+        def find(self, filter=None):
+            if not filter:
+                return SimpleCursor(list(self.store.values()))
+            results = [doc for doc in self.store.values() if all(doc.get(k) == v for k, v in filter.items())]
+            return SimpleCursor(results)
+        async def count_documents(self, filter):
+            results = [doc for doc in self.store.values() if all(doc.get(k) == v for k, v in filter.items())]
+            return len(results)
         async def update_one(self, filter, update):
             for doc in self.store.values():
                 if all(doc.get(k) == v for k, v in filter.items()):
