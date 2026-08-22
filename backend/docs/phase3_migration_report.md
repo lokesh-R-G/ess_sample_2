@@ -502,31 +502,31 @@ WRITE OPERATIONS EXECUTED: 0
 
 * Role versions:
 
-  - ROLE_EMPLOYEE: None
+  - ROLE_EMPLOYEE: 1
 
-  - ROLE_MANAGER: None
+  - ROLE_MANAGER: 1
 
-  - ROLE_HR: None
+  - ROLE_HR: 1
 
-  - ROLE_ADMIN: None
+  - ROLE_ADMIN: 1
 
-  - ROLE_ACCOUNTS: None
+  - ROLE_ACCOUNTS: 1
 
-  - ROLE_ACCOUNTS_MD: None
+  - ROLE_ACCOUNTS_MD: 1
 
-  - ROLE_SUPER_ADMIN: None
+  - ROLE_SUPER_ADMIN: 1
 
 * Role‑permission version counts (sample):
 
-  - ('ROLE_SUPER_ADMIN', 'leave.read'): versions [None]
+  - ('ROLE_SUPER_ADMIN', 'leave.read'): versions [1]
 
-  - ('ROLE_SUPER_ADMIN', 'leave.apply'): versions [None]
+  - ('ROLE_SUPER_ADMIN', 'leave.apply'): versions [1]
 
-  - ('ROLE_SUPER_ADMIN', 'leave.manage'): versions [None]
+  - ('ROLE_SUPER_ADMIN', 'leave.manage'): versions [1]
 
-  - ('ROLE_SUPER_ADMIN', 'leave.approve'): versions [None]
+  - ('ROLE_SUPER_ADMIN', 'leave.approve'): versions [1]
 
-  - ('ROLE_SUPER_ADMIN', 'attendance.read'): versions [None]
+  - ('ROLE_SUPER_ADMIN', 'attendance.read'): versions [1]
 
 
 

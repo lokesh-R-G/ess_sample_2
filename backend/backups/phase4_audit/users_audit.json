@@ -1,0 +1,91 @@
+{
+  "timestamp": "2026-08-22T09:44:20.314522",
+  "legacy_roles": [
+    "Super Admin",
+    "Employee",
+    "Admin"
+  ],
+  "missing_companyId_user_ids": [
+    "6a59da184dd04831201e71ae",
+    "6a74348789dd1899f87043c6",
+    "6a7475d3457609815c49f054",
+    "6a7c20a0fba3d43adb70f9e8",
+    "6a7daa38217a40f271d0b3c2",
+    "6a7e9874ed79415ae11468fc",
+    "6a7f09e082b51d4fe13c3e93"
+  ],
+  "missing_branchId_user_ids": [
+    "6a59da184dd04831201e71ae",
+    "6a74348789dd1899f87043c6",
+    "6a7475d3457609815c49f054",
+    "6a7c20a0fba3d43adb70f9e8",
+    "6a7daa38217a40f271d0b3c2",
+    "6a7e9874ed79415ae11468fc",
+    "6a7f09e082b51d4fe13c3e93"
+  ],
+  "users": [
+    {
+      "_id": "6a59da184dd04831201e71ae",
+      "empId": "0001",
+      "role": "Admin",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    },
+    {
+      "_id": "6a74348789dd1899f87043c6",
+      "empId": "5188",
+      "role": "Super Admin",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    },
+    {
+      "_id": "6a7475d3457609815c49f054",
+      "empId": "202201",
+      "role": "Employee",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    },
+    {
+      "_id": "6a7c20a0fba3d43adb70f9e8",
+      "empId": "202102",
+      "role": "Employee",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    },
+    {
+      "_id": "6a7daa38217a40f271d0b3c2",
+      "empId": "1021",
+      "role": "Employee",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    },
+    {
+      "_id": "6a7e9874ed79415ae11468fc",
+      "empId": "5182",
+      "role": "Employee",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    },
+    {
+      "_id": "6a7f09e082b51d4fe13c3e93",
+      "empId": "TEST-DASH-001",
+      "role": "Employee",
+      "roleId": null,
+      "authorizationVersion": null,
+      "companyId": null,
+      "branchId": null
+    }
+  ]
+}
