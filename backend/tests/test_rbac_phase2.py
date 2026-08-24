@@ -9,53 +9,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.permission.engine.seed_permissions import seed_permissions, CANONICAL_PERMISSIONS
 
 # Load environment variables for DB connection
-MONGO_URI = os.getenv('MONGODB_URI') or ''
-DB_NAME = os.getenv('MONGODB_DB_NAME') or 'ess_test'
-
-if MONGO_URI:
-    client = AsyncIOMotorClient(MONGO_URI)
-    db = client[DB_NAME]
-else:
-    # Simple async in‑memory mock collections
-    class _InMemoryCollection:
-        def __init__(self):
-            self.store = {}
-            self._id_counter = 0
-        async def insert_one(self, doc):
-            self._id_counter += 1
-            _id = str(self._id_counter)
-            doc_copy = doc.copy()
-            doc_copy["_id"] = _id
-            self.store[_id] = doc_copy
-            return type("Result", (), {"inserted_id": _id})
-        async def delete_many(self, _):
-            self.store.clear()
-        async def find_one(self, filter):
-            for doc in self.store.values():
-                if all(doc.get(k) == v for k, v in filter.items()):
-                    return doc
-            return None
-        async def find(self, filter=None):
-            filter = filter or {}
-            for doc in self.store.values():
-                if all(doc.get(k) == v for k, v in filter.items()):
-                    yield doc
-        async def count_documents(self, filter=None):
-            filter = filter or {}
-            return sum(1 for doc in self.store.values() if all(doc.get(k) == v for k, v in filter.items()))
-    class _MockDatabase:
-        def __init__(self):
-            self._collections = {}
-        def __getitem__(self, name):
-            if name not in self._collections:
-                self._collections[name] = _InMemoryCollection()
-            return self._collections[name]
-        __getattr__ = __getitem__
-    class _MockClient:
-        def __getitem__(self, name):
-            return _MockDatabase()
-    client = _MockClient()
-    db = client[DB_NAME]
+from backend.tests.mock_db import _MockClient
+client = _MockClient()
+db = client['ess_test']
 
 @pytest.fixture(scope="module")
 async def setup_db():

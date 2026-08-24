@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header, Request
+from app.rbac.engine import authorize, has_permission
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import decode_access_token
 from app.db.mongo import get_database
 from bson import ObjectId
+
+
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -44,6 +47,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
 
 
 def require_roles(*allowed_roles: str):
+    """Legacy role‑based guard – retained for backward compatibility only.
+    New code should use ``require_permission`` instead.
+    """
     async def _role_guard(user=Depends(get_current_user)):
         user_role = (user.get("role") or "").lower()
         allowed = [r.lower() for r in allowed_roles]
@@ -52,3 +58,36 @@ def require_roles(*allowed_roles: str):
         return user
 
     return _role_guard
+
+
+def require_permission(permission_code: str, resource_context_provider: callable | None = None):
+    from fastapi import Request
+    import inspect
+    """Permission‑based dependency.
+    * ``permission_code`` – canonical permission identifier (e.g. ``"attendance.read"``).
+    * ``resource_context_provider`` – optional callable that receives the ``user`` dict and returns a ``resource_context`` mapping required for scope checks.
+    If omitted, an empty context is used (only GLOBAL permissions succeed).
+    """
+    async def _perm_guard(request: Request, user=Depends(get_current_user)):
+        rc = {}
+        if resource_context_provider:
+            try:
+                sig = inspect.signature(resource_context_provider)
+                if "request" in sig.parameters:
+                    res = resource_context_provider(user=user, request=request)
+                else:
+                    res = resource_context_provider(user)
+                if inspect.isawaitable(res):
+                    rc = await res
+                else:
+                    rc = res or {}
+            except HTTPException:
+                raise
+            except Exception as e:
+                print('PROVIDER ERROR:', repr(e))
+                # Fail closed on provider errors
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid permission context")
+        if not await has_permission(user, permission_code, rc):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        return user
+    return _perm_guard

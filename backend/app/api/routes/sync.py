@@ -3,7 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.db.mongo import get_database
-from app.dependencies import require_roles
+from app.dependencies import require_permission
+from app.rbac.context_providers import self_context
 from app.models import SyncRequest
 from app.services.sync_service import sync_essl_logs
 from app.dependencies import get_current_user
@@ -15,22 +16,21 @@ router = APIRouter(prefix="/sync", tags=["sync"])
 
 
 @router.post("/essl/")
-async def sync_essl(payload: SyncRequest | None = None, _admin=Depends(require_roles("Admin"))):
-    db = get_database()
+async def sync_essl(payload: SyncRequest | None = None, _admin=Depends(require_permission("essl.sync")), db=Depends(get_database)):
     request = payload or SyncRequest()
     return await sync_essl_logs(db, request.fromDate, request.toDate)
 
 
-@router.post("/my-data/")
-async def sync_my_data(current_user=Depends(get_current_user)):
-    db = get_database()
+@router.post("/my-data/", dependencies=[Depends(require_permission("attendance.sync", resource_context_provider=self_context))])
+async def sync_my_data(
+    current_user=Depends(get_current_user), db=Depends(get_database)):
     emp_id = current_user["empId"]
 
-    from ...services.sync_service import DictAttrWrapper
+    from app.services.sync_service import DictAttrWrapper
     raw_user = await db.users.find_one({"empId": emp_id})
     user = DictAttrWrapper(raw_user)
 
-    print("🔄 Sync triggered for:", user.empId)
+    print("Sync triggered for:", user.empId)
 
     from datetime import datetime, timedelta
     if not user.lastSyncAt:

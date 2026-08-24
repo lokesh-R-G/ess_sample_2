@@ -10,7 +10,7 @@ from app.role.engine.seed_roles import seed_roles_and_mappings
 @pytest.fixture(scope="module")
 async def setup_db():
     # Load the mock DB implementation used in other tests
-    from backend.tests.test_rbac_phase1 import _MockClient, _MockDatabase
+    from backend.tests.mock_db import _MockClient, _MockDatabase
     client = _MockClient()
     db = client["ess_test"]
     # Ensure clean collections

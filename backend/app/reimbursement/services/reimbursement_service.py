@@ -9,7 +9,10 @@ class ReimbursementService:
         self.db = db
 
     async def get_active_trip_allowance(self, company_id: str, date_str: str) -> TripAllowancePolicyModel:
+        # Resolve active policy for company on date
         print(f"DEBUG: get_active_trip_allowance called with company_id={company_id}, date_str={date_str}")
+        all_docs = await self.db.trip_allowance_policies.find({}).to_list(None)
+        print(f"DEBUG: all docs in trip_allowance_policies: {all_docs}")
         cursor = self.db.trip_allowance_policies.find({
             "companyId": company_id,
             "policyCode": "TRIP_ALL_DEFAULT",
