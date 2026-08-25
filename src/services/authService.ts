@@ -59,9 +59,16 @@ export interface UserProfile {
     canEditMobile: boolean;
     canEditAddress: boolean;
     canEditBank: boolean;
-    canEditEmergencyContact: boolean;
-    canEditEmployment: boolean;
+    canEditEmergencyContact?: boolean;
+    canEditEmployment?: boolean;
+    [key: string]: boolean | string[] | undefined;
   };
+  empId?: string;
+  employeeId?: string;
+  employeeCode?: string;
+  role?: string;
+  roleId?: string;
+  firstLogin?: boolean;
 }
 
 export async function login(empId: string, password: string) {

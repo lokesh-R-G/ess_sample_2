@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { GlassCard, AnimatedButton, Input } from '../../../components/ui';
 import { payrollCycleApi, PayrollCycle } from '../../../services/payrollCycleApi';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function AdminPayrollCycles() {
+  const { hasPermission } = useAuth();
   const [cycles, setCycles] = useState<PayrollCycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -83,7 +85,9 @@ export default function AdminPayrollCycles() {
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-neutral-900">Payroll Cycles (V2)</h1>
-        <AnimatedButton onClick={() => setIsCreating(true)}>Create Cycle</AnimatedButton>
+        {hasPermission('payroll.cycle.manage') && (
+          <AnimatedButton onClick={() => setIsCreating(true)}>Create Cycle</AnimatedButton>
+        )}
       </div>
 
       {isCreating && (
@@ -113,46 +117,50 @@ export default function AdminPayrollCycles() {
                 </div>
               </div>
               <div className="flex flex-col items-end space-y-2">
-                {cycle.processingStatus === 'DRAFT' && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'OPEN')}>Open Cycle</AnimatedButton>
-                )}
-                {cycle.processingStatus === 'OPEN' && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'APPROVAL_PENDING')}>Request Approvals</AnimatedButton>
-                )}
-                {cycle.processingStatus === 'APPROVAL_PENDING' && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'APPROVAL_LOCKED')}>Lock Approvals</AnimatedButton>
-                )}
-                {cycle.processingStatus === 'APPROVAL_LOCKED' && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'ATTENDANCE_FINALIZED')}>Finalize Attendance</AnimatedButton>
-                )}
-                {cycle.processingStatus === 'ATTENDANCE_FINALIZED' && (
-                  <AnimatedButton 
-                    onClick={() => setConfirmCalcModal(cycle)}
-                    disabled={calculatingCycle === cycle.id}
-                  >
-                    {calculatingCycle === cycle.id ? 'Calculating...' : 'Calculate Payroll'}
-                  </AnimatedButton>
-                )}
-                {cycle.processingStatus === 'PROCESSING' && (
-                  <div className="text-sm text-amber-600 font-medium">Processing or Failed</div>
-                )}
-                {cycle.processingStatus === 'CALCULATED' && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'ADMIN_REVIEW')}>Send to Admin Review</AnimatedButton>
-                )}
-                {cycle.processingStatus === 'ADMIN_REVIEW' && (
+                {hasPermission('payroll.cycle.manage') && (
                   <>
-                    <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'FINALIZED')}>Finalize Payroll</AnimatedButton>
-                    {/* Note: Recalculate happens in AdminPayrollReview */}
+                    {cycle.processingStatus === 'DRAFT' && (
+                      <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'OPEN')}>Open Cycle</AnimatedButton>
+                    )}
+                    {cycle.processingStatus === 'OPEN' && (
+                      <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'APPROVAL_PENDING')}>Request Approvals</AnimatedButton>
+                    )}
+                    {cycle.processingStatus === 'APPROVAL_PENDING' && (
+                      <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'APPROVAL_LOCKED')}>Lock Approvals</AnimatedButton>
+                    )}
+                    {cycle.processingStatus === 'APPROVAL_LOCKED' && (
+                      <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'ATTENDANCE_FINALIZED')}>Finalize Attendance</AnimatedButton>
+                    )}
+                    {cycle.processingStatus === 'ATTENDANCE_FINALIZED' && (
+                      <AnimatedButton 
+                        onClick={() => setConfirmCalcModal(cycle)}
+                        disabled={calculatingCycle === cycle.id}
+                      >
+                        {calculatingCycle === cycle.id ? 'Calculating...' : 'Calculate Payroll'}
+                      </AnimatedButton>
+                    )}
+                    {cycle.processingStatus === 'PROCESSING' && (
+                      <div className="text-sm text-amber-600 font-medium">Processing or Failed</div>
+                    )}
+                    {cycle.processingStatus === 'CALCULATED' && (
+                      <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'ADMIN_REVIEW')}>Send to Admin Review</AnimatedButton>
+                    )}
+                    {cycle.processingStatus === 'ADMIN_REVIEW' && (
+                      <>
+                        <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'FINALIZED')}>Finalize Payroll</AnimatedButton>
+                        {/* Note: Recalculate happens in AdminPayrollReview */}
+                      </>
+                    )}
+                    {cycle.processingStatus === 'FINALIZED' && (
+                      <AnimatedButton onClick={() => handlePublish(cycle.id)}>Publish Payslips</AnimatedButton>
+                    )}
+                    {['FINALIZED', 'PUBLISHED'].includes(cycle.processingStatus) && (
+                      <AnimatedButton variant="secondary" onClick={() => window.location.href = `/admin/payroll/export/${cycle.id}`}>Bank Export</AnimatedButton>
+                    )}
+                    {['PUBLISHED', 'EXPORTED'].includes(cycle.processingStatus) && (
+                      <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'CLOSED')}>Close Cycle</AnimatedButton>
+                    )}
                   </>
-                )}
-                {cycle.processingStatus === 'FINALIZED' && (
-                  <AnimatedButton onClick={() => handlePublish(cycle.id)}>Publish Payslips</AnimatedButton>
-                )}
-                {['FINALIZED', 'PUBLISHED'].includes(cycle.processingStatus) && (
-                  <AnimatedButton variant="secondary" onClick={() => window.location.href = `/admin/payroll/export/${cycle.id}`}>Bank Export</AnimatedButton>
-                )}
-                {['PUBLISHED', 'EXPORTED'].includes(cycle.processingStatus) && (
-                  <AnimatedButton onClick={() => handleStatusChange(cycle.id, 'CLOSED')}>Close Cycle</AnimatedButton>
                 )}
                 
                 {/* Link to Review UI */}

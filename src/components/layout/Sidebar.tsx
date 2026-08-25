@@ -28,6 +28,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  requiredPermission?: string;
 }
 
 const employeeNavItems: NavItem[] = [
@@ -40,23 +41,23 @@ const employeeNavItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-  { path: '/admin', label: 'Admin Dashboard', icon: Shield },
-  { path: '/admin/employees', label: 'Employees', icon: Users, adminOnly: true },
-  { path: '/admin/payroll/control', label: 'Payroll Control', icon: Receipt, adminOnly: true },
-  { path: '/admin/payroll', label: 'Payroll Configuration', icon: Settings, adminOnly: true },
-  { path: '/admin/organization', label: 'Organization', icon: Building2, adminOnly: true },
-  //{ path: '/admin/branches', label: 'Branches', icon: Building2, adminOnly: true },    
-  { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true },
-  { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true },
-  { path: '/admin/attendance/sync', label: 'Attendance Sync Settings', icon: RefreshCw, adminOnly: true },
-  { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true },
-  { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true },
-  { path: '/admin/leave-policy', label: 'Leave Policy', icon: Settings, adminOnly: true },
-  { path: '/admin/reimbursement-policy', label: 'Reimb. Policy', icon: Settings, adminOnly: true },
-  { path: '/admin/weekly-off-policy', label: 'Weekly Off', icon: Settings, adminOnly: true },
-  { path: '/admin/approvals', label: 'Leave Approvals', icon: FileText, adminOnly: true },
-  { path: '/admin/reimbursement-approvals', label: 'Reimbursement Approvals', icon: Receipt, adminOnly: true },
-  { path: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },
+  { path: '/admin', label: 'Admin Dashboard', icon: Shield }, // Always visible if they can access admin
+  { path: '/admin/employees', label: 'Employees', icon: Users, adminOnly: true, requiredPermission: 'employee.read' },
+  { path: '/admin/payroll/control', label: 'Payroll Control', icon: Receipt, adminOnly: true, requiredPermission: 'payroll.read' },
+  { path: '/admin/payroll/cycles', label: 'Payroll Cycles', icon: RefreshCw, adminOnly: true, requiredPermission: 'payroll.cycle.read' },
+  { path: '/admin/payroll', label: 'Payroll Configuration', icon: Settings, adminOnly: true, requiredPermission: 'payroll.manage' },
+  { path: '/admin/organization', label: 'Organization', icon: Building2, adminOnly: true, requiredPermission: 'organization.manage' },
+  { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true, requiredPermission: 'organization.manage' },
+  { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true, requiredPermission: 'attendance.read' },
+  { path: '/admin/attendance/sync', label: 'Attendance Sync Settings', icon: RefreshCw, adminOnly: true, requiredPermission: 'attendance.sync' },
+  { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true, requiredPermission: 'attendance.sync' },
+  { path: '/admin/attendance-policy', label: 'Policy Engine', icon: Settings, adminOnly: true, requiredPermission: 'policy.attendance.manage' },
+  { path: '/admin/leave-policy', label: 'Leave Policy', icon: Settings, adminOnly: true, requiredPermission: 'policy.leave.manage' },
+  { path: '/admin/reimbursement-policy', label: 'Reimb. Policy', icon: Settings, adminOnly: true, requiredPermission: 'policy.reimbursement.manage' },
+  { path: '/admin/weekly-off-policy', label: 'Weekly Off', icon: Settings, adminOnly: true, requiredPermission: 'policy.weekly_off.manage' },
+  { path: '/admin/approvals', label: 'Leave Approvals', icon: FileText, adminOnly: true, requiredPermission: 'leave.approve' },
+  { path: '/admin/reimbursement-approvals', label: 'Reimbursement Approvals', icon: Receipt, adminOnly: true, requiredPermission: 'reimbursement.approve' },
+  { path: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true, requiredPermission: 'organization.manage' },
 ];
 
 import { useAuth } from '../../context/AuthContext';
@@ -67,8 +68,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isAdmin = false,
 }) => {
   const location = useLocation();
-  const { user, logout } = useAuth();
-  const navItems = isAdmin ? adminNavItems : employeeNavItems;
+  const { user, logout, hasPermission } = useAuth();
+  
+  const navItems = (isAdmin ? adminNavItems : employeeNavItems).filter(item => {
+    if (item.requiredPermission) {
+      return hasPermission(item.requiredPermission);
+    }
+    return true;
+  });
 
   return (
     <motion.aside

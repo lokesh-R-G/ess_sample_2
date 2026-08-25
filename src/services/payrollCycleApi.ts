@@ -11,15 +11,15 @@ export interface PayrollCycle {
 
 export const payrollCycleApi = {
   getCycles: async (): Promise<PayrollCycle[]> => {
-    return api.get<PayrollCycle[]>('/payrollRun/cycles');
+    return api.get<PayrollCycle[]>('/v2/payroll/cycles');
   },
   
   createCycle: async (data: any): Promise<PayrollCycle> => {
-    return api.post<PayrollCycle>('/payrollRun/cycles', data);
+    return api.post<PayrollCycle>('/v2/payroll/cycles', data);
   },
   
   updateStatus: async (cycleId: string, status: string): Promise<PayrollCycle> => {
-    return api.patch<PayrollCycle>(`/payrollRun/cycles/${cycleId}/status`, { status });
+    return api.patch<PayrollCycle>(`/v2/payroll/cycles/${cycleId}/status`, { status });
   },
 
   calculatePayroll: async (cycleId: string): Promise<any> => {
@@ -31,11 +31,11 @@ export const payrollCycleApi = {
   },
   
   recalculateEmployee: async (cycleId: string, employeeId: string, reason: string): Promise<any> => {
-    return api.post<any>(`/payrollRun/cycles/${cycleId}/employees/${employeeId}/recalculate?reason=${reason}`);
+    return api.post<any>(`/v2/payroll/cycles/${cycleId}/employees/${employeeId}/recalculate?reason=${reason}`);
   },
 
   exportCsv: async (cycleId: string): Promise<any> => {
-    const res = await api.get<{csv: string}>(`/payrollRun/cycles/${cycleId}/export/csv`);
+    const res = await api.get<{csv: string}>(`/v2/payroll/cycles/${cycleId}/export/csv`);
     return res.csv;
   }
 };

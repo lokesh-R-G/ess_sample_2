@@ -46,6 +46,7 @@ class UserResponse(BaseModel):
     departmentId: str | None = None
     designationId: str | None = None
     managerId: str | None = None
+    permissions: dict[str, list[str]] | None = None
 
 
 class Company(BaseModel):

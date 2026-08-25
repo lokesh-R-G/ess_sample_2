@@ -235,7 +235,7 @@ async def test_manager_self_team_composite(setup_db):
     """Manager must have explicit ['SELF', 'TEAM'] for named permissions."""
     db = setup_db
     expected_self_team = {
-        "attendance.read", "attendance.manage", "attendance.sync",
+        "attendance.read", "attendance.manage",
         "leave.read", "leave.apply", "leave.approve",
         "reimbursement.read", "reimbursement.create", "reimbursement.approve",
         "employee.read", "payroll.salary.read", "payroll.pf.read", "payroll.esi.read",

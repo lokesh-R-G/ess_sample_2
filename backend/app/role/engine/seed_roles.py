@@ -47,6 +47,8 @@ ACCOUNTS_EXCLUDED_PERMISSIONS: set = {
     "workflow.approve",
     "essl.sync",
     "essl.recovery_sync",
+    "attendance.sync",
+    "scheduler.configure",
 }
 
 
@@ -102,7 +104,7 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
             scopes = [base_scope]
             if role_id == "manager":
                 manager_self_and_team = {
-                    "attendance.read", "attendance.manage", "attendance.sync",
+                    "attendance.read", "attendance.manage",
                     "leave.read", "leave.apply", "leave.approve",
                     "reimbursement.read", "reimbursement.create", "reimbursement.approve",
                     "employee.read", "payroll.salary.read", "payroll.pf.read", "payroll.esi.read"

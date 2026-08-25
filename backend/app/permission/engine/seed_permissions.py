@@ -46,6 +46,8 @@ CANONICAL_PERMISSIONS: List[Dict[str, Any]] = [
     {"permissionId": "workflow.read", "name": "Read Workflow", "description": "Read workflow definitions", "module": "workflow", "action": "read"},
     {"permissionId": "workflow.manage", "name": "Manage Workflow", "description": "Create / update workflows", "module": "workflow", "action": "manage"},
     {"permissionId": "workflow.approve", "name": "Approve Workflow", "description": "Approve workflow actions", "module": "workflow", "action": "approve"},
+    # SCHEDULER
+    {"permissionId": "scheduler.configure", "name": "Configure Scheduler", "description": "Configure automated jobs and schedules", "module": "scheduler", "action": "configure"},
     # ESSL
     {"permissionId": "essl.sync", "name": "Sync ESSL", "description": "Synchronize ESSL data", "module": "essl", "action": "sync"},
     {"permissionId": "essl.recovery_sync", "name": "Recovery Sync ESSL", "description": "Recover and sync ESSL data", "module": "essl", "action": "recovery_sync"}

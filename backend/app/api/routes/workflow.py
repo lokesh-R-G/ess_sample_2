@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Dict, Any
 from pydantic import BaseModel
 from app.db.mongo import get_database
-from app.dependencies import require_roles, get_current_user
+from app.dependencies import get_current_user
 from app.models import Workflow, UserResponse
 from app.services import workflow_service
 

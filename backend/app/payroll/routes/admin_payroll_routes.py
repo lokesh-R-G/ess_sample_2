@@ -8,6 +8,25 @@ from app.dependencies import require_permission, get_current_user
 
 async def company_context(companyId: str) -> dict:
     return {"companyId": companyId}
+
+async def cycle_context(cycleId: str = Query(None, description="Payroll Cycle ID"), cycle_id: str = None, payload: dict = Body(None), db: AsyncIOMotorDatabase = Depends(get_database)) -> dict:
+    cid = cycleId or cycle_id
+    if not cid and payload and "payrollCycleId" in payload:
+        cid = payload["payrollCycleId"]
+    if cid:
+        from bson import ObjectId
+        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cid)})
+        if cycle:
+            return {"companyId": cycle.get("companyId")}
+    return {}
+
+async def deduction_context(deduction_id: str, db: AsyncIOMotorDatabase = Depends(get_database)) -> dict:
+    from bson import ObjectId
+    doc = await db.manual_payroll_adjustments.find_one({"_id": ObjectId(deduction_id)})
+    if doc:
+        return {"companyId": doc.get("companyId")}
+    return {}
+
 from app.domain_models import AuthUser, PayrollCycle
 from app.deduction.models.manual_deduction import ManualPayrollAdjustment
 from app.payroll.services.payroll_processor import PayrollProcessor
@@ -23,7 +42,7 @@ async def get_leave_balances(
     cycleId: str = Query(..., description="Payroll Cycle ID"),
     branchId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
         
     emp_query = {"companyId": companyId, "status": "Active"}
@@ -210,10 +229,9 @@ async def get_deductions(
 async def create_deduction(
     payload: ManualPayrollAdjustment,
     db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
     _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
 ):
-    if current_user.role != "Super Admin" and current_user.companyId != payload.companyId:
-        raise HTTPException(status_code=403, detail="Unauthorized company access")
         
     # Check cycle status
     if payload.payrollCycleId:
@@ -234,13 +252,12 @@ async def update_deduction(
     deduction_id: str,
     payload: ManualPayrollAdjustment,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=deduction_context))
 ):
     doc = await db.manual_payroll_adjustments.find_one({"_id": ObjectId(deduction_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Not found")
-    if current_user.role != "Super Admin" and current_user.companyId != doc["companyId"]:
-        raise HTTPException(status_code=403, detail="Unauthorized company access")
 
     cycle_id = doc.get("payrollCycleId")
     if cycle_id:
@@ -279,13 +296,12 @@ async def update_deduction(
 async def delete_deduction(
     deduction_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=deduction_context))
 ):
     doc = await db.manual_payroll_adjustments.find_one({"_id": ObjectId(deduction_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Not found")
-    if current_user.role != "Super Admin" and current_user.companyId != doc["companyId"]:
-        raise HTTPException(status_code=403, detail="Unauthorized company access")
         
     cycle_id = doc.get("payrollCycleId")
     if cycle_id:
@@ -305,10 +321,9 @@ async def calculate_payroll_for_company(
     cycle_id: str,
     company_id: str = Body(..., embed=True),
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
-    if current_user.role != "Super Admin" and current_user.companyId != company_id:
-        raise HTTPException(status_code=403, detail="Unauthorized")
         
     processor = PayrollProcessor(db)
     
@@ -347,10 +362,8 @@ async def get_salary_report(
     companyId: str,
     branchId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
-    if current_user.role != "Super Admin" and current_user.companyId != companyId:
-        raise HTTPException(status_code=403, detail="Unauthorized")
         
     # Aggregate payrolls
     pipeline = [
@@ -390,7 +403,7 @@ async def get_pf_report(
     companyId: str,
     branchId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
     # Enforces same rules, returning the PF math specifically
     pipeline = [
@@ -437,7 +450,7 @@ async def get_esi_report(
     companyId: str,
     branchId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
     pipeline = [
         {"$match": {"cycleId": cycle_id, "isActive": True}},
@@ -480,7 +493,7 @@ async def get_branch_summary(
     companyId: str,
     branchId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
     match_stage = {"cycleId": cycle_id, "isActive": True, "companyId": companyId}
     if branchId:
@@ -552,10 +565,9 @@ async def publish_payroll(
     cycle_id: str,
     company_id: str = Body(..., embed=True),
     db: AsyncIOMotorDatabase = Depends(get_database),
-    _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.publish", resource_context_provider=cycle_context))
 ):
-    if current_user.role != "Super Admin" and current_user.companyId != company_id:
-        raise HTTPException(status_code=403, detail="Unauthorized")
         
     payslip_service = PayslipService(db)
     

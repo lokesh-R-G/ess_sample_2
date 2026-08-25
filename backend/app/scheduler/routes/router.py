@@ -15,7 +15,7 @@ class SchedulerConfigUpdate(BaseModel):
     lookbackDays: int
 
 @router.get("/config", response_model=List[SchedulerJobConfig])
-async def get_scheduler_config(db=Depends(get_database), _admin=Depends(require_permission("organization.manage"))):
+async def get_scheduler_config(db=Depends(get_database), _admin=Depends(require_permission("scheduler.configure"))):
     cursor = db.scheduler_configs.find({})
     configs = await cursor.to_list(length=None)
     
@@ -31,7 +31,7 @@ async def update_scheduler_config(
     payload: SchedulerConfigUpdate, 
     db=Depends(get_database), 
     current_user=Depends(get_current_user),
-    _admin=Depends(require_permission("organization.manage"))
+    _admin=Depends(require_permission("scheduler.configure"))
 ):
 
     if payload.frequencyMinutes < 1:

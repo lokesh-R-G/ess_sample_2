@@ -4,17 +4,20 @@ import { useAuth } from '../../context/AuthContext';
 
 export function ProtectedRoute({
   children,
-  allowRoles,
+  requireAnyPermission,
 }: {
   children: React.ReactNode;
-  allowRoles?: Array<'Employee' | 'Admin'>;
+  requireAnyPermission?: string[];
 }) {
   const location = useLocation();
-  const { isAuthenticated, tokenReady, user } = useAuth();
+  const { isAuthenticated, tokenReady, user, hasPermission } = useAuth();
 
   if (!tokenReady) return <div className="min-h-screen bg-white" />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (user?.firstLogin && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />;
-  if (allowRoles && user && !allowRoles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  if (requireAnyPermission && requireAnyPermission.length > 0) {
+    const hasAny = requireAnyPermission.some(p => hasPermission(p));
+    if (!hasAny) return <Navigate to="/dashboard" replace />;
+  }
   return <>{children}</>;
 }

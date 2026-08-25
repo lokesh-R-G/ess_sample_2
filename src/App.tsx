@@ -110,33 +110,35 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin" element={<ProtectedRoute allowRoles={['Admin']}><AdminLayout /></ProtectedRoute>}>
+        <Route path="/admin" element={<ProtectedRoute requireAnyPermission={[
+          'employee.read', 'leave.read', 'device.sync', 'payroll.read', 'organization.manage', 'attendance.read', 'attendance.sync', 'scheduler.configure'
+        ]}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<AdminDashboard />} />
-          <Route path="employees" element={<AdminEmployees />} />
-          <Route path="employees/new" element={<EmployeeWizard />} />
-          <Route path="employees/edit/:id" element={<EmployeeWizard />} />
-          <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
-          <Route path="reimbursement-approvals" element={<AdminReimbursementApprovals />} />
-          <Route path="holidays" element={<AdminHolidays />} />
-          <Route path="sync" element={<AdminSync />} />
-          <Route path="payroll" element={<AdminPayrollRules />} />
-          <Route path="payroll/preview" element={<SalaryPreviewPage />} />
-          <Route path="payroll/cycles" element={<AdminPayrollCycles />} />
-          <Route path="payroll/control" element={<AdminPayrollControl />} />
-          <Route path="payroll/review/:cycleId" element={<AdminPayrollReview />} />
-          <Route path="payroll/export/:cycleId" element={<AdminBankExport />} />
-          <Route path="branches" element={<AdminBranches />} />
-          <Route path="attendance" element={<AdminAttendanceMonitor />} />
-          <Route path="attendance/sync" element={<AdminAttendance />} />
-          <Route path="attendance/recalculate" element={<ManualRecalculation />} />
-          <Route path="attendance/historical-corrections" element={<HistoricalCorrections />} />
-          <Route path="attendance-policy" element={<AdminAttendancePolicy />} />
-          <Route path="leave-policy" element={<LeavePolicySettings />} />
-          <Route path="reimbursement-policy" element={<ReimbursementPolicySettings />} />
-          <Route path="weekly-off-policy" element={<AdminWeeklyOffPolicy />} />
-          <Route path="organization" element={<AdminOrganization />} />
+          <Route path="employees" element={<ProtectedRoute requireAnyPermission={['employee.read']}><AdminEmployees /></ProtectedRoute>} />
+          <Route path="employees/new" element={<ProtectedRoute requireAnyPermission={['employee.manage']}><EmployeeWizard /></ProtectedRoute>} />
+          <Route path="employees/edit/:id" element={<ProtectedRoute requireAnyPermission={['employee.manage']}><EmployeeWizard /></ProtectedRoute>} />
+          <Route path="leave-approvals" element={<ProtectedRoute requireAnyPermission={['leave.approve']}><AdminLeaveApprovals /></ProtectedRoute>} />
+          <Route path="reimbursement-approvals" element={<ProtectedRoute requireAnyPermission={['reimbursement.approve']}><AdminReimbursementApprovals /></ProtectedRoute>} />
+          <Route path="holidays" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminHolidays /></ProtectedRoute>} />
+          <Route path="sync" element={<ProtectedRoute requireAnyPermission={['essl.sync']}><AdminSync /></ProtectedRoute>} />
+          <Route path="payroll" element={<ProtectedRoute requireAnyPermission={['payroll.manage']}><AdminPayrollRules /></ProtectedRoute>} />
+          <Route path="payroll/preview" element={<ProtectedRoute requireAnyPermission={['payroll.manage', 'payroll.read']}><SalaryPreviewPage /></ProtectedRoute>} />
+          <Route path="payroll/cycles" element={<ProtectedRoute requireAnyPermission={['payroll.cycle.manage', 'payroll.cycle.read']}><AdminPayrollCycles /></ProtectedRoute>} />
+          <Route path="payroll/control" element={<ProtectedRoute requireAnyPermission={['payroll.read', 'payroll.calculate']}><AdminPayrollControl /></ProtectedRoute>} />
+          <Route path="payroll/review/:cycleId" element={<ProtectedRoute requireAnyPermission={['payroll.publish']}><AdminPayrollReview /></ProtectedRoute>} />
+          <Route path="payroll/export/:cycleId" element={<ProtectedRoute requireAnyPermission={['payroll.publish']}><AdminBankExport /></ProtectedRoute>} />
+          <Route path="branches" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminBranches /></ProtectedRoute>} />
+          <Route path="attendance" element={<ProtectedRoute requireAnyPermission={['attendance.read']}><AdminAttendanceMonitor /></ProtectedRoute>} />
+          <Route path="attendance/sync" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><AdminAttendance /></ProtectedRoute>} />
+          <Route path="attendance/recalculate" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><ManualRecalculation /></ProtectedRoute>} />
+          <Route path="attendance/historical-corrections" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><HistoricalCorrections /></ProtectedRoute>} />
+          <Route path="attendance-policy" element={<ProtectedRoute requireAnyPermission={['policy.attendance.manage']}><AdminAttendancePolicy /></ProtectedRoute>} />
+          <Route path="leave-policy" element={<ProtectedRoute requireAnyPermission={['policy.leave.manage']}><LeavePolicySettings /></ProtectedRoute>} />
+          <Route path="reimbursement-policy" element={<ProtectedRoute requireAnyPermission={['policy.reimbursement.manage']}><ReimbursementPolicySettings /></ProtectedRoute>} />
+          <Route path="weekly-off-policy" element={<ProtectedRoute requireAnyPermission={['policy.weekly_off.manage']}><AdminWeeklyOffPolicy /></ProtectedRoute>} />
+          <Route path="organization" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminOrganization /></ProtectedRoute>} />
           <Route path="approvals" element={<Navigate to="/admin/leave-approvals" replace />} />
-          <Route path="settings" element={<AdminSettings />} />
+          <Route path="settings" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminSettings /></ProtectedRoute>} />
         </Route>
 
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />

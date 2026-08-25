@@ -15,10 +15,14 @@ class RecalculateRequest(BaseModel):
     toDate: str
     force: bool = True
 
+from app.dependencies import get_current_user, require_permission
+
 @router.post("/recalculate", summary="Manually Recalculate Attendance (V2)")
 async def recalculate_attendance(
     request: RecalculateRequest,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+    _admin: dict = Depends(require_permission("attendance.sync"))
 ):
     """
     Manual Attendance Recalculation API (V2)

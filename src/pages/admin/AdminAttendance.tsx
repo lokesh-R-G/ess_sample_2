@@ -3,8 +3,10 @@ import { GlassCard, AnimatedButton } from '../../components/ui';
 import { api } from '../../lib/api';
 import { AlertCircle, Calendar, RefreshCw, Settings, CheckCircle2, Clock, Play, Save } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 
 export const AdminAttendance: React.FC = () => {
+  const { hasPermission } = useAuth();
   const [fromDate, setFromDate] = useState(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
   const [toDate, setToDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   
@@ -219,55 +221,61 @@ export const AdminAttendance: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Manual eSSL Sync */}
-        <GlassCard className="p-6 flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-2 text-neutral-900">
-            <RefreshCw className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-semibold">Manual eSSL Sync</h3>
-          </div>
-          <p className="text-sm text-neutral-500 mb-6 flex-grow">
-            Pull raw device logs directly from the biometric system for all employees.
-          </p>
-          <AnimatedButton onClick={handleSync} loading={syncing} disabled={recalculating || combining} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-            <div className="flex items-center justify-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Sync eSSL
+        {hasPermission('essl.sync') && (
+          <GlassCard className="p-6 flex flex-col h-full">
+            <div className="flex items-center gap-2 mb-2 text-neutral-900">
+              <RefreshCw className="w-5 h-5 text-emerald-600" />
+              <h3 className="font-semibold">Manual eSSL Sync</h3>
             </div>
-          </AnimatedButton>
-        </GlassCard>
+            <p className="text-sm text-neutral-500 mb-6 flex-grow">
+              Pull raw device logs directly from the biometric system for all employees.
+            </p>
+            <AnimatedButton onClick={handleSync} loading={syncing} disabled={recalculating || combining} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+              <div className="flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Sync eSSL
+              </div>
+            </AnimatedButton>
+          </GlassCard>
+        )}
 
         {/* Manual Recalculate */}
-        <GlassCard className="p-6 flex flex-col h-full">
-          <div className="flex items-center gap-2 mb-2 text-neutral-900">
-            <Play className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold">Recalculate Attendance</h3>
-          </div>
-          <p className="text-sm text-neutral-500 mb-6 flex-grow">
-            Trigger the V2 Attendance Engine to rebuild snapshots for all active employees.
-          </p>
-          <AnimatedButton onClick={handleRecalculate} loading={recalculating} disabled={syncing || combining} className="w-full">
-            <div className="flex items-center justify-center gap-2">
-              <Play className="w-4 h-4" />
-              Recalculate Attendance
+        {hasPermission('attendance.sync') && (
+          <GlassCard className="p-6 flex flex-col h-full">
+            <div className="flex items-center gap-2 mb-2 text-neutral-900">
+              <Play className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold">Recalculate Attendance</h3>
             </div>
-          </AnimatedButton>
-        </GlassCard>
+            <p className="text-sm text-neutral-500 mb-6 flex-grow">
+              Trigger the V2 Attendance Engine to rebuild snapshots for all active employees.
+            </p>
+            <AnimatedButton onClick={handleRecalculate} loading={recalculating} disabled={syncing || combining} className="w-full">
+              <div className="flex items-center justify-center gap-2">
+                <Play className="w-4 h-4" />
+                Recalculate Attendance
+              </div>
+            </AnimatedButton>
+          </GlassCard>
+        )}
 
         {/* Combined */}
-        <GlassCard className="p-6 flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
-          <div className="flex items-center gap-2 mb-2 text-indigo-900">
-            <Clock className="w-5 h-5 text-indigo-600" />
-            <h3 className="font-semibold">Combined Operation</h3>
-          </div>
-          <p className="text-sm text-indigo-700/70 mb-6 flex-grow">
-            Execute a full sync immediately followed by a complete V2 recalculation.
-          </p>
-          <AnimatedButton onClick={handleCombined} loading={combining} disabled={syncing || recalculating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
-            <div className="flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" />
-              Sync & Recalculate
+        {hasPermission('essl.sync') && hasPermission('attendance.sync') && (
+          <GlassCard className="p-6 flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
+            <div className="flex items-center gap-2 mb-2 text-indigo-900">
+              <Clock className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-semibold">Combined Operation</h3>
             </div>
-          </AnimatedButton>
-        </GlassCard>
+            <p className="text-sm text-indigo-700/70 mb-6 flex-grow">
+              Execute a full sync immediately followed by a complete V2 recalculation.
+            </p>
+            <AnimatedButton onClick={handleCombined} loading={combining} disabled={syncing || recalculating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+              <div className="flex items-center justify-center gap-2">
+                <Clock className="w-4 h-4" />
+                Sync & Recalculate
+              </div>
+            </AnimatedButton>
+          </GlassCard>
+        )}
       </div>
 
       {/* Results Section */}
@@ -374,31 +382,33 @@ export const AdminAttendance: React.FC = () => {
       )}
 
       {/* Scheduler UI Real Implementation */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2 text-neutral-900">
-            <Settings className="w-5 h-5" />
-            <h3 className="font-semibold text-lg">Automation / Scheduler Configuration</h3>
+      {hasPermission('scheduler.configure') && (
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2 text-neutral-900">
+              <Settings className="w-5 h-5" />
+              <h3 className="font-semibold text-lg">Automation / Scheduler Configuration</h3>
+            </div>
+            <button 
+              onClick={fetchSchedulerConfigs}
+              disabled={loadingConfig}
+              className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-800"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingConfig ? 'animate-spin' : ''}`} /> Reload
+            </button>
           </div>
-          <button 
-            onClick={fetchSchedulerConfigs}
-            disabled={loadingConfig}
-            className="text-sm flex items-center gap-1 text-blue-600 hover:text-blue-800"
-          >
-            <RefreshCw className={`w-4 h-4 ${loadingConfig ? 'animate-spin' : ''}`} /> Reload
-          </button>
-        </div>
 
-        {loadingConfig && schedulerConfigs.length === 0 ? (
-          <div className="text-sm text-neutral-500 py-4">Loading configurations from backend...</div>
-        ) : (
-          <div className="space-y-4">
-            {renderConfigRow('ESSL_SHORT_SYNC', 'eSSL Short Sync', 'Syncs recent logs automatically.')}
-            {renderConfigRow('ESSL_RECOVERY_SYNC', 'eSSL Recovery Sync', 'Deep sync for missed transactions over a longer period.')}
-            {renderConfigRow('ATTENDANCE_CALCULATION', 'Attendance Calculation Job', 'Background task for evaluating new syncs and dirty queues via V2.')}
-          </div>
-        )}
-      </GlassCard>
+          {loadingConfig && schedulerConfigs.length === 0 ? (
+            <div className="text-sm text-neutral-500 py-4">Loading configurations from backend...</div>
+          ) : (
+            <div className="space-y-4">
+              {renderConfigRow('ESSL_SHORT_SYNC', 'eSSL Short Sync', 'Syncs recent logs automatically.')}
+              {renderConfigRow('ESSL_RECOVERY_SYNC', 'eSSL Recovery Sync', 'Deep sync for missed transactions over a longer period.')}
+              {renderConfigRow('ATTENDANCE_CALCULATION', 'Attendance Calculation Job', 'Background task for evaluating new syncs and dirty queues via V2.')}
+            </div>
+          )}
+        </GlassCard>
+      )}
     </div>
   );
 };

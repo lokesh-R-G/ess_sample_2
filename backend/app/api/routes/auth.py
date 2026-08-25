@@ -70,4 +70,17 @@ async def me(current_user=Depends(get_current_user)):
     user_data = dict(current_user)
     if "_id" in user_data:
         del user_data["_id"]
+        
+    role_id = user_data.get("roleId")
+    if role_id:
+        from app.rbac.engine import _load_role_permissions
+        role_perms = await _load_role_permissions(role_id)
+        # Format as a dictionary: { "permission.id": ["SCOPE_A", "SCOPE_B"] }
+        user_data["permissions"] = {
+            p["permissionId"]: p.get("scopes", [])
+            for p in role_perms
+        }
+    else:
+        user_data["permissions"] = {}
+        
     return UserResponse(**user_data)

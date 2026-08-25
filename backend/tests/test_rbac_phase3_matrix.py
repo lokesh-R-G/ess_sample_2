@@ -44,6 +44,8 @@ EXCLUDED_FOR_ACCOUNTS = {
     "payroll.calculate",
     "payroll.publish",
     "payroll.cycle.manage",
+    "attendance.sync",
+    "scheduler.configure",
 }
 
 # Modules that Accounts is allowed to have permissions from
@@ -77,7 +79,7 @@ async def test_role_permission_matrix(setup_db):
                 exp_scopes = [expected_scope]
                 if role_id == "manager":
                     manager_self_and_team = {
-                        "attendance.read", "attendance.manage", "attendance.sync",
+                        "attendance.read", "attendance.manage",
                         "leave.read", "leave.apply", "leave.approve",
                         "reimbursement.read", "reimbursement.create", "reimbursement.approve",
                         "employee.read", "payroll.salary.read", "payroll.pf.read", "payroll.esi.read"
