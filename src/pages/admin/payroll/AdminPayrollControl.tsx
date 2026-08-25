@@ -27,9 +27,10 @@ const AdminPayrollControl: React.FC = () => {
     const fetchCompanies = async () => {
       try {
         const res = await api.get('/v2/organization/companies');
-        setCompanies(res.data);
-        if (res.data.length > 0) {
-          const cid = user?.companyId || res.data[0].companyId;
+        setCompanies(res.data?.data || res.data || []);
+        const compList = res.data?.data || res.data || [];
+        if (compList.length > 0) {
+          const cid = user?.companyId || compList[0]._id || compList[0].id || compList[0].companyId;
           setSelectedCompanyId(cid);
         }
       } catch (err) {
@@ -50,9 +51,11 @@ const AdminPayrollControl: React.FC = () => {
         ]);
         
         if (bRes.status === 'fulfilled') {
-          setBranches(bRes.value.data);
-          if (bRes.value.data.length > 0) {
-            setBranchId(bRes.value.data[0].branchId);
+          const branchList = bRes.value.data?.data || bRes.value.data || [];
+          const safeBranches = Array.isArray(branchList) ? branchList : [];
+          setBranches(safeBranches);
+          if (safeBranches.length > 0) {
+            setBranchId(safeBranches[0]._id || safeBranches[0].id || safeBranches[0].branchId || '');
           } else {
             setBranchId('');
           }
@@ -63,10 +66,12 @@ const AdminPayrollControl: React.FC = () => {
         }
 
         if (cRes.status === 'fulfilled') {
-          setCycles(cRes.value.data);
-          if (cRes.value.data.length > 0) {
-            setCycleId(cRes.value.data[0].id);
-            setMonth(cRes.value.data[0].period || '');
+          const cycleList = cRes.value.data?.data || cRes.value.data || [];
+          const safeCycles = Array.isArray(cycleList) ? cycleList : [];
+          setCycles(safeCycles);
+          if (safeCycles.length > 0) {
+            setCycleId(safeCycles[0]._id || safeCycles[0].id || '');
+            setMonth(safeCycles[0].period || '');
           } else {
             setCycleId('');
             setMonth('');
@@ -130,9 +135,10 @@ const AdminPayrollControl: React.FC = () => {
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
                 className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
               >
-                {companies.map(c => (
-                  <option key={c.companyId} value={c.companyId}>{c.name}</option>
-                ))}
+                {companies.map(c => {
+                  const compId = c._id || c.id || c.companyId;
+                  return <option key={compId} value={compId}>{c.name}</option>;
+                })}
               </select>
             </div>
           )}
@@ -143,15 +149,16 @@ const AdminPayrollControl: React.FC = () => {
               value={cycleId}
               onChange={(e) => {
                 setCycleId(e.target.value);
-                const c = cycles.find(cyc => cyc.id === e.target.value);
+                const c = cycles.find(cyc => (cyc._id || cyc.id) === e.target.value);
                 if (c) setMonth(c.period);
               }}
               className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
             >
               <option value="" disabled>Select Cycle</option>
-              {cycles.map(c => (
-                <option key={c.id} value={c.id}>{c.name} ({c.period})</option>
-              ))}
+              {cycles.map(c => {
+                const cycId = c._id || c.id;
+                return <option key={cycId} value={cycId}>{c.name} ({c.period})</option>;
+              })}
             </select>
           </div>
         </div>
@@ -192,9 +199,10 @@ const AdminPayrollControl: React.FC = () => {
                 className="text-sm border-none bg-transparent focus:ring-0 text-slate-700 font-medium cursor-pointer"
               >
                 <option value="">All Branches</option>
-                {branches.map(b => (
-                  <option key={b.branchId} value={b.branchId}>{b.name}</option>
-                ))}
+                {branches.map(b => {
+                  const bId = b._id || b.id || b.branchId;
+                  return <option key={bId} value={bId}>{b.name}</option>;
+                })}
               </select>
             </div>
             
