@@ -3,7 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List, Optional
 from bson import ObjectId
 from app.db.mongo import get_database
-from app.dependencies import get_current_user, require_roles
+from app.dependencies import get_current_user, require_permission
 from app.reimbursement_policy.models.trip_allowance_policy import TripAllowancePolicyModel
 import datetime
 
@@ -14,7 +14,7 @@ async def get_policies(
     companyId: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_database),
     current_user: dict = Depends(get_current_user),
-    _role = Depends(require_roles("Admin", "HR"))
+    _role = Depends(require_permission("policy.reimbursement.manage"))
 ):
     query = {}
     if companyId:
@@ -35,7 +35,7 @@ async def create_policy(
     policy: TripAllowancePolicyModel,
     db: AsyncIOMotorDatabase = Depends(get_database),
     current_user: dict = Depends(get_current_user),
-    _role = Depends(require_roles("Admin", "HR"))
+    _role = Depends(require_permission("policy.reimbursement.manage"))
 ):
     if policy.ratePerKm <= 0:
         raise HTTPException(status_code=400, detail="ratePerKm must be greater than 0")
@@ -73,7 +73,7 @@ async def update_policy(
     update_data: dict,
     db: AsyncIOMotorDatabase = Depends(get_database),
     current_user: dict = Depends(get_current_user),
-    _role = Depends(require_roles("Admin", "HR"))
+    _role = Depends(require_permission("policy.reimbursement.manage"))
 ):
     existing = await db.trip_allowance_policies.find_one({"_id": ObjectId(policy_id)})
     if not existing:

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.db.mongo import get_database
-from app.dependencies import require_roles, get_current_user
+from app.dependencies import require_permission, get_current_user
 from app.services.auth_service import create_provisioned_user
 from app.services.sync_service import sync_essl_logs
 from app.core.security import hash_password
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/summary/")
-async def summary(_admin=Depends(require_roles("Admin"))):
+async def summary(_admin=Depends(require_permission("organization.read"))):
     db = get_database()
     total_employees = await db.employees.count_documents({})
     active_employees = await db.employees.count_documents({"status": "Active"})
@@ -122,7 +122,7 @@ class InviteEmployeeRequest(BaseModel):
 @router.post("/invite-employee/", status_code=201)
 async def invite_employee(
     payload: InviteEmployeeRequest,
-    admin=Depends(require_roles("Admin")),
+    admin=Depends(require_permission("employee.manage")),
 ):
     """
     Canonical ESS invitation endpoint.
@@ -243,7 +243,7 @@ async def invite_employee(
 
 
 @router.post("/create-user/")
-async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("Admin"))):
+async def create_user(payload: CreateUserRequest, _admin=Depends(require_permission("employee.manage"))):
     db = get_database()
     # Validate with eSSL unless force is used
     if not payload.force and not await validate_employee_with_essl(payload.empId):
@@ -279,7 +279,7 @@ async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("
     return {"user": {"empId": created.get("empId"), "role": created.get("role"), "firstLogin": created.get("firstLogin")}}
 
 @router.get("/users/")
-async def get_users(_admin=Depends(require_roles("Admin"))):
+async def get_users(_admin=Depends(require_permission("employee.read"))):
     db = get_database()
     users = await db.users.find({}, {"_id": 0}).to_list(length=None)
     # add fallback for status field 
@@ -292,7 +292,7 @@ class StatusUpdatePayload(BaseModel):
     status: str
 
 @router.put("/users/{emp_id}/status/")
-async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=Depends(require_roles("Admin"))):
+async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=Depends(require_permission("employee.manage"))):
     db = get_database()
     is_active = payload.status.lower() == "active"
     await db.users.update_one({"empId": emp_id}, {"$set": {"isActive": is_active, "status": payload.status.lower()}})
@@ -304,7 +304,7 @@ class EsslConfigPayload(BaseModel):
     serialNumber: str
 
 @router.put("/essl-config/{branch}/")
-async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Depends(require_roles("Admin"))):
+async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Depends(require_permission("organization.manage"))):
     db = get_database()
     await db.essl_configs.update_one(
         {"branch": branch},
@@ -316,7 +316,7 @@ async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Dep
 from datetime import datetime, timezone
 
 @router.get("/attendance-summary/")
-async def get_attendance_summary(_admin=Depends(require_roles("Admin"))):
+async def get_attendance_summary(_admin=Depends(require_permission("attendance.read"))):
     db = get_database()
     today_str = datetime.now(timezone.utc).date().isoformat()
     

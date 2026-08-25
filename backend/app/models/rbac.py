@@ -37,7 +37,7 @@ class RolePermission(BaseModel):
     id: str | None = Field(default=None, alias="_id")
     roleId: str
     permissionId: str
-    scope: Literal["SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"]
+    scopes: list[Literal["SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"]]
     isActive: bool = True
     version: int = 1
     effectiveFrom: datetime | None = None
@@ -53,8 +53,8 @@ class RolePermissionHistory(BaseModel):
     id: str | None = Field(default=None, alias="_id")
     roleId: str
     permissionId: str
-    previousScope: Literal["SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"] | None = None
-    newScope: Literal["SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"] | None = None
+    previousScopes: list[Literal["SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"]] | None = None
+    newScopes: list[Literal["SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"]] | None = None
     previousState: bool | None = None
     newState: bool | None = None
     changeType: Literal["ADD", "REMOVE", "UPDATE"]

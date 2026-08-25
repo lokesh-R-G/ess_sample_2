@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 from datetime import datetime, timezone
 from app.db.mongo import get_database
-from app.dependencies import require_roles, get_current_user
+from app.dependencies import require_permission, get_current_user
 from app.models import SchedulerJobConfig
 from app.scheduler.scheduler import update_job_schedule
 
@@ -15,7 +15,7 @@ class SchedulerConfigUpdate(BaseModel):
     lookbackDays: int
 
 @router.get("/config", response_model=List[SchedulerJobConfig])
-async def get_scheduler_config(db=Depends(get_database), _admin=Depends(require_roles("Admin"))):
+async def get_scheduler_config(db=Depends(get_database), _admin=Depends(require_permission("organization.manage"))):
     cursor = db.scheduler_configs.find({})
     configs = await cursor.to_list(length=None)
     
@@ -30,11 +30,9 @@ async def update_scheduler_config(
     job_key: str, 
     payload: SchedulerConfigUpdate, 
     db=Depends(get_database), 
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
+    _admin=Depends(require_permission("organization.manage"))
 ):
-    # Require Admin
-    if current_user.get("role") != "Admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires Admin role")
 
     if payload.frequencyMinutes < 1:
         raise HTTPException(status_code=400, detail="Frequency must be at least 1 minute")

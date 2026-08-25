@@ -20,6 +20,13 @@ CANONICAL_ROLE_MAP = {
     "Accounts": "accounts",
     "Accounts MD": "accounts_md",
     "Super Admin": "super_admin",
+    "ROLE_EMPLOYEE": "employee",
+    "ROLE_MANAGER": "manager",
+    "ROLE_HR": "hr",
+    "ROLE_ADMIN": "admin",
+    "ROLE_ACCOUNTS": "accounts",
+    "ROLE_ACCOUNTS_MD": "accounts_md",
+    "ROLE_SUPER_ADMIN": "super_admin",
 }
 
 def resolve_user(user, employees_coll, emp_hist_coll, companies_coll, branchs_coll, roles_coll):

@@ -92,8 +92,13 @@ class ReimbursementService:
         if not claim:
             raise ValueError("Claim not found.")
             
-        employee = await self.db.employees.find_one({"employeeId": claim["employeeId"], "reportingManager": hod_id})
-        if not employee:
+        emp_hist = await self.db.employee_employment_histories.find_one({
+            "employeeId": claim["employeeId"],
+            "isCurrent": True,
+            "deletedAt": None
+        })
+        
+        if not emp_hist or emp_hist.get("managerId") != hod_id:
             raise ValueError("Unauthorized: You are not the reporting manager for this employee.")
             
         status = "HOD_APPROVED" if action == "APPROVE" else "HOD_REJECTED"

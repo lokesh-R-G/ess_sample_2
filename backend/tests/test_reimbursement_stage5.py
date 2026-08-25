@@ -210,8 +210,8 @@ async def test_missing_roleId():
 async def test_team_scope_evaluator():
     from app.rbac.engine import authorize
     db = get_mock_db()
-    # Create target employee with managerId matching user empId
-    await db.employees.insert_one({"employeeId": "emp_target", "managerId": "emp123"})
+    # Create target employee history with managerId matching user empId
+    await db.employee_employment_histories.insert_one({"employeeId": "emp_target", "managerId": "emp123", "isCurrent": True})
     user = override_get_current_user_self()
     # Seed a role permission with TEAM scope for a dummy permission
     await db.role_permissions.insert_one({"roleId": user["roleId"], "permissionId": "dummy.team", "scope": "TEAM"})
@@ -219,7 +219,7 @@ async def test_team_scope_evaluator():
     # Should succeed when manager matches
     await authorize(user, "dummy.team", {"empId": "emp_target"})
     # Now test failure when manager mismatch
-    await db.employees.insert_one({"employeeId": "emp_other", "managerId": "other_manager"})
+    await db.employee_employment_histories.insert_one({"employeeId": "emp_other", "managerId": "other_manager", "isCurrent": True})
     with pytest.raises(Exception) as exc:
         await authorize(user, "dummy.team", {"empId": "emp_other"})
-    assert "TEAM scope violation" in str(exc.value)
+    assert "scope violation" in str(exc.value)

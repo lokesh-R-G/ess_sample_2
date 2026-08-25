@@ -1,6 +1,6 @@
 import os
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 from typing import Optional, List
@@ -29,19 +29,17 @@ async def get_current_employee(db: AsyncIOMotorDatabase = Depends(get_database),
     if not emp_doc or not emp_doc.get("employeeId"):
         raise HTTPException(status_code=403, detail="Could not resolve authoritative employee organization record")
         
-def require_roles(*allowed_roles: str):
-    async def _role_guard(db: AsyncIOMotorDatabase = Depends(get_database), token: str = Depends(bearer_scheme)):
-        token_str = token.credentials if hasattr(token, 'credentials') else token
-        payload = jwt.decode(token_str, os.environ.get("JWT_SECRET_KEY", "IDSqwert1234Fin2678"), algorithms=["HS256"])
-        emp_code = payload.get("employeeCode")
-        user_doc = await db.users.find_one({"empId": emp_code})
-        if not user_doc:
-            raise HTTPException(status_code=403, detail="User not found")
-        role = user_doc.get("role", "")
-        if role not in allowed_roles:
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
-        return user_doc
-    return _role_guard
+async def claim_context(request: Request, db: AsyncIOMotorDatabase = Depends(get_database)) -> dict:
+    claim_id = request.path_params.get("claim_id")
+    if not claim_id:
+        return {}
+    claim = await db.reimbursement_claims.find_one({"claimId": claim_id})
+    if not claim:
+        return {}
+    return {
+        "companyId": claim.get("companyId"),
+        "empId": claim.get("employeeId")
+    }
 
 
 @router.post("/trip-sheet", dependencies=[Depends(require_permission("reimbursement.create", resource_context_provider=self_context))])
@@ -65,7 +63,7 @@ async def get_my_claims(db: AsyncIOMotorDatabase = Depends(get_database), curren
     return await service.get_my_claims(current_employee["employeeId"])
 
 
-@router.get("/approvals/pending")
+@router.get("/approvals/pending", dependencies=[Depends(require_permission("reimbursement.approve"))])
 async def get_pending_hod_claims(db: AsyncIOMotorDatabase = Depends(get_database), current_employee: dict = Depends(get_current_user)):
     service = ReimbursementService(db)
     employment = current_employee.get("employment", {})
@@ -77,7 +75,7 @@ class ActionReq(BaseModel):
     reason: Optional[str] = None
 
 
-@router.post("/approvals/{claim_id}/action")
+@router.post("/approvals/{claim_id}/action", dependencies=[Depends(require_permission("reimbursement.approve", resource_context_provider=claim_context))])
 async def hod_action(claim_id: str, req: ActionReq, db: AsyncIOMotorDatabase = Depends(get_database), current_employee: dict = Depends(get_current_user)):
     service = ReimbursementService(db)
     try:
@@ -86,15 +84,15 @@ async def hod_action(claim_id: str, req: ActionReq, db: AsyncIOMotorDatabase = D
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/accounts/pending")
-async def get_pending_accounts_claims(db: AsyncIOMotorDatabase = Depends(get_database), current_employee: dict = Depends(get_current_user), _role=Depends(require_roles("Accounts", "Admin"))):
+@router.get("/accounts/pending", dependencies=[Depends(require_permission("reimbursement.approve"))])
+async def get_pending_accounts_claims(db: AsyncIOMotorDatabase = Depends(get_database), current_employee: dict = Depends(get_current_user)):
     service = ReimbursementService(db)
     employment = current_employee.get("employment", {})
     return await service.get_accounts_pending_claims(employment.get("companyId"))
 
 
-@router.post("/accounts/{claim_id}/action")
-async def accounts_action(claim_id: str, req: ActionReq, db: AsyncIOMotorDatabase = Depends(get_database), current_employee: dict = Depends(get_current_user), _role=Depends(require_roles("Accounts", "Admin"))):
+@router.post("/accounts/{claim_id}/action", dependencies=[Depends(require_permission("reimbursement.approve", resource_context_provider=claim_context))])
+async def accounts_action(claim_id: str, req: ActionReq, db: AsyncIOMotorDatabase = Depends(get_database), current_employee: dict = Depends(get_current_user)):
     service = ReimbursementService(db)
     try:
         return await service.process_accounts_action(claim_id, current_employee["employeeId"], req.action, req.reason)

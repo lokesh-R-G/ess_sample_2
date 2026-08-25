@@ -74,15 +74,25 @@ async def test_role_permission_matrix(setup_db):
             # All other roles get every permission
             if should_exist:
                 # Expected scope may differ for accounts (COMPANY) or others via DEFAULT_SCOPES
-                exp_scope = expected_scope
+                exp_scopes = [expected_scope]
+                if role_id == "manager":
+                    manager_self_and_team = {
+                        "attendance.read", "attendance.manage", "attendance.sync",
+                        "leave.read", "leave.apply", "leave.approve",
+                        "reimbursement.read", "reimbursement.create", "reimbursement.approve",
+                        "employee.read", "payroll.salary.read", "payroll.pf.read", "payroll.esi.read"
+                    }
+                    if perm_id in manager_self_and_team:
+                        exp_scopes = ["SELF", "TEAM"]
+
                 mapping = await db.role_permissions.find_one({"roleId": role_id, "permissionId": perm_id})
                 if not mapping:
                     discrepancies.append(f"Missing mapping: role={role_id}, perm={perm_id}")
                 else:
-                    actual_scope = mapping.get("scope")
-                    if actual_scope != exp_scope:
+                    actual_scopes = mapping.get("scopes", [])
+                    if set(actual_scopes) != set(exp_scopes):
                         discrepancies.append(
-                            f"Scope mismatch: role={role_id}, perm={perm_id}, expected={exp_scope}, got={actual_scope}"
+                            f"Scope mismatch: role={role_id}, perm={perm_id}, expected={exp_scopes}, got={actual_scopes}"
                         )
             else:
                 mapping = await db.role_permissions.find_one({"roleId": role_id, "permissionId": perm_id})
@@ -106,7 +116,11 @@ async def test_versioning_and_history(setup_db):
             "changeType": "ADD",
         })
         assert hist is not None, f"Missing ADD history for {m['roleId']}/{m['permissionId']}"
-        assert hist.get("newScope") == m.get("scope"), "History newScope does not match mapping"
+        # Verify that the stored history array matches the mapping's scopes array (Model B).
+        assert hist.get("newScopes") == m.get("scopes"), (
+            f"History newScopes {hist.get('newScopes')!r} does not match "
+            f"mapping scopes {m.get('scopes')!r} for {m['roleId']}/{m['permissionId']}"
+        )
         assert hist.get("version") == 1
 
     # Rerun the seed to ensure no new versions or duplicate histories are created

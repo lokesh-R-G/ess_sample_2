@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Optional, Dict, Any
 
 from app.db.mongo import get_database
-from app.dependencies import get_current_user, require_roles
+from app.dependencies import get_current_user, require_permission
 from app.payroll.routes.payroll_rules_routes import router as rules_router
 from app.payroll.routes.salary_preview_routes import router as preview_router
 from app.payroll.routes.salary_preview_routes import gross_router
@@ -60,7 +60,8 @@ async def employee_earnings_preview(
 async def calculate_cycle_payroll(
     cycle_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    current_user: dict = Depends(require_roles("Admin", "PayrollAdmin", "HR"))
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.calculate"))
 ):
     service = PayrollCycleService(db)
     processor = PayrollProcessor(db)
@@ -77,7 +78,7 @@ async def calculate_cycle_payroll(
 async def publish_cycle_payroll(
     cycle_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    current_user: dict = Depends(require_roles("Admin", "PayrollAdmin", "HR"))
+    _admin = Depends(require_permission("payroll.publish"))
 ):
     service = PayslipService(db)
     try:

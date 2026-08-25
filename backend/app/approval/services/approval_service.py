@@ -27,7 +27,7 @@ class ApprovalService:
         if not emp_hist:
             raise HTTPException(status_code=400, detail="Employee employment history not found")
             
-        manager_ref = emp_hist.get("reportingManagerEmployeeId") or emp_hist.get("reportingManagerId")
+        manager_ref = emp_hist.get("managerId")
         if not manager_ref:
             raise HTTPException(status_code=400, detail="Reporting manager not mapped for this employee")
             

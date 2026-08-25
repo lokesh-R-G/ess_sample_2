@@ -86,7 +86,7 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
     # Seed role_permission mappings
     for role in ROLES:
         role_id = role["roleId"]
-        default_scope = role["scope"]
+        base_scope = role["scope"]
         for perm in CANONICAL_PERMISSIONS:
             perm_id = perm["permissionId"]
             # Skip excluded permissions for this role
@@ -97,11 +97,24 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
                 allowed_modules = {"attendance", "reimbursement", "payroll"}
                 if perm.get("module") not in allowed_modules or perm_id in ACCOUNTS_EXCLUDED_PERMISSIONS:
                     continue
+            
+            # Determine scopes
+            scopes = [base_scope]
+            if role_id == "manager":
+                manager_self_and_team = {
+                    "attendance.read", "attendance.manage", "attendance.sync",
+                    "leave.read", "leave.apply", "leave.approve",
+                    "reimbursement.read", "reimbursement.create", "reimbursement.approve",
+                    "employee.read", "payroll.salary.read", "payroll.pf.read", "payroll.esi.read"
+                }
+                if perm_id in manager_self_and_team:
+                    scopes = ["SELF", "TEAM"]
+
             now = datetime.utcnow()
             mapping_doc = {
                 "roleId": role_id,
                 "permissionId": perm_id,
-                "scope": default_scope,
+                "scopes": scopes,
                 "isActive": True,
                 "version": 1,
                 "effectiveFrom": None,
@@ -119,8 +132,8 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
                 history_doc = {
                     "roleId": role_id,
                     "permissionId": perm_id,
-                    "previousScope": None,
-                    "newScope": default_scope,
+                    "previousScopes": None,
+                    "newScopes": scopes,
                     "previousState": None,
                     "newState": True,
                     "changeType": "ADD",
@@ -133,12 +146,16 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
                 added_history += 1
             else:
                 # If scope differs, treat as UPDATE
-                if existing.get("scope") != default_scope:
+                existing_scopes = existing.get("scopes", [])
+                if existing.get("scope"):
+                    existing_scopes = [existing.get("scope")]
+
+                if set(existing_scopes) != set(scopes):
                     history_doc = {
                         "roleId": role_id,
                         "permissionId": perm_id,
-                        "previousScope": existing.get("scope"),
-                        "newScope": default_scope,
+                        "previousScopes": existing_scopes,
+                        "newScopes": scopes,
                         "previousState": existing.get("isActive"),
                         "newState": True,
                         "changeType": "UPDATE",
@@ -149,11 +166,16 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
                     }
                     await db.role_permission_history.insert_one(history_doc)
                     added_history += 1
+                    
+                    update_dict = {"scopes": scopes, "updatedAt": now, "version": existing.get("version", 1) + 1}
+                    if "scope" in existing:
+                        update_dict["scope"] = None # Optional: remove legacy field or keep None
+
                     await db.role_permissions.update_one(
                         {"roleId": role_id, "permissionId": perm_id},
-                        {"$set": {"scope": default_scope, "updatedAt": now, "version": existing.get("version", 1) + 1}}
+                        {"$set": update_dict}
                     )
-                # No action needed when existing scope matches default.
+                # No action needed when existing scopes match default.
 
     return {
         "created_roles": created_roles,

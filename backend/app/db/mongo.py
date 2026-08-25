@@ -33,7 +33,6 @@ async def init_indexes() -> None:
     # RBAC indexes
     await db.roles.create_index([("roleId", 1)], unique=True)
     await db.permissions.create_index([("permissionId", 1)], unique=True)
-    await db.role_permissions.create_index([("roleId", 1), ("permissionId", 1), ("scope", 1)], unique=True)
     await db.role_permissions.create_index([("roleId", 1), ("permissionId", 1)], unique=True)
     await db.role_permission_history.create_index([("roleId", 1), ("permissionId", 1), ("version", 1)], unique=True)
     # Users RBAC fields

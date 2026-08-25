@@ -60,11 +60,11 @@ async def test_scopes_and_versioning(setup_db):
     for i, scope in enumerate(scopes):
         role = {"roleId": f"role_{i}", "name": f"Role {i}", "createdAt": datetime.utcnow(), "version": 1}
         await db.roles.insert_one(role)
-        mapping = {"roleId": role["roleId"], "permissionId": perm["permissionId"], "scope": scope, "isActive": True, "version": 1, "createdAt": datetime.utcnow()}
+        mapping = {"roleId": role["roleId"], "permissionId": perm["permissionId"], "scopes": [scope], "isActive": True, "version": 1, "createdAt": datetime.utcnow()}
         result = await db.role_permissions.insert_one(mapping)
         assert result.inserted_id is not None
         fetched = await db.role_permissions.find_one({"roleId": role["roleId"], "permissionId": perm["permissionId"]})
-        assert fetched["scope"] == scope
+        assert fetched["scopes"] == [scope]
         assert fetched["version"] == 1
 
 @pytest.mark.asyncio

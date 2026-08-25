@@ -60,47 +60,62 @@ async def authorize(user: dict, permission_code: str, resource_context: Dict[str
         print("AUTHORIZE FAILED: Permission not granted", role_id, permission_code)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission not granted")
 
-    scope = perm_entry.get("scope", "GLOBAL").upper()
-    # Normalise resource context to an empty dict to simplify checks
+    scopes = perm_entry.get("scopes", [])
+    if not scopes and "scope" in perm_entry:
+        scopes = [perm_entry.get("scope")]
+        
     rc = resource_context or {}
+    
+    for scope in scopes:
+        scope = scope.upper()
+        try:
+            if scope == "SELF":
+                if rc.get("empId") != user.get("empId"):
+                    continue
+                return None
+            elif scope == "TEAM":
+                # TEAM scope: the caller must be the effective reporting manager
+                # of the target employee, as resolved from employee_employment_histories.
+                # Rules:
+                #   1. No active employment-history record → DENY (fail-closed; data error).
+                #   2. managerId != null  → effective manager = managerId.
+                #   3. managerId == null  → employee is their own effective manager (top-level).
+                # This is independent of SELF: TEAM does NOT implicitly grant SELF access.
+                target_emp_id = rc.get("empId")
+                if not target_emp_id:
+                    continue
+                db = _get_db()
+                emp_hist = await db.employee_employment_histories.find_one({
+                    "employeeId": target_emp_id,
+                    "isCurrent": True,
+                    "deletedAt": None
+                })
+                if not emp_hist:
+                    # No authoritative history record — deny TEAM (fail-closed).
+                    print(f"AUTHORIZE TEAM DENIED: no active employment history for {target_emp_id}")
+                    continue
+                manager_id = emp_hist.get("managerId")
+                if manager_id is None:
+                    # managerId is explicitly null → employee is their own effective manager.
+                    manager_id = target_emp_id
+                if manager_id == user.get("empId"):
+                    return None
+                # caller is not the effective manager → this scope fails, try next.
+            elif scope == "BRANCH":
+                if rc.get("branchId") and rc.get("branchId") == user.get("branchId"):
+                    return None
+            elif scope == "COMPANY":
+                if rc.get("companyId") and rc.get("companyId") == user.get("companyId"):
+                    return None
+            elif scope == "GLOBAL":
+                return None
+        except Exception as e:
+            print(f"Error evaluating scope {scope}: {e}")
+            continue
 
-    # Scope enforcement – fail closed if required keys are missing
-    if scope == "SELF":
-        if rc.get("empId") != user.get("empId"):
-            print("AUTHORIZE FAILED: SELF scope violation", user, rc)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="SELF scope violation")
-    elif scope == "TEAM":
-        # Expect target employee identifier in context
-        target_emp_id = rc.get("empId")
-        if not target_emp_id:
-            print("AUTHORIZE FAILED: TEAM scope missing target employee", user, rc)
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="TEAM scope missing target employee")
-        # Load target employee (read‑only)
-        db = _get_db()
-        target_emp = await db.employees.find_one({"employeeId": target_emp_id})
-        if not target_emp:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target employee not found")
-        manager_id = target_emp.get("managerId")
-        if not manager_id or manager_id != user.get("empId"):
-            print("TEAM SCOPE VIOLATION:", manager_id, user.get("empId"))
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="TEAM scope violation")
-    elif scope == "BRANCH":
-        if not rc.get("branchId") or rc.get("branchId") != user.get("branchId"):
-            print("BRANCH SCOPE VIOLATION:", rc.get("branchId"), user.get("branchId"))
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="BRANCH scope violation")
-    elif scope == "COMPANY":
-        if not rc.get("companyId") or rc.get("companyId") != user.get("companyId"):
-            print("COMPANY SCOPE VIOLATION:", rc.get("companyId"), user.get("companyId"))
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="COMPANY scope violation")
-    elif scope == "GLOBAL":
-        # No restriction
-        pass
-    else:
-        # Unknown scope – treat as deny
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unknown scope")
+    print("AUTHORIZE FAILED: All scopes failed", role_id, permission_code, scopes, user, rc)
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission not granted or scope violation")
 
-    # If we reach here the user is authorised
-    return None
 
 # Convenience wrapper used by dependencies – returns True/False instead of raising.
 async def has_permission(user: dict, permission_code: str, resource_context: Dict[str, Any] | None = None) -> bool:

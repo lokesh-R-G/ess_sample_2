@@ -1,1 +1,0 @@
-import asyncio; import sys; sys.path.append('c:\\ess\\ess_sample_2\\backend'); from app.db.mongo import get_database; async def main(): db = get_database(); p = await db.attendance_policies.find_one(); print(p); asyncio.run(main())
