@@ -10,14 +10,18 @@ class PayrollCycleService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
 
-    async def create_cycle(self, company_id: str, name: str, start_date: datetime, end_date: datetime) -> PayrollCycle:
-        # Check for duplicate cycle overlapping dates for this company
-        existing = await self.db.payroll_cycles.find_one({
-            "companyId": company_id,
+    async def create_cycle(self, company_id: Optional[str], name: str, start_date: datetime, end_date: datetime) -> PayrollCycle:
+        # Check for duplicate cycle overlapping dates
+        # Since cycles are global, we check globally (or optionally by company if provided for legacy)
+        query = {
             "$or": [
                 {"startDate": {"$lte": end_date}, "endDate": {"$gte": start_date}}
             ]
-        })
+        }
+        if company_id:
+            query["companyId"] = company_id
+            
+        existing = await self.db.payroll_cycles.find_one(query)
         if existing:
             raise ValueError("A payroll cycle already exists for this date range.")
 
@@ -40,8 +44,8 @@ class PayrollCycleService:
         doc["_id"] = str(doc["_id"])
         return PayrollCycle(**doc)
 
-    async def list_cycles(self, company_id: str) -> List[PayrollCycle]:
-        cursor = self.db.payroll_cycles.find({"companyId": company_id}).sort("startDate", -1)
+    async def list_cycles(self) -> List[PayrollCycle]:
+        cursor = self.db.payroll_cycles.find({}).sort("startDate", -1)
         cycles = []
         async for doc in cursor:
             doc["_id"] = str(doc["_id"])

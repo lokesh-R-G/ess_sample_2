@@ -16,8 +16,8 @@ router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 @router.get("/me/", dependencies=[Depends(require_permission("attendance.read", resource_context_provider=self_context))])
 async def my_attendance(
-    fromDate: datetime | None = Query(default=None),
-    toDate: datetime | None = Query(default=None),
+    fromDate: datetime = Query(...),
+    toDate: datetime = Query(...),
     current_user=Depends(get_current_user),
     db=Depends(get_database)
 ):
@@ -30,8 +30,8 @@ async def my_attendance(
 @router.get("/{emp_id}/", dependencies=[Depends(require_permission("attendance.read", resource_context_provider=employee_context_by_emp_id))])
 async def attendance_by_employee(
     emp_id: str,
-    fromDate: datetime | None = Query(default=None),
-    toDate: datetime | None = Query(default=None),
+    fromDate: datetime = Query(...),
+    toDate: datetime = Query(...),
     current_user=Depends(get_current_user),
     db=Depends(get_database)
 ):

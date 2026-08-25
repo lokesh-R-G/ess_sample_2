@@ -44,26 +44,41 @@ const AdminPayrollControl: React.FC = () => {
     const fetchBranchesAndCycles = async () => {
       if (!selectedCompanyId) return;
       try {
-        const [bRes, cRes] = await Promise.all([
-          api.get(`/v2/organizations/${selectedCompanyId}/branches`),
-          api.get(`/v2/payroll/cycles?companyId=${selectedCompanyId}`)
+        const [bRes, cRes] = await Promise.allSettled([
+          api.get(`/v2/organization/branches/?companyId=${selectedCompanyId}`),
+          api.get('/v2/payroll/cycles')
         ]);
         
-        setBranches(bRes.data);
-        if (bRes.data.length > 0) {
-          setBranchId(bRes.data[0].branchId);
+        if (bRes.status === 'fulfilled') {
+          setBranches(bRes.value.data);
+          if (bRes.value.data.length > 0) {
+            setBranchId(bRes.value.data[0].branchId);
+          } else {
+            setBranchId('');
+          }
+        } else {
+          console.error("Failed to fetch branches", bRes.reason);
+          setBranches([]);
+          setBranchId('');
         }
 
-        setCycles(cRes.data);
-        if (cRes.data.length > 0) {
-          setCycleId(cRes.data[0].id);
-          setMonth(cRes.data[0].period || '');
+        if (cRes.status === 'fulfilled') {
+          setCycles(cRes.value.data);
+          if (cRes.value.data.length > 0) {
+            setCycleId(cRes.value.data[0].id);
+            setMonth(cRes.value.data[0].period || '');
+          } else {
+            setCycleId('');
+            setMonth('');
+          }
         } else {
+          console.error("Failed to fetch cycles", cRes.reason);
+          setCycles([]);
           setCycleId('');
           setMonth('');
         }
       } catch (err) {
-        console.error("Failed to fetch branches/cycles", err);
+        console.error("Unexpected error fetching branches/cycles", err);
       }
     };
     fetchBranchesAndCycles();

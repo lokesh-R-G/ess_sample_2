@@ -278,9 +278,30 @@ async def test_super_admin_global_scope(setup_db):
 def test_attendance_me_employee_self():
     """employee accesses own attendance → 200"""
     def _t(c):
-        r = c.get("/api/v1/attendance/me/")
+        r = c.get("/api/v1/attendance/me/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
         assert r.json()["empId"] == "target_emp"
+    _run(override_employee_self, _t)
+
+def test_attendance_me_missing_from_date():
+    """Missing fromDate → 422"""
+    def _t(c):
+        r = c.get("/api/v1/attendance/me/?toDate=2026-08-31T23:59:59Z")
+        assert r.status_code == 422, r.text
+    _run(override_employee_self, _t)
+
+def test_attendance_me_missing_to_date():
+    """Missing toDate → 422"""
+    def _t(c):
+        r = c.get("/api/v1/attendance/me/?fromDate=2026-08-01T00:00:00Z")
+        assert r.status_code == 422, r.text
+    _run(override_employee_self, _t)
+
+def test_attendance_me_invalid_date():
+    """Invalid date format → 422"""
+    def _t(c):
+        r = c.get("/api/v1/attendance/me/?fromDate=invalid-date&toDate=2026-08-31T23:59:59Z")
+        assert r.status_code == 422, r.text
     _run(override_employee_self, _t)
 
 
@@ -299,7 +320,7 @@ def test_attendance_me_no_role():
 def test_attendance_by_emp_employee_self():
     """employee reads their own attendance via /{emp_id}/ → 200 (SELF)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_employee_self, _t)
 
@@ -307,7 +328,7 @@ def test_attendance_by_emp_employee_self():
 def test_attendance_by_emp_manager_team():
     """manager reads direct report → 200 (TEAM via employment history)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_manager_team, _t)
 
@@ -315,7 +336,7 @@ def test_attendance_by_emp_manager_team():
 def test_attendance_by_emp_manager_non_team():
     """manager reads non-report → 403 (TEAM mismatch; no SELF because different empId)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 403, r.text
     _run(override_manager_nonteam, _t)
 
@@ -323,7 +344,7 @@ def test_attendance_by_emp_manager_non_team():
 def test_attendance_by_emp_manager_self_via_self_scope():
     """manager reads their own attendance → 200 (SELF scope in ['SELF','TEAM'])"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_manager_self, _t)
 
@@ -331,7 +352,7 @@ def test_attendance_by_emp_manager_self_via_self_scope():
 def test_attendance_by_emp_hr_global():
     """hr reads any attendance → 200 (GLOBAL)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_hr, _t)
 
@@ -339,7 +360,7 @@ def test_attendance_by_emp_hr_global():
 def test_attendance_by_emp_admin_global():
     """admin reads any attendance → 200 (GLOBAL)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_admin, _t)
 
@@ -347,7 +368,7 @@ def test_attendance_by_emp_admin_global():
 def test_attendance_by_emp_accounts_same_company():
     """accounts reads same-company attendance → 200 (COMPANY)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_accounts_same_company, _t)
 
@@ -355,7 +376,7 @@ def test_attendance_by_emp_accounts_same_company():
 def test_attendance_by_emp_accounts_diff_company():
     """accounts reads different-company attendance → 403 (COMPANY mismatch)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 403, r.text
     _run(override_accounts_diff_company, _t)
 
@@ -363,7 +384,7 @@ def test_attendance_by_emp_accounts_diff_company():
 def test_attendance_by_emp_super_admin_global():
     """super_admin reads any attendance → 200 (GLOBAL — no bypass, through permission)"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, r.text
     _run(override_super_admin, _t)
 
@@ -371,7 +392,7 @@ def test_attendance_by_emp_super_admin_global():
 def test_attendance_by_emp_no_role():
     """Unknown role → no mapping → 403"""
     def _t(c):
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 403, r.text
     _run(override_no_role, _t)
 
@@ -383,7 +404,7 @@ def test_attendance_by_emp_no_role():
 def test_team_deny_no_employment_history():
     """TEAM must be denied when target employee has no active employment history."""
     def _t(c):
-        r = c.get("/api/v1/attendance/no_hist_emp/")
+        r = c.get("/api/v1/attendance/no_hist_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         # manager123 manages no_hist_emp? No — no history → fail-closed DENY.
         # manager has ["SELF","TEAM"]. SELF fails (different empId). TEAM fails (no history).
         assert r.status_code == 403, (
@@ -396,7 +417,7 @@ def test_team_null_manager_id_resolves_to_self():
     """TEAM: managerId=null → effective manager = target employee. top_level_emp is their own manager."""
     def _t(c):
         # Caller empId = top_level_emp, so TEAM check: manager_id = top_level_emp == caller.empId → ALLOW
-        r = c.get("/api/v1/attendance/top_level_emp/")
+        r = c.get("/api/v1/attendance/top_level_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 200, (
             f"Expected 200 (null managerId → self-managed), got {r.status_code}: {r.text}"
         )
@@ -417,7 +438,7 @@ def test_team_does_not_grant_self():
         # but manager123 has no employment history seeded in this DB, so TEAM fails.
         # SELF would succeed because empId matches. This test just verifies the other scenario:
         # a manager requesting another employee who is NOT their report → 403.
-        r = c.get("/api/v1/attendance/target_emp/")
+        r = c.get("/api/v1/attendance/target_emp/?fromDate=2026-08-01T00:00:00Z&toDate=2026-08-31T23:59:59Z")
         assert r.status_code == 403, (
             f"Expected 403 (non-manager cannot access via TEAM), got {r.status_code}: {r.text}"
         )

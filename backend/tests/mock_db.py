@@ -15,6 +15,14 @@ class SimpleCursor:
             self.data.sort(key=lambda x: (x.get(key) is None, x.get(key)), reverse=reverse)
         return self
 
+    def skip(self, amount):
+        self.data = self.data[amount:]
+        return self
+
+    def limit(self, amount):
+        self.data = self.data[:amount]
+        return self
+
     async def to_list(self, length=None):
         return self.data
 

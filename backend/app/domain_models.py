@@ -395,7 +395,7 @@ class LeaveBalance(BaseModel):
 
 class PayrollCycle(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
-    companyId: str
+    companyId: Optional[str] = None
     name: str
     startDate: datetime
     endDate: datetime

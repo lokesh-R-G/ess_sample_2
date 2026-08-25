@@ -11,13 +11,17 @@ async def employee_context_provider(emp_id: str) -> Dict[str, str]:
     - managerId (optional, used by TEAM scope)
     """
     db = _get_db()
-    employee = await db.employees.find_one({"employeeId": emp_id})
-    print("EMPLOYEE_CONTEXT_PROVIDER:", emp_id, employee)
+    employee = await db.employees.find_one({"$or": [{"employeeCode": emp_id}, {"empId": emp_id}]})
     if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
+        # Fallback to internal employeeId
+        employee = await db.employees.find_one({"employeeId": emp_id})
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+
+    internal_emp_id = employee.get("employeeId")
         
     emp_hist = await db.employee_employment_histories.find_one({
-        "employeeId": emp_id,
+        "employeeId": internal_emp_id,
         "isCurrent": True,
         "deletedAt": None
     })
@@ -25,7 +29,8 @@ async def employee_context_provider(emp_id: str) -> Dict[str, str]:
     # Ensure ObjectId fields are stringified for JSON serialisation if present
     # Fallback to employee collection fields if employment history doesn't exist (though it should)
     return {
-        "empId": employee.get("employeeId"),
+        "empId": employee.get("empId") or employee.get("employeeCode"),
+        "employeeId": internal_emp_id,
         "branchId": emp_hist.get("branchId") if emp_hist else None,
         "companyId": emp_hist.get("companyId") if emp_hist else None,
         "managerId": emp_hist.get("managerId") if emp_hist else None,
@@ -41,21 +46,31 @@ def resource_context_provider(provider_callable: callable):
         return await provider_callable(**kwargs)
     return wrapper
 
-from fastapi import Request
+from fastapi import Request, Depends
+from app.dependencies import get_current_user
 
-def self_context(user: dict) -> dict:
+def self_context(user: dict = Depends(get_current_user)) -> dict:
     """Return the canonical resource context for the authenticated user themselves.
     Used by SELF-scoped endpoints such as /attendance/me/.
     Falls back from employeeId → empId so both token shapes are handled.
     """
     return {
-        "empId": user.get("employeeId") or user.get("empId"),
+        "empId": user.get("empId"),
+        "employeeId": user.get("employeeId"),
         "branchId": user.get("branchId"),
         "companyId": user.get("companyId"),
     }
 
-async def employee_context_by_emp_id(request: Request, **kwargs) -> dict:
+async def employee_context_by_emp_id(request: Request) -> dict:
     emp_id = request.path_params.get("emp_id")
     if not emp_id:
         raise HTTPException(status_code=404, detail="Employee ID missing in path")
     return await employee_context_provider(emp_id)
+
+from typing import Optional
+from fastapi import Depends
+from app.dependencies import get_current_user
+
+async def query_company_context(companyId: Optional[str] = None, current_user: dict = Depends(get_current_user)) -> dict:
+    target_company = companyId if companyId else current_user.get("companyId")
+    return {"companyId": target_company}

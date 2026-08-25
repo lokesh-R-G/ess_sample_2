@@ -13,7 +13,7 @@ from app.reimbursement.schemas import TripSheetRequest, ReimbursementClaimRespon
 from app.reimbursement.services.reimbursement_service import ReimbursementService
 
 router = APIRouter(tags=["Reimbursement Engine"])
-def self_context(user: dict) -> dict:
+def self_context(user: dict = Depends(get_current_user)) -> dict:
     return {"empId": user.get("employeeId")}
 async def get_current_employee(db: AsyncIOMotorDatabase = Depends(get_database), token: str = Depends(bearer_scheme)):
     with open('token_debug.log', 'a') as f:

@@ -74,31 +74,41 @@ async def authorize(user: dict, permission_code: str, resource_context: Dict[str
                     continue
                 return None
             elif scope == "TEAM":
-                # TEAM scope: the caller must be the effective reporting manager
-                # of the target employee, as resolved from employee_employment_histories.
-                # Rules:
-                #   1. No active employment-history record → DENY (fail-closed; data error).
-                #   2. managerId != null  → effective manager = managerId.
-                #   3. managerId == null  → employee is their own effective manager (top-level).
-                # This is independent of SELF: TEAM does NOT implicitly grant SELF access.
-                target_emp_id = rc.get("empId")
-                if not target_emp_id:
+                # TEAM scope needs the internal employeeId to query histories
+                target_employee_id = rc.get("employeeId")
+                
+                # If it's missing from context, we must resolve it via the canonical empId
+                if not target_employee_id:
+                    target_emp_id = rc.get("empId")
+                    if not target_emp_id:
+                        continue
+                    db = _get_db()
+                    target_emp_doc = await db.employees.find_one({"$or": [{"employeeCode": target_emp_id}, {"empId": target_emp_id}]})
+                    if target_emp_doc:
+                        target_employee_id = target_emp_doc.get("employeeId")
+                    else:
+                        target_employee_id = target_emp_id # fallback to treating it as internal id
+
+                if not target_employee_id:
                     continue
+                    
                 db = _get_db()
                 emp_hist = await db.employee_employment_histories.find_one({
-                    "employeeId": target_emp_id,
+                    "employeeId": target_employee_id,
                     "isCurrent": True,
                     "deletedAt": None
                 })
                 if not emp_hist:
                     # No authoritative history record — deny TEAM (fail-closed).
-                    print(f"AUTHORIZE TEAM DENIED: no active employment history for {target_emp_id}")
+                    print(f"AUTHORIZE TEAM DENIED: no active employment history for {target_employee_id}")
                     continue
                 manager_id = emp_hist.get("managerId")
                 if manager_id is None:
                     # managerId is explicitly null → employee is their own effective manager.
-                    manager_id = target_emp_id
-                if manager_id == user.get("empId"):
+                    manager_id = target_employee_id
+                
+                # manager_id from DB could match either the caller's internal employeeId or canonical empId
+                if manager_id in (user.get("employeeId"), user.get("empId")):
                     return None
                 # caller is not the effective manager → this scope fails, try next.
             elif scope == "BRANCH":

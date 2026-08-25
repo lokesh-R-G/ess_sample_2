@@ -111,6 +111,8 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
                 }
                 if perm_id in manager_self_and_team:
                     scopes = ["SELF", "TEAM"]
+                elif perm_id == "organization.read":
+                    scopes = ["COMPANY"]
 
             now = datetime.utcnow()
             mapping_doc = {
