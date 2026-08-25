@@ -22,21 +22,22 @@ def _get_db():
         pass
     return get_database()
 
-# Simple in‑memory cache for role permissions. In a real system you might add TTL/invalidations.
+# Compatibility cache retained for seed/migration callers. Permission reads are
+# intentionally live so grants and revocations take effect without a restart.
 _ROLE_PERM_CACHE: Dict[str, List[Dict[str, Any]]] = {}
+
+
+def clear_role_permission_cache() -> None:
+    """Invalidate cached role mappings after an RBAC seed or migration."""
+    _ROLE_PERM_CACHE.clear()
 
 async def _load_role_permissions(role_id: str) -> List[Dict[str, Any]]:
     """Load role_permissions documents for a given canonical roleId.
     Returns a list of dicts with at least ``permissionId`` and ``scope`` fields.
     """
-    # Use cached version if present
-    if role_id in _ROLE_PERM_CACHE:
-        return _ROLE_PERM_CACHE[role_id]
     db = _get_db()
     cursor = db.role_permissions.find({"roleId": role_id})
     perms = await cursor.to_list(length=None)
-    # Cache the result for the lifetime of the process
-    _ROLE_PERM_CACHE[role_id] = perms
     return perms
 
 async def authorize(user: dict, permission_code: str, resource_context: Dict[str, Any] | None = None) -> None:

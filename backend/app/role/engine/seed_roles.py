@@ -181,6 +181,9 @@ async def seed_roles_and_mappings(db: AsyncIOMotorDatabase | None = None) -> Dic
                     )
                 # No action needed when existing scopes match default.
 
+    from app.rbac.engine import clear_role_permission_cache
+    clear_role_permission_cache()
+
     return {
         "created_roles": created_roles,
         "created_mappings": created_mappings,

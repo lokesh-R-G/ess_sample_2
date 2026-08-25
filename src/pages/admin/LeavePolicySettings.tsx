@@ -82,7 +82,7 @@ export const LeavePolicySettings: React.FC = () => {
               <h3 className="text-lg font-semibold mb-4">Historical Policies</h3>
               <div className="space-y-2">
                 {policies.map(p => (
-                  <div key={p.id} className="p-3 border rounded cursor-pointer hover:bg-neutral-50" onClick={() => setFormData(p)}>
+                  <div key={p.id ?? `${p.policyCode}:${p.version}`} className="p-3 border rounded cursor-pointer hover:bg-neutral-50" onClick={() => setFormData(p)}>
                     <div className="flex justify-between">
                       <span className="font-medium">{p.name} (v{p.version})</span>
                       <StatusBadge status={p.status === 'Active' ? 'success' : 'default'} label={p.status || ''} size="sm" />

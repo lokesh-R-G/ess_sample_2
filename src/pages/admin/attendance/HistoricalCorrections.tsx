@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassCard, AnimatedButton, Input, StatusBadge } from '../../../components/ui';
+import { api } from '../../../lib/api';
 
 interface CorrectionLog {
   id: string;
@@ -29,14 +30,8 @@ export default function HistoricalCorrections() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v2/attendance/correction-logs', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.data || []);
-      }
+      const data = await api.get<{ data: CorrectionLog[] }>('/v2/attendance/correction-logs/');
+      setLogs(data.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -69,24 +64,10 @@ export default function HistoricalCorrections() {
         reason
       };
 
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/v2/attendance/correction-logs/apply', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (res.ok) {
-        alert('Correction applied successfully and recalulation queued.');
-        setIsModalOpen(false);
-        fetchLogs();
-      } else {
-        const err = await res.json();
-        alert(`Error: ${err.detail || 'Failed to apply correction'}`);
-      }
+      await api.post<CorrectionLog>('/v2/attendance/correction-logs/apply', payload);
+      alert('Correction applied successfully and recalculation queued.');
+      setIsModalOpen(false);
+      fetchLogs();
     } catch (error) {
       console.error(error);
       alert('An error occurred');

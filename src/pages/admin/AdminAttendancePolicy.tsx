@@ -124,7 +124,7 @@ export const AdminAttendancePolicy: React.FC = () => {
       {!editingPolicy ? (
         <div className="grid grid-cols-1 gap-4">
           {policies.filter(p => p.isCurrent !== false).map(p => (
-            <GlassCard key={p._id} className="p-4 flex items-center justify-between">
+            <GlassCard key={p._id ?? `${p.attendancePolicyCode}:${p.version}`} className="p-4 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-sm bg-neutral-100 px-2 py-0.5 rounded">{p.attendancePolicyCode}</span>

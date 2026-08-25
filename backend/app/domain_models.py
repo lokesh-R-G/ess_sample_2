@@ -395,11 +395,20 @@ class LeaveBalance(BaseModel):
 
 class PayrollCycle(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
-    companyId: Optional[str] = None
     name: str
     startDate: datetime
     endDate: datetime
     processingStatus: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
+
+class PayrollRun(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    cycleId: str
+    companyId: str
+    status: Literal["DRAFT", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "CLOSED"] = "DRAFT"
+    attendanceSummary: dict = Field(default_factory=dict)
+    calculationSummary: dict = Field(default_factory=dict)
+    createdAt: datetime = Field(default_factory=datetime.utcnow)
+    updatedAt: datetime = Field(default_factory=datetime.utcnow)
 
 class Payroll(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
