@@ -9,13 +9,17 @@ class BankExportService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
 
-    async def generate_csv_export(self, cycle_id: str, generated_by: str) -> str:
+    async def generate_csv_export(self, cycle_id: str, generated_by: str, company_id: str | None = None) -> str:
         cycle = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
         if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED", "EXPORTED"]:
             raise ValueError("Cycle must be finalized before exporting")
 
+        payroll_query = {"cycleId": cycle_id, "isActive": True}
+        if company_id:
+            payroll_query["companyId"] = company_id
+
         payrolls = []
-        cursor = self.db.payrolls.find({"cycleId": cycle_id, "isActive": True})
+        cursor = self.db.payrolls.find(payroll_query)
         async for p in cursor:
             payrolls.append(p)
             
@@ -47,6 +51,7 @@ class BankExportService:
         # Save audit
         await self.db.export_audits.insert_one({
             "cycleId": cycle_id,
+            "companyId": company_id,
             "exportType": "CSV",
             "generatedBy": generated_by,
             "generatedAt": datetime.utcnow(),
@@ -54,10 +59,18 @@ class BankExportService:
             "totalAmount": total_amount,
             "status": "COMPLETED"
         })
-        
-        await self.db.payroll_cycles.update_one(
-            {"_id": ObjectId(cycle_id)},
-            {"$set": {"processingStatus": "EXPORTED"}}
+
+        await self.db.payroll_runs.update_one(
+            {"cycleId": cycle_id, "companyId": company_id},
+            {"$set": {"status": "EXPORTED", "updatedAt": datetime.utcnow()}},
+            upsert=True,
         )
+
+        remaining_runs = await self.db.payroll_runs.count_documents({"cycleId": cycle_id, "status": {"$ne": "EXPORTED"}})
+        if remaining_runs == 0:
+            await self.db.payroll_cycles.update_one(
+                {"_id": ObjectId(cycle_id)},
+                {"$set": {"processingStatus": "EXPORTED"}}
+            )
 
         return csv_content

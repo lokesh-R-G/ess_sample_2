@@ -19,7 +19,8 @@ export interface PayrollRecord {
 }
 
 export const payrollReviewApi = {
-  getPayrollsForCycle: async (cycleId: string): Promise<PayrollRecord[]> => {
-    return api.get<PayrollRecord[]>(`/v2/payroll/cycles/${cycleId}/payrolls`);
+  getPayrollsForCycle: async (cycleId: string, companyId?: string): Promise<PayrollRecord[]> => {
+    const params = companyId ? `?companyId=${encodeURIComponent(companyId)}` : '';
+    return api.get<PayrollRecord[]>(`/v2/payroll/cycles/${cycleId}/payrolls${params}`);
   }
 };

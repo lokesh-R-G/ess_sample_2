@@ -98,7 +98,7 @@ class PayrollCycleService:
             {"date": {"$gte": cycle.startDate.isoformat(), "$lte": cycle.endDate.isoformat()}},
             {"$set": {"payrollCycleLocked": str(cycle.id)}}
         )
-    async def process_cycle(self, cycle_id: str, processor: PayrollProcessor, user_id: str) -> dict:
+    async def process_cycle(self, cycle_id: str, company_id: str, processor: PayrollProcessor, user_id: str) -> dict:
         cycle = await self.get_cycle(cycle_id)
         if not cycle:
             raise ValueError("Cycle not found")
@@ -114,8 +114,11 @@ class PayrollCycleService:
         if result.modified_count == 0:
             raise ValueError("Failed to start processing. The cycle may have changed state concurrently.")
 
-        # Get all employees
-        employees = await self.db.employees.find({"companyId": cycle.companyId, "status": "Active"}).to_list(length=None)
+        if not company_id:
+            raise ValueError("companyId is required to process payroll for a global cycle")
+
+        # Get all employees for the selected company
+        employees = await self.db.employees.find({"companyId": company_id, "status": "Active"}).to_list(length=None)
         
         summary = {
             "totalEmployees": len(employees),

@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
 
 export default function AdminPayrollCycles() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const [cycles, setCycles] = useState<PayrollCycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -52,10 +52,15 @@ export default function AdminPayrollCycles() {
 
   const handleCalculatePayroll = async () => {
     if (!confirmCalcModal) return;
+    const companyId = (user as any)?.companyId || (user as any)?.employment?.companyId;
+    if (!companyId) {
+      toast.error('Select a company from Payroll Control to calculate a cycle');
+      return;
+    }
     setCalculatingCycle(confirmCalcModal.id);
     setConfirmCalcModal(null);
     try {
-      const summary = await payrollCycleApi.calculatePayroll(confirmCalcModal.id);
+      const summary = await payrollCycleApi.calculatePayroll(confirmCalcModal.id, companyId);
       if (summary.failed > 0) {
         toast.error(`Calculation finished with ${summary.failed} errors.`);
       } else {
@@ -71,7 +76,12 @@ export default function AdminPayrollCycles() {
 
   const handlePublish = async (cycleId: string) => {
     try {
-      const res = await payrollCycleApi.publishCycle(cycleId);
+      const companyId = (user as any)?.companyId || (user as any)?.employment?.companyId;
+      if (!companyId) {
+        toast.error('Select a company from Payroll Control to publish a cycle');
+        return;
+      }
+      const res = await payrollCycleApi.publishCycle(cycleId, companyId);
       toast.success(`Published payslips! Dispatched ${res.publishedPayslips} emails.`);
       fetchCycles();
     } catch (error: any) {
@@ -165,7 +175,7 @@ export default function AdminPayrollCycles() {
                 
                 {/* Link to Review UI */}
                 {['CALCULATED', 'ADMIN_REVIEW', 'FINALIZED', 'PUBLISHED', 'EXPORTED', 'CLOSED'].includes(cycle.processingStatus) && (
-                  <AnimatedButton variant="outline" onClick={() => window.location.href = `/admin/payroll/review/${cycle.id}`}>View Payrolls</AnimatedButton>
+                  <AnimatedButton variant="ghost" onClick={() => window.location.href = `/admin/payroll/review/${cycle.id}`}>View Payrolls</AnimatedButton>
                 )}
               </div>
             </div>

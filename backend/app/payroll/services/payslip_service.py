@@ -53,12 +53,16 @@ class PayslipService:
         payslip_doc["_id"] = str(payslip_doc["_id"])
         return Payslip(**payslip_doc)
 
-    async def publish_payslips(self, cycle_id: str) -> int:
+    async def publish_payslips(self, cycle_id: str, company_id: Optional[str] = None) -> int:
         cycle = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
         if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED"]:
             raise ValueError("Cycle must be finalized before publishing payslips")
 
         # Get all payslips for this cycle
+        payroll_query = {"cycleId": cycle_id, "isActive": True}
+        if company_id:
+            payroll_query["companyId"] = company_id
+
         payslips_cursor = self.db.payslips.find({"cycleId": cycle_id, "status": "GENERATED"})
         payslips_to_publish = [doc async for doc in payslips_cursor]
 
@@ -67,11 +71,23 @@ class PayslipService:
             {"cycleId": cycle_id, "status": "GENERATED"},
             {"$set": {"status": "PUBLISHED", "publishedAt": datetime.utcnow()}}
         )
-        
-        await self.db.payroll_cycles.update_one(
-            {"_id": ObjectId(cycle_id)},
-            {"$set": {"processingStatus": "PUBLISHED"}}
+
+        payroll_filter = {"cycleId": cycle_id, "isActive": True}
+        if company_id:
+            payroll_filter["companyId"] = company_id
+
+        await self.db.payroll_runs.update_one(
+            {"cycleId": cycle_id, "companyId": company_id},
+            {"$set": {"status": "PUBLISHED", "updatedAt": datetime.utcnow()}},
+            upsert=True,
         )
+        
+        remaining_runs = await self.db.payroll_runs.count_documents({"cycleId": cycle_id, "status": {"$ne": "PUBLISHED"}})
+        if remaining_runs == 0:
+            await self.db.payroll_cycles.update_one(
+                {"_id": ObjectId(cycle_id)},
+                {"$set": {"processingStatus": "PUBLISHED"}}
+            )
         
         # Integrate with the centralized personal email resolver to dispatch emails
         email_service = EmailService(self.db)

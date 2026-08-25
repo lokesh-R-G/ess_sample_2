@@ -4,9 +4,11 @@ import { GlassCard, AnimatedButton, Input } from '../../../components/ui';
 import { payrollReviewApi, PayrollRecord } from '../../../services/payrollReviewApi';
 import { payrollCycleApi } from '../../../services/payrollCycleApi';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function AdminPayrollReview() {
   const { cycleId } = useParams<{ cycleId: string }>();
+  const { user } = useAuth();
   const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayroll, setSelectedPayroll] = useState<PayrollRecord | null>(null);
@@ -24,7 +26,7 @@ export default function AdminPayrollReview() {
 
   const fetchPayrolls = async () => {
     try {
-      const data = await payrollReviewApi.getPayrollsForCycle(cycleId!);
+      const data = await payrollReviewApi.getPayrollsForCycle(cycleId!, user?.companyId || undefined);
       setPayrolls(data || []);
     } catch (error) {
       toast.error('Failed to load payroll review data');

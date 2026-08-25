@@ -3,15 +3,21 @@ import { useParams } from 'react-router-dom';
 import { GlassCard, AnimatedButton } from '../../../components/ui';
 import { payrollCycleApi } from '../../../services/payrollCycleApi';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function AdminBankExport() {
   const { cycleId } = useParams<{ cycleId: string }>();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleExportCSV = async () => {
     try {
+      if (!user?.companyId) {
+        toast.error('Company context is required for export');
+        return;
+      }
       setLoading(true);
-      const csvContent = await payrollCycleApi.exportCsv(cycleId!);
+      const csvContent = await payrollCycleApi.exportCsv(cycleId!, user.companyId);
       
       // Create blob and download
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
