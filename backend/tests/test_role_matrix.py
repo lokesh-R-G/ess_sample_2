@@ -8,14 +8,14 @@ from typing import Dict, Any
 from app.db.mongo import get_database
 from app.dependencies import get_current_user, require_permission
 from app.rbac.context_providers import self_context, employee_context_by_emp_id
-from backend.tests.mock_db import _MockClient
+from tests.mock_db import _MockClient
 _mock_client = _MockClient()
 def get_mock_db():
     return _mock_client["ess_test"]
 from app.role.engine.seed_roles import seed_roles_and_mappings
 from app.permission.engine.seed_permissions import seed_permissions
 from app.rbac.engine import _ROLE_PERM_CACHE, authorize
-from backend.scripts.phase4_migrate_users import CANONICAL_ROLE_MAP
+from scripts.phase4_migrate_users import CANONICAL_ROLE_MAP
 
 # We use the FastAPI app to test the dependencies
 app = FastAPI()
@@ -61,7 +61,7 @@ def setup_rbac_db():
     app.dependency_overrides[get_database] = lambda: db
     yield
     app.dependency_overrides.clear()
-    db.client.drop_database(db.name)
+    # db.client.drop_database(db.name)
 
 def test_generate_rbac_report():
     db = get_mock_db()

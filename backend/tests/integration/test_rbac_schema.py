@@ -2,7 +2,7 @@
 
 import pytest
 from pymongo import MongoClient
-from backend.app.core.config import get_settings
+from app.core.config import get_settings
 
 @pytest.fixture(scope="module")
 def db():
@@ -35,7 +35,9 @@ def test_unique_role_permission_combination(db):
 def test_valid_scopes(db):
     allowed = {"SELF", "TEAM", "BRANCH", "COMPANY", "GLOBAL"}
     for doc in db.role_permissions.find({}):
-        assert doc.get("scope") in allowed, f"Invalid scope {doc.get('scope')} in document {doc['_id']}"
+        scopes = doc.get("scopes", [])
+        for scope in scopes:
+            assert scope in allowed, f"Invalid scope {scope} in document {doc['_id']}"
 
 def test_role_permission_history_structure(db):
     # Verify required fields exist in history documents
