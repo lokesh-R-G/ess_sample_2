@@ -60,7 +60,7 @@ def _coerce_lines(payload: Any) -> list[str]:
     return [str(payload)]
 
 
-def _parse_line(line: str) -> dict[str, Any] | None:
+def _parse_line(line: str, serial_number: str, machine_id: str | None = None) -> dict[str, Any] | None:
     cleaned = line.strip().strip("[]{}").strip()
     if not cleaned:
         return None
@@ -82,7 +82,9 @@ def _parse_line(line: str) -> dict[str, Any] | None:
         "timestamp": timestamp,
         "rawPayload": cleaned,
         "source": "essl",
-        "fingerprint": create_fingerprint(emp_code, timestamp, cleaned),
+        "fingerprint": create_fingerprint(emp_code, timestamp, cleaned, serial_number),
+        "machineId": machine_id,
+        "serialNumber": serial_number,
     }
 
 
@@ -106,7 +108,7 @@ class SliceableResponse:
         return bool(self._obj)
 
 
-def parse_essl_payload(payload: Any) -> list[dict[str, Any]]:
+def parse_essl_payload(payload: Any, serial_number: str, machine_id: str | None = None) -> list[dict[str, Any]]:
     if isinstance(payload, SliceableResponse):
         payload = payload._obj
     serialized = serialize_object(payload)
@@ -114,7 +116,7 @@ def parse_essl_payload(payload: Any) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
 
     for line in lines:
-        parsed = _parse_line(line)
+        parsed = _parse_line(line, serial_number, machine_id)
         if parsed is not None:
             records.append(parsed)
 
@@ -216,7 +218,7 @@ class EsslClient:
 
             print("✅ eSSL Response Received")
 
-            parsed = parse_essl_payload(response)
+            parsed = parse_essl_payload(response, self.serial_number)
 
             print(f"📦 Parsed records: {len(parsed)}")
 
@@ -227,12 +229,12 @@ class EsslClient:
             return []    
 
 
-def build_essl_client() -> EsslClient:
+def build_essl_client(serial_number: str) -> EsslClient:
     if not settings.essl_wsdl_url:
         raise RuntimeError("ESSL_WSDL_URL is not configured")
     return EsslClient(
         wsdl_url=settings.essl_wsdl_url,
         api_username=settings.essl_api_username,
         api_password=settings.essl_api_password,
-        serial_number=settings.essl_serial_number,
+        serial_number=serial_number,
     )

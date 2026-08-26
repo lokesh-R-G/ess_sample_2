@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 
 from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
-from app.services.sync_service import sync_essl_logs
+from app.services.essl_service import build_essl_client
 import asyncio
 from app.email_service.services.email_service import EmailService
 
@@ -39,16 +39,30 @@ async def authenticate_user(db, emp_id: str, password: str) -> dict:
     return user
 
 
-async def validate_employee_with_essl(emp_id: str) -> bool:
-    try:
-        client = build_essl_client()
-    except RuntimeError:
+async def validate_employee_with_essl(db, emp_id: str) -> bool:
+    cursor = db.essl_machines.find({"status": "Active"})
+    machines = await cursor.to_list(length=None)
+    
+    if not machines:
         return False
-
+        
     to_date = datetime.now(timezone.utc)
     from_date = to_date - timedelta(days=365)
-    records = await asyncio.to_thread(client.fetch_transactions, from_date, to_date)
-    return any(record.get("empId") == emp_id for record in records)
+    
+    for machine in machines:
+        serial_number = machine.get("serialNumber")
+        if not serial_number:
+            continue
+            
+        try:
+            client = build_essl_client(serial_number)
+            records = await asyncio.to_thread(client.fetch_transactions, from_date, to_date)
+            if any(record.get("empId") == emp_id for record in records):
+                return True
+        except Exception:
+            continue
+            
+    return False
 
 
 async def create_provisioned_user(db, emp_id: str, role: str = "Employee") -> dict:
@@ -76,7 +90,7 @@ async def create_provisioned_user(db, emp_id: str, role: str = "Employee") -> di
 async def authenticate_or_provision_user(db, emp_id: str, password: str) -> dict:
     user = await db.users.find_one({"empId": emp_id})
     if user is None:
-        if not await validate_employee_with_essl(emp_id):
+        if not await validate_employee_with_essl(db, emp_id):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         user = await create_provisioned_user(db, emp_id)
         # Do not perform a full sync here to avoid blocking login; scheduling of per-user sync

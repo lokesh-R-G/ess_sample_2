@@ -17,8 +17,19 @@ router = APIRouter(prefix="/sync", tags=["sync"])
 
 @router.post("/essl/")
 async def sync_essl(payload: SyncRequest | None = None, _admin=Depends(require_permission("essl.sync")), db=Depends(get_database)):
+    from app.core.datetime_utils import IST
+    from datetime import timezone
+
     request = payload or SyncRequest()
-    return await sync_essl_logs(db, request.fromDate, request.toDate)
+    from_date = request.fromDate
+    to_date = request.toDate
+
+    if from_date and from_date.tzinfo is None:
+        from_date = from_date.replace(tzinfo=IST).astimezone(timezone.utc)
+    if to_date and to_date.tzinfo is None:
+        to_date = to_date.replace(tzinfo=IST).astimezone(timezone.utc)
+
+    return await sync_essl_logs(db, from_date, to_date)
 
 
 @router.post("/my-data/", dependencies=[Depends(require_permission("attendance.sync", resource_context_provider=self_context))])

@@ -140,6 +140,7 @@ class SyncResponse(BaseModel):
     rawMatched: int = 0
     attendanceUpserted: int
     dateRange: dict[str, str | None]
+    machines: list[dict] | None = None
 
 
 class AttendancePolicy(BaseModel):

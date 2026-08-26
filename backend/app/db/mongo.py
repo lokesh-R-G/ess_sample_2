@@ -18,9 +18,9 @@ def get_database() -> AsyncIOMotorDatabase:
 async def init_indexes() -> None:
     db = get_database()
     await db.users.create_index([("empId", 1)], unique=True)
-    # Ensure raw log de-duplication by fingerprint and by empId+timestamp
+    # Ensure raw log de-duplication by fingerprint
     await db.attendance_logs.create_index([("fingerprint", 1)], unique=True)
-    await db.attendance_logs.create_index([("empId", 1), ("timestamp", 1)], unique=True)
+    await db.attendance_logs.create_index([("empId", 1), ("timestamp", 1)])
     await db.attendance.create_index([("empId", 1), ("date", 1)], unique=True)
     await db.attendance.create_index([("empId", 1), ("date", -1)])
     

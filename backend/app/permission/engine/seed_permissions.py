@@ -50,7 +50,9 @@ CANONICAL_PERMISSIONS: List[Dict[str, Any]] = [
     {"permissionId": "scheduler.configure", "name": "Configure Scheduler", "description": "Configure automated jobs and schedules", "module": "scheduler", "action": "configure"},
     # ESSL
     {"permissionId": "essl.sync", "name": "Sync ESSL", "description": "Synchronize ESSL data", "module": "essl", "action": "sync"},
-    {"permissionId": "essl.recovery_sync", "name": "Recovery Sync ESSL", "description": "Recover and sync ESSL data", "module": "essl", "action": "recovery_sync"}
+    {"permissionId": "essl.recovery_sync", "name": "Recovery Sync ESSL", "description": "Recover and sync ESSL data", "module": "essl", "action": "recovery_sync"},
+    {"permissionId": "essl_machine.view", "name": "View ESSL Machine", "description": "View ESSL machine configuration", "module": "essl_machine", "action": "view"},
+    {"permissionId": "essl_machine.manage", "name": "Manage ESSL Machine", "description": "Create and update ESSL machines", "module": "essl_machine", "action": "manage"}
 ]
 
 

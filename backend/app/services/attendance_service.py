@@ -10,8 +10,8 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_fingerprint(emp_id: str, timestamp: datetime, raw_payload: str) -> str:
-    payload = f"{emp_id}|{timestamp.isoformat()}|{raw_payload}".encode("utf-8")
+def create_fingerprint(emp_id: str, timestamp: datetime, raw_payload: str, serial_number: str) -> str:
+    payload = f"{emp_id}|{timestamp.isoformat()}|{raw_payload}|{serial_number}".encode("utf-8")
     return sha256(payload).hexdigest()
 
 
@@ -22,6 +22,8 @@ def build_raw_log_document(record: dict, sync_batch_id: str) -> dict:
         "rawPayload": record["rawPayload"],
         "source": record.get("source", "essl"),
         "fingerprint": record["fingerprint"],
+        "machineId": record.get("machineId"),
+        "serialNumber": record.get("serialNumber"),
         "syncBatchId": sync_batch_id,
         "createdAt": _utc_now(),
         "updatedAt": _utc_now(),
@@ -199,10 +201,17 @@ def infer_attendance_status(record: dict) -> str:
     return "absent"
 
 
-async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[str, int]:
+async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict:
+    from pymongo.errors import DuplicateKeyError
+    import logging
+    logger = logging.getLogger("attendance_service")
+
+    received = len(records)
     inserted = 0
-    updated = 0
     matched = 0
+    modified = 0
+    rejected = 0
+    errors = []
 
     for record in records:
         document = build_raw_log_document(record, sync_batch_id)
@@ -215,15 +224,29 @@ async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[s
             if result.upserted_id is not None:
                 inserted += 1
             elif result.modified_count > 0:
-                updated += 1
+                modified += 1
             else:
                 matched += 1
+        except DuplicateKeyError as e:
+            logger.error(f"DuplicateKeyError during raw log upsert: {e}")
+            rejected += 1
+            errors.append(f"DuplicateKeyError: {str(e)}")
         except Exception as e:
-            # log but continue on duplicate or other errors
-            pass
+            logger.exception(f"Unexpected error in upsert_raw_logs: {e}")
+            rejected += 1
+            errors.append(str(e))
 
-    print(f"   Raw logs: inserted={inserted}, matched_existing={matched}, modified={updated}")
-    return {"inserted": inserted, "updated": updated, "matched": matched}
+    print(f"   Raw logs: received={received}, inserted={inserted}, matched_existing={matched}, modified={modified}, rejected={rejected}")
+    return {
+        "received": received,
+        "valid": received,
+        "duplicates_in_batch": 0,
+        "inserted": inserted,
+        "matched_existing": matched,
+        "modified": modified,
+        "rejected": rejected,
+        "errors": errors
+    }
 
 
 async def upsert_daily_attendance(db, summaries: list[dict]) -> int:
