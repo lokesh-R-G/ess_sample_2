@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from collections import defaultdict
 
 async def run_audit():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     mongo_uri = os.getenv("MONGODB_URI")
     db_name = os.getenv("MONGODB_DB_NAME")
     

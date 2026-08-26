@@ -14,7 +14,7 @@ def json_serial(obj):
     return str(obj)
 
 async def run_migration():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db = AsyncIOMotorClient(os.getenv('MONGODB_URI'))[os.getenv('MONGODB_DB_NAME')]
     
     # 1. Verification and Backup

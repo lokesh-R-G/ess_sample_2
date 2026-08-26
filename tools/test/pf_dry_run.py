@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
 async def audit_pf():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db = AsyncIOMotorClient(os.getenv('MONGODB_URI'))[os.getenv('MONGODB_DB_NAME')]
     
     docs = await db.pf_rules.find({}).to_list(length=None)

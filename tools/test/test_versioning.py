@@ -9,7 +9,7 @@ from app.api.routes.leave_policy_v2 import create_policy
 from fastapi import Depends
 
 async def run_test():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db_client = AsyncIOMotorClient(os.getenv('MONGODB_URI'))
     db = db_client[os.getenv('MONGODB_DB_NAME')]
     

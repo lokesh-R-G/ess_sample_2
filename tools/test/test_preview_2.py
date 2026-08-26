@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from app.payroll.services.payroll_processor import PayrollProcessor
 
 async def run_preview_tests():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db = AsyncIOMotorClient(os.getenv('MONGODB_URI'))[os.getenv('MONGODB_DB_NAME')]
     
     print("--- 6. PAYROLL PREVIEW TESTS ---")

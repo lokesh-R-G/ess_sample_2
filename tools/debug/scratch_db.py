@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import os
 
 async def run():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     client = AsyncIOMotorClient(os.getenv('MONGODB_URI'))
     db = client[os.getenv('MONGODB_DB_NAME')]
     p = await db.employee_personals.find_one()

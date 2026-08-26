@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
 async def run_payroll_migration():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     mongo_uri = os.getenv("MONGODB_URI")
     db_name = os.getenv("MONGODB_DB_NAME")
     

@@ -11,7 +11,7 @@ def json_serial(obj):
     return str(obj)
 
 async def audit_esi_history():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db = AsyncIOMotorClient(os.getenv('MONGODB_URI'))[os.getenv('MONGODB_DB_NAME')]
     
     print("--- ESI RULE DB RECORDS ---")

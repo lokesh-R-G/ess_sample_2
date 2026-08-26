@@ -6,7 +6,7 @@ from app.attendance_policy.repositories.leave_policy_repository import LeavePoli
 from app.attendance_policy.models.leave_policy import LeavePolicy
 
 async def test_get_all():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db_client = AsyncIOMotorClient(os.getenv('MONGODB_URI'))
     db = db_client[os.getenv('MONGODB_DB_NAME')]
     repo = LeavePolicyRepository(db)

@@ -6,7 +6,7 @@ import json
 from bson import json_util
 
 async def run():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     db_client = AsyncIOMotorClient(os.getenv('MONGODB_URI'))
     db = db_client[os.getenv('MONGODB_DB_NAME')]
     

@@ -5,7 +5,7 @@ import argparse
 from datetime import datetime, timezone
 
 # Add backend directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backend')))
 
 from app.db.mongo import get_database
 

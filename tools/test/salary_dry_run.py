@@ -6,7 +6,7 @@ import json
 from dotenv import load_dotenv
 
 async def run_dry_run():
-    load_dotenv()
+    load_dotenv('../../backend/.env')
     mongo_uri = os.getenv("MONGODB_URI")
     db_name = os.getenv("MONGODB_DB_NAME")
     
