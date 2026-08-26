@@ -167,10 +167,22 @@ const AdminPayrollControl: React.FC = () => {
 
       setLoadingCompanyData(true);
       try {
-        const [branchPayload, employeePayload] = await Promise.all([
+        const [branchResult, employeeResult] = await Promise.allSettled([
           organizationApi.getBranches(selectedCompanyId),
-          employeeApi.getEmployees(),
+          employeeApi.getAllDirectoryEmployees(),
         ]);
+
+        const branchPayload = branchResult.status === 'fulfilled' ? branchResult.value : [];
+        if (branchResult.status === 'rejected') {
+          console.error('Failed to load branches:', branchResult.reason);
+          toast.error('Failed to load branches');
+        }
+
+        const employeePayload = employeeResult.status === 'fulfilled' ? employeeResult.value : [];
+        if (employeeResult.status === 'rejected') {
+          console.error('Failed to load employees:', employeeResult.reason);
+          toast.error('Failed to load employees');
+        }
 
         const branchList = normalizeArray<any>(branchPayload)
           .map((branch) => ({ id: getId(branch), name: branch?.name || 'Unnamed Branch', companyId: branch?.companyId }))
@@ -217,12 +229,22 @@ const AdminPayrollControl: React.FC = () => {
         const cycle = cycles.find((item) => item.id === selectedCycleId) || null;
         setCurrentCycle(cycle);
 
-        const [attendancePayload, payrollPayload, reimbursementPayload, deductionPayload] = await Promise.all([
+        const [attendanceResult, payrollResult, reimbursementResult, deductionResult] = await Promise.allSettled([
           payrollCycleApi.getAttendanceLedger(selectedCycleId, selectedCompanyId, selectedBranchId || undefined),
           payrollReviewApi.getPayrollsForCycle(selectedCycleId, selectedCompanyId),
-          api.get(`/v2/payroll/admin/reimbursements?cycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`),
-          api.get(`/v2/payroll/admin/deductions?cycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`),
+          api.get(`/v2/payroll/admin/reimbursements?payrollCycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`),
+          api.get(`/v2/payroll/admin/deductions?payrollCycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`),
         ]);
+
+        const attendancePayload = attendanceResult.status === 'fulfilled' ? attendanceResult.value : [];
+        const payrollPayload = payrollResult.status === 'fulfilled' ? payrollResult.value : [];
+        const reimbursementPayload = reimbursementResult.status === 'fulfilled' ? reimbursementResult.value : [];
+        const deductionPayload = deductionResult.status === 'fulfilled' ? deductionResult.value : [];
+
+        if (attendanceResult.status === 'rejected') console.error('Failed to load attendance:', attendanceResult.reason);
+        if (payrollResult.status === 'rejected') console.error('Failed to load payrolls:', payrollResult.reason);
+        if (reimbursementResult.status === 'rejected') console.error('Failed to load reimbursements:', reimbursementResult.reason);
+        if (deductionResult.status === 'rejected') console.error('Failed to load deductions:', deductionResult.reason);
 
         const attendanceList = normalizeArray<AttendanceLedgerRow>(attendancePayload);
         const payrollList = normalizeArray<PayrollRecord>(payrollPayload);
@@ -366,19 +388,19 @@ const AdminPayrollControl: React.FC = () => {
 
           if (amount > 0) {
             if (existing?._id) {
-              saveJobs.push(api.put(`/v2/payroll/admin/deductions/${existing._id}`, payload));
+              saveJobs.push(api.put(`/v2/payroll/admin/deductions/${existing._id}?companyId=${selectedCompanyId}&payrollCycleId=${selectedCycleId}`, payload));
             } else {
-              saveJobs.push(api.post('/v2/payroll/admin/deductions', payload));
+              saveJobs.push(api.post(`/v2/payroll/admin/deductions?companyId=${selectedCompanyId}&payrollCycleId=${selectedCycleId}`, payload));
             }
           } else if (existing?._id) {
-            saveJobs.push(api.delete(`/v2/payroll/admin/deductions/${existing._id}`));
+            saveJobs.push(api.delete(`/v2/payroll/admin/deductions/${existing._id}?companyId=${selectedCompanyId}&payrollCycleId=${selectedCycleId}`));
           }
         }
       }
 
       await Promise.all(saveJobs);
       toast.success('Adjustments saved');
-      const refreshed = await api.get(`/v2/payroll/admin/deductions?cycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`);
+      const refreshed = await api.get(`/v2/payroll/admin/deductions?payrollCycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`);
       const deductionList = normalizeArray<any>(refreshed);
       const deductionMap: Record<string, Record<string, any>> = {};
       for (const deduction of deductionList) {

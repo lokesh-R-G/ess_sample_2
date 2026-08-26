@@ -44,12 +44,20 @@ async def get_leave_balances(
     db: AsyncIOMotorDatabase = Depends(get_database),
     _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
+    from app.employee.repositories.employee_repository import EmployeeRepository
+    
+    emp_repo = EmployeeRepository(db)
+    # We might need cycle start/end, but cycle is not fetched here yet. We can just fetch current for leave balances, or fetch the cycle.
+    cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycleId)})
+    if not cycle:
+        raise HTTPException(status_code=404, detail="Cycle not found")
         
-    emp_query = {"companyId": companyId, "status": "Active"}
-    if branchId:
-        emp_query["branchId"] = branchId
-        
-    employees = await db.employees.find(emp_query).to_list(length=1000)
+    employees = await emp_repo.get_company_employees(
+        company_id=companyId, 
+        branch_id=branchId, 
+        cycle_start=cycle.get("startDate"), 
+        cycle_end=cycle.get("endDate")
+    )
     employee_ids = [e["employeeId"] for e in employees]
     
     # Fetch leave ledgers
@@ -109,12 +117,19 @@ async def get_reimbursements(
     db: AsyncIOMotorDatabase = Depends(get_database),
     _admin = Depends(require_permission("payroll.calculate", resource_context_provider=company_context))
 ):
-
-    emp_query = {"companyId": companyId, "status": "Active"}
-    if branchId:
-        emp_query["branchId"] = branchId
+    from app.employee.repositories.employee_repository import EmployeeRepository
+    
+    cycle = None
+    if payrollCycleId:
+        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(payrollCycleId)})
         
-    employees = await db.employees.find(emp_query).to_list(length=1000)
+    emp_repo = EmployeeRepository(db)
+    employees = await emp_repo.get_company_employees(
+        company_id=companyId, 
+        branch_id=branchId, 
+        cycle_start=cycle.get("startDate") if cycle else None, 
+        cycle_end=cycle.get("endDate") if cycle else None
+    )
     employee_ids = [e["employeeId"] for e in employees]
     
     query = {
@@ -239,7 +254,7 @@ async def create_deduction(
         if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
             raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
 
-    payload.createdBy = current_user.employeeId
+    payload.createdBy = current_user.get("employeeId")
     
     doc = payload.model_dump(by_alias=True, exclude_none=True)
     res = await db.manual_payroll_adjustments.insert_one(doc)
@@ -272,7 +287,7 @@ async def update_deduction(
             "status": "Archived", 
             "isCurrent": False,
             "updatedAt": datetime.utcnow(),
-            "updatedBy": current_user.employeeId
+            "updatedBy": current_user.get("employeeId")
         }}
     )
 
@@ -282,7 +297,7 @@ async def update_deduction(
     payload.originalAdjustmentId = doc.get("originalAdjustmentId") or str(doc["_id"])
     payload.createdBy = doc.get("createdBy")
     payload.createdAt = doc.get("createdAt")
-    payload.updatedBy = current_user.employeeId
+    payload.updatedBy = current_user.get("employeeId")
     payload.updatedAt = datetime.utcnow()
 
     new_doc = payload.model_dump(by_alias=True, exclude_none=True)
@@ -311,7 +326,7 @@ async def delete_deduction(
             
     await db.manual_payroll_adjustments.update_one(
         {"_id": ObjectId(deduction_id)},
-        {"$set": {"status": "Deleted", "isCurrent": False, "deletedAt": datetime.utcnow(), "updatedBy": current_user.employeeId}}
+        {"$set": {"status": "Deleted", "isCurrent": False, "deletedAt": datetime.utcnow(), "updatedBy": current_user.get("employeeId")}}
     )
     return {"success": True}
 
@@ -324,12 +339,20 @@ async def calculate_payroll_for_company(
     current_user: dict = Depends(get_current_user),
     _admin = Depends(require_permission("payroll.calculate", resource_context_provider=cycle_context))
 ):
+    from app.employee.repositories.employee_repository import EmployeeRepository
+    
+    cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
+    if not cycle:
+        raise HTTPException(status_code=404, detail="Cycle not found")
         
     processor = PayrollProcessor(db)
+    emp_repo = EmployeeRepository(db)
     
-    emp_query = {"companyId": company_id, "status": "Active"}
-        
-    employees = await db.employees.find(emp_query).to_list(length=10000)
+    employees = await emp_repo.get_company_employees(
+        company_id=company_id, 
+        cycle_start=cycle.get("startDate"), 
+        cycle_end=cycle.get("endDate")
+    )
     
     results = []
     errors = []
@@ -340,7 +363,8 @@ async def calculate_payroll_for_company(
             res = await processor.process_employee(
                 cycle_id=cycle_id,
                 employee_id=emp["employeeId"],
-                recalculated_by=current_user.employeeId,
+                company_id=company_id,
+                recalculated_by=current_user.get("employeeId"),
                 reason="Admin Batch Calculation"
             )
             results.append(emp["employeeId"])

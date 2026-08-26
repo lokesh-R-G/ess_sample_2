@@ -54,7 +54,7 @@ class PayrollCycleService:
             raise ValueError("Payroll cycle not found")
 
         valid_transitions = {
-            "DRAFT": ["OPEN"],
+            "DRAFT": ["OPEN", "ATTENDANCE_FINALIZED"],
             "OPEN": ["APPROVAL_PENDING"],
             "APPROVAL_PENDING": ["APPROVAL_LOCKED"],
             "APPROVAL_LOCKED": ["ATTENDANCE_FINALIZED"],
@@ -118,7 +118,13 @@ class PayrollCycleService:
             raise ValueError("companyId is required to process payroll for a global cycle")
 
         # Get all employees for the selected company
-        employees = await self.db.employees.find({"companyId": company_id, "status": "Active"}).to_list(length=None)
+        from app.employee.repositories.employee_repository import EmployeeRepository
+        emp_repo = EmployeeRepository(self.db)
+        employees = await emp_repo.get_company_employees(
+            company_id=company_id,
+            cycle_start=cycle.startDate,
+            cycle_end=cycle.endDate
+        )
         
         summary = {
             "totalEmployees": len(employees),
@@ -142,7 +148,7 @@ class PayrollCycleService:
                     summary["skipped"] += 1
                     continue
 
-                await processor.process_employee(cycle_id, emp_id, recalculated_by=user_id, reason="Initial Calculation")
+                await processor.process_employee(cycle_id, emp_id, company_id=company_id, recalculated_by=user_id, reason="Initial Calculation")
                 summary["successfullyCalculated"] += 1
                 summary["payrollVersionsCreated"] += 1
             except Exception as e:

@@ -115,26 +115,42 @@ async def get_cycle_attendance_ledger(
     if not start_date or not end_date:
         raise HTTPException(status_code=400, detail="Cycle is missing date bounds")
 
-    employees_query = {"companyId": companyId, "status": "Active"}
-    if branchId:
-        employees_query["branchId"] = branchId
-
-    employees = await db.employees.find(employees_query).to_list(length=5000)
+    from app.employee.repositories.employee_repository import EmployeeRepository
+    
+    emp_repo = EmployeeRepository(db)
+    employees = await emp_repo.get_company_employees(
+        company_id=companyId, 
+        branch_id=branchId, 
+        cycle_start=start_date, 
+        cycle_end=end_date
+    )
     employee_ids = [employee.get("employeeId") for employee in employees if employee.get("employeeId")]
     if not employee_ids:
         return []
+
+    emp_codes = [employee.get("employeeCode") for employee in employees if employee.get("employeeCode")]
 
     branch_docs = await db.branches.find({"companyId": companyId, "deletedAt": None}).to_list(length=1000)
     branch_map = {branch.get("branchId") or str(branch.get("_id")): branch for branch in branch_docs}
 
     attendance_rows = await db.attendance.find({
-        "employeeId": {"$in": employee_ids},
+        "$or": [
+            {"employeeId": {"$in": employee_ids}},
+            {"empId": {"$in": emp_codes}}
+        ],
         "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
     }).to_list(length=10000)
 
     grouped: Dict[str, List[dict]] = {}
     for row in attendance_rows:
-        key = row.get("employeeId") or row.get("empId")
+        # Map both empId and employeeId back to the canonical UUID employeeId
+        key = row.get("employeeId")
+        if not key:
+            emp_id = row.get("empId")
+            for emp in employees:
+                if emp.get("employeeCode") == emp_id:
+                    key = emp.get("employeeId")
+                    break
         if not key:
             continue
         grouped.setdefault(key, []).append(row)
@@ -171,8 +187,6 @@ async def get_cycle_attendance_ledger(
             elif normalized == "absent":
                 lop += 1.0
 
-        if not rows:
-            absent = float(total_days)
 
         working_days = present + paid_leave + holiday + weekly_off
         branch_id = employee.get("branchId")

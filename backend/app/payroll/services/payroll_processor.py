@@ -156,7 +156,7 @@ class PayrollProcessor:
         }
         return snapshot
 
-    async def process_employee(self, cycle_id: str, employee_id: str, recalculated_by: Optional[str] = None, reason: Optional[str] = None) -> Payroll:
+    async def process_employee(self, cycle_id: str, employee_id: str, company_id: str, recalculated_by: Optional[str] = None, reason: Optional[str] = None) -> Payroll:
         # Fetch cycle
         cycle_doc = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
         if not cycle_doc:
@@ -170,7 +170,7 @@ class PayrollProcessor:
         if not emp_doc:
             raise ValueError(f"Employee {employee_id} not found")
             
-        company_id = emp_doc.get("companyId", cycle.companyId)
+        emp_company_id = emp_doc.get("companyId", company_id)
         branch_id = emp_doc.get("branchId")
         emp_code = emp_doc.get("employeeCode")
         
@@ -228,7 +228,7 @@ class PayrollProcessor:
         # 7. Persist Payroll
         payroll = Payroll(
             cycleId=cycle_id,
-            companyId=company_id,
+            companyId=emp_company_id,
             branchId=branch_id,
             payrollCode=cycle.name,
             employeeId=employee_id,
