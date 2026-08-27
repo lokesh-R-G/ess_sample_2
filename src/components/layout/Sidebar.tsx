@@ -45,7 +45,7 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/employees', label: 'Employees', icon: Users, adminOnly: true, requiredPermission: 'employee.read' },
   { path: '/admin/payroll/control', label: 'Payroll Control', icon: Receipt, adminOnly: true, requiredPermission: 'payroll.read' },
   { path: '/admin/payroll/cycles', label: 'Payroll Cycles', icon: RefreshCw, adminOnly: true, requiredPermission: 'payroll.cycle.read' },
-  { path: '/admin/payroll', label: 'Payroll Configuration', icon: Settings, adminOnly: true, requiredPermission: 'payroll.manage' },
+  { path: '/admin/settings/payroll', label: 'Payroll Settings', icon: Settings, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/organization', label: 'Organization', icon: Building2, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true, requiredPermission: 'attendance.read' },

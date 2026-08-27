@@ -1,32 +1,20 @@
 import React, { useState } from 'react';
-import { Settings, SlidersHorizontal, Shield, Activity, Receipt } from 'lucide-react';
-import PayrollSettingsTab from './tabs/PayrollSettingsTab';
-import PFRulesTab from './tabs/PFRulesTab';
-import ESIRulesTab from './tabs/ESIRulesTab';
-import PTRulesTab from './tabs/PTRulesTab';
-import ComponentBehaviorTab from './tabs/ComponentBehaviorTab';
+import { Shield, Activity, Receipt } from 'lucide-react';
+import PFRulesTab from './PFRulesTab';
+import ESIRulesTab from './ESIRulesTab';
+import PTRulesTab from './PTRulesTab';
 
-export default function AdminPayrollRules() {
-  const [activeTab, setActiveTab] = useState('settings');
+export default function PayrollRulesTab() {
+  const [activeTab, setActiveTab] = useState('pf');
 
   const tabs = [
-    { id: 'settings', label: 'General Settings', icon: Settings },
     { id: 'pf', label: 'PF Rules', icon: Shield },
     { id: 'esi', label: 'ESI Rules', icon: Activity },
     { id: 'pt', label: 'PT Rules', icon: Receipt },
-    { id: 'components', label: 'Component Behaviors', icon: SlidersHorizontal },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Payroll Rules Engine</h1>
-          <p className="text-neutral-500 mt-1">Configure global statutory rules and payroll settings</p>
-        </div>
-      </div>
-
-      {/* Tabs Header */}
+    <div className="space-y-6 bg-white p-6 rounded-2xl border border-neutral-200">
       <div className="flex space-x-1 border-b border-neutral-200">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -49,13 +37,10 @@ export default function AdminPayrollRules() {
         })}
       </div>
 
-      {/* Tab Content */}
       <div className="mt-6">
-        {activeTab === 'settings' && <PayrollSettingsTab />}
         {activeTab === 'pf' && <PFRulesTab />}
         {activeTab === 'esi' && <ESIRulesTab />}
         {activeTab === 'pt' && <PTRulesTab />}
-        {activeTab === 'components' && <ComponentBehaviorTab />}
       </div>
     </div>
   );

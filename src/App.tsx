@@ -121,7 +121,7 @@ function AppRoutes() {
           <Route path="reimbursement-approvals" element={<ProtectedRoute requireAnyPermission={['reimbursement.approve']}><AdminReimbursementApprovals /></ProtectedRoute>} />
           <Route path="holidays" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminHolidays /></ProtectedRoute>} />
           <Route path="sync" element={<ProtectedRoute requireAnyPermission={['essl.sync']}><AdminSync /></ProtectedRoute>} />
-          <Route path="payroll" element={<ProtectedRoute requireAnyPermission={['payroll.manage']}><AdminPayrollRules /></ProtectedRoute>} />
+          <Route path="settings/payroll" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminPayrollRules /></ProtectedRoute>} />
           <Route path="payroll/preview" element={<ProtectedRoute requireAnyPermission={['payroll.manage', 'payroll.read']}><SalaryPreviewPage /></ProtectedRoute>} />
           <Route path="payroll/cycles" element={<ProtectedRoute requireAnyPermission={['payroll.cycle.manage', 'payroll.cycle.read']}><AdminPayrollCycles /></ProtectedRoute>} />
           <Route path="payroll/control" element={<ProtectedRoute requireAnyPermission={['payroll.read', 'payroll.calculate']}><AdminPayrollControl /></ProtectedRoute>} />

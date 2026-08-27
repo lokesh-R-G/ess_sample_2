@@ -15,18 +15,16 @@ pf_rule_router = APIRouter(prefix="/pf-rules", tags=["PF Rules"])
 
 from fastapi import Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.dependencies import get_database
+from app.dependencies import get_database, require_permission
 from app.payroll.repositories.pf_rule_repository import PFRuleRepository
 
 @pf_rule_router.post("/")
-async def create_pf_policy(payload: PFRule, db: AsyncIOMotorDatabase = Depends(get_database)):
-    # TODO: Add authorization
+async def create_pf_policy(payload: PFRule, db: AsyncIOMotorDatabase = Depends(get_database), user: dict = Depends(require_permission("organization.manage"))):
     repo = PFRuleRepository(db)
     return await repo.create_initial_policy(payload)
 
 @pf_rule_router.put("/")
-async def update_pf_policy(payload: PFRule, db: AsyncIOMotorDatabase = Depends(get_database)):
-    # TODO: Add authorization
+async def update_pf_policy(payload: PFRule, db: AsyncIOMotorDatabase = Depends(get_database), user: dict = Depends(require_permission("organization.manage"))):
     repo = PFRuleRepository(db)
     new_effective_from = payload.effectiveFrom
     if not new_effective_from:
@@ -37,7 +35,7 @@ async def update_pf_policy(payload: PFRule, db: AsyncIOMotorDatabase = Depends(g
         raise HTTPException(status_code=400, detail=str(e))
 
 @pf_rule_router.get("/current")
-async def get_current_pf_policy(db: AsyncIOMotorDatabase = Depends(get_database)):
+async def get_current_pf_policy(db: AsyncIOMotorDatabase = Depends(get_database), user: dict = Depends(require_permission("organization.manage"))):
     repo = PFRuleRepository(db)
     policy = await repo.get_current_policy()
     if not policy:
@@ -50,12 +48,12 @@ esi_rule_router = APIRouter(prefix="/esi-rules", tags=["ESI Rules"])
 from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
 
 @esi_rule_router.post("/")
-async def create_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends(get_database)):
+async def create_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends(get_database), user: dict = Depends(require_permission("organization.manage"))):
     repo = ESIRuleRepository(db)
     return await repo.create_initial_policy(payload)
 
 @esi_rule_router.put("/")
-async def update_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends(get_database)):
+async def update_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends(get_database), user: dict = Depends(require_permission("organization.manage"))):
     repo = ESIRuleRepository(db)
     new_effective_from = payload.effectiveFrom
     if not new_effective_from:
@@ -66,7 +64,7 @@ async def update_esi_policy(payload: ESIRule, db: AsyncIOMotorDatabase = Depends
         raise HTTPException(status_code=400, detail=str(e))
 
 @esi_rule_router.get("/current")
-async def get_current_esi_policy(db: AsyncIOMotorDatabase = Depends(get_database)):
+async def get_current_esi_policy(db: AsyncIOMotorDatabase = Depends(get_database), user: dict = Depends(require_permission("organization.manage"))):
     repo = ESIRuleRepository(db)
     policy = await repo.get_current_policy()
     if not policy:
