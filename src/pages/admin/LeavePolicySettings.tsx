@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { DashboardLayout } from '../../components/layout';
 import { GlassCard, AnimatedButton, Input, Select, StatusBadge } from '../../components/ui';
 import { Plus, Save, Trash2, Edit } from 'lucide-react';
 import { getLeavePoliciesV2, createLeavePolicyV2, LeavePolicyV2, LeaveTypeConfig } from '../../services/leavePolicyService';
@@ -72,9 +71,12 @@ export const LeavePolicySettings: React.FC = () => {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-neutral-900">Leave Policy Settings</h1>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Leave Policy Settings</h1>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-6">
@@ -146,7 +148,6 @@ export const LeavePolicySettings: React.FC = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 };
 
