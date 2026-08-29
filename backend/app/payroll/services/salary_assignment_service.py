@@ -182,7 +182,7 @@ class SalaryAssignmentService:
                 "ptState": payload.get("ptState", "None")
             }
             
-            await self.db.employee_personal.update_one(
+            await self.db.employee_personals.update_one(
                 {"employeeId": employee_id},
                 {"$set": {"statutoryChoice": statutory_choice}}
             )

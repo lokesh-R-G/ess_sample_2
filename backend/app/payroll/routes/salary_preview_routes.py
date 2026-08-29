@@ -9,6 +9,8 @@ from app.db.mongo import get_database
 from app.domain_models import PFRule, ESIRule, ProfessionalTaxSlab
 from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine, CalculationMode, StatutoryDecisions
 from app.payroll.services.payroll_calculation_service import PayrollCalculationEngine
+from app.payroll.repositories.pf_rule_repository import PFRuleRepository
+from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
 
 def clean_mongo_doc(doc: dict) -> dict:
     if not doc:
@@ -96,7 +98,6 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     )
     
     # Check if PF is globally enabled to zero out PF Gross if disabled
-    from app.payroll.repositories.pf_rule_repository import PFRuleRepository
     pf_repo = PFRuleRepository(db)
     
     target_dt_utc = datetime.utcnow()
@@ -141,11 +142,12 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     
     # 3. Fetch Rules (Mocked for now, assume default rules if none exist)
     target_dt_utc = datetime.utcnow()
+    
+    pf_repo = PFRuleRepository(db)
     pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
     if not pf_rule:
         pf_rule = PFRule(effectiveFrom=target_dt_utc)
     
-    from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
     esi_repo = ESIRuleRepository(db)
     esi_rule = await esi_repo.resolve_policy_by_date(target_dt_utc)
     if not esi_rule:

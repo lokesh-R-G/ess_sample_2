@@ -69,8 +69,8 @@ async def get_salary_config(
             "ptState": config.get("ptState", "None")
         })
         
-    # Merge statutory choices from canonical employee_personal
-    emp_personal = await db.employee_personal.find_one({"employeeId": employee_id})
+    # Merge statutory choices from canonical employee_personals
+    emp_personal = await db.employee_personals.find_one({"employeeId": employee_id})
     if emp_personal and "statutoryChoice" in emp_personal:
         choice = emp_personal["statutoryChoice"]
         result.update({
