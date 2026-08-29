@@ -109,14 +109,14 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
       });
       setGrossPreview(res?.data || res || null);
       
-      // Setup Defaults for Stage 2
+      // Setup Defaults for Stage 2 only if missing
       onChange({ 
           ...data, 
-          isFresher: true, 
-          wantsPf: true, 
-          wantsPension: true, 
-          pfCalculationMode: 'Default',
-          isExistingPensionMember: false,
+          isFresher: data.isFresher ?? true, 
+          wantsPf: data.wantsPf ?? true, 
+          wantsPension: data.wantsPension ?? true, 
+          pfCalculationMode: data.pfCalculationMode || 'Default',
+          isExistingPensionMember: data.isExistingPensionMember ?? false,
           isSalaryPreviewCalculated: false
       });
       setPreview(null);

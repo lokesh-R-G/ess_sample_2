@@ -158,10 +158,6 @@ class SalaryAssignmentService:
                 "employeeId": employee_id,
                 "salaryStructureId": structure_id,
                 "monthlyGross": sum(r["monthlyAmount"] for r in snapshot_records if r["includeInGross"]),
-                "wantsPf": payload.get("wantsPf", True),
-                "pfCalculationMethod": payload.get("pfCalculationMode", "Default"),
-                "esiEnabled": payload.get("esiEnabled", True),
-                "existingPensionMember": payload.get("isExistingPensionMember", False),
                 "ptState": payload.get("ptState", "None"),
                 "status": "Active",
                 "updatedAt": now
@@ -173,6 +169,22 @@ class SalaryAssignmentService:
                     "$setOnInsert": {"createdAt": now, "createdBy": user_id, "id": str(ObjectId())}
                 },
                 upsert=True
+            )
+            
+            # Persist canonical statutory choice to employee_personal
+            statutory_choice = {
+                "isFresher": payload.get("isFresher", True),
+                "isExistingPensionMember": payload.get("isExistingPensionMember", False),
+                "wantsPf": payload.get("wantsPf", True),
+                "wantsPension": payload.get("wantsPension", True),
+                "pfCalculationMode": payload.get("pfCalculationMode", "Default"),
+                "esiEnabled": payload.get("esiEnabled", True),
+                "ptState": payload.get("ptState", "None")
+            }
+            
+            await self.db.employee_personal.update_one(
+                {"employeeId": employee_id},
+                {"$set": {"statutoryChoice": statutory_choice}}
             )
             
         return {"status": "success", "message": "Salary Assigned and Snapshot Persisted", "snapshotCount": len(snapshot_records)}

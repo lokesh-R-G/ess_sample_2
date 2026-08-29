@@ -17,6 +17,14 @@ class SalaryAssignmentRequest(BaseModel):
     pfOption: str = "Default"
     esiOption: str = "Default"
     ptState: str = "None"
+    
+    # Statutory Choice fields
+    wantsPf: bool = True
+    wantsPension: bool = True
+    pfCalculationMode: str = "Default"
+    isFresher: bool = True
+    isExistingPensionMember: bool = False
+    esiEnabled: bool = True
 
 @router.post("/", dependencies=[Depends(require_permission("payroll.salary.manage"))])
 async def assign_salary(
@@ -32,11 +40,6 @@ async def get_salary_config(
     employee_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    # Retrieve active configuration config
-    config = await db["employee_payroll_configs"].find_one({"employeeId": employee_id, "deletedAt": None})
-    if not config:
-        config = {}
-    
     # Retrieve basic salary and custom components from active assignment snapshot
     active_components = await db["employee_salary_components"].find({"employeeId": employee_id, "isCurrent": True}).to_list(None)
     
@@ -51,14 +54,33 @@ async def get_salary_config(
             if cid:
                 custom_components[cid] = comp.get("monthlyAmount", 0.0)
     
-    return {
-        "salaryStructureId": config.get("salaryStructureId"),
+    result = {
         "basicSalary": basic_salary,
-        "pfOption": "Default",
-        "wantsPf": config.get("wantsPf", True),
-        "pfCalculationMode": config.get("pfCalculationMethod", "Default"),
-        "isExistingPensionMember": config.get("existingPensionMember", False),
-        "esiEnabled": config.get("esiEnabled", True),
-        "ptState": config.get("ptState", "None"),
         "customComponents": custom_components
     }
+
+    # Merge canonical config
+    config = await db.employee_payroll_configs.find_one({"employeeId": employee_id})
+    if config:
+        result.update({
+            "salaryStructureId": config.get("salaryStructureId"),
+            "pfOption": config.get("pfOption", "Default"),
+            "esiOption": config.get("esiOption", "Default"),
+            "ptState": config.get("ptState", "None")
+        })
+        
+    # Merge statutory choices from canonical employee_personal
+    emp_personal = await db.employee_personal.find_one({"employeeId": employee_id})
+    if emp_personal and "statutoryChoice" in emp_personal:
+        choice = emp_personal["statutoryChoice"]
+        result.update({
+            "wantsPf": choice.get("wantsPf", True),
+            "wantsPension": choice.get("wantsPension", True),
+            "pfCalculationMode": choice.get("pfCalculationMode", "Default"),
+            "isFresher": choice.get("isFresher", True),
+            "isExistingPensionMember": choice.get("isExistingPensionMember", False),
+            "esiEnabled": choice.get("esiEnabled", True),
+            "ptState": choice.get("ptState", result.get("ptState", "None"))
+        })
+        
+    return result
