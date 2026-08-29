@@ -14,17 +14,17 @@ class SalaryAssignmentRequest(BaseModel):
     salaryStructureId: str
     basicSalary: float
     effectiveFrom: str
-    pfOption: str = "Default"
-    esiOption: str = "Default"
-    ptState: str = "None"
+    pfOption: Optional[str] = "Default"
+    esiOption: Optional[str] = "Default"
+    ptState: Optional[str] = "None"
     
     # Statutory Choice fields
-    wantsPf: bool = True
-    wantsPension: bool = True
-    pfCalculationMode: str = "Default"
-    isFresher: bool = True
-    isExistingPensionMember: bool = False
-    esiEnabled: bool = True
+    wantsPf: Optional[bool] = True
+    wantsPension: Optional[bool] = True
+    pfCalculationMode: Optional[str] = "Default"
+    isFresher: Optional[bool] = True
+    isExistingPensionMember: Optional[bool] = False
+    esiEnabled: Optional[bool] = True
 
 @router.post("/", dependencies=[Depends(require_permission("payroll.salary.manage"))])
 async def assign_salary(

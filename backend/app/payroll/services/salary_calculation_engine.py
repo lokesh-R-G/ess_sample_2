@@ -10,13 +10,13 @@ class CalculationMode(str, Enum):
     ASSIGNMENT = "ASSIGNMENT"
 
 class StatutoryDecisions(BaseModel):
-    isFresher: bool = True
-    isExistingPensionMember: bool = False
-    wantsPf: bool = True
-    wantsPension: bool = True
-    pfCalculationMode: str = "Default"
-    esiEnabled: bool = True
-    ptState: str = "None"
+    isFresher: Optional[bool] = True
+    isExistingPensionMember: Optional[bool] = False
+    wantsPf: Optional[bool] = True
+    wantsPension: Optional[bool] = True
+    pfCalculationMode: Optional[str] = "Default"
+    esiEnabled: Optional[bool] = True
+    ptState: Optional[str] = "None"
 
 class SalaryCalculationEngine:
     """
@@ -215,7 +215,7 @@ class SalaryCalculationEngine:
         # 6. Statutory: PT Calculation
         pt_amount = 0.0
         pt_state = statutory_decisions.ptState
-        if pt_state != "None" and pt_slabs:
+        if pt_state and pt_state != "None" and pt_slabs:
             pt_amount = PayrollCalculationEngine.calculateProfessionalTax(gross_salary, pt_slabs, gender="Any")
             
         pt_preview = {

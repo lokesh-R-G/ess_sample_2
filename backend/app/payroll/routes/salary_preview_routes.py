@@ -34,16 +34,16 @@ router = APIRouter(prefix="/calculate-preview", tags=["Payroll Engine Preview"])
 class PreviewRequest(BaseModel):
     salaryStructureId: str
     basicSalary: float
-    pfOption: str = "Default" # Legacy, to be removed if needed, keeping for compat
-    esiOption: str = "Default" # Legacy
-    ptState: str = "None"
+    pfOption: Optional[str] = "Default" # Legacy
+    esiOption: Optional[str] = "Default" # Legacy
+    ptState: Optional[str] = "None"
     customComponents: Optional[dict[str, float]] = None
-    isFresher: bool = True
-    isExistingPensionMember: bool = False
-    wantsPf: bool = True
-    wantsPension: bool = True
-    pfCalculationMode: str = "Default" # "Ceiling" or "Actual"
-    esiEnabled: bool = True
+    isFresher: Optional[bool] = True
+    isExistingPensionMember: Optional[bool] = False
+    wantsPf: Optional[bool] = True
+    wantsPension: Optional[bool] = True
+    pfCalculationMode: Optional[str] = "Default" # "Ceiling" or "Actual"
+    esiEnabled: Optional[bool] = True
 
 gross_router = APIRouter(tags=["Payroll Engine Preview"])
 
@@ -80,11 +80,11 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     # but we still need to know if PF is globally enabled.
     
     decisions = StatutoryDecisions(
-        isFresher=True,
-        wantsPf=True,
-        wantsPension=True,
-        esiEnabled=True,
-        ptState="None"
+        isFresher=req.isFresher if req.isFresher is not None else True,
+        wantsPf=req.wantsPf if req.wantsPf is not None else True,
+        wantsPension=req.wantsPension if req.wantsPension is not None else True,
+        esiEnabled=req.esiEnabled if req.esiEnabled is not None else True,
+        ptState=req.ptState if req.ptState is not None else "None"
     )
     
     result = SalaryCalculationEngine.calculate(
@@ -153,19 +153,20 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     if not esi_rule:
         esi_rule = ESIRule(effectiveFrom=target_dt_utc)
     
-    pt_cursor = db["pt_slabs"].find({"state": req.ptState})
+    pt_state_normalized = req.ptState if req.ptState is not None else "None"
+    pt_cursor = db["pt_slabs"].find({"state": pt_state_normalized})
     pt_docs = await pt_cursor.to_list(length=None)
     pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
     
     # 4. Pass to Engine
     decisions = StatutoryDecisions(
-        isFresher=req.isFresher,
-        isExistingPensionMember=req.isExistingPensionMember,
-        wantsPf=req.wantsPf,
-        wantsPension=req.wantsPension,
-        pfCalculationMode=req.pfCalculationMode,
-        esiEnabled=req.esiEnabled,
-        ptState=req.ptState
+        isFresher=req.isFresher if req.isFresher is not None else True,
+        isExistingPensionMember=req.isExistingPensionMember if req.isExistingPensionMember is not None else False,
+        wantsPf=req.wantsPf if req.wantsPf is not None else True,
+        wantsPension=req.wantsPension if req.wantsPension is not None else True,
+        pfCalculationMode=req.pfCalculationMode if req.pfCalculationMode is not None else "Default",
+        esiEnabled=req.esiEnabled if req.esiEnabled is not None else True,
+        ptState=pt_state_normalized
     )
     
     result = SalaryCalculationEngine.calculate(
