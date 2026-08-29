@@ -99,7 +99,7 @@ class PayslipService:
                 emp = await self.db.employees.find_one({"_id": ObjectId(emp_id)})
                 if not emp:
                     continue
-                emp_personal = await self.db.employee_personal.find_one({"employeeId": emp_id})
+                emp_personal = await self.db.employee_personals.find_one({"employeeId": emp_id})
                 
                 personal_email = None
                 if emp_personal and emp_personal.get("contactInfo"):

@@ -25,18 +25,19 @@ export default function AdminEmployeeSalaryConfig() {
   const loadData = async (empId: string) => {
     setLoading(true);
     try {
-      const [empRes, configRes] = await Promise.all([
-        employeeApi.getEmployee(empId),
-        employeeApi.getSalaryConfig(empId)
-      ]);
-      setEmployee(empRes?.data || empRes || null);
+      const empRes = await employeeApi.getEmployee(empId);
+      const empData = empRes?.data || empRes || null;
+      setEmployee(empData);
       
-      const config = configRes?.data || configRes || {};
-      
-      setFormData({
-        employeeId: empId,
-        ...config
-      });
+      if (empData && empData.employeeId) {
+        const configRes = await employeeApi.getSalaryConfig(empData.employeeId);
+        const config = configRes?.data || configRes || {};
+        
+        setFormData({
+          employeeId: empData.employeeId,
+          ...config
+        });
+      }
       
     } catch (e) {
       console.error(e);
@@ -61,7 +62,7 @@ export default function AdminEmployeeSalaryConfig() {
     try {
       const payload = {
         ...formData,
-        employeeId: employeeId,
+        employeeId: employee?.employeeId,
       };
       
       await employeeApi.assignSalary(payload);

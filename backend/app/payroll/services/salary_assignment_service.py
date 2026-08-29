@@ -90,13 +90,13 @@ class SalaryAssignmentService:
         pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
         
         decisions = StatutoryDecisions(
-            isFresher=payload.get("isFresher", True),
-            isExistingPensionMember=payload.get("isExistingPensionMember", False),
-            wantsPf=payload.get("wantsPf", True),
-            wantsPension=payload.get("wantsPension", True),
-            pfCalculationMode=payload.get("pfCalculationMode", "Default"),
-            esiEnabled=payload.get("esiEnabled", True),
-            ptState=payload.get("ptState", "None")
+            isFresher=payload["isFresher"] if "isFresher" in payload else True,
+            isExistingPensionMember=payload["isExistingPensionMember"] if "isExistingPensionMember" in payload else False,
+            wantsPf=payload["wantsPf"] if "wantsPf" in payload else True,
+            wantsPension=payload["wantsPension"] if "wantsPension" in payload else True,
+            pfCalculationMode=payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Default",
+            esiEnabled=payload["esiEnabled"] if "esiEnabled" in payload else True,
+            ptState=payload["ptState"] if "ptState" in payload else None
         )
         
         preview = SalaryCalculationEngine.calculate(
@@ -173,16 +173,16 @@ class SalaryAssignmentService:
             
             # Persist canonical statutory choice to employee_personal
             statutory_choice = {
-                "isFresher": payload.get("isFresher", True),
-                "isExistingPensionMember": payload.get("isExistingPensionMember", False),
-                "wantsPf": payload.get("wantsPf", True),
-                "wantsPension": payload.get("wantsPension", True),
-                "pfCalculationMode": payload.get("pfCalculationMode", "Default"),
-                "esiEnabled": payload.get("esiEnabled", True),
-                "ptState": payload.get("ptState", "None")
+                "isFresher": payload["isFresher"] if "isFresher" in payload else True,
+                "isExistingPensionMember": payload["isExistingPensionMember"] if "isExistingPensionMember" in payload else False,
+                "wantsPf": payload["wantsPf"] if "wantsPf" in payload else True,
+                "wantsPension": payload["wantsPension"] if "wantsPension" in payload else True,
+                "pfCalculationMode": payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Default",
+                "esiEnabled": payload["esiEnabled"] if "esiEnabled" in payload else True,
+                "ptState": payload["ptState"] if "ptState" in payload else None
             }
             
-            await self.db.employee_personal.update_one(
+            await self.db.employee_personals.update_one(
                 {"employeeId": employee_id},
                 {"$set": {"statutoryChoice": statutory_choice}}
             )

@@ -34,7 +34,7 @@ async def payload_company_context(req: ProcessCycleReq, current_user: dict = Dep
     return {"companyId": req.companyId or current_user.get("companyId")}
 
 async def employee_context(employee_id: str, db: AsyncIOMotorDatabase = Depends(get_database)) -> dict:
-    emp = await db.employee_personal.find_one({"employeeId": employee_id})
+    emp = await db.employee_personals.find_one({"employeeId": employee_id})
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
     return {"companyId": emp.get("companyId")}
@@ -242,7 +242,7 @@ async def get_cycle_payrolls(cycle_id: str, companyId: Optional[str] = None, db:
     cursor = db.payrolls.find({"cycleId": cycle_id, "isActive": True, "companyId": target})
     async for p in cursor:
         p["_id"] = str(p["_id"])
-        emp = await db.employee_personal.find_one({"employeeId": p["employeeId"]})
+        emp = await db.employee_personals.find_one({"employeeId": p["employeeId"]})
         if emp:
             p["employeeName"] = emp.get("firstName", "") + " " + emp.get("lastName", "")
             p["employeeCode"] = emp.get("employeeCode", "")

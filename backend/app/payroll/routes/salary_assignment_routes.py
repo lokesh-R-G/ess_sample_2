@@ -14,17 +14,17 @@ class SalaryAssignmentRequest(BaseModel):
     salaryStructureId: str
     basicSalary: float
     effectiveFrom: str
-    pfOption: str = "Default"
-    esiOption: str = "Default"
-    ptState: str = "None"
+    pfOption: Optional[str] = "Default"
+    esiOption: Optional[str] = "Default"
+    ptState: Optional[str] = "None"
     
     # Statutory Choice fields
-    wantsPf: bool = True
-    wantsPension: bool = True
-    pfCalculationMode: str = "Default"
-    isFresher: bool = True
-    isExistingPensionMember: bool = False
-    esiEnabled: bool = True
+    wantsPf: Optional[bool] = True
+    wantsPension: Optional[bool] = True
+    pfCalculationMode: Optional[str] = "Default"
+    isFresher: Optional[bool] = True
+    isExistingPensionMember: Optional[bool] = False
+    esiEnabled: Optional[bool] = True
 
 @router.post("/", dependencies=[Depends(require_permission("payroll.salary.manage"))])
 async def assign_salary(
@@ -69,8 +69,8 @@ async def get_salary_config(
             "ptState": config.get("ptState", "None")
         })
         
-    # Merge statutory choices from canonical employee_personal
-    emp_personal = await db.employee_personal.find_one({"employeeId": employee_id})
+    # Merge statutory choices from canonical employee_personals
+    emp_personal = await db.employee_personals.find_one({"employeeId": employee_id})
     if emp_personal and "statutoryChoice" in emp_personal:
         choice = emp_personal["statutoryChoice"]
         result.update({

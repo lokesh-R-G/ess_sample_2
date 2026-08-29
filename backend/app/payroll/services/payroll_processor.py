@@ -19,7 +19,7 @@ class PayrollProcessor:
 
     async def _calculate_core(self, employee_id: str, start_date: datetime, end_date: datetime, cycle_id: Optional[str] = None) -> dict:
         # Fetch employee choice for statutory
-        emp_personal = await self.db.employee_personal.find_one({"employeeId": employee_id}) or {}
+        emp_personal = await self.db.employee_personals.find_one({"employeeId": employee_id}) or {}
         emp_choice = emp_personal.get("statutoryChoice", {"wantsPf": True, "wantsPension": True, "isFresher": False})
 
         # Fetch Statutory Rules (Date-Aware)
