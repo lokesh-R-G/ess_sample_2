@@ -100,11 +100,6 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     pf_repo = PFRuleRepository(db)
     
     target_dt_utc = datetime.utcnow()
-    if req.effectiveDate:
-        try:
-            target_dt_utc = datetime.fromisoformat(req.effectiveDate.replace("Z", "+00:00")).replace(tzinfo=None)
-        except:
-            pass
 
     pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
     if pf_rule and pf_rule.pfEnabled is False:
@@ -145,6 +140,7 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     components_docs = serialize_mongo(components_docs_raw)
     
     # 3. Fetch Rules (Mocked for now, assume default rules if none exist)
+    target_dt_utc = datetime.utcnow()
     pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
     if not pf_rule:
         pf_rule = PFRule(effectiveFrom=target_dt_utc)

@@ -30,6 +30,15 @@ class SalaryAssignmentService:
         structure_id = payload.get("salaryStructureId")
         basic_salary = payload.get("basicSalary", 0.0)
         
+        effective_from_raw = payload.get("effectiveFrom")
+        if not effective_from_raw:
+            raise HTTPException(status_code=400, detail="effectiveFrom is required for salary assignment")
+            
+        if isinstance(effective_from_raw, str):
+            effective_date = datetime.fromisoformat(effective_from_raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        else:
+            effective_date = effective_from_raw
+            
         if not employee_id or not structure_id or basic_salary <= 0:
             raise HTTPException(status_code=400, detail="Invalid salary assignment payload")
             
@@ -60,9 +69,9 @@ class SalaryAssignmentService:
         
         # Fetch actual rules dynamically instead of mocking
         target_dt_utc = datetime.utcnow()
-        if payload.get("effectiveDate"):
+        if payload.get("effectiveFrom"):
             try:
-                target_dt_utc = datetime.fromisoformat(payload["effectiveDate"].replace("Z", "+00:00")).replace(tzinfo=None)
+                target_dt_utc = datetime.fromisoformat(payload["effectiveFrom"].replace("Z", "+00:00")).replace(tzinfo=None)
             except:
                 pass
 
@@ -101,15 +110,6 @@ class SalaryAssignmentService:
         )
         
         raw_components = preview.get("_rawComponents", [])
-        
-        effective_from_raw = payload.get("effectiveFrom")
-        if effective_from_raw:
-            if isinstance(effective_from_raw, str):
-                effective_date = datetime.fromisoformat(effective_from_raw.replace("Z", "+00:00"))
-            else:
-                effective_date = effective_from_raw
-        else:
-            effective_date = datetime.utcnow()
         
         snapshot_records = []
         for rc in raw_components:

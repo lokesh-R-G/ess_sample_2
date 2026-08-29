@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { employeeApi } from '../../services/employeeApi';
 import { GlassCard, AnimatedButton } from '../../components/ui';
 import { toast } from 'react-hot-toast';
-import { ChevronLeft, Save } from 'lucide-react';
+import { ChevronLeft, Save, Calendar } from 'lucide-react';
 import SalaryPayrollStep from './employee/wizard-steps/SalaryPayrollStep';
+import { Input } from '../../components/ui';
 
 export default function AdminEmployeeSalaryConfig() {
   const navigate = useNavigate();
@@ -51,14 +52,16 @@ export default function AdminEmployeeSalaryConfig() {
       return;
     }
     
+    if (!formData.effectiveFrom) {
+      toast.error("Effective date is required.");
+      return;
+    }
+    
     setSaving(true);
     try {
-      // Force effective from to be now, to handle revision
-      const now = new Date().toISOString();
       const payload = {
         ...formData,
         employeeId: employeeId,
-        effectiveFrom: now
       };
       
       await employeeApi.assignSalary(payload);
@@ -95,6 +98,24 @@ export default function AdminEmployeeSalaryConfig() {
       </div>
 
       <GlassCard className="p-6">
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2">
+          <div className="bg-brand-50 p-4 rounded-lg border border-brand-100 flex items-start gap-4">
+            <div className="bg-brand-100 p-2 rounded-full mt-1">
+              <Calendar className="w-5 h-5 text-brand-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-brand-900 mb-1">Effective Date</h3>
+              <p className="text-xs text-brand-700 mb-3">When does this salary configuration take effect?</p>
+              <Input
+                type="date"
+                value={formData.effectiveFrom ? formData.effectiveFrom.split('T')[0] : ''}
+                onChange={(e) => setFormData({ ...formData, effectiveFrom: new Date(e.target.value).toISOString() })}
+                required
+              />
+            </div>
+          </div>
+        </div>
+
         <SalaryPayrollStep 
           data={formData} 
           onChange={(newData: any) => setFormData(newData)} 

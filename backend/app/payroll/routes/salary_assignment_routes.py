@@ -13,6 +13,7 @@ class SalaryAssignmentRequest(BaseModel):
     employeeId: str
     salaryStructureId: str
     basicSalary: float
+    effectiveFrom: str
     pfOption: str = "Default"
     esiOption: str = "Default"
     ptState: str = "None"
