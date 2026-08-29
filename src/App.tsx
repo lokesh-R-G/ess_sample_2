@@ -23,6 +23,9 @@ import SalaryPreviewPage from './pages/admin/payroll/SalaryPreviewPage';
 import AdminPayrollCycles from './pages/admin/payroll/AdminPayrollCycles';
 import AdminPayrollReview from './pages/admin/payroll/AdminPayrollReview';
 import AdminBankExport from './pages/admin/payroll/AdminBankExport';
+import AdminEmployeeSalaryList from './pages/admin/AdminEmployeeSalaryList';
+import AdminEmployeeSalaryConfig from './pages/admin/AdminEmployeeSalaryConfig';
+
 import AdminPayrollControl from './pages/admin/payroll/AdminPayrollControl';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendanceMonitor from './pages/admin/attendance/AdminAttendanceMonitor';
@@ -127,6 +130,8 @@ function AppRoutes() {
           <Route path="payroll/control" element={<ProtectedRoute requireAnyPermission={['payroll.read', 'payroll.calculate']}><AdminPayrollControl /></ProtectedRoute>} />
           <Route path="payroll/review/:cycleId" element={<ProtectedRoute requireAnyPermission={['payroll.publish']}><AdminPayrollReview /></ProtectedRoute>} />
           <Route path="payroll/export/:cycleId" element={<ProtectedRoute requireAnyPermission={['payroll.publish']}><AdminBankExport /></ProtectedRoute>} />
+          <Route path="employee-salary" element={<ProtectedRoute requireAnyPermission={['payroll.salary.manage']}><AdminEmployeeSalaryList /></ProtectedRoute>} />
+          <Route path="employee-salary/:id" element={<ProtectedRoute requireAnyPermission={['payroll.salary.manage']}><AdminEmployeeSalaryConfig /></ProtectedRoute>} />
           <Route path="branches" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminBranches /></ProtectedRoute>} />
           <Route path="attendance" element={<ProtectedRoute requireAnyPermission={['attendance.read']}><AdminAttendanceMonitor /></ProtectedRoute>} />
           <Route path="attendance/sync" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><AdminAttendance /></ProtectedRoute>} />

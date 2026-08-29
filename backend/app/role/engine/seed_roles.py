@@ -24,6 +24,7 @@ EXCLUDED_PERMISSIONS: Dict[str, List[str]] = {
         "payroll.calculate",
         "payroll.publish",
         "payroll.cycle.manage",
+        "payroll.salary.manage",
     ]
 }
 
@@ -49,6 +50,7 @@ ACCOUNTS_EXCLUDED_PERMISSIONS: set = {
     "essl.recovery_sync",
     "attendance.sync",
     "scheduler.configure",
+    "payroll.salary.manage",
 }
 
 

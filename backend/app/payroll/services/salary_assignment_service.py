@@ -152,4 +152,27 @@ class SalaryAssignmentService:
             )
             await self.db["employee_salary_components"].insert_many(snapshot_records)
             
+            # Upsert employee_payroll_configs to preserve canonical configuration choices
+            now = datetime.utcnow()
+            config_doc = {
+                "employeeId": employee_id,
+                "salaryStructureId": structure_id,
+                "monthlyGross": sum(r["monthlyAmount"] for r in snapshot_records if r["includeInGross"]),
+                "wantsPf": payload.get("wantsPf", True),
+                "pfCalculationMethod": payload.get("pfCalculationMode", "Default"),
+                "esiEnabled": payload.get("esiEnabled", True),
+                "existingPensionMember": payload.get("isExistingPensionMember", False),
+                "ptState": payload.get("ptState", "None"),
+                "status": "Active",
+                "updatedAt": now
+            }
+            await self.db["employee_payroll_configs"].update_one(
+                {"employeeId": employee_id, "deletedAt": None},
+                {
+                    "$set": config_doc,
+                    "$setOnInsert": {"createdAt": now, "createdBy": user_id, "id": str(ObjectId())}
+                },
+                upsert=True
+            )
+            
         return {"status": "success", "message": "Salary Assigned and Snapshot Persisted", "snapshotCount": len(snapshot_records)}

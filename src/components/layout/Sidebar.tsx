@@ -43,6 +43,7 @@ const employeeNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { path: '/admin', label: 'Admin Dashboard', icon: Shield }, // Always visible if they can access admin
   { path: '/admin/employees', label: 'Employees', icon: Users, adminOnly: true, requiredPermission: 'employee.read' },
+  { path: '/admin/employee-salary', label: 'Salary Configuration', icon: Receipt, adminOnly: true, requiredPermission: 'payroll.salary.manage' },
   { path: '/admin/payroll/control', label: 'Payroll Control', icon: Receipt, adminOnly: true, requiredPermission: 'payroll.read' },
   { path: '/admin/payroll/cycles', label: 'Payroll Cycles', icon: RefreshCw, adminOnly: true, requiredPermission: 'payroll.cycle.read' },
   { path: '/admin/settings/payroll', label: 'Payroll Settings', icon: Settings, adminOnly: true, requiredPermission: 'organization.manage' },

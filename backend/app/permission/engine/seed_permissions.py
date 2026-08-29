@@ -26,6 +26,7 @@ CANONICAL_PERMISSIONS: List[Dict[str, Any]] = [
     # PAYROLL
     {"permissionId": "payroll.read", "name": "Read Payroll", "description": "Read payroll data", "module": "payroll", "action": "read"},
     {"permissionId": "payroll.salary.read", "name": "Read Salary", "description": "Read salary details", "module": "payroll", "action": "salary.read"},
+    {"permissionId": "payroll.salary.manage", "name": "Manage Salary Configuration", "description": "Configure and finalize employee salary structure", "module": "payroll", "action": "salary.manage"},
     {"permissionId": "payroll.pf.read", "name": "Read PF", "description": "Read provident fund details", "module": "payroll", "action": "pf.read"},
     {"permissionId": "payroll.esi.read", "name": "Read ESI", "description": "Read employee state insurance details", "module": "payroll", "action": "esi.read"},
     {"permissionId": "payroll.branch_summary.read", "name": "Read Branch Summary", "description": "Read payroll summary per branch", "module": "payroll", "action": "branch_summary.read"},

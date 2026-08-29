@@ -93,5 +93,6 @@ export const employeeApi = {
   calculatePayslipPreview: (data: any) => api.post('/v2/payroll/calculate-preview', data),
 
   // Assign Salary & Store Snapshot
-  assignSalary: (data: any) => api.post('/v2/payroll/assign', data)
+  assignSalary: (data: any) => api.post('/v2/payroll/assign', data),
+  getSalaryConfig: (employeeId: string) => api.get(`/v2/payroll/assign/${employeeId}`)
 };
