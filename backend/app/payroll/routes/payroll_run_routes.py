@@ -138,7 +138,7 @@ async def get_cycle_attendance_ledger(
             {"employeeId": {"$in": employee_ids}},
             {"empId": {"$in": emp_codes}}
         ],
-        "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+        "date": {"$gte": start_date.strftime("%Y-%m-%d"), "$lte": end_date.strftime("%Y-%m-%d")}
     }).to_list(length=10000)
 
     grouped: Dict[str, List[dict]] = {}

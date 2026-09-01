@@ -56,7 +56,7 @@ class PayrollProcessor:
         # 2. Fetch Finalized Attendance
         attendance_cursor = self.db.attendance.find({
             "employeeId": employee_id,
-            "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+            "date": {"$gte": start_date.strftime("%Y-%m-%d"), "$lte": end_date.strftime("%Y-%m-%d")}
         })
         attendance_records = [doc async for doc in attendance_cursor]
 
