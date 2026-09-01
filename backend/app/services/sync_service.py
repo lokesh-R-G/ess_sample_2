@@ -44,11 +44,26 @@ async def sync_essl_machine(db, machine: dict, fallback_from_date: datetime | No
         logger.error(f"Machine {machine_id} has no serial number. Skipping.")
         return {"machineId": machine_id, "status": "FAILED", "error": "No serial number"}
 
-    # Set processing lock
-    await db.essl_machines.update_one(
-        {"_id": machine["_id"]}, 
-        {"$set": {"syncStatus": "PROCESSING", "updatedAt": datetime.now(timezone.utc)}}
+    # Acquire processing lock via CAS with 5-minute stale timeout
+    now = datetime.now(timezone.utc)
+    stale_threshold = now - timedelta(minutes=5)
+    
+    lock_result = await db.essl_machines.update_one(
+        {
+            "_id": machine["_id"],
+            "$or": [
+                {"syncStatus": {"$ne": "PROCESSING"}},
+                {"syncLockAt": {"$lt": stale_threshold}}
+            ]
+        },
+        {"$set": {"syncStatus": "PROCESSING", "syncLockAt": now, "updatedAt": now}}
     )
+    
+    if lock_result.modified_count == 0:
+        logger.warning(f"Machine {serial_number} is currently processing. Skipping.")
+        return {"machineId": machine_id, "status": "SKIPPED", "error": "Currently processing in another job"}
+        
+    lock_acquired = True
 
     try:
         client = build_essl_client(serial_number)
@@ -110,7 +125,6 @@ async def sync_essl_machine(db, machine: dict, fallback_from_date: datetime | No
         await db.essl_machines.update_one(
             {"_id": machine["_id"]},
             {"$set": {
-                "syncStatus": "IDLE", 
                 "lastSuccessfulSyncAt": to_date,
                 "lastSyncAt": now,
                 "lastSyncError": None,
@@ -132,13 +146,19 @@ async def sync_essl_machine(db, machine: dict, fallback_from_date: datetime | No
         await db.essl_machines.update_one(
             {"_id": machine["_id"]},
             {"$set": {
-                "syncStatus": "FAILED", 
                 "lastSyncError": str(e),
                 "lastSyncAt": now,
                 "updatedAt": now
             }}
         )
         return {"machineId": machine_id, "status": "FAILED", "error": str(e)}
+        
+    finally:
+        if lock_acquired:
+            await db.essl_machines.update_one(
+                {"_id": machine["_id"], "syncStatus": "PROCESSING"},
+                {"$set": {"syncStatus": "IDLE", "syncLockAt": None, "updatedAt": datetime.now(timezone.utc)}}
+            )
 
 
 async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetime | None = None) -> SyncResponse:
@@ -160,17 +180,17 @@ async def sync_essl_logs(db, from_date: datetime | None = None, to_date: datetim
     # 2. Iterate machines independently
     for machine in machines:
         serial_number = machine.get("serialNumber")
-        # Prevent concurrent jobs from overlapping on the same machine
-        if machine.get("syncStatus") == "PROCESSING":
-            logger.warning(f"Machine {serial_number} is currently processing. Skipping.")
+            
+        result = await sync_essl_machine(db, machine, fallback_from_date=from_date, fallback_to_date=to_date)
+        
+        if result.get("status") == "SKIPPED":
             machine_statuses.append({
                 "serialNumber": serial_number,
                 "status": "SKIPPED",
-                "error": "Currently processing in another job"
+                "error": result.get("error", "Currently processing in another job")
             })
             continue
             
-        result = await sync_essl_machine(db, machine, fallback_from_date=from_date, fallback_to_date=to_date)
         if result.get("status") == "SUCCESS":
             total_inserted += result.get("rawInserted", 0)
             total_updated += result.get("rawUpdated", 0)
