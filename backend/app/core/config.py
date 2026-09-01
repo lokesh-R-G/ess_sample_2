@@ -19,6 +19,11 @@ def _csv_env(name: str, default: str = "") -> list[str]:
 class Settings:
     mongo_uri: str
     mongo_db_name: str
+    mongo_server_selection_timeout_ms: int
+    mongo_connect_timeout_ms: int
+    mongo_socket_timeout_ms: int
+    mongo_index_retry_attempts: int
+    mongo_index_retry_backoff_seconds: float
     jwt_secret_key: str
     jwt_algorithm: str
     jwt_expire_minutes: int
@@ -48,6 +53,11 @@ def get_settings() -> Settings:
     settings = Settings(
         mongo_uri=os.getenv("MONGODB_URI", ""),
         mongo_db_name=os.getenv("MONGODB_DB_NAME", "ess_payroll"),
+        mongo_server_selection_timeout_ms=int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "10000")),
+        mongo_connect_timeout_ms=int(os.getenv("MONGO_CONNECT_TIMEOUT_MS", "10000")),
+        mongo_socket_timeout_ms=int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "30000")),
+        mongo_index_retry_attempts=int(os.getenv("MONGO_INDEX_RETRY_ATTEMPTS", "5")),
+        mongo_index_retry_backoff_seconds=float(os.getenv("MONGO_INDEX_RETRY_BACKOFF_SECONDS", "1.0")),
         jwt_secret_key=os.getenv("JWT_SECRET_KEY", "change-this-secret"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         jwt_expire_minutes=int(os.getenv("JWT_EXPIRE_MINUTES", "480")),

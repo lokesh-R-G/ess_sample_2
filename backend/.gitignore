@@ -35,6 +35,6 @@ dist-ssr
 .venv
 venv
 .vscode
-*.pyc
+*.cpython-312.pyc
 __pycache__
 .bolt

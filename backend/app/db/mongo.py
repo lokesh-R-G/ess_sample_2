@@ -1,12 +1,37 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+from collections.abc import Sequence
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.errors import (
+    AutoReconnect,
+    ConnectionFailure,
+    DuplicateKeyError,
+    OperationFailure,
+    ServerSelectionTimeoutError,
+    WriteConcernError,
+)
 
 from app.core.config import get_settings
 
 
 settings = get_settings()
-client = AsyncIOMotorClient(settings.mongo_uri) if settings.mongo_uri else None
+logger = logging.getLogger(__name__)
+
+client = (
+    AsyncIOMotorClient(
+        settings.mongo_uri,
+        serverSelectionTimeoutMS=settings.mongo_server_selection_timeout_ms,
+        connectTimeoutMS=settings.mongo_connect_timeout_ms,
+        socketTimeoutMS=settings.mongo_socket_timeout_ms,
+        retryWrites=True,
+        tls=settings.mongo_uri.startswith("mongodb+srv://"),
+    )
+    if settings.mongo_uri
+    else None
+)
 
 
 def get_database() -> AsyncIOMotorDatabase:
@@ -15,40 +40,120 @@ def get_database() -> AsyncIOMotorDatabase:
     return client[settings.mongo_db_name]
 
 
+def _is_replica_state_change(error: BaseException) -> bool:
+    return (
+        isinstance(error, (WriteConcernError, OperationFailure))
+        and (
+            getattr(error, "code", None) == 11602
+            or "InterruptedDueToReplStateChange" in str(error)
+        )
+    )
+
+
+def _is_retryable_index_error(error: BaseException) -> bool:
+    return isinstance(error, (AutoReconnect, ConnectionFailure, ServerSelectionTimeoutError)) or _is_replica_state_change(error)
+
+
+async def _create_index_with_retry(
+    collection_name: str,
+    keys: Sequence[tuple[str, int]],
+    **options: object,
+) -> str:
+    db = get_database()
+    description = f"{collection_name} {list(keys)} options={options or {}}"
+    attempts = max(1, settings.mongo_index_retry_attempts)
+    backoff = max(0.0, settings.mongo_index_retry_backoff_seconds)
+
+    for attempt in range(1, attempts + 1):
+        try:
+            index_name = await db[collection_name].create_index(list(keys), **options)
+            logger.info("MongoDB index succeeded: %s (attempt %d/%d)", description, attempt, attempts)
+            return index_name
+        except DuplicateKeyError:
+            logger.exception(
+                "MongoDB unique index blocked by duplicate data: %s. Resolve duplicate key groups and retry.",
+                description,
+            )
+            raise
+        except Exception as error:
+            if not _is_retryable_index_error(error) or attempt == attempts:
+                logger.exception("MongoDB index failed permanently: %s", description)
+                raise
+
+            delay = backoff * (2 ** (attempt - 1))
+            logger.warning(
+                "MongoDB index retrying after transient error: %s (attempt %d/%d, %.1fs): %s",
+                description,
+                attempt,
+                attempts,
+                delay,
+                error,
+            )
+            await asyncio.sleep(delay)
+
+
+async def _ping_with_retry() -> None:
+    db = get_database()
+    attempts = max(1, settings.mongo_index_retry_attempts)
+    backoff = max(0.0, settings.mongo_index_retry_backoff_seconds)
+
+    for attempt in range(1, attempts + 1):
+        try:
+            await db.command("ping")
+            logger.info("MongoDB ping succeeded (attempt %d/%d)", attempt, attempts)
+            return
+        except Exception as error:
+            if not _is_retryable_index_error(error) or attempt == attempts:
+                logger.exception("MongoDB ping failed permanently")
+                raise
+            delay = backoff * (2 ** (attempt - 1))
+            logger.warning(
+                "MongoDB ping retrying after transient error (attempt %d/%d, %.1fs): %s",
+                attempt,
+                attempts,
+                delay,
+                error,
+            )
+            await asyncio.sleep(delay)
+
+
 async def init_indexes() -> None:
     db = get_database()
-    await db.users.create_index([("empId", 1)], unique=True)
+    await _ping_with_retry()
+    indexes: list[tuple[str, Sequence[tuple[str, int]], dict[str, object]]] = [
+        ("users", [("empId", 1)], {"unique": True}),
     # Ensure raw log de-duplication by fingerprint
-    await db.attendance_logs.create_index([("fingerprint", 1)], unique=True)
-    await db.attendance_logs.create_index([("empId", 1), ("timestamp", 1)])
-    await db.attendance.create_index([("empId", 1), ("date", 1)], unique=True)
-    await db.attendance.create_index([("empId", 1), ("date", -1)])
+        ("attendance_logs", [("fingerprint", 1)], {"unique": True}),
+        ("attendance_logs", [("empId", 1), ("timestamp", 1)], {}),
+        ("attendance", [("empId", 1), ("date", 1)], {"unique": True}),
+        ("attendance", [("empId", 1), ("date", -1)], {}),
     
     # Organization Engine Indexes
-    await db.companies.create_index([("organizationId", 1), ("name", 1)], unique=True, sparse=True)
-    await db.branches.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
-    await db.departments.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
-    await db.designations.create_index([("departmentId", 1), ("name", 1)], unique=True, sparse=True)
-    await db.roles.create_index([("companyId", 1), ("name", 1)], unique=True, sparse=True)
+        ("companies", [("organizationId", 1), ("name", 1)], {"unique": True, "sparse": True}),
+        ("branches", [("companyId", 1), ("name", 1)], {"unique": True, "sparse": True}),
+        ("departments", [("companyId", 1), ("name", 1)], {"unique": True, "sparse": True}),
+        ("designations", [("departmentId", 1), ("name", 1)], {"unique": True, "sparse": True}),
+        ("roles", [("companyId", 1), ("name", 1)], {"unique": True, "sparse": True}),
     # RBAC indexes
-    await db.roles.create_index([("roleId", 1)], unique=True)
-    await db.permissions.create_index([("permissionId", 1)], unique=True)
-    await db.role_permissions.create_index([("roleId", 1), ("permissionId", 1)], unique=True)
-    await db.role_permission_history.create_index([("roleId", 1), ("permissionId", 1), ("version", 1)], unique=True)
+        ("roles", [("roleId", 1)], {"unique": True}),
+        ("permissions", [("permissionId", 1)], {"unique": True}),
+        ("role_permissions", [("roleId", 1), ("permissionId", 1)], {"unique": True}),
+        ("role_permission_history", [("roleId", 1), ("permissionId", 1), ("version", 1)], {"unique": True}),
     # Users RBAC fields
-    await db.users.create_index([("roleId", 1)])
-    await db.users.create_index([("authorizationVersion", 1)])
+        ("users", [("roleId", 1)], {}),
+        ("users", [("authorizationVersion", 1)], {}),
     
     # Holiday Calendar V2 Indexes
-    await db.holiday_calendars.create_index([("branchId", 1), ("effectiveFrom", 1)], sparse=True)
-    await db.holiday_dates.create_index([("calendarId", 1), ("holidayDate", 1)], unique=True, sparse=True)
+        ("holiday_calendars", [("branchId", 1), ("effectiveFrom", 1)], {"sparse": True}),
+        ("holiday_dates", [("calendarId", 1), ("holidayDate", 1)], {"unique": True, "sparse": True}),
 
     # Employee Engine Indexes
-    await db.employees.create_index([("companyId", 1), ("employeeCode", 1)], unique=True, partialFilterExpression={"employeeCode": {"$type": "string"}})
-    await db.employees.create_index([("email", 1)], unique=True, sparse=True)
-    await db.employee_shift_assignments.create_index([("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], unique=True, sparse=True)
-    await db.employee_role_assignments.create_index([("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], unique=True, sparse=True)
-    await db.employee_reportings.create_index([("employeeId", 1), ("managerId", 1), ("effectiveFrom", 1)], unique=True, sparse=True)
+        ("employees", [("companyId", 1), ("employeeCode", 1)], {"unique": True, "partialFilterExpression": {"employeeCode": {"$type": "string"}}}),
+        ("employees", [("email", 1)], {"unique": True, "sparse": True}),
+        ("employee_shift_assignments", [("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
+        ("employee_role_assignments", [("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
+        ("employee_reportings", [("employeeId", 1), ("managerId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
+    ]
 
     # Batch Generated Indexes
     generic_collections = [
@@ -76,11 +181,24 @@ async def init_indexes() -> None:
         'financial_years', 'number_series'
     ]
     for col in generic_collections:
-        await db[col].create_index([('companyId', 1)])
-        await db[col].create_index([('employeeId', 1)])
-        await db[col].create_index([('createdAt', -1)])
+        indexes.extend([
+            (col, [('companyId', 1)], {}),
+            (col, [('employeeId', 1)], {}),
+            (col, [('createdAt', -1)], {}),
+        ])
         
-    await db.payroll_runs.create_index([('financialYear', 1), ('month', 1)])
-    await db.payslips.create_index([('payrollRunId', 1), ('employeeId', 1)])
-    await db.login_audit_logs.create_index([('email', 1)])
-    await db.audit_logs.create_index([('createdAt', -1)])
+    indexes.extend([
+        ("payroll_runs", [('financialYear', 1), ('month', 1)], {}),
+        ("payslips", [('payrollRunId', 1), ('employeeId', 1)], {}),
+        ("login_audit_logs", [('email', 1)], {}),
+        ("audit_logs", [('createdAt', -1)], {}),
+    ])
+
+    for collection_name, keys, options in indexes:
+        await _create_index_with_retry(collection_name, keys, **options)
+
+
+def close_mongo_connection() -> None:
+    if client is not None:
+        client.close()
+        logger.info("MongoDB client closed")

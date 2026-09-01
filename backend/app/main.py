@@ -50,7 +50,7 @@ from app.email_service.routes.router import router as v2_email_router
 from app.approval.routes.router import router as v2_approval_router
 from app.api.routes.essl_machine import router as v2_essl_machine_router
 from app.core.config import get_settings
-from app.db.mongo import get_database, init_indexes
+from app.db.mongo import close_mongo_connection, get_database, init_indexes
 from app.scheduler.scheduler import init_scheduler
 from app.permission.engine.seed_permissions import seed_permissions
 from app.role.engine.seed_roles import seed_roles_and_mappings
@@ -69,7 +69,10 @@ async def lifespan(_: FastAPI):
     await seed_roles_and_mappings(db)
     # start APScheduler for background sync jobs
     init_scheduler()
-    yield
+    try:
+        yield
+    finally:
+        close_mongo_connection()
 
 
 tags_metadata = [
