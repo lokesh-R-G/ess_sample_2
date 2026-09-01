@@ -273,6 +273,36 @@ class EmployeeSalaryComponent(BaseModel):
     isCurrent: bool = True
     status: Literal["Active", "Archived"] = "Active"
 
+class EmployeeStatutoryProfile(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    employeeId: str
+    companyId: Optional[str] = None
+    
+    effectiveFrom: datetime
+    effectiveTo: Optional[datetime] = None
+    status: Literal["Active", "Archived"] = "Active"
+    version: int = 1
+    isCurrent: bool = True
+    
+    # PF Settings
+    wantsPf: bool = True
+    wantsPension: bool = True
+    pfCalculationMode: Optional[str] = "Actual"
+    useCeiling: bool = False
+    isFresher: bool = False
+    isExistingPensionMember: bool = False
+    
+    # ESI Settings
+    esiEnabled: bool = True
+    
+    # PT Settings
+    ptState: Optional[str] = None
+    
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    createdBy: Optional[str] = None
+    updatedBy: Optional[str] = None
+
 # ==========================================
 # 3.5 PAYROLL RULE ENGINE
 # ==========================================

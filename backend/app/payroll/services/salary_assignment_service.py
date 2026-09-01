@@ -171,20 +171,38 @@ class SalaryAssignmentService:
                 upsert=True
             )
             
-            # Persist canonical statutory choice to employee_personal
-            statutory_choice = {
-                "isFresher": payload["isFresher"] if "isFresher" in payload else True,
-                "isExistingPensionMember": payload["isExistingPensionMember"] if "isExistingPensionMember" in payload else False,
-                "wantsPf": payload["wantsPf"] if "wantsPf" in payload else True,
-                "wantsPension": payload["wantsPension"] if "wantsPension" in payload else True,
-                "pfCalculationMode": payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Actual",
-                "esiEnabled": payload["esiEnabled"] if "esiEnabled" in payload else True,
-                "ptState": payload["ptState"] if "ptState" in payload else None
+            # Phase 1: Persist canonical statutory choice to employee_statutory_profiles
+            # 1. Archive the existing active profile
+            await self.db.employee_statutory_profiles.update_many(
+                {"employeeId": employee_id, "status": "Active"},
+                {"$set": {"status": "Archived", "effectiveTo": effective_date, "isCurrent": False, "updatedAt": now}}
+            )
+            
+            # 2. Insert the new active profile
+            prev_profile = await self.db.employee_statutory_profiles.find_one({"employeeId": employee_id}, sort=[("version", -1)])
+            next_version = (prev_profile.get("version", 0) + 1) if prev_profile else 1
+
+            statutory_profile = {
+                "employeeId": employee_id,
+                "effectiveFrom": effective_date,
+                "effectiveTo": None,
+                "status": "Active",
+                "version": next_version,
+                "isCurrent": True,
+                "isFresher": payload.get("isFresher", True),
+                "isExistingPensionMember": payload.get("isExistingPensionMember", False),
+                "wantsPf": payload.get("wantsPf", True),
+                "wantsPension": payload.get("wantsPension", True),
+                "pfCalculationMode": payload.get("pfCalculationMode", "Actual"),
+                "useCeiling": payload.get("useCeiling", payload.get("pfCalculationMode") == "Ceiling"),
+                "esiEnabled": payload.get("esiEnabled", True),
+                "ptState": payload.get("ptState", None),
+                "createdAt": now,
+                "updatedAt": now,
+                "createdBy": user_id,
+                "updatedBy": user_id
             }
             
-            await self.db.employee_personals.update_one(
-                {"employeeId": employee_id},
-                {"$set": {"statutoryChoice": statutory_choice}}
-            )
+            await self.db.employee_statutory_profiles.insert_one(statutory_profile)
             
         return {"status": "success", "message": "Salary Assigned and Snapshot Persisted", "snapshotCount": len(snapshot_records)}

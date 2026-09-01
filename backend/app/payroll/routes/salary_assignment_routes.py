@@ -70,18 +70,21 @@ async def get_salary_config(
             "ptState": config.get("ptState", "None")
         })
         
-    # Merge statutory choices from canonical employee_personals
-    emp_personal = await db.employee_personals.find_one({"employeeId": employee_id})
-    if emp_personal and "statutoryChoice" in emp_personal:
-        choice = emp_personal["statutoryChoice"]
+    # Phase 1: Merge statutory choices from canonical employee_statutory_profiles
+    statutory_profile = await db.employee_statutory_profiles.find_one(
+        {"employeeId": employee_id, "status": "Active"},
+        sort=[("version", -1)]
+    )
+    if statutory_profile:
         result.update({
-            "wantsPf": choice.get("wantsPf", True),
-            "wantsPension": choice.get("wantsPension", True),
-            "pfCalculationMode": choice.get("pfCalculationMode", "Actual"),
-            "isFresher": choice.get("isFresher", True),
-            "isExistingPensionMember": choice.get("isExistingPensionMember", False),
-            "esiEnabled": choice.get("esiEnabled", True),
-            "ptState": choice.get("ptState", result.get("ptState", "None"))
+            "wantsPf": statutory_profile.get("wantsPf", True),
+            "wantsPension": statutory_profile.get("wantsPension", True),
+            "pfCalculationMode": statutory_profile.get("pfCalculationMode", "Actual"),
+            "useCeiling": statutory_profile.get("useCeiling", False),
+            "isFresher": statutory_profile.get("isFresher", True),
+            "isExistingPensionMember": statutory_profile.get("isExistingPensionMember", False),
+            "esiEnabled": statutory_profile.get("esiEnabled", True),
+            "ptState": statutory_profile.get("ptState", result.get("ptState", "None"))
         })
         
     return result
