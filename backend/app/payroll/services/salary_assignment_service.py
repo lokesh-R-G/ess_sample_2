@@ -59,7 +59,7 @@ class SalaryAssignmentService:
         components_docs = await self.db["salary_components"].find({"_id": {"$in": obj_ids}, "deletedAt": None}).to_list(length=None)
         
         # Override flat component amounts using customComponents if provided
-        custom_comps = payload.get("customComponents", {})
+        custom_comps = payload.get("customComponents") or {}
         for doc in components_docs:
             if doc.get("calculationMethod") == "Flat":
                 cid = str(doc.get("_id"))
@@ -94,7 +94,7 @@ class SalaryAssignmentService:
             isExistingPensionMember=payload["isExistingPensionMember"] if "isExistingPensionMember" in payload else False,
             wantsPf=payload["wantsPf"] if "wantsPf" in payload else True,
             wantsPension=payload["wantsPension"] if "wantsPension" in payload else True,
-            pfCalculationMode=payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Default",
+            pfCalculationMode=payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Actual",
             esiEnabled=payload["esiEnabled"] if "esiEnabled" in payload else True,
             ptState=payload["ptState"] if "ptState" in payload else None
         )
@@ -177,7 +177,7 @@ class SalaryAssignmentService:
                 "isExistingPensionMember": payload["isExistingPensionMember"] if "isExistingPensionMember" in payload else False,
                 "wantsPf": payload["wantsPf"] if "wantsPf" in payload else True,
                 "wantsPension": payload["wantsPension"] if "wantsPension" in payload else True,
-                "pfCalculationMode": payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Default",
+                "pfCalculationMode": payload["pfCalculationMode"] if "pfCalculationMode" in payload else "Actual",
                 "esiEnabled": payload["esiEnabled"] if "esiEnabled" in payload else True,
                 "ptState": payload["ptState"] if "ptState" in payload else None
             }

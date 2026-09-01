@@ -17,11 +17,12 @@ class SalaryAssignmentRequest(BaseModel):
     pfOption: Optional[str] = "Default"
     esiOption: Optional[str] = "Default"
     ptState: Optional[str] = "None"
+    customComponents: Optional[dict[str, float]] = None
     
     # Statutory Choice fields
     wantsPf: Optional[bool] = True
     wantsPension: Optional[bool] = True
-    pfCalculationMode: Optional[str] = "Default"
+    pfCalculationMode: Optional[str] = "Actual"
     isFresher: Optional[bool] = True
     isExistingPensionMember: Optional[bool] = False
     esiEnabled: Optional[bool] = True
@@ -76,7 +77,7 @@ async def get_salary_config(
         result.update({
             "wantsPf": choice.get("wantsPf", True),
             "wantsPension": choice.get("wantsPension", True),
-            "pfCalculationMode": choice.get("pfCalculationMode", "Default"),
+            "pfCalculationMode": choice.get("pfCalculationMode", "Actual"),
             "isFresher": choice.get("isFresher", True),
             "isExistingPensionMember": choice.get("isExistingPensionMember", False),
             "esiEnabled": choice.get("esiEnabled", True),
