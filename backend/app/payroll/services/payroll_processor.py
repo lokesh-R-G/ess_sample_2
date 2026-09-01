@@ -18,54 +18,47 @@ class PayrollProcessor:
         self.esi_repo = ESIRuleRepository(db)
 
     async def _calculate_core(self, employee_id: str, start_date: datetime, end_date: datetime, cycle_id: Optional[str] = None) -> dict:
-        # Fetch employee choice for statutory
-        emp_personal = await self.db.employee_personals.find_one({"employeeId": employee_id}) or {}
-        emp_choice = emp_personal.get("statutoryChoice", {"wantsPf": True, "wantsPension": True, "isFresher": False})
-
-        # Fetch Statutory Rules (Date-Aware)
-        policy_query = {
-            "effectiveFrom": {"$lte": start_date},
-            "$or": [
-                {"effectiveTo": None},
-                {"effectiveTo": {"$gt": start_date}},
-                {"effectiveUntil": None},
-                {"effectiveUntil": {"$gt": start_date}}
-            ]
-        }
+        from app.payroll.services.payroll_input_builder import PayrollInputBuilder
         
-        pf_rule = await self.pf_repo.resolve_policy_by_date(start_date)
-        if not pf_rule:
-            raise ValueError(f"No applicable PF policy found for DEFAULT_PF on {start_date.strftime('%Y-%m-%d')}")
+        builder = PayrollInputBuilder(self.db)
+        payroll_input = await builder.build(
+            employee_id=employee_id,
+            start_date=start_date,
+            end_date=end_date,
+            cycle_id=cycle_id
+        )
         
-        esi_rule = await self.esi_repo.resolve_policy_by_date(start_date)
-        if not esi_rule:
-            raise ValueError(f"No applicable ESI policy found for DEFAULT_ESI on {start_date.strftime('%Y-%m-%d')}")
-
-        pt_slabs_cursor = self.db.pt_slabs.find(policy_query)
-        pt_slabs = []
-        async for doc in pt_slabs_cursor:
-            doc["_id"] = str(doc["_id"])
-            pt_slabs.append(ProfessionalTaxSlab(**doc))
-
-        # 1. Fetch Salary Snapshot using Resolver
-        structure_components = await self.salary_repo.get_components_by_employee_and_date(employee_id, start_date)
-            
-        if not structure_components:
-            raise ValueError("No active salary components found")
-
-        # 2. Fetch Finalized Attendance
-        attendance_cursor = self.db.attendance.find({
-            "employeeId": employee_id,
-            "date": {"$gte": start_date.strftime("%Y-%m-%d"), "$lte": end_date.strftime("%Y-%m-%d")}
-        })
-        attendance_records = [doc async for doc in attendance_cursor]
-
-        # 3. Aggregate LOP
-        lop_result = LopAggregator.aggregate_lop(attendance_records)
+        emp_choice = payroll_input.empChoice
+        pf_rule = payroll_input.pfRule
+        esi_rule = payroll_input.esiRule
+        pt_slabs = payroll_input.ptSlabs
+        structure_components = payroll_input.components
+        
+        from collections import namedtuple
+        LopResult = namedtuple('LopResult', ['totalLopDays', 'leaveLopDays', 'permissionLopDays', 'lateLopDays', 'earlyOutLopDays', 'absenceLopDays', 'otherLopDays', 'payableDays', 'workingDays', 'breakdown'])
+        lop_dict = payroll_input.lopBreakdown or {}
+        lop_result = LopResult(
+            totalLopDays=payroll_input.lopDays,
+            leaveLopDays=lop_dict.get('leaveLopDays', 0.0),
+            permissionLopDays=lop_dict.get('permissionLopDays', 0.0),
+            lateLopDays=lop_dict.get('lateLopDays', 0.0),
+            earlyOutLopDays=lop_dict.get('earlyOutLopDays', 0.0),
+            absenceLopDays=lop_dict.get('absenceLopDays', 0.0),
+            otherLopDays=lop_dict.get('otherLopDays', 0.0),
+            payableDays=lop_dict.get('payableDays', 0.0),
+            workingDays=lop_dict.get('workingDays', 30.0),
+            breakdown=lop_dict.get('breakdown', [])
+        )
+        
+        # Override object with dict if lopAggregator is changed
+        try:
+            lop_result.model_dump = lambda: lop_dict
+        except:
+            pass
 
         # 4. Calculation Math
         total_gross = PayrollCalculationEngine.calculateGross(structure_components)
-        working_days = (end_date - start_date).days + 1
+        working_days = payroll_input.workingDays
         
         monthly_gross = PayrollCalculationEngine.calculateMonthlyGross(total_gross, working_days, lop_result.totalLopDays)
         prorated_components = PayrollCalculationEngine.splitSalaryComponents(monthly_gross, structure_components)
@@ -77,33 +70,14 @@ class PayrollProcessor:
         esi_result = PayrollCalculationEngine.calculateEsi(esi_gross, esi_rule)
         
         # We need gender for PT, default to Any if missing
-        gender = emp_personal.get("gender", "Any")
+        gender = "Any"
         pt = PayrollCalculationEngine.calculateProfessionalTax(monthly_gross, pt_slabs, gender)
 
-        # 4.5 Fetch Eligible Reimbursements
-        reimbursements_cursor = self.db.reimbursement_claims.find({
-            "employeeId": employee_id,
-            "status": "PAYROLL_ELIGIBLE",
-            "deletedAt": None
-        })
-        reimbursements = [doc async for doc in reimbursements_cursor]
-        total_reimbursements = sum(r.get("calculatedAmount", 0.0) for r in reimbursements)
+        reimbursements = payroll_input.reimbursementRecords
+        total_reimbursements = payroll_input.reimbursementsTotal
 
-        # 4.6 Fetch Manual Deductions
-        deductions_query = {
-            "employeeId": employee_id,
-            "status": "Active",
-            "deletedAt": None
-        }
-        if cycle_id:
-            deductions_query["payrollCycleId"] = cycle_id
-        else:
-            # Fallback for preview
-            deductions_query["payrollPeriod"] = start_date.strftime("%Y-%m")
-
-        manual_deductions_cursor = self.db.manual_payroll_adjustments.find(deductions_query)
-        manual_deductions = [doc async for doc in manual_deductions_cursor]
-        total_manual_deductions = sum(d.get("amount", 0.0) for d in manual_deductions)
+        manual_deductions = payroll_input.manualDeductionRecords
+        total_manual_deductions = payroll_input.manualDeductionsTotal
 
         # total_deductions must include statutory and manual
         statutory_deductions = PayrollCalculationEngine.calculateEmployeeDeduction(pf_result, esi_result, pt)

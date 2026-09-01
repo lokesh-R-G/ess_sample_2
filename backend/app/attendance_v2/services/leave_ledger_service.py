@@ -243,25 +243,27 @@ class LeaveLedgerService:
                 total_consumed = 0.0
                 total_lop = 0.0
                 
+                is_half_day = rd.get("isHalfDay", False)
+                daily_deduction = 0.5 if is_half_day else 1.0
+                
                 for d_str in working_days:
-                    if balance >= 1.0:
-                        allocated = 1.0
-                        balance -= 1.0
-                        total_consumed += 1.0
-                    elif balance > 0.0:
-                        allocated = balance
-                        total_consumed += balance
-                        total_lop += (1.0 - balance)
-                        balance = 0.0
+                    if balance >= daily_deduction:
+                        allocated = daily_deduction
+                        balance -= daily_deduction
+                        total_consumed += daily_deduction
+                        lop = 0.0
                     else:
-                        allocated = 0.0
-                        total_lop += 1.0
+                        allocated = balance
+                        lop = daily_deduction - balance
+                        total_consumed += balance
+                        total_lop += lop
+                        balance = 0.0
                         
                     allocations.append({
                         "date": d_str,
                         "approvalId": approval_id,
                         "allocated": allocated,
-                        "lop": 1.0 - allocated,
+                        "lop": lop,
                         "createdAt": now
                     })
                     

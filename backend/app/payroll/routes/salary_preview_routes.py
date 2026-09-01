@@ -143,40 +143,38 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     # 3. Fetch Rules (Mocked for now, assume default rules if none exist)
     target_dt_utc = datetime.utcnow()
     
-    pf_repo = PFRuleRepository(db)
-    pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
-    if not pf_rule:
-        pf_rule = PFRule(effectiveFrom=target_dt_utc)
+    from app.payroll.services.payroll_input_builder import PayrollInputBuilder, StatutoryDecisions
     
-    esi_repo = ESIRuleRepository(db)
-    esi_rule = await esi_repo.resolve_policy_by_date(target_dt_utc)
-    if not esi_rule:
-        esi_rule = ESIRule(effectiveFrom=target_dt_utc)
-    
-    pt_state_normalized = req.ptState if req.ptState is not None else "None"
-    pt_cursor = db["pt_slabs"].find({"state": pt_state_normalized})
-    pt_docs = await pt_cursor.to_list(length=None)
-    pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
-    
-    # 4. Pass to Engine
-    decisions = StatutoryDecisions(
+    # Map UI decisions
+    ui_decisions = StatutoryDecisions(
         isFresher=req.isFresher if req.isFresher is not None else True,
         isExistingPensionMember=req.isExistingPensionMember if req.isExistingPensionMember is not None else False,
         wantsPf=req.wantsPf if req.wantsPf is not None else True,
         wantsPension=req.wantsPension if req.wantsPension is not None else True,
         pfCalculationMode=req.pfCalculationMode if req.pfCalculationMode is not None else "Default",
+        useCeiling=(req.pfCalculationMode == "Ceiling"),
         esiEnabled=req.esiEnabled if req.esiEnabled is not None else True,
-        ptState=pt_state_normalized
+        ptState=req.ptState if req.ptState is not None else "None"
     )
     
+    builder = PayrollInputBuilder(db)
+    payroll_input = await builder.build(
+        employee_id="preview", # Or req.employeeId if we have it in preview
+        start_date=target_dt_utc,
+        end_date=target_dt_utc,
+        ui_statutory_decisions=ui_decisions,
+        ui_components=components_docs
+    )
+    
+    # 4. Pass to Engine
     result = SalaryCalculationEngine.calculate(
         basic_salary=req.basicSalary,
-        structure_components=components_docs,
+        structure_components=payroll_input.components,
         calculation_mode=CalculationMode.PREVIEW,
-        statutory_decisions=decisions,
-        pf_rule=pf_rule,
-        esi_rule=esi_rule,
-        pt_slabs=pt_slabs
+        statutory_decisions=payroll_input.statutoryDecisions,
+        pf_rule=payroll_input.pfRule,
+        esi_rule=payroll_input.esiRule,
+        pt_slabs=payroll_input.ptSlabs
     )
     
     return serialize_mongo(result)
