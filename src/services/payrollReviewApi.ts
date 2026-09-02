@@ -1,7 +1,7 @@
 import { api } from '../lib/api';
 
 export interface PayrollRecord {
-  _id: string;
+  id: string;
   cycleId: string;
   employeeId: string;
   employeeCode?: string;
@@ -9,12 +9,18 @@ export interface PayrollRecord {
   grossEarnings: number;
   grossDeductions: number;
   netPay: number;
+  pfAmount?: number;
+  esiAmount?: number;
+  ptAmount?: number;
+  reimbursementAmount?: number;
+  lopDays?: number;
   status: string;
   version: number;
   isActive: boolean;
   previousVersionId?: string;
   recalculatedBy?: string;
   recalculationReason?: string;
+  calculatedAt?: string;
   payloadSnapshot: any;
 }
 

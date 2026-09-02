@@ -58,19 +58,39 @@ class PayslipService:
         if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED"]:
             raise ValueError("Cycle must be finalized before publishing payslips")
 
-        # Get all payslips for this cycle
+        # Get all active payrolls for this cycle
         payroll_query = {"cycleId": cycle_id, "isActive": True}
         if company_id:
             payroll_query["companyId"] = company_id
 
-        payslips_cursor = self.db.payslips.find({"cycleId": cycle_id, "status": "GENERATED"})
-        payslips_to_publish = [doc async for doc in payslips_cursor]
+        payrolls_cursor = self.db.payrolls.find(payroll_query)
+        payslips_published = 0
+        payslips_to_publish = []
 
-        # Update payslips status
-        result = await self.db.payslips.update_many(
-            {"cycleId": cycle_id, "status": "GENERATED"},
-            {"$set": {"status": "PUBLISHED", "publishedAt": datetime.utcnow()}}
-        )
+        async for payroll_doc in payrolls_cursor:
+            payslip_doc = await self.db.payslips.find_one({"payrollId": str(payroll_doc["_id"])})
+            if not payslip_doc:
+                payslip = Payslip(
+                    payrollId=str(payroll_doc["_id"]),
+                    employeeId=payroll_doc["employeeId"],
+                    cycleId=cycle_id,
+                    generatedDate=datetime.utcnow(),
+                    payrollVersion=payroll_doc.get("version", 1),
+                    payloadSnapshot=payroll_doc.get("payloadSnapshot", {}),
+                    status="PUBLISHED",
+                    publishedAt=datetime.utcnow()
+                )
+                ps_doc = payslip.model_dump(by_alias=True, exclude_none=True)
+                await self.db.payslips.insert_one(ps_doc)
+                payslips_to_publish.append(ps_doc)
+            else:
+                await self.db.payslips.update_one(
+                    {"_id": payslip_doc["_id"]},
+                    {"$set": {"status": "PUBLISHED", "publishedAt": datetime.utcnow()}}
+                )
+                payslip_doc["status"] = "PUBLISHED"
+                payslips_to_publish.append(payslip_doc)
+            payslips_published += 1
 
         payroll_filter = {"cycleId": cycle_id, "isActive": True}
         if company_id:
@@ -121,4 +141,4 @@ class PayslipService:
         # Run email dispatch in background to prevent HTTP timeout
         asyncio.create_task(send_emails())
         
-        return result.modified_count
+        return payslips_published

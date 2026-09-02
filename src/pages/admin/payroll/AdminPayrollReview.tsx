@@ -71,8 +71,8 @@ export default function AdminPayrollReview() {
             <div className="space-y-2 max-h-[70vh] overflow-y-auto">
               {payrolls.map(p => (
                 <div 
-                  key={p._id} 
-                  className={`p-3 border rounded cursor-pointer transition-colors ${selectedPayroll?._id === p._id ? 'border-brand-500 bg-brand-50' : 'border-neutral-200 hover:bg-neutral-50'}`}
+                  key={p.id} 
+                  className={`p-3 border rounded cursor-pointer transition-colors ${selectedPayroll?.id === p.id ? 'border-brand-500 bg-brand-50' : 'border-neutral-200 hover:bg-neutral-50'}`}
                   onClick={() => setSelectedPayroll(p)}
                 >
                   <div className="font-semibold text-neutral-900">{p.employeeName || p.employeeId}</div>
