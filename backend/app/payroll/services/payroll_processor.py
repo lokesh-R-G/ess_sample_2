@@ -34,10 +34,9 @@ class PayrollProcessor:
         pt_slabs = payroll_input.ptSlabs
         structure_components = payroll_input.components
         
-        from collections import namedtuple
-        LopResult = namedtuple('LopResult', ['totalLopDays', 'leaveLopDays', 'permissionLopDays', 'lateLopDays', 'earlyOutLopDays', 'absenceLopDays', 'otherLopDays', 'payableDays', 'workingDays', 'breakdown'])
+        from app.payroll.services.lop_aggregator import LopAggregationResult
         lop_dict = payroll_input.lopBreakdown or {}
-        lop_result = LopResult(
+        lop_result = LopAggregationResult(
             totalLopDays=payroll_input.lopDays,
             leaveLopDays=lop_dict.get('leaveLopDays', 0.0),
             permissionLopDays=lop_dict.get('permissionLopDays', 0.0),
@@ -49,12 +48,6 @@ class PayrollProcessor:
             workingDays=lop_dict.get('workingDays', 30.0),
             breakdown=lop_dict.get('breakdown', [])
         )
-        
-        # Override object with dict if lopAggregator is changed
-        try:
-            lop_result.model_dump = lambda: lop_dict
-        except:
-            pass
 
         # 4. Calculation Math
         total_gross = PayrollCalculationEngine.calculateGross(structure_components)
