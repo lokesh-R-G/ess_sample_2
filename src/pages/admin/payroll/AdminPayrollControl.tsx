@@ -788,7 +788,7 @@ const AdminPayrollControl: React.FC = () => {
                   </tr>
                 ) : (
                   payrolls.map((payroll) => (
-                    <tr key={payroll._id} className="hover:bg-slate-50/60">
+                    <tr key={payroll.id} className="hover:bg-slate-50/60">
                       <td className="px-4 py-3 font-medium text-slate-900">{payroll.employeeName || payroll.employeeId}</td>
                       <td className="px-4 py-3 text-right text-slate-900">{formatCurrency(payroll.grossEarnings)}</td>
                       <td className="px-4 py-3 text-right text-slate-900">{formatCurrency(payroll.grossDeductions)}</td>

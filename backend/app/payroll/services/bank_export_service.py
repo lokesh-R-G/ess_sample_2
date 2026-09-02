@@ -26,25 +26,43 @@ class BankExportService:
         if not payrolls:
             raise ValueError("No active payrolls found for this cycle")
 
+        # Validate bank details first
+        errors = []
+        export_data = []
+        
+        for p in payrolls:
+            emp_id = p["employeeId"]
+            net = p.get("netPay", 0.0)
+            
+            # Fetch bank details
+            bank = await self.db.employee_banks.find_one({"employeeId": emp_id, "isPrimary": True})
+            
+            if not bank:
+                errors.append(f"Employee {emp_id} has no primary bank configured.")
+                continue
+                
+            account_number = bank.get("accountNumber", "")
+            ifsc_code = bank.get("ifscCode", "")
+            bank_name = bank.get("bankName", "")
+            
+            if not account_number or not ifsc_code:
+                errors.append(f"Employee {emp_id} is missing account number or IFSC code.")
+                continue
+                
+            export_data.append([emp_id, account_number, ifsc_code, f"{net:.2f}", bank_name])
+            
+        if errors:
+            raise ValueError("Incomplete bank records found: " + "; ".join(errors))
+            
         # Generate CSV
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow(["Employee ID", "Account Number", "IFSC Code", "Net Pay", "Bank Name"])
         
         total_amount = 0.0
-        
-        for p in payrolls:
-            emp_id = p["employeeId"]
-            net = p.get("netPay", 0.0)
-            total_amount += net
-            
-            # Fetch bank details
-            bank = await self.db.employee_banks.find_one({"employeeId": emp_id, "isPrimary": True})
-            if not bank:
-                # Default empty if no primary bank is configured
-                writer.writerow([emp_id, "", "", f"{net:.2f}", ""])
-            else:
-                writer.writerow([emp_id, bank.get("accountNumber", ""), bank.get("ifscCode", ""), f"{net:.2f}", bank.get("bankName", "")])
+        for row in export_data:
+            total_amount += float(row[3])
+            writer.writerow(row)
                 
         csv_content = output.getvalue()
         
