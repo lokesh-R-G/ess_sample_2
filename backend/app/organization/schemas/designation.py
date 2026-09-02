@@ -5,11 +5,13 @@ from typing import Optional
 class DesignationCreate(BaseModel):
     companyId: str
     departmentId: str
+    code: str
     name: str
 
 class DesignationUpdate(BaseModel):
     companyId: Optional[str] = None
     departmentId: Optional[str] = None
+    code: Optional[str] = None
     name: Optional[str] = None
 
 class DesignationResponse(BaseModel):
@@ -17,6 +19,8 @@ class DesignationResponse(BaseModel):
     id: str = Field(serialization_alias="_id")
     companyId: str
     departmentId: str
+    departmentName: Optional[str] = None
+    code: str
     name: str
     status: Optional[str] = None
     createdAt: Optional[datetime] = None

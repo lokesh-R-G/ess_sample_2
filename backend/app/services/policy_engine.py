@@ -1,155 +1,456 @@
-from datetime import datetime
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.models import AttendancePolicy
-from app.core.datetime_utils import to_ist, compare_time_with_policy
+from datetime import datetime, timedelta
+
+from app.core.datetime_utils import to_ist, compare_time_with_policy, IST
 
 class PolicyEngine:
-    def __init__(self, db: AsyncIOMotorDatabase, policy: AttendancePolicy):
-        self.db = db
-        self.policy = policy
-        # Cache monthly aggregates per employee
-        self.monthly_late_counts = {}
-        self.monthly_permission_used = {}
+    def __init__(self, context: dict):
+        self.ctx = context
+        self.policy = context.get("policy")
+        self.shift = context.get("shift")
+        self.holiday_dates = context.get("holidayDates", [])
+        self.today_schedule = context.get("todaySchedule", {"dayType": "WORKING", "startTime": None, "endTime": None})
+        self.monthly_records = context.get("monthlyRecords", [])
+        self.approved_requests = context.get("approvedRequests", [])
+        self.raw_punches = context.get("rawPunches", [])
+        self.monthly_late_count = context.get("monthlyLateCount", 0)
+        self.target_date = context.get("targetDate")
+        
+        # Determine canonical schedule
+        self.schedule = self._calculate_expected_schedule()
 
-    async def _load_monthly_aggregates(self, emp_id: str, month_str: str):
-        """Load aggregates for the month up to now, if not already cached."""
-        key = f"{emp_id}_{month_str}"
-        if key in self.monthly_late_counts:
-            return
+    def _get_shift_datetime(self, time_str: str) -> datetime | None:
+        if not time_str or not self.target_date:
+            return None
+        try:
+            if time_str.count(":") == 2:
+                dt = datetime.strptime(time_str, "%H:%M:%S").time()
+            else:
+                dt = datetime.strptime(time_str, "%H:%M").time()
+            # Treat configured schedule times as local IST wall-clock time
+            return datetime.combine(self.target_date, dt).replace(tzinfo=IST)
+        except ValueError:
+            return None
 
-        # Query all attendance for this employee in this month
-        cursor = self.db.attendance.find({
-            "empId": emp_id,
-            "date": {"$regex": f"^{month_str}"}
-        })
-        records = await cursor.to_list(length=None)
-
-        late_count = sum(1 for r in records if r.get("lateMinutes", 0) > 0)
-        permission_used = sum(r.get("permissionHoursUsed", 0.0) for r in records)
-
-        self.monthly_late_counts[key] = late_count
-        self.monthly_permission_used[key] = permission_used
-
-    def _increment_late(self, emp_id: str, month_str: str) -> float:
-        """Increment late count and return LOP days (0.5 or 1.0) if threshold hit."""
-        key = f"{emp_id}_{month_str}"
-        self.monthly_late_counts[key] += 1
-        count = self.monthly_late_counts[key]
-
-        if count == self.policy.lateHalfDayThreshold:
-            return 0.5
-        elif count == self.policy.lateFullDayThreshold:
-            return 1.0 - 0.5 # Since 0.5 was already deducted at lateHalfDayThreshold, deduct another 0.5. Wait.
-            # Actually, total deduction is 1 day. If we return the delta deduction:
-            # return 0.5
-        elif count > self.policy.lateFullDayThreshold:
-            if (count - self.policy.lateFullDayThreshold) % self.policy.lateIncrementThreshold == 0:
-                return 0.5
-        return 0.0
-
-    def _add_permission(self, emp_id: str, month_str: str, hours: float) -> tuple[float, float]:
+    def _calculate_expected_schedule(self) -> dict:
         """
-        Add permission hours. 
-        Returns (permission_used_today, excess_lop_hours_generated_today)
+        Single source of truth for the expected schedule.
+        Calculates working duration based on the currently evaluated schedule (WORKING or CUTOFF).
+        WEEKOFF returns None for timings.
         """
-        key = f"{emp_id}_{month_str}"
-        current_used = self.monthly_permission_used[key]
+        day_type = self.today_schedule.get("dayType", "WORKING")
         
-        # We need to track total excess. 
-        # Example: Limit = 1.0
-        # Previously used = 1.0
-        # Today requested = 2.0. Excess = 2.0.
+        start_str = None
+        end_str = None
+        source = "Shift"
+        break_start = None
+        break_end = None
+
+        if day_type == "WEEKOFF":
+            source = "WeeklyOffPolicy"
+        elif day_type == "CUTOFF" and self.today_schedule.get("startTime") and self.today_schedule.get("endTime"):
+            start_str = self.today_schedule.get("startTime")
+            end_str = self.today_schedule.get("endTime")
+            source = "WeeklyOffPolicy"
+            # CUTOFF only uses breaks if explicitly configured, but our UI currently doesn't define CUTOFF breaks.
+            # As per requirements, do not artificially inherit Shift break if it makes CUTOFF wrong.
+            # We will inherit ONLY if the shift break is strictly within the CUTOFF window.
+            b_s = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
+            b_e = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
+            c_s = self._get_shift_datetime(start_str)
+            c_e = self._get_shift_datetime(end_str)
+            if b_s and b_e and c_s and c_e:
+                if b_s >= c_s and b_e <= c_e:
+                    break_start = b_s
+                    break_end = b_e
+        else:
+            # WORKING or CUTOFF fallback
+            start_str = getattr(self.shift, "startTime", None)
+            end_str = getattr(self.shift, "endTime", None)
+            source = "Shift"
+            break_start = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
+            break_end = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
+            day_type = "WORKING" # Ensure fallback forces WORKING
+
+        start_dt = self._get_shift_datetime(start_str)
+        end_dt = self._get_shift_datetime(end_str)
         
-        available = max(0.0, self.policy.monthlyPermissionHours - current_used)
-        used_today = min(available, hours)
-        excess_today = hours - used_today
-        
-        self.monthly_permission_used[key] += hours
-        
-        # Check if excess triggers LOP (4 hours = Half Day, 8 hours = Full Day)
-        # We need to know previous excess to see if we cross a boundary.
-        prev_excess = max(0.0, current_used - self.policy.monthlyPermissionHours)
-        new_excess = prev_excess + excess_today
-        
-        lop_deduction = 0.0
-        # If we cross 4 hours (Half Day)
-        if prev_excess < self.policy.lopHalfDayHours <= new_excess:
-            lop_deduction += (self.policy.lopHalfDayHours) # e.g. 4 hours worth of LOP
+        break_duration_hours = 0.0
+        if break_start and break_end:
+            break_duration_hours = (break_end - break_start).total_seconds() / 3600.0
+                
+        expected_hours = 0.0
+        if start_dt and end_dt:
+            expected_hours = (end_dt - start_dt).total_seconds() / 3600.0
+            expected_hours = max(0.0, expected_hours - break_duration_hours)
             
-        # If we cross 8 hours (Full Day)
-        if prev_excess < self.policy.lopFullDayHours <= new_excess:
-            lop_deduction += (self.policy.lopFullDayHours - self.policy.lopHalfDayHours)
-            
-        return used_today, excess_today # Actually, let's just return the raw hours. LOP can be calculated directly.
-
-    async def evaluate_attendance(self, emp_id: str, date_val: datetime, in_time: datetime | None, out_time: datetime | None) -> dict:
-        """
-        Evaluates attendance and returns a dict with the new metrics.
-        """
-        ist_date = to_ist(date_val)
-        month_str = ist_date.strftime("%Y-%m")
-        await self._load_monthly_aggregates(emp_id, month_str)
-
-        metrics = {
-            "lateMinutes": 0,
-            "lateCount": 0,
-            "permissionHoursUsed": 0.0,
-            "permissionHoursExceeded": 0.0,
-            "lopHours": 0.0,
-            "halfDayCount": 0.0,
-            "status": "Absent"
+        return {
+            "scheduleType": day_type,
+            "scheduleSource": source,
+            "actualStartTime": start_str,
+            "actualEndTime": end_str,
+            "actualStartDt": start_dt,
+            "actualEndDt": end_dt,
+            "breakStartDt": break_start,
+            "breakEndDt": break_end,
+            "breakDurationHours": break_duration_hours,
+            "expectedWorkingHours": expected_hours
         }
 
-        if not in_time:
-            metrics["status"] = "Absent"
+    def _is_holiday(self) -> bool:
+        if not self.target_date:
+            return False
+            
+        target_str = self.target_date.strftime("%Y-%m-%d")
+        for hd in self.holiday_dates:
+            hd_date = hd.get("holidayDate") if isinstance(hd, dict) else getattr(hd, "holidayDate", None)
+            
+            if hasattr(hd_date, "strftime"):
+                if hd_date.strftime("%Y-%m-%d") == target_str:
+                    return True
+            elif str(hd_date)[:10] == target_str:
+                return True
+                
+        return False
+
+    def _normalize_working_intervals(self) -> list:
+        intervals = []
+        if not self.raw_punches:
+            return intervals
+            
+        # 1. Sort purely chronologically
+        logs = sorted(self.raw_punches, key=lambda x: to_ist(x["timestamp"]))
+        
+        # 2. State machine
+        current_in = None
+        threshold_minutes = 5.0
+        
+        for log in logs:
+            punch = to_ist(log["timestamp"])
+            if current_in is None:
+                # Check if this IN is actually a duplicate of the LAST OUT
+                if intervals:
+                    last_out = intervals[-1][1]
+                    if last_out and (punch - last_out).total_seconds() / 60.0 <= threshold_minutes:
+                        # It's a duplicate OUT. Extend the last interval's OUT to this punch.
+                        intervals[-1] = (intervals[-1][0], punch)
+                        continue
+                current_in = punch
+            else:
+                diff_mins = (punch - current_in).total_seconds() / 60.0
+                if diff_mins <= threshold_minutes:
+                    # Duplicate IN. Ignore.
+                    pass
+                else:
+                    # It's an OUT punch
+                    intervals.append((current_in, punch))
+                    current_in = None
+                    
+        # If there's a trailing unclosed IN
+        if current_in is not None:
+            intervals.append((current_in, None))
+            
+        return intervals
+
+    def _normalize_approval_intervals(self) -> list:
+        intervals = []
+        self.approval_snapshot = []
+        
+        for req in self.approved_requests:
+            app_type = req.get("approvalType")
+            if app_type in ["Permission", "On Duty", "Leave", "Miss Punch", "Mobile Punch"]:
+                rd = req.get("requestData", {})
+                from_time_str = rd.get("fromTime")
+                to_time_str = rd.get("toTime")
+                
+                if app_type in ["On Duty", "Leave"] and not (from_time_str and to_time_str):
+                    self.approval_snapshot.append({
+                        "approvalId": str(req.get("_id", "")),
+                        "approvalType": app_type,
+                        "status": req.get("status"),
+                        "fromDate": rd.get("fromDate", rd.get("date")),
+                        "toDate": rd.get("toDate", rd.get("date")),
+                        "fullDay": True,
+                        "requestedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
+                        "appliedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
+                        "excessMinutes": 0.0
+                    })
+                elif from_time_str and to_time_str:
+                    start = self._get_shift_datetime(from_time_str)
+                    end = self._get_shift_datetime(to_time_str)
+                    
+                    if start and end:
+                        req_mins = (end - start).total_seconds() / 60.0
+                        applied_mins = req_mins
+                        excess_mins = 0.0
+                        
+                        if app_type == "Permission":
+                            max_per_request = getattr(self.policy, "permissionMinutes", 60)
+                            if req_mins > max_per_request:
+                                applied_mins = max_per_request
+                                excess_mins = req_mins - max_per_request
+                                # Limit the interval used for Late In forgiveness
+                                end = start + timedelta(minutes=applied_mins)
+                                
+                        if app_type in ["Permission", "On Duty"]:
+                            intervals.append({"start": start, "end": end, "type": app_type})
+                        
+                        self.approval_snapshot.append({
+                            "approvalId": str(req.get("_id", "")),
+                            "approvalType": app_type,
+                            "status": req.get("status"),
+                            "fromDate": rd.get("fromDate", rd.get("date")),
+                            "toDate": rd.get("toDate", rd.get("date")),
+                            "fromTime": from_time_str,
+                            "toTime": to_time_str,
+                            "fullDay": False,
+                            "requestedMinutes": req_mins,
+                            "appliedMinutes": applied_mins,
+                            "excessMinutes": excess_mins
+                        })
+        return intervals
+
+    def evaluate_attendance(self) -> dict:
+        metrics = {
+            "lateMinutes": 0,
+            "lateCount": self.monthly_late_count,
+            "earlyOutMinutes": 0,
+            "effectiveHours": 0.0,
+            "breakDuration": 0.0,
+            "virtualBreakApplied": False,
+            "lateIncrementApplied": False,
+            "lopHours": 0.0,
+            "lopReason": None,
+            "halfDayCount": 0.0,
+            "status": "Absent",
+            "inTime": None,
+            "outTime": None,
+            
+            # Phase 10.2
+            "scheduleType": self.schedule["scheduleType"],
+            "scheduleSource": self.schedule["scheduleSource"],
+            "actualStartTime": self.schedule["actualStartTime"],
+            "actualEndTime": self.schedule["actualEndTime"],
+            
+            # Phase 10.3 / M2.1
+            "approvalSnapshot": []
+        }
+        
+        # Normalization of Approvals (must be called before early returns to populate snapshot)
+        approval_intervals = self._normalize_approval_intervals()
+        metrics["approvalSnapshot"] = self.approval_snapshot
+        
+        # 1. Leave / OD Override Check
+        is_full_day_override = False
+        override_status = None
+        leave_allocation = None
+        
+        for req in self.approved_requests:
+            if req.get("approvalType") in ["Leave", "On Duty"]:
+                rd = req.get("requestData", {})
+                # If it has specific times, it's a partial-day approval (interval), so do not override the whole day.
+                if rd.get("fromTime") and rd.get("toTime"):
+                    continue
+                    
+                is_full_day_override = True
+                override_status = req.get("approvalType")
+                if override_status == "Leave":
+                    leave_allocation = req.get("leaveAllocation")
+                break
+                
+        # 2. Holiday Check
+        if not is_full_day_override and self._is_holiday():
+            metrics["status"] = "Holiday"
+            return metrics
+            
+        # 3. Week Off Check
+        if not is_full_day_override and self.today_schedule.get("dayType") == "WEEKOFF":
+            metrics["status"] = "Week Off" if not self.raw_punches else "Week Off Worked"
             return metrics
 
-        # Determine shift start based on weekday
-        shift_start_str = self.policy.shiftStartTime
-        shift_end_str = self.policy.shiftEndTime if ist_date.weekday() != 5 else self.policy.saturdayShiftEndTime
+        # 4. Absent Check
+        if not self.raw_punches and not is_full_day_override:
+            metrics["status"] = "Absent"
+            metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
+            metrics["lopReason"] = "Missing Punches"
+            return metrics
 
-        late_diff = compare_time_with_policy(in_time, shift_start_str)
+        working_intervals = self._normalize_working_intervals()
+        
+        in_time = working_intervals[0][0] if working_intervals else None
+        out_time = working_intervals[-1][1] if working_intervals else None
 
-        if late_diff <= self.policy.graceMinutes:
-            metrics["status"] = "Present"
-        elif late_diff <= self.policy.lateEndMinute:
-            metrics["status"] = "Present"
-            metrics["lateMinutes"] = int(late_diff)
+        metrics["inTime"] = in_time.isoformat() if in_time else None
+        metrics["outTime"] = out_time.isoformat() if out_time else None
+
+        # Effective Hours
+        effective_seconds = 0
+        for start, end in working_intervals:
+            if end:
+                effective_seconds += (end - start).total_seconds()
+                
+        # Break Logic
+        break_start = self.schedule["breakStartDt"]
+        break_end = self.schedule["breakEndDt"]
+        
+        if break_start and break_end:
+            break_seconds = (break_end - break_start).total_seconds()
             
-            # Increment late count
-            deduction_days = self._increment_late(emp_id, month_str)
-            metrics["lateCount"] = self.monthly_late_counts[f"{emp_id}_{month_str}"]
-            metrics["halfDayCount"] += deduction_days
-            metrics["lopHours"] += (deduction_days * 8.0) # Assuming 8 hours = 1 day
-        elif late_diff <= self.policy.latePermissionEndMinute:
-            metrics["status"] = "Present" # Or Late Permission Required
-            metrics["lateMinutes"] = int(late_diff)
+            # Scenario A: Punched out for lunch if there are multiple intervals spanning the break
+            punched_out_for_lunch = len(working_intervals) > 1
             
-            # Need permission. Let's assume late minutes converted to hours.
-            perm_hours = late_diff / 60.0
-            used, excess = self._add_permission(emp_id, month_str, perm_hours)
-            metrics["permissionHoursUsed"] = used
-            metrics["permissionHoursExceeded"] = excess
-            
-            # If excess triggers LOP, it's aggregated. 
-            # We will just record the excess, and the payroll system or a separate aggregation will handle it,
-            # or we calculate it here. For simplicity, let's just add excess directly to lopHours.
-            metrics["lopHours"] += excess
-        else:
-            # After half day cutoff or beyond permission
-            half_day_diff = compare_time_with_policy(in_time, self.policy.halfDayCutoffTime)
-            if half_day_diff >= 0:
+            if not punched_out_for_lunch and out_time and out_time > break_end and in_time < break_start:
+                # Scenario B: Virtual Break Generation
+                metrics["virtualBreakApplied"] = True
+                metrics["breakDuration"] = self.schedule["breakDurationHours"]
+                effective_seconds = max(0, effective_seconds - break_seconds)
+                
+            # Lunch Absence Detection
+            if out_time and out_time <= break_start:
                 metrics["status"] = "Half Day"
-                metrics["halfDayCount"] += 0.5
+                metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                metrics["lopReason"] = "Missing Second Half"
+            elif in_time and in_time >= break_end:
+                metrics["status"] = "Half Day"
+                metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                metrics["lopReason"] = "Missing First Half"
+                
+        metrics["effectiveHours"] = round(effective_seconds / 3600.0, 2)
+        
+        # Day Status (if not already Half Day due to Lunch Absence)
+        if metrics["status"] not in ["Half Day"]:
+            if not out_time:
+                metrics["status"] = "Present (No Out)"
             else:
-                metrics["status"] = "Present"
-                metrics["lateMinutes"] = int(late_diff)
+                expected_hours = self.schedule["expectedWorkingHours"]
+                # Determine the allowable shortages from the base shift to treat CUTOFF as a complete day
+                base_expected = 9.0
+                if self.shift and getattr(self.shift, "startTime", None) and getattr(self.shift, "endTime", None):
+                    base_start = self._get_shift_datetime(self.shift.startTime)
+                    base_end = self._get_shift_datetime(self.shift.endTime)
+                    if base_start and base_end:
+                        base_expected = (base_end - base_start).total_seconds() / 3600.0
+                        
+                allowable_full_shortage = max(0.0, base_expected - getattr(self.policy, "minHoursForFullDay", 8.0))
+                
+                req_full = max(0.0, expected_hours - allowable_full_shortage)
+                # req_half should roughly be half of the expected hours for a complete day interpretation
+                req_half = expected_hours / 2.0
+                
+                if metrics["effectiveHours"] >= req_full:
+                    metrics["status"] = "Present"
+                elif metrics["effectiveHours"] >= req_half:
+                    metrics["status"] = "Half Day"
+                    metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                    metrics["lopReason"] = "Low Effective Hours"
+                    metrics["halfDayCount"] += 0.5
+                else:
+                    metrics["status"] = "Absent"
+                    metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
+                    metrics["lopReason"] = "Extremely Low Effective Hours"
 
-        # If they left early? (Could check out_time vs shift_end_str)
-        # Not explicitly requested in Phase 1, but good to have.
+        # Late / Early Out evaluation
+        if in_time and metrics["status"] == "Present":
+            original_expected_in = self.schedule["actualStartDt"]
+            adjusted_expected_in = original_expected_in
+            
+            # Permission Overrides
+            for p in approval_intervals:
+                if adjusted_expected_in and p["start"] <= adjusted_expected_in <= p["end"]:
+                    adjusted_expected_in = p["end"]
 
-        # If no out punch
-        if not out_time:
-            metrics["status"] = "Present (No Out)"
+            raw_late_mins = 0.0
+            if original_expected_in and in_time > original_expected_in:
+                raw_late_mins = (in_time - original_expected_in).total_seconds() / 60.0
+                
+            effective_late_mins = 0.0
+            if adjusted_expected_in and in_time > adjusted_expected_in:
+                effective_late_mins = (in_time - adjusted_expected_in).total_seconds() / 60.0
+                
+            late_occurrence = False
+            if raw_late_mins > getattr(self.policy, "graceInMinutes", 0):
+                if raw_late_mins > getattr(self.policy, "lateInThresholdMinutes", 15):
+                    late_occurrence = True
+                    
+            if late_occurrence:
+                metrics["lateMinutes"] = int(effective_late_mins)
+                
+                # Late Increment Rules
+                current_lates = self.monthly_late_count + 1
+                metrics["lateCount"] = current_lates
+                metrics["lateIncrementApplied"] = True
+                
+                full_threshold = getattr(self.policy, "lateFullDayThreshold", None)
+                half_threshold = getattr(self.policy, "lateHalfDayThreshold", None)
+                inc_threshold = getattr(self.policy, "lateIncrementThreshold", None)
+                
+                # 1. Status Progression (independent of LOP)
+                if full_threshold and current_lates >= full_threshold:
+                    metrics["status"] = "Absent"
+                elif half_threshold and current_lates >= half_threshold:
+                    metrics["status"] = "Half Day"
 
+                # 2. LOP Penalty Generation
+                if inc_threshold:
+                    if current_lates % inc_threshold == 0:
+                        metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                        metrics["lopReason"] = "Late Increment Threshold Reached"
+                        metrics["halfDayCount"] += 0.5
+                else:
+                    # Fallback to one-time penalty if increment is disabled
+                    if full_threshold and current_lates == full_threshold:
+                        metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
+                        metrics["lopReason"] = "Late Full Day Threshold Reached"
+                    elif half_threshold and current_lates == half_threshold:
+                        metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                        metrics["lopReason"] = "Late Half Day Threshold Reached"
+                        metrics["halfDayCount"] += 0.5
+
+            # Early out Logic
+            if out_time:
+                original_expected_out = self.schedule["actualEndDt"]
+                adjusted_expected_out = original_expected_out
+                
+                for p in approval_intervals:
+                    if adjusted_expected_out and p["start"] <= adjusted_expected_out <= p["end"]:
+                        adjusted_expected_out = p["start"]
+
+                raw_early_mins = 0.0
+                if original_expected_out and out_time < original_expected_out:
+                    raw_early_mins = (original_expected_out - out_time).total_seconds() / 60.0
+                    
+                effective_early_mins = 0.0
+                if adjusted_expected_out and out_time < adjusted_expected_out:
+                    effective_early_mins = (adjusted_expected_out - out_time).total_seconds() / 60.0
+                    
+                early_occurrence = False
+                if raw_early_mins > getattr(self.policy, "graceOutMinutes", 0):
+                    if raw_early_mins > getattr(self.policy, "earlyOutThresholdMinutes", 15):
+                        early_occurrence = True
+                        
+                if early_occurrence:
+                    metrics["earlyOutMinutes"] = int(effective_early_mins)
+                    if effective_early_mins > getattr(self.policy, "graceOutMinutes", 0):
+                        if effective_early_mins > getattr(self.policy, "earlyOutThresholdMinutes", 15):
+                            if metrics["status"] == "Present":
+                                metrics["status"] = "Half Day"
+                                metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
+                                metrics["lopReason"] = "Early Out Beyond Threshold"
+                                metrics["halfDayCount"] += 0.5
+                                    
+        # Force Full-Day Override Rules
+        if is_full_day_override:
+            metrics["status"] = override_status
+            if override_status == "Leave" and leave_allocation:
+                metrics["lopHours"] = leave_allocation["lop"] * (self.schedule["expectedWorkingHours"] or 8.0)
+                metrics["lopReason"] = "Insufficient Leave Balance" if leave_allocation["lop"] > 0 else None
+                metrics["leaveLopDays"] = leave_allocation["lop"]
+            else:
+                metrics["lopHours"] = 0.0
+                metrics["lopReason"] = None
+                
+            expected = self.schedule.get("expectedWorkingHours", 0.0)
+            if metrics["effectiveHours"] < expected:
+                metrics["effectiveHours"] = expected
+                
+        metrics["approvalSnapshot"] = self.approval_snapshot
         return metrics

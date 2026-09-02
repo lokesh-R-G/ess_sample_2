@@ -1,0 +1,1 @@
+import asyncio; import sys; sys.path.append('c:\\ess\\ess_sample_2\\backend'); from app.core.datetime_utils import compare_time_with_policy; from datetime import datetime; print(compare_time_with_policy(datetime(2026,7,18,9,40,34), '10:00:00'))

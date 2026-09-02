@@ -77,7 +77,7 @@ ENGINES = [
         "solves": "Removes hardcoded '9 AM to 5 PM' rules. Allows HR to configure multiple shifting policies across different branches.",
         "why_not_others": "Decoupled so that calculating a punch (Attendance Engine) is separated from defining what a late punch is (Policy Engine).",
         "owners": ["HR (Configuration)", "System (Lookup)"],
-        "modules": ["GracePolicy", "LatePolicy", "LatePenaltyRule", "ShiftAttendancePolicy"],
+        "modules": ["LatePenaltyRule", "ShiftAttendancePolicy"],
         "rules": ["Policies must be immutable; changes create new versions.", "Grace minutes do not automatically excuse late coming unless requested."],
         "decisions": ["Defines the boundaries of Late, Grace, and Overflows."],
         "never": ["Never calculates a punch.", "Never modifies employee balances.", "Never deducts leave."],

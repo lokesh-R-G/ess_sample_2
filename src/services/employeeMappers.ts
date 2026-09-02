@@ -30,6 +30,8 @@ export interface EmploymentHistoryUI {
   designationId?: string;
   effectiveFrom?: string;
   employmentType?: string;
+  reportingManagerEmployeeId?: string;
+  isReportingManager?: boolean;
   shiftId?: string;
   noticePeriodDays?: number;
   probationPeriodDays?: number;

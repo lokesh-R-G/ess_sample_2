@@ -7,11 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.attendance import router as attendance_router
 from app.api.routes.admin import router as admin_router
-from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.auth import router as auth_router
 from app.auth.forgot_password.routes.router import router as forgot_password_router
 from app.api.routes.health import router as health_router
 from app.api.routes.leave import router as leave_router
+from app.api.routes.dashboard_v2 import router as dashboard_v2_router
+from app.api.routes.profile_v2 import router as profile_v2_router
+from app.api.routes.leave_v2 import router as leave_v2_router
 from app.api.routes.payslip import router as payslip_router
 from app.api.routes.profile import router as profile_router
 from app.api.routes.sync import router as sync_router
@@ -24,7 +26,6 @@ from app.salary.routes.router import salary_router as v2_salary_router
 from app.attendance_policy.routes.router import attendance_policy_router as v2_policy_router
 from app.permission.routes.router import permission_router as v2_permission_router
 from app.attendance_v2.routes.router import attendance_v2_router as v2_attendance_router
-from app.leave_policy.routes.router import leave_policy_router as v2_leave_policy_router
 from app.leave.routes.router import leave_router as v2_leave_router
 from app.payroll_policy.routes.router import router as v2_payroll_policy_router
 from app.deduction_policy.routes.router import router as v2_deduction_policy_router
@@ -46,9 +47,13 @@ from app.scheduler.routes.router import router as v2_scheduler_router
 from app.report_generator.routes.router import router as v2_report_router
 from app.pdf_service.routes.router import router as v2_pdf_router
 from app.email_service.routes.router import router as v2_email_router
+from app.approval.routes.router import router as v2_approval_router
+from app.api.routes.essl_machine import router as v2_essl_machine_router
 from app.core.config import get_settings
-from app.db.mongo import init_indexes
+from app.db.mongo import close_mongo_connection, get_database, init_indexes
 from app.scheduler.scheduler import init_scheduler
+from app.permission.engine.seed_permissions import seed_permissions
+from app.role.engine.seed_roles import seed_roles_and_mappings
 
 
 settings = get_settings()
@@ -57,9 +62,17 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await init_indexes()
+    # Idempotently add canonical permissions and mappings before protected
+    # routes are served (including scheduler.configure).
+    db = get_database()
+    await seed_permissions(db)
+    await seed_roles_and_mappings(db)
     # start APScheduler for background sync jobs
     init_scheduler()
-    yield
+    try:
+        yield
+    finally:
+        close_mongo_connection()
 
 
 tags_metadata = [
@@ -115,7 +128,6 @@ app.include_router(health_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(forgot_password_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
-app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")
 app.include_router(leave_router, prefix="/api/v1")
 app.include_router(payslip_router, prefix="/api/v1")
@@ -130,7 +142,11 @@ app.include_router(v2_salary_router, prefix="/api/v2/salary")
 app.include_router(v2_policy_router, prefix="/api/v2/attendance-policy")
 app.include_router(v2_permission_router, prefix="/api/v2/permission")
 app.include_router(v2_attendance_router, prefix="/api/v2/attendance")
-app.include_router(v2_leave_policy_router, prefix="/api/v2/leave-policy")
+app.include_router(profile_v2_router, prefix="/api/v2/employees")
+app.include_router(dashboard_v2_router, prefix="/api/v2")
+app.include_router(leave_v2_router, prefix="/api")
+from app.api.routes.leave_policy_v2 import router as leave_policy_v2_router
+app.include_router(leave_policy_v2_router, prefix="/api")
 app.include_router(v2_leave_router, prefix="/api/v2/leave")
 app.include_router(v2_payroll_policy_router, prefix="/api/v2/payroll-policy")
 app.include_router(v2_deduction_policy_router, prefix="/api/v2/deduction-policy")
@@ -152,3 +168,5 @@ app.include_router(v2_scheduler_router, prefix="/api/v2/scheduler")
 app.include_router(v2_report_router, prefix="/api/v2/report")
 app.include_router(v2_pdf_router, prefix="/api/v2/pdf")
 app.include_router(v2_email_router, prefix="/api/v2/email")
+app.include_router(v2_approval_router, prefix="/api/v2/approval")
+app.include_router(v2_essl_machine_router)

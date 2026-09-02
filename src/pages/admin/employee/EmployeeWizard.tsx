@@ -9,14 +9,12 @@ import PersonalInfoStep from './wizard-steps/PersonalInfoStep';
 import ContactAddressStep from './wizard-steps/ContactAddressStep';
 import EmploymentStep from './wizard-steps/EmploymentStep';
 import BankingGovIdStep from './wizard-steps/BankingGovIdStep';
-import SalaryPayrollStep from './wizard-steps/SalaryPayrollStep';
 
 const STEPS = [
   { id: 'personal', title: 'Personal Info', component: PersonalInfoStep },
   { id: 'contact', title: 'Contact & Address', component: ContactAddressStep },
   { id: 'employment', title: 'Employment', component: EmploymentStep },
-  { id: 'banking', title: 'Banking & Gov IDs', component: BankingGovIdStep },
-  { id: 'salary', title: 'Salary & Payroll', component: SalaryPayrollStep }
+  { id: 'banking', title: 'Banking & Gov IDs', component: BankingGovIdStep }
 ];
 
 export default function EmployeeWizard() {
@@ -126,12 +124,6 @@ export default function EmployeeWizard() {
     } else if (stepIndex === 3) {
       // Optional fields largely, but we can enforce PAN
       if (!formData.panNumber) errors.panNumber = "PAN Number is required for payroll";
-    } else if (stepIndex === 4) {
-      if (!formData.salaryStructureId) errors.salaryStructureId = "Salary Structure is required";
-      if (!formData.basicSalary) errors.basicSalary = "Basic Salary is required";
-      if (!formData.isSalaryPreviewCalculated) {
-        errors.general = "You must calculate and review the salary preview before saving.";
-      }
     }
 
     setValidationErrors(errors);
@@ -155,7 +147,7 @@ export default function EmployeeWizard() {
       if (stepIndex === 0) {
         let empId = formData.employeeId;
         if (!empId) {
-          const empRes = await employeeApi.createEmployee({});
+          const empRes = await employeeApi.createEmployee({ employeeCode: formData.employeeCode || undefined });
           empId = empRes._id || empRes.employeeId || empRes.id;
           setFormData((prev: any) => ({ ...prev, employeeId: empId }));
         }
@@ -169,10 +161,6 @@ export default function EmployeeWizard() {
       } else if (stepIndex === 3) {
         await employeeApi.createBanking(cleanPayload({ ...formData, employeeId: formData.employeeId }));
         await employeeApi.createGovernmentId(cleanPayload({ ...formData, employeeId: formData.employeeId }));
-      } else if (stepIndex === 4) {
-        const payload = cleanPayload({ ...formData, employeeId: formData.employeeId });
-        await employeeApi.createPayrollConfig(payload);
-        await employeeApi.assignSalary(payload);
       }
       return true;
     } catch (e: any) {
@@ -340,7 +328,7 @@ export default function EmployeeWizard() {
             </button>
 
             <AnimatedButton onClick={handleSaveAndContinue} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : currentStep === STEPS.length - 1 ? 'Save & Assign Salary' : 'Save & Continue'}
+              {isSubmitting ? 'Saving...' : currentStep === STEPS.length - 1 ? 'Save & Complete' : 'Save & Continue'}
             </AnimatedButton>
           </div>
 

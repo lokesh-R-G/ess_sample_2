@@ -2,8 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class EmployeeCreate(BaseModel):
-    # Empty schema, the backend generates everything on creation
-    pass
+    employeeCode: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
     status: Optional[str] = None

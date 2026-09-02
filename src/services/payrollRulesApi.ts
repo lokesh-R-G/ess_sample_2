@@ -7,14 +7,14 @@ export const payrollRulesApi = {
   updatePayrollSettings: (id: string, data: any) => api.put(`/v2/payroll/payroll-settings/${id}`, data),
 
   // PF Rules
-  getPFRules: () => api.get('/v2/payroll/pf-rules/'),
+  getPFRules: () => api.get('/v2/payroll/pf-rules/current'),
   createPFRule: (data: any) => api.post('/v2/payroll/pf-rules/', data),
-  updatePFRule: (id: string, data: any) => api.put(`/v2/payroll/pf-rules/${id}`, data),
+  updatePFRule: (id: string, data: any) => api.put(`/v2/payroll/pf-rules/`, data), // NOTE: Backend PUT uses root without id in path!
 
   // ESI Rules
-  getESIRules: () => api.get('/v2/payroll/esi-rules/'),
+  getESIRules: () => api.get('/v2/payroll/esi-rules/current'),
   createESIRule: (data: any) => api.post('/v2/payroll/esi-rules/', data),
-  updateESIRule: (id: string, data: any) => api.put(`/v2/payroll/esi-rules/${id}`, data),
+  updateESIRule: (id: string, data: any) => api.put(`/v2/payroll/esi-rules/`, data),
 
   // PT Rules
   getPTRules: () => api.get('/v2/payroll/pt-rules/'),

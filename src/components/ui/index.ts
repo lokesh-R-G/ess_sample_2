@@ -12,3 +12,4 @@ export { LoadingSkeleton } from './LoadingSkeleton';
 export { BackgroundParticles } from './BackgroundParticles';
 export { ESSLMachineLookup } from './ESSLMachineLookup';
 export { SalaryComponentMultiSelect } from './SalaryComponentMultiSelect';
+export { GenericCRUDPage } from './GenericCRUDPage';

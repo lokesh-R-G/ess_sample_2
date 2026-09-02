@@ -9,6 +9,8 @@ from app.db.mongo import get_database
 from app.domain_models import PFRule, ESIRule, ProfessionalTaxSlab
 from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine, CalculationMode, StatutoryDecisions
 from app.payroll.services.payroll_calculation_service import PayrollCalculationEngine
+from app.payroll.repositories.pf_rule_repository import PFRuleRepository
+from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
 
 def clean_mongo_doc(doc: dict) -> dict:
     if not doc:
@@ -32,16 +34,16 @@ router = APIRouter(prefix="/calculate-preview", tags=["Payroll Engine Preview"])
 class PreviewRequest(BaseModel):
     salaryStructureId: str
     basicSalary: float
-    pfOption: str = "Default" # Legacy, to be removed if needed, keeping for compat
-    esiOption: str = "Default" # Legacy
-    ptState: str = "None"
+    pfOption: Optional[str] = "Default" # Legacy
+    esiOption: Optional[str] = "Default" # Legacy
+    ptState: Optional[str] = "None"
     customComponents: Optional[dict[str, float]] = None
-    isFresher: bool = True
-    isExistingPensionMember: bool = False
-    wantsPf: bool = True
-    wantsPension: bool = True
-    pfCalculationMode: str = "Default" # "Ceiling" or "Actual"
-    esiEnabled: bool = True
+    isFresher: Optional[bool] = True
+    isExistingPensionMember: Optional[bool] = False
+    wantsPf: Optional[bool] = True
+    wantsPension: Optional[bool] = True
+    pfCalculationMode: Optional[str] = "Default" # "Ceiling" or "Actual"
+    esiEnabled: Optional[bool] = True
 
 gross_router = APIRouter(tags=["Payroll Engine Preview"])
 
@@ -78,11 +80,11 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     # but we still need to know if PF is globally enabled.
     
     decisions = StatutoryDecisions(
-        isFresher=True,
-        wantsPf=True,
-        wantsPension=True,
-        esiEnabled=True,
-        ptState="None"
+        isFresher=req.isFresher if req.isFresher is not None else True,
+        wantsPf=req.wantsPf if req.wantsPf is not None else True,
+        wantsPension=req.wantsPension if req.wantsPension is not None else True,
+        esiEnabled=req.esiEnabled if req.esiEnabled is not None else True,
+        ptState=req.ptState if req.ptState is not None else "None"
     )
     
     result = SalaryCalculationEngine.calculate(
@@ -96,8 +98,12 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     )
     
     # Check if PF is globally enabled to zero out PF Gross if disabled
-    pf_doc = await db["pf_rules"].find_one({"status": "Active"})
-    if pf_doc and pf_doc.get("pfEnabled", True) is False:
+    pf_repo = PFRuleRepository(db)
+    
+    target_dt_utc = datetime.utcnow()
+
+    pf_rule = await pf_repo.resolve_policy_by_date(target_dt_utc)
+    if pf_rule and pf_rule.pfEnabled is False:
         result["pfGross"] = 0.0
 
     return serialize_mongo(result)
@@ -135,35 +141,40 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     components_docs = serialize_mongo(components_docs_raw)
     
     # 3. Fetch Rules (Mocked for now, assume default rules if none exist)
-    pf_doc = await db["pf_rules"].find_one({"status": "Active"})
-    pf_rule = PFRule(**clean_mongo_doc(pf_doc)) if pf_doc else PFRule(effectiveFrom=datetime.utcnow())
+    target_dt_utc = datetime.utcnow()
     
-    esi_doc = await db["esi_rules"].find_one({"status": "Active"})
-    esi_rule = ESIRule(**clean_mongo_doc(esi_doc)) if esi_doc else ESIRule(effectiveFrom=datetime.utcnow())
+    from app.payroll.services.payroll_input_builder import PayrollInputBuilder, StatutoryDecisions
     
-    pt_cursor = db["pt_slabs"].find({"state": req.ptState})
-    pt_docs = await pt_cursor.to_list(length=None)
-    pt_slabs = [ProfessionalTaxSlab(**clean_mongo_doc(d)) for d in pt_docs]
-    
-    # 4. Pass to Engine
-    decisions = StatutoryDecisions(
-        isFresher=req.isFresher,
-        isExistingPensionMember=req.isExistingPensionMember,
-        wantsPf=req.wantsPf,
-        wantsPension=req.wantsPension,
-        pfCalculationMode=req.pfCalculationMode,
-        esiEnabled=req.esiEnabled,
-        ptState=req.ptState
+    # Map UI decisions
+    ui_decisions = StatutoryDecisions(
+        isFresher=req.isFresher if req.isFresher is not None else True,
+        isExistingPensionMember=req.isExistingPensionMember if req.isExistingPensionMember is not None else False,
+        wantsPf=req.wantsPf if req.wantsPf is not None else True,
+        wantsPension=req.wantsPension if req.wantsPension is not None else True,
+        pfCalculationMode=req.pfCalculationMode if req.pfCalculationMode is not None else "Default",
+        useCeiling=(req.pfCalculationMode == "Ceiling"),
+        esiEnabled=req.esiEnabled if req.esiEnabled is not None else True,
+        ptState=req.ptState if req.ptState is not None else "None"
     )
     
+    builder = PayrollInputBuilder(db)
+    payroll_input = await builder.build(
+        employee_id="preview", # Or req.employeeId if we have it in preview
+        start_date=target_dt_utc,
+        end_date=target_dt_utc,
+        ui_statutory_decisions=ui_decisions,
+        ui_components=components_docs
+    )
+    
+    # 4. Pass to Engine
     result = SalaryCalculationEngine.calculate(
         basic_salary=req.basicSalary,
-        structure_components=components_docs,
+        structure_components=payroll_input.components,
         calculation_mode=CalculationMode.PREVIEW,
-        statutory_decisions=decisions,
-        pf_rule=pf_rule,
-        esi_rule=esi_rule,
-        pt_slabs=pt_slabs
+        statutory_decisions=payroll_input.statutoryDecisions,
+        pf_rule=payroll_input.pfRule,
+        esi_rule=payroll_input.esiRule,
+        pt_slabs=payroll_input.ptSlabs
     )
     
     return serialize_mongo(result)

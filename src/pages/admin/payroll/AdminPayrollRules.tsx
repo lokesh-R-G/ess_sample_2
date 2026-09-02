@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Shield, Activity, Receipt, SlidersHorizontal } from 'lucide-react';
+import { Settings, SlidersHorizontal, Shield, Activity, Receipt } from 'lucide-react';
 import PayrollSettingsTab from './tabs/PayrollSettingsTab';
 import PFRulesTab from './tabs/PFRulesTab';
 import ESIRulesTab from './tabs/ESIRulesTab';

@@ -31,4 +31,7 @@ class ShiftController:
         success = await self.service.delete(id, user_id)
         if not success:
             raise HTTPException(status_code=404, detail="Shift not found")
-        return {"message": "Shift archived successfully"}
+        return {"message": "Shift deleted successfully"}
+
+    async def get_history(self, code: str) -> List[dict]:
+        return await self.service.get_history(code)

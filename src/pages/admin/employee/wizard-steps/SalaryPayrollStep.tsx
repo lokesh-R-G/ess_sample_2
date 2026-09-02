@@ -60,7 +60,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
       flatComponents.forEach(c => {
         const cid = c._id || c.id;
         if (newCustomComps[cid] === undefined) {
-          newCustomComps[cid] = c.monthlyAmount || c.amount || 0;
+          newCustomComps[cid] = c.monthlyAmount || 0;
           changed = true;
         }
       });
@@ -90,6 +90,13 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
     }
   };
 
+  const handleMultipleChanges = (updates: any) => {
+    onChange({ ...data, ...updates, isSalaryPreviewCalculated: false });
+    setStage(1);
+    setGrossPreview(null);
+    setPreview(null);
+  };
+
   const handleCustomComponentChange = (cid: string, value: number) => {
     const newCustomComps = { ...(data.customComponents || {}), [cid]: value };
     onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false });
@@ -109,14 +116,14 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
       });
       setGrossPreview(res?.data || res || null);
       
-      // Setup Defaults for Stage 2
+      // Setup Defaults for Stage 2 only if missing
       onChange({ 
           ...data, 
-          isFresher: true, 
-          wantsPf: true, 
-          wantsPension: true, 
-          pfCalculationMode: 'Default',
-          isExistingPensionMember: false,
+          isFresher: data.isFresher ?? true, 
+          wantsPf: data.wantsPf ?? true, 
+          wantsPension: data.wantsPension ?? true, 
+          pfCalculationMode: data.pfCalculationMode && data.pfCalculationMode !== 'Default' ? data.pfCalculationMode : 'Actual',
+          isExistingPensionMember: data.isExistingPensionMember ?? false,
           isSalaryPreviewCalculated: false
       });
       setPreview(null);
@@ -140,7 +147,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
         isFresher: data.isFresher ?? true,
         wantsPf: data.wantsPf ?? true,
         wantsPension: data.wantsPension ?? true,
-        pfCalculationMode: data.pfCalculationMode || 'Default',
+        pfCalculationMode: data.pfCalculationMode && data.pfCalculationMode !== 'Default' ? data.pfCalculationMode : 'Actual',
         isExistingPensionMember: data.isExistingPensionMember ?? false,
         esiEnabled: data.esiEnabled ?? true
       });
@@ -217,7 +224,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                             key={cid}
                             label={`${c.name} (₹)`}
                             type="number"
-                            value={data.customComponents?.[cid] ?? (c.monthlyAmount || c.amount || '')}
+                            value={data.customComponents?.[cid] ?? (c.monthlyAmount || '')}
                             onChange={(e) => handleCustomComponentChange(cid, Number(e.target.value))}
                           />
                         );
@@ -309,7 +316,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                   <label className="text-sm font-medium text-neutral-700 block">Is Employee a Fresher?</label>
                                   <div className="flex gap-4">
                                       <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                          <input type="radio" checked={data.isFresher === true} onChange={() => handleChange('isFresher', true)} className="text-brand-600 focus:ring-brand-500" />
+                                          <input type="radio" checked={data.isFresher === true} onChange={() => handleMultipleChanges({ isFresher: true, wantsPf: true, wantsPension: true, pfCalculationMode: 'Actual', isExistingPensionMember: false })} className="text-brand-600 focus:ring-brand-500" />
                                           <span>Yes</span>
                                       </label>
                                       <label className="flex items-center space-x-2 text-sm cursor-pointer">
@@ -338,7 +345,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                                       <span>Yes</span>
                                                   </label>
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                      <input type="radio" checked={data.wantsPf === false} onChange={() => {handleChange('wantsPf', false); handleChange('wantsPension', false)}} className="text-brand-600 focus:ring-brand-500" />
+                                                      <input type="radio" checked={data.wantsPf === false} onChange={() => handleMultipleChanges({ wantsPf: false, wantsPension: false })} className="text-brand-600 focus:ring-brand-500" />
                                                       <span>No</span>
                                                   </label>
                                               </div>
@@ -349,7 +356,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                                   <label className="text-sm font-medium text-neutral-700 block">Do they want Pension?</label>
                                                   <div className="flex gap-4">
                                                       <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                          <input type="radio" checked={data.wantsPension === true} onChange={() => {handleChange('wantsPension', true); handleChange('pfCalculationMode', 'Ceiling')}} className="text-brand-600 focus:ring-brand-500" />
+                                                          <input type="radio" checked={data.wantsPension === true} onChange={() => handleMultipleChanges({ wantsPension: true, pfCalculationMode: 'Ceiling' })} className="text-brand-600 focus:ring-brand-500" />
                                                           <span>Yes</span>
                                                       </label>
                                                       <label className="flex items-center space-x-2 text-sm cursor-pointer">
@@ -395,7 +402,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                                   <span>Yes</span>
                                               </label>
                                               <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                  <input type="radio" checked={data.isExistingPensionMember === false} onChange={() => {handleChange('isExistingPensionMember', false); handleChange('wantsPension', false)}} className="text-brand-600 focus:ring-brand-500" />
+                                                  <input type="radio" checked={data.isExistingPensionMember === false} onChange={() => handleMultipleChanges({ isExistingPensionMember: false, wantsPension: false })} className="text-brand-600 focus:ring-brand-500" />
                                                   <span>No</span>
                                               </label>
                                           </div>
@@ -409,7 +416,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                                   <span>Yes</span>
                                               </label>
                                               <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                  <input type="radio" checked={data.wantsPf === false} onChange={() => {handleChange('wantsPf', false); handleChange('wantsPension', false)}} className="text-brand-600 focus:ring-brand-500" />
+                                                  <input type="radio" checked={data.wantsPf === false} onChange={() => handleMultipleChanges({ wantsPf: false, wantsPension: false })} className="text-brand-600 focus:ring-brand-500" />
                                                   <span>No</span>
                                               </label>
                                           </div>
@@ -420,12 +427,12 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                               <label className="text-sm font-medium text-neutral-700 block">Do they want Pension?</label>
                                               <div className="flex gap-4">
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                      <input type="radio" checked={data.wantsPension === true} onChange={() => {handleChange('wantsPension', true); handleChange('pfCalculationMode', 'Ceiling')}} className="text-brand-600 focus:ring-brand-500" />
+                                                      <input type="radio" checked={data.wantsPension === true} onChange={() => handleMultipleChanges({ wantsPension: true, pfCalculationMode: 'Ceiling' })} className="text-brand-600 focus:ring-brand-500" />
                                                       <span>Yes</span>
                                                   </label>
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
                                                       <input type="radio" checked={data.wantsPension === false} onChange={() => handleChange('wantsPension', false)} className="text-brand-600 focus:ring-brand-500" />
-                                                      <span>No</span>
+                                                  <span>No</span>
                                                   </label>
                                               </div>
                                           </div>

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.db.mongo import get_database
-from app.dependencies import require_roles, get_current_user
+from app.dependencies import require_permission, get_current_user
 from app.services.auth_service import create_provisioned_user
 from app.services.sync_service import sync_essl_logs
 from app.core.security import hash_password
@@ -20,24 +20,32 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/summary/")
-async def summary(_admin=Depends(require_roles("Admin"))):
+async def summary(_admin=Depends(require_permission("organization.read"))):
     db = get_database()
-    total_employees = await db.users.count_documents({})
-    active_employees = await db.users.count_documents({"isActive": {"$ne": False}})
-    recent_employees = await db.users.find({}, {"_id": 0, "empId": 1, "name": 1, "designation": 1, "role": 1, "isActive": 1}).sort("createdAt", -1).limit(5).to_list(length=None)
+    total_employees = await db.employees.count_documents({})
+    active_employees = await db.employees.count_documents({"status": "Active"})
+    recent_employees = await db.employees.find({}, {"_id": 0}).sort("createdAt", -1).limit(5).to_list(length=None)
     branches = await db.branches.find({}, {"_id": 0}).to_list(length=None)
+    
+    # Restrict to last 3 months to avoid fetching everything
+    now_utc = datetime.now(timezone.utc)
+    
+    # Fetch all for trend - this could be optimized, but ok for now
     attendance_rows = await db.attendance.find({}, {"_id": 0}).to_list(length=None)
 
     monthly_counts: dict[str, dict[str, int]] = {}
+    from app.services.attendance_service import infer_attendance_status
     for row in attendance_rows:
         date_value = row.get("date")
         if isinstance(date_value, str) and len(date_value) >= 7:
             month_key = date_value[:7]
             if month_key not in monthly_counts:
                 monthly_counts[month_key] = {"present": 0, "absent": 0}
-            if row.get("status") == "present":
+            
+            st = infer_attendance_status(row).lower()
+            if "present" in st:
                 monthly_counts[month_key]["present"] += 1
-            elif row.get("status") == "absent":
+            elif st == "absent":
                 monthly_counts[month_key]["absent"] += 1
 
     months = list(monthly_counts.keys())
@@ -58,12 +66,13 @@ async def summary(_admin=Depends(require_roles("Admin"))):
 
     normalized_employees = []
     for employee in recent_employees:
+        name = f"{employee.get('firstName', '')} {employee.get('lastName', '')}".strip()
         normalized_employees.append(
             {
-                "id": employee.get("empId"),
-                "name": employee.get("name") or employee.get("empId") or "Unknown",
+                "id": employee.get("employeeCode") or employee.get("employeeId"),
+                "name": name or "Unknown",
                 "designation": employee.get("designation") or "Unknown",
-                "status": "active" if employee.get("isActive", True) else "inactive",
+                "status": "active" if employee.get("status") == "Active" else "inactive",
             }
         )
         
@@ -113,7 +122,7 @@ class InviteEmployeeRequest(BaseModel):
 @router.post("/invite-employee/", status_code=201)
 async def invite_employee(
     payload: InviteEmployeeRequest,
-    admin=Depends(require_roles("Admin")),
+    admin=Depends(require_permission("employee.manage")),
 ):
     """
     Canonical ESS invitation endpoint.
@@ -163,8 +172,15 @@ async def invite_employee(
     if existing_user:
         raise HTTPException(status_code=409, detail="An ESS user with this Employee Code already exists")
 
-    # 4. Email uniqueness check
-    email = payload.email.strip().lower()
+    # 4. Resolve Canonical Email for delivery (Fail early if missing)
+    from app.employee.services.email_resolver import get_employee_personal_email
+    try:
+        delivery_email = await get_employee_personal_email(db, payload.employeeId)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Legacy Email check for users collection
+    email = payload.email.strip().lower() if payload.email else delivery_email
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     existing_email = await db.users.find_one({"email": email})
@@ -210,7 +226,7 @@ async def invite_employee(
             "temporary_password": temp_password,
             "login_url": "http://localhost:5173/login",
         }
-        asyncio.create_task(email_service.send_welcome_email(email, context))
+        asyncio.create_task(email_service.send_welcome_email(delivery_email, context))
         email_sent = True
     except Exception as exc:
         # Log failure but keep the user created
@@ -227,7 +243,7 @@ async def invite_employee(
 
 
 @router.post("/create-user/")
-async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("Admin"))):
+async def create_user(payload: CreateUserRequest, _admin=Depends(require_permission("employee.manage"))):
     db = get_database()
     # Validate with eSSL unless force is used
     if not payload.force and not await validate_employee_with_essl(payload.empId):
@@ -263,7 +279,7 @@ async def create_user(payload: CreateUserRequest, _admin=Depends(require_roles("
     return {"user": {"empId": created.get("empId"), "role": created.get("role"), "firstLogin": created.get("firstLogin")}}
 
 @router.get("/users/")
-async def get_users(_admin=Depends(require_roles("Admin"))):
+async def get_users(_admin=Depends(require_permission("employee.read"))):
     db = get_database()
     users = await db.users.find({}, {"_id": 0}).to_list(length=None)
     # add fallback for status field 
@@ -276,35 +292,19 @@ class StatusUpdatePayload(BaseModel):
     status: str
 
 @router.put("/users/{emp_id}/status/")
-async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=Depends(require_roles("Admin"))):
+async def update_user_status(emp_id: str, payload: StatusUpdatePayload, _admin=Depends(require_permission("employee.manage"))):
     db = get_database()
     is_active = payload.status.lower() == "active"
     await db.users.update_one({"empId": emp_id}, {"$set": {"isActive": is_active, "status": payload.status.lower()}})
     return {"success": True}
 
-@router.get("/holidays/")
-async def get_holidays(_admin=Depends(require_roles("Admin"))):
-    db = get_database()
-    holidays = await db.holidays.find({}, {"_id": 0}).sort("date", 1).to_list(length=None)
-    return holidays
 
-class HolidayPayload(BaseModel):
-    name: str
-    date: str
-    type: str = "National"
-
-@router.post("/holidays/")
-async def add_holiday(payload: HolidayPayload, _admin=Depends(require_roles("Admin"))):
-    db = get_database()
-    document = payload.model_dump()
-    await db.holidays.insert_one(document)
-    return {"success": True}
 
 class EsslConfigPayload(BaseModel):
     serialNumber: str
 
 @router.put("/essl-config/{branch}/")
-async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Depends(require_roles("Admin"))):
+async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Depends(require_permission("organization.manage"))):
     db = get_database()
     await db.essl_configs.update_one(
         {"branch": branch},
@@ -316,7 +316,7 @@ async def update_essl_config(branch: str, payload: EsslConfigPayload, _admin=Dep
 from datetime import datetime, timezone
 
 @router.get("/attendance-summary/")
-async def get_attendance_summary(_admin=Depends(require_roles("Admin"))):
+async def get_attendance_summary(_admin=Depends(require_permission("attendance.read"))):
     db = get_database()
     today_str = datetime.now(timezone.utc).date().isoformat()
     
@@ -328,12 +328,13 @@ async def get_attendance_summary(_admin=Depends(require_roles("Admin"))):
     od_count = 0
     
     for r in records:
-        status = r.get("status", "").lower()
-        if status == "present":
+        from app.services.attendance_service import infer_attendance_status
+        status = infer_attendance_status(r).lower()
+        if "present" in status:
             present_count += 1
         elif status == "absent":
             absent_count += 1
-        elif status in ["od", "leave"]:
+        elif status in ["od", "leave", "on duty", "holiday", "weekoff", "week off"]:
             od_count += 1
             
     return {

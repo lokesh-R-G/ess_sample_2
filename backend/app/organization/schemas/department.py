@@ -4,16 +4,20 @@ from typing import Optional
 
 class DepartmentCreate(BaseModel):
     companyId: str
+    code: str
     name: str
 
 class DepartmentUpdate(BaseModel):
     companyId: Optional[str] = None
+    code: Optional[str] = None
     name: Optional[str] = None
 
 class DepartmentResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     id: str = Field(serialization_alias="_id")
     companyId: str
+    companyName: Optional[str] = None
+    code: str
     name: str
     status: Optional[str] = None
     createdAt: Optional[datetime] = None

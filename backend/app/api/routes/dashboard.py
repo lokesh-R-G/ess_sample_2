@@ -16,99 +16,131 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 @router.get("/me/")
 async def me(current_user=Depends(get_current_user)):
     db = get_database()
-    # exclude internal MongoDB _id to keep payload JSON serializable
-    attendance_rows = await db.attendance.find({"empId": current_user["empId"]}, {"_id": 0}).sort("date", 1).to_list(length=None)
-
-    present = sum(1 for row in attendance_rows if infer_attendance_status(row) == "present")
-    absent = sum(1 for row in attendance_rows if infer_attendance_status(row) == "absent")
-    leave = sum(1 for row in attendance_rows if infer_attendance_status(row) == "leave")
-    weekoff = sum(1 for row in attendance_rows if infer_attendance_status(row) == "weekoff")
-    od = sum(1 for row in attendance_rows if infer_attendance_status(row) == "od")
+    
+    # Identify employee ID (V2 UUID)
+    emp_uuid = current_user.get("employeeId")
+    emp_code = current_user.get("empId")
+    
+    if not emp_uuid and emp_code:
+        emp_doc = await db.employees.find_one({"employeeCode": emp_code})
+        if emp_doc:
+            emp_uuid = emp_doc.get("employeeId")
+            
+    if not emp_uuid:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Could not resolve employee UUID")
+        
+    now = get_current_ist()
+    first_day_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # 1. Fetch Authoritative Attendance Records using V2 engine for the current month
+    attendance_records = await get_attendance_for_employee(db, emp_uuid, first_day_of_month, now)
+    
+    # Transform status
+    processed_records = []
+    for r in attendance_records:
+        r["status"] = infer_attendance_status(r)
+        processed_records.append(r)
+        
+    # Aggregate statistics
+    present = 0
+    absent = 0
+    leave = 0
+    weekoff = 0
+    od = 0
+    holiday = 0
+    half_day = 0
+    
+    for r in processed_records:
+        st = r.get("status", "").lower()
+        if "present" in st:
+            present += 1
+        elif st == "absent":
+            absent += 1
+        elif st == "leave":
+            leave += 1
+        elif "week off" in st or st == "weekoff":
+            weekoff += 1
+        elif st == "od" or st == "on duty":
+            od += 1
+        elif st == "holiday":
+            holiday += 1
+        elif "half day" in st:
+            half_day += 1
 
     trend_by_month: dict[str, int] = Counter()
-    for row in attendance_rows:
+    for row in processed_records:
         date_value = row.get("date")
         if isinstance(date_value, str) and len(date_value) >= 7:
-            trend_by_month[date_value[:7]] += 1
-
+            if "present" in row.get("status", "").lower():
+                trend_by_month[date_value[:7]] += 1
+                
     months = list(trend_by_month.keys())
     present_series = list(trend_by_month.values())
 
+    # 2. Fetch Authoritative Leave Ledger balances
+    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+    ledger_svc = LeaveLedgerService(db)
+    
+    policy_query = {
+        "deletedAt": None,
+        "effectiveFrom": {"$lte": now},
+        "$or": [{"effectiveTo": None}, {"effectiveTo": {"$gt": now}}]
+    }
+    docs = await db.leave_policies.find(policy_query).sort([("version", -1)]).to_list(length=1)
+    if not docs:
+        docs = await db.leave_policies.find({"deletedAt": None, "isCurrent": True}).sort([("version", -1)]).to_list(length=1)
+        
+    leave_types = []
+    if docs:
+        policy = docs[0]
+        leave_types = [t.get("code") for t in policy.get("leaveTypes", []) if t.get("enabled", True)]
+        
+    balances = {}
+    for lt in leave_types:
+        ledger = await ledger_svc.get_or_create_ledger(emp_uuid, emp_code, now.year, lt)
+        balances[lt] = {
+            "total": ledger.get("openingBalance", 0.0),
+            "used": ledger.get("consumed", 0.0),
+            "balance": ledger.get("availableBalance", 0.0)
+        }
+        
+    total_leave_balance = sum(b["balance"] for b in balances.values())
+
+    # 3. Fetch Approvals Count (Pending)
+    pending_approvals = await db.approvals.count_documents({
+        "employeeId": emp_uuid,
+        "status": "PENDING"
+    })
+    
+    # We still need to serialize the records to stringify _id fields
+    from app.core.serialize import serialize_mongo_doc
+    processed_records = serialize_mongo_doc(processed_records)
+
     return {
         "employee": {
-            "empId": current_user.get("empId"),
-            "name": current_user.get("name") or current_user.get("empId"),
+            "empId": emp_uuid,
+            "name": current_user.get("name") or emp_code,
             "designation": current_user.get("designation"),
             "branch": current_user.get("branch"),
         },
         "stats": {
             "presentDays": present,
             "absentDays": absent,
-            "leaveBalance": 0,
+            "leaveBalance": total_leave_balance,
             "currentSalary": 0,
-            "workingHours": round(sum((row.get("workedMinutes") or 0) for row in attendance_rows) / 60, 2),
+            "workingHours": round(sum((row.get("workHours") or 0) for row in processed_records), 2),
+            "pendingApprovals": pending_approvals
         },
-        "attendance": [ {**row, "status": infer_attendance_status(row)} for row in attendance_rows ],
-        "distribution": [present, leave, absent, weekoff, od],
+        "attendance": processed_records,
+        "distribution": [present, leave, absent, weekoff, od, holiday, half_day],
         "attendanceTrendData": {
             "months": months,
             "present": present_series,
         },
         "notifications": [],
         "holidays": [],
-        "leaveBalance": {},
+        "leaveBalance": balances,
         "upcomingHolidays": [],
-        "alerts": _generate_alerts(attendance_rows, current_user, await get_attendance_policy(db))
+        "alerts": []
     }
-
-def _generate_alerts(attendance_rows: list[dict], user: dict, policy) -> list[dict]:
-    alerts = []
-    
-    # 1. Late & Permission logic based on current month
-    now = get_current_ist()
-    month_str = now.strftime("%Y-%m")
-    today_str = now.strftime("%Y-%m-%d")
-    
-    # Filter records to current month up to today
-    monthly_records = [r for r in attendance_rows if r.get("date", "").startswith(month_str)]
-    today_record = next((r for r in monthly_records if r.get("date") == today_str), None)
-    
-    late_count = sum(1 for r in monthly_records if r.get("lateMinutes", 0) > 0)
-    perm_used = sum(r.get("permissionHoursUsed", 0.0) for r in monthly_records)
-    total_lop = sum(r.get("lopHours", 0.0) for r in monthly_records)
-    
-    if late_count >= policy.lateFullDayThreshold:
-        alerts.append({"type": "error", "message": f"{late_count} Lates reached. 1 Day salary deduction applied."})
-    elif late_count >= policy.lateHalfDayThreshold:
-        alerts.append({"type": "error", "message": f"{late_count} Lates reached. Half Day will be deducted."})
-        
-    if total_lop > 0:
-        alerts.append({"type": "warning", "message": f"You currently have {total_lop} accumulated LOP hours."})
-        
-    if perm_used >= policy.monthlyPermissionHours:
-        alerts.append({"type": "error", "message": "Your monthly permission balance has been exhausted."})
-    else:
-        remaining_mins = int((policy.monthlyPermissionHours - perm_used) * 60)
-        alerts.append({"type": "warning", "message": f"Remaining Permission Balance: {remaining_mins} Minutes"})
-        
-    # Today's context
-    if not today_record or (not today_record.get("inTime")):
-        # Not punched in yet
-        shift_start = policy.shiftStartTime
-        diff = compare_time_with_policy(now, shift_start)
-        if diff < 0:
-            alerts.append({"type": "success", "message": f"Good Morning, Check in before {shift_start}."})
-        elif diff <= policy.lateEndMinute:
-            alerts.append({"type": "warning", "message": "You have entered the Late Window."})
-        elif diff <= policy.latePermissionEndMinute:
-            alerts.append({"type": "error", "message": "Late Permission Required."})
-            
-    if today_record:
-        if today_record.get("status") == "holiday":
-            alerts.append({"type": "warning", "message": "Today is a Holiday."})
-        elif today_record.get("status") == "weekoff":
-            alerts.append({"type": "warning", "message": "Today is Weekly Off."})
-        elif today_record.get("inTime") and not today_record.get("outTime") and now.hour > 19:
-            alerts.append({"type": "warning", "message": "Miss Punch detected."})
-            
-    return alerts

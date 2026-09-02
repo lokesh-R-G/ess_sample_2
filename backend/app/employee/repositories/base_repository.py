@@ -26,9 +26,11 @@ class BaseRepository(Generic[T]):
         data["createdBy"] = created_by
         data["updatedBy"] = created_by
         data["status"] = data.get("status", "Active")
-        data["version"] = 1
-        data["isCurrent"] = True
-        data["effectiveFrom"] = now
+        data["version"] = data.get("version", 1)
+        data["isCurrent"] = data.get("isCurrent", True)
+        data["effectiveFrom"] = data.get("effectiveFrom") or now
+        if data["effectiveFrom"].tzinfo is None:
+            data["effectiveFrom"] = data["effectiveFrom"].replace(tzinfo=timezone.utc)
         data["effectiveTo"] = None
         
         result = await self.collection.insert_one(data)
@@ -50,10 +52,24 @@ class BaseRepository(Generic[T]):
                 )
                 
                 if current_doc:
+                    new_effective_from = data.get("effectiveFrom")
+                    
+                    current_eff = current_doc.get("effectiveFrom")
+                    if current_eff and current_eff.tzinfo is None:
+                        current_eff = current_eff.replace(tzinfo=timezone.utc)
+                        
+                    if new_effective_from:
+                        if new_effective_from.tzinfo is None:
+                            new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
+                        if current_eff and new_effective_from <= current_eff:
+                            new_effective_from = now
+                    else:
+                        new_effective_from = now
+                        
                     # Mark current as false
                     await self.collection.update_one(
                         {"_id": current_doc["_id"]}, 
-                        {"$set": {"isCurrent": False, "effectiveTo": now}},
+                        {"$set": {"isCurrent": False, "effectiveTo": new_effective_from}},
                         session=session
                     )
                     
@@ -62,7 +78,7 @@ class BaseRepository(Generic[T]):
                     new_doc.pop("_id", None)
                     new_doc["version"] = current_doc.get("version", 1) + 1
                     new_doc["isCurrent"] = True
-                    new_doc["effectiveFrom"] = now
+                    new_doc["effectiveFrom"] = new_effective_from
                     new_doc["effectiveTo"] = None
                     
                     result = await self.collection.insert_one(new_doc, session=session)
@@ -74,7 +90,9 @@ class BaseRepository(Generic[T]):
                     data["createdBy"] = user_id
                     data["version"] = 1
                     data["isCurrent"] = True
-                    data["effectiveFrom"] = now
+                    data["effectiveFrom"] = data.get("effectiveFrom") or now
+                    if data["effectiveFrom"].tzinfo is None:
+                        data["effectiveFrom"] = data["effectiveFrom"].replace(tzinfo=timezone.utc)
                     data["effectiveTo"] = None
                     
                     result = await self.collection.insert_one(data, session=session)
@@ -87,6 +105,29 @@ class BaseRepository(Generic[T]):
         except:
             return None
         doc = await self.collection.find_one({"_id": obj_id, "deletedAt": None})
+        if doc:
+            return self.model_class(**self._prepare_doc(doc))
+        return None
+
+    async def get_by_code_and_date(self, code_field: str, code_value: str, target_date: datetime) -> Optional[T]:
+        """
+        Resolves the configuration using businessCode + attendanceDate.
+        Effective rule: effectiveFrom <= attendanceDate < effectiveTo
+        If effectiveTo is null: effectiveFrom <= attendanceDate
+        """
+        query = {
+            code_field: code_value,
+            "deletedAt": None,
+            "effectiveFrom": {"$lte": target_date},
+            "$or": [
+                {"effectiveTo": None},
+                {"effectiveTo": {"$gt": target_date}}
+            ]
+        }
+        
+        # We sort by version descending just in case there's an overlap bug, 
+        # picking the highest version that matches the date.
+        doc = await self.collection.find_one(query, sort=[("version", -1)])
         if doc:
             return self.model_class(**self._prepare_doc(doc))
         return None
@@ -145,9 +186,23 @@ class BaseRepository(Generic[T]):
                 if not current_doc:
                     return None
                     
+                new_effective_from = data.get("effectiveFrom")
+                
+                current_eff = current_doc.get("effectiveFrom")
+                if current_eff and current_eff.tzinfo is None:
+                    current_eff = current_eff.replace(tzinfo=timezone.utc)
+                    
+                if new_effective_from:
+                    if new_effective_from.tzinfo is None:
+                        new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
+                    if current_eff and new_effective_from <= current_eff:
+                        new_effective_from = now
+                else:
+                    new_effective_from = now
+                
                 await self.collection.update_one(
                     {"_id": obj_id}, 
-                    {"$set": {"isCurrent": False, "effectiveTo": now}},
+                    {"$set": {"isCurrent": False, "effectiveTo": new_effective_from}},
                     session=session
                 )
                 
@@ -155,7 +210,7 @@ class BaseRepository(Generic[T]):
                 new_doc.pop("_id", None)
                 new_doc["version"] = current_doc.get("version", 1) + 1
                 new_doc["isCurrent"] = True
-                new_doc["effectiveFrom"] = now
+                new_doc["effectiveFrom"] = new_effective_from
                 new_doc["effectiveTo"] = None
                 
                 result = await self.collection.insert_one(new_doc, session=session)

@@ -1,0 +1,10 @@
+import urllib.request
+import json
+try:
+    req = urllib.request.Request("http://localhost:8000/api/v2/employee/employeePersonals/", data=b"""{"employeeId":"dummy-123","firstName":"Lokesh","lastName":""}""", headers={"Content-Type": "application/json", "Authorization": "Bearer test"})
+    resp = urllib.request.urlopen(req)
+    print(resp.status)
+except Exception as e:
+    print("Failed:", e)
+    if hasattr(e, "code"): print(e.code)
+    if hasattr(e, "read"): print(e.read().decode())

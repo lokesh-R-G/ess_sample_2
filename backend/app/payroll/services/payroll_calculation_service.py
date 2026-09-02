@@ -28,14 +28,14 @@ class PayrollCalculationEngine:
         """
         # Gross contribution is from earning components that are included in gross
         total_gross = sum(
-            c.get("amount", 0.0)
+            c.get("monthlyAmount", 0.0)
             for c in structure_components
             if c.get("includeInGross", True)
         )
 
         # Fixed components are those that are attendanceDependent = False
         fixed_gross = sum(
-            c.get("amount", 0.0)
+            c.get("monthlyAmount", 0.0)
             for c in structure_components
             if c.get("includeInGross", True) and not c.get("attendanceDependent", True)
         )
@@ -47,7 +47,7 @@ class PayrollCalculationEngine:
             new_c = c.copy()
             if new_c.get("includeInGross", True) and new_c.get("attendanceDependent", True):
                 if distributable_gross > 0:
-                    new_c["distributionRatio"] = new_c.get("amount", 0.0) / distributable_gross
+                    new_c["distributionRatio"] = new_c.get("monthlyAmount", 0.0) / distributable_gross
                 else:
                     new_c["distributionRatio"] = 0.0
             else:
@@ -75,7 +75,7 @@ class PayrollCalculationEngine:
                 
             # Handle fixed components
             if not c.get("attendanceDependent", True):
-                original_amount = c.get("amount", 0.0)
+                original_amount = c.get("monthlyAmount", 0.0)
                 new_c = c.copy()
                 new_c["proratedAmount"] = original_amount
                 remaining_gross -= original_amount
@@ -103,7 +103,7 @@ class PayrollCalculationEngine:
     def calculateGross(components: List[Dict[str, Any]]) -> float:
         """Calculate total gross based on 'includeInGross' flag of components."""
         return sum(
-            c.get("proratedAmount", c.get("amount", 0.0))
+            c.get("proratedAmount", c.get("monthlyAmount", 0.0))
             for c in components
             if c.get("includeInGross", True) and c.get("componentType") == "Earning"
         )
@@ -115,7 +115,7 @@ class PayrollCalculationEngine:
             return 0.0
             
         return sum(
-            c.get("proratedAmount", c.get("amount", 0.0))
+            c.get("proratedAmount", c.get("monthlyAmount", 0.0))
             for c in components
             if c.get("pfApplicable", False) and c.get("componentType") == "Earning"
         )
@@ -124,7 +124,7 @@ class PayrollCalculationEngine:
     def calculateEsiGross(components: List[Dict[str, Any]]) -> float:
         """Calculate ESI Gross based on components flagged with 'esiApplicable'."""
         return sum(
-            c.get("proratedAmount", c.get("amount", 0.0))
+            c.get("proratedAmount", c.get("monthlyAmount", 0.0))
             for c in components
             if c.get("esiApplicable", False) and c.get("componentType") == "Earning"
         )

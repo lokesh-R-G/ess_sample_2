@@ -176,13 +176,7 @@ export const Attendance: React.FC = () => {
                     
                     const inTimeStr = attendance.inTime || attendance.firstIn;
                     const outTimeStr = attendance.outTime || attendance.lastOut;
-                    const inDate = inTimeStr ? new Date(inTimeStr) : null;
-                    const outDate = outTimeStr ? new Date(outTimeStr) : null;
-                    
-                    let computedHours = attendance.workHours;
-                    if (computedHours === undefined && inDate && outDate) {
-                      computedHours = (outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60);
-                    }
+                    const computedHours = attendance.workHours;
 
                     return (
                       <motion.div key={selectedDate.toISOString()} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
@@ -258,19 +252,56 @@ export const Attendance: React.FC = () => {
                               </div>
                             ) : null}
                             
-                            {attendance.permissionHoursUsed ? (
-                              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-200">
-                                <span className="text-sm text-amber-700">Permission Used</span>
-                                <span className="text-sm font-semibold text-amber-800">{attendance.permissionHoursUsed.toFixed(2)} hrs</span>
+                            {attendance.earlyOutMinutes ? (
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-200">
+                                <span className="text-sm text-orange-700">Early Out Duration</span>
+                                <span className="text-sm font-semibold text-orange-800">{attendance.earlyOutMinutes} mins</span>
                               </div>
                             ) : null}
                             
                             {attendance.lopHours ? (
-                              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 border border-purple-200">
-                                <span className="text-sm text-purple-700">LOP Triggered</span>
-                                <span className="text-sm font-semibold text-purple-800">{attendance.lopHours.toFixed(2)} hrs</span>
+                              <div className="flex flex-col gap-1 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-purple-700">LOP Triggered</span>
+                                  <span className="text-sm font-semibold text-purple-800">{attendance.lopHours.toFixed(2)} hrs</span>
+                                </div>
+                                {attendance.lopReason && (
+                                  <span className="text-xs text-purple-600">Reason: {attendance.lopReason}</span>
+                                )}
                               </div>
                             ) : null}
+                            
+                            {(attendance.scheduleType || attendance.scheduleSource) && (
+                              <div className="mt-4 pt-4 border-t border-neutral-200 space-y-2">
+                                <h4 className="text-xs font-semibold text-neutral-500 uppercase">Schedule Snapshot</h4>
+                                <div className="flex justify-between text-xs text-neutral-600">
+                                  <span>Type</span>
+                                  <span className="font-medium text-neutral-900">{attendance.scheduleType}</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-neutral-600">
+                                  <span>Source</span>
+                                  <span className="font-medium text-neutral-900">{attendance.scheduleSource}</span>
+                                </div>
+                                {attendance.actualStartTime && attendance.actualEndTime && (
+                                  <div className="flex justify-between text-xs text-neutral-600">
+                                    <span>Effective Timings</span>
+                                    <span className="font-medium text-neutral-900">
+                                      {formatTimeIST(attendance.actualStartTime)} - {formatTimeIST(attendance.actualEndTime)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {(attendance.engineVersion || attendance.processedAt) && (
+                              <div className="mt-4 pt-4 border-t border-neutral-200 space-y-1">
+                                <h4 className="text-[10px] font-semibold text-neutral-400 uppercase">Audit Snapshot</h4>
+                                <div className="text-[10px] text-neutral-400 flex flex-col">
+                                  <span>Engine: {attendance.engineVersion || 'N/A'}</span>
+                                  <span>Processed: {attendance.processedAt ? new Date(attendance.processedAt).toLocaleString() : 'N/A'}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </motion.div>

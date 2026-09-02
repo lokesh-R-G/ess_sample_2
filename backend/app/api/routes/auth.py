@@ -22,7 +22,11 @@ settings = get_settings()
 async def login(payload: LoginRequest):
     db = get_database()
     user = await authenticate_or_provision_user(db, payload.empId, payload.password)
-    user_view = serialize_user(user)
+    user_view = await serialize_user(user)
+    employee = await db.employees.find_one({"$or": [{"employeeCode": payload.empId}, {"empId": payload.empId}]})
+    if employee:
+        user_view["employeeId"] = employee.get("employeeId")
+        user_view["employeeCode"] = employee.get("employeeCode", payload.empId)
     # If this is the user's first login, kick off a background sync for the last 90 days
     if user_view.get("firstLogin"):
         # mark processing; schedule background sync for last 90 days
@@ -36,6 +40,9 @@ async def login(payload: LoginRequest):
             "employeeId": user_view.get("employeeId"),
             "employeeCode": user_view.get("employeeCode", user_view["empId"]),
             "role": user_view["role"],
+            "roleId": user_view.get("roleId"),
+            "companyId": user_view.get("companyId"),
+            "branchId": user_view.get("branchId"),
             "firstLogin": user_view["firstLogin"],
         },
         expires_delta=timedelta(minutes=settings.jwt_expire_minutes),
@@ -63,4 +70,17 @@ async def me(current_user=Depends(get_current_user)):
     user_data = dict(current_user)
     if "_id" in user_data:
         del user_data["_id"]
+        
+    role_id = user_data.get("roleId")
+    if role_id:
+        from app.rbac.engine import _load_role_permissions
+        role_perms = await _load_role_permissions(role_id)
+        # Format as a dictionary: { "permission.id": ["SCOPE_A", "SCOPE_B"] }
+        user_data["permissions"] = {
+            p["permissionId"]: p.get("scopes", [])
+            for p in role_perms
+        }
+    else:
+        user_data["permissions"] = {}
+        
     return UserResponse(**user_data)

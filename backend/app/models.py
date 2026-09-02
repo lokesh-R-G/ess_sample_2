@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
-RoleType = Literal["Employee", "Admin"]
+RoleType = str  # Legacy role now a plain string
 
 
 class LoginRequest(BaseModel):
@@ -26,6 +26,9 @@ class TokenResponse(BaseModel):
     employeeId: str | None = None
     employeeCode: str | None = None
     role: RoleType
+    roleId: str | None = None
+    companyId: str | None = None
+    branchId: str | None = None
     firstLogin: bool
     mustChangePassword: bool = False
 
@@ -35,12 +38,15 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
     empId: str
     role: RoleType
+    roleId: str | None = None
+    authorizationVersion: int | None = None
     firstLogin: bool
     companyId: str | None = None
     branchId: str | None = None
     departmentId: str | None = None
     designationId: str | None = None
     managerId: str | None = None
+    permissions: dict[str, list[str]] | None = None
 
 
 class Company(BaseModel):
@@ -131,8 +137,10 @@ class SyncRequest(BaseModel):
 class SyncResponse(BaseModel):
     rawInserted: int
     rawUpdated: int
+    rawMatched: int = 0
     attendanceUpserted: int
     dateRange: dict[str, str | None]
+    machines: list[dict] | None = None
 
 
 class AttendancePolicy(BaseModel):
@@ -151,3 +159,14 @@ class AttendancePolicy(BaseModel):
     lateIncrementThreshold: int = 4
     lopHalfDayHours: float = 4.0
     lopFullDayHours: float = 8.0
+
+class SchedulerJobConfig(BaseModel):
+    id: str | None = Field(default=None, alias="_id")
+    jobKey: str  # ESSL_SHORT_SYNC, ESSL_RECOVERY_SYNC, ATTENDANCE_CALCULATION
+    enabled: bool = True
+    frequencyMinutes: int
+    lookbackDays: int
+    timezone: str = "Asia/Kolkata"
+    createdAt: datetime | None = None
+    updatedAt: datetime | None = None
+    updatedBy: str | None = None

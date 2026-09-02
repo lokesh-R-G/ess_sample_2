@@ -1,0 +1,136 @@
+[
+  {
+    "_id": {
+      "$oid": "6a7d598e222b3934049ec7ce"
+    },
+    "policyCode": "Leave_test_001",
+    "name": "Test",
+    "description": null,
+    "effectiveFrom": {
+      "$date": "2026-08-13T05:43:42.853Z"
+    },
+    "leaveTypes": [
+      {
+        "code": "tes_CL",
+        "name": "cl",
+        "enabled": true,
+        "annualEntitlement": 12.0,
+        "carryForwardEnabled": false,
+        "carryForwardLimit": 0.0,
+        "carryForwardType": "FLAT",
+        "expiryEnabled": true,
+        "expiryRule": "YEAR_END",
+        "joiningYearProrationEnabled": false,
+        "prorationRule": "MONTHLY_REDUCTION",
+        "anniversaryEligibilityEnabled": true,
+        "zeroBalanceApprovalAllowed": true,
+        "lopEnabled": true
+      },
+      {
+        "code": "test_el",
+        "name": "el",
+        "enabled": true,
+        "annualEntitlement": 12.0,
+        "carryForwardEnabled": true,
+        "carryForwardLimit": 0.0,
+        "carryForwardType": "FLAT",
+        "expiryEnabled": true,
+        "expiryRule": "YEAR_END",
+        "joiningYearProrationEnabled": true,
+        "prorationRule": "MONTHLY_REDUCTION",
+        "anniversaryEligibilityEnabled": true,
+        "zeroBalanceApprovalAllowed": false,
+        "lopEnabled": true
+      }
+    ],
+    "createdAt": {
+      "$date": "2026-08-13T05:43:42.853Z"
+    },
+    "updatedAt": {
+      "$date": "2026-08-13T05:43:42.853Z"
+    },
+    "createdBy": null,
+    "updatedBy": null,
+    "status": "Active",
+    "version": 1,
+    "isCurrent": false,
+    "effectiveTo": {
+      "$date": "2026-08-13T00:00:00Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "6a7d70647709bca08bc1f027"
+    },
+    "policyCode": "Leave_test_001",
+    "name": "Test",
+    "description": null,
+    "effectiveFrom": {
+      "$date": "2026-08-13T00:00:00Z"
+    },
+    "leaveTypes": [
+      {
+        "code": "tes_CL",
+        "name": "cl",
+        "enabled": true,
+        "annualEntitlement": 12.0,
+        "carryForwardEnabled": false,
+        "carryForwardLimit": 0.0,
+        "carryForwardType": "FLAT",
+        "expiryEnabled": true,
+        "expiryRule": "YEAR_END",
+        "joiningYearProrationEnabled": false,
+        "prorationRule": "MONTHLY_REDUCTION",
+        "anniversaryEligibilityEnabled": true,
+        "zeroBalanceApprovalAllowed": true,
+        "lopEnabled": true
+      },
+      {
+        "code": "test_el",
+        "name": "el",
+        "enabled": true,
+        "annualEntitlement": 12.0,
+        "carryForwardEnabled": true,
+        "carryForwardLimit": 0.0,
+        "carryForwardType": "FLAT",
+        "expiryEnabled": true,
+        "expiryRule": "YEAR_END",
+        "joiningYearProrationEnabled": true,
+        "prorationRule": "MONTHLY_REDUCTION",
+        "anniversaryEligibilityEnabled": true,
+        "zeroBalanceApprovalAllowed": false,
+        "lopEnabled": true
+      }
+    ],
+    "createdAt": {
+      "$date": "2026-08-13T05:43:42.853Z"
+    },
+    "updatedAt": {
+      "$date": "2026-08-13T07:21:08.122Z"
+    },
+    "createdBy": null,
+    "updatedBy": null,
+    "status": "Active",
+    "version": 2,
+    "isCurrent": true,
+    "effectiveTo": null
+  },
+  {
+    "_id": {
+      "$oid": "6a7d98d860c8e29d3632f202"
+    },
+    "policyCode": "TEST-DASH-POLICY",
+    "version": 1,
+    "isCurrent": true,
+    "deletedAt": null,
+    "effectiveFrom": {
+      "$date": "2020-01-01T00:00:00Z"
+    },
+    "leaveTypes": [
+      {
+        "code": "SL",
+        "enabled": true
+      }
+    ]
+  }
+]

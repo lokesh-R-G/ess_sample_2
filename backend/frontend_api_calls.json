@@ -1,0 +1,357 @@
+[
+  {
+    "file": "components\\admin\\InviteESSDialog.tsx",
+    "method": "POST",
+    "endpoint": "/v1/admin/invite-employee/"
+  },
+  {
+    "file": "components\\ui\\SalaryComponentMultiSelect.tsx",
+    "method": "GET",
+    "endpoint": "/v2/organization/salary-components/?limit=500"
+  },
+  {
+    "file": "pages\\admin\\AdminAttendance.tsx",
+    "method": "GET",
+    "endpoint": "/v2/scheduler/config"
+  },
+  {
+    "file": "pages\\admin\\AdminAttendance.tsx",
+    "method": "POST",
+    "endpoint": "/v1/sync/essl/"
+  },
+  {
+    "file": "pages\\admin\\AdminAttendance.tsx",
+    "method": "POST",
+    "endpoint": "/v2/attendance/recalculate"
+  },
+  {
+    "file": "pages\\admin\\AdminEmployees.tsx",
+    "method": "GET",
+    "endpoint": "/v2/employee/employees/directory/"
+  },
+  {
+    "file": "pages\\admin\\AdminSettings.tsx",
+    "method": "POST",
+    "endpoint": "/v1/sync/essl/"
+  },
+  {
+    "file": "pages\\admin\\AdminSync.tsx",
+    "method": "POST",
+    "endpoint": "/v1/sync/essl/"
+  },
+  {
+    "file": "services\\adminService.ts",
+    "method": "GET",
+    "endpoint": "/v1/admin/summary/"
+  },
+  {
+    "file": "services\\adminService.ts",
+    "method": "POST",
+    "endpoint": "/v1/admin/invite-employee/"
+  },
+  {
+    "file": "services\\adminService.ts",
+    "method": "GET",
+    "endpoint": "/v1/admin/attendance-summary/"
+  },
+  {
+    "file": "services\\adminService.ts",
+    "method": "POST",
+    "endpoint": "/v1/admin/create-user/"
+  },
+  {
+    "file": "services\\approvalService.ts",
+    "method": "GET",
+    "endpoint": "/v2/attendance/permission-ledger/me"
+  },
+  {
+    "file": "services\\approvalService.ts",
+    "method": "POST",
+    "endpoint": "/v2/approval/"
+  },
+  {
+    "file": "services\\attendanceService.ts",
+    "method": "POST",
+    "endpoint": "/v2/attendance/recalculate"
+  },
+  {
+    "file": "services\\authService.ts",
+    "method": "POST",
+    "endpoint": "/v1/auth/login/"
+  },
+  {
+    "file": "services\\authService.ts",
+    "method": "POST",
+    "endpoint": "/v1/auth/change-password/"
+  },
+  {
+    "file": "services\\authService.ts",
+    "method": "GET",
+    "endpoint": "/v1/auth/me/"
+  },
+  {
+    "file": "services\\authService.ts",
+    "method": "GET",
+    "endpoint": "/v1/profile/me/"
+  },
+  {
+    "file": "services\\authService.ts",
+    "method": "PUT",
+    "endpoint": "/v1/profile/me/"
+  },
+  {
+    "file": "services\\branchService.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/branches/"
+  },
+  {
+    "file": "services\\branchService.ts",
+    "method": "POST",
+    "endpoint": "/v2/organization/branches/"
+  },
+  {
+    "file": "services\\dashboardService.ts",
+    "method": "GET",
+    "endpoint": "/v1/dashboard/me/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "GET",
+    "endpoint": "/v2/employee/employees/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employees/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employeePersonals/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employeeContacts/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employeeAddresss/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employmentHistorys/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employeeBanks/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employeeGovernmentIds/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/employee/employeePayrollConfigs/"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/calculate-gross"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/calculate-preview"
+  },
+  {
+    "file": "services\\employeeApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/assign"
+  },
+  {
+    "file": "services\\holidayCalendarService.ts",
+    "method": "GET",
+    "endpoint": "/v2/holiday/holiday-calendar/"
+  },
+  {
+    "file": "services\\holidayCalendarService.ts",
+    "method": "POST",
+    "endpoint": "/v2/holiday/holiday-calendar/"
+  },
+  {
+    "file": "services\\leavePolicyService.ts",
+    "method": "GET",
+    "endpoint": "/v2/leave-policies"
+  },
+  {
+    "file": "services\\leavePolicyService.ts",
+    "method": "GET",
+    "endpoint": "/v2/leave-policies/active"
+  },
+  {
+    "file": "services\\leavePolicyService.ts",
+    "method": "POST",
+    "endpoint": "/v2/leave-policies"
+  },
+  {
+    "file": "services\\leaveService.ts",
+    "method": "GET",
+    "endpoint": "/v2/approval/inbox/employee/me"
+  },
+  {
+    "file": "services\\leaveService.ts",
+    "method": "POST",
+    "endpoint": "/v2/approval/"
+  },
+  {
+    "file": "services\\missPunch.api.ts",
+    "method": "POST",
+    "endpoint": "/v1/miss-punch/"
+  },
+  {
+    "file": "services\\missPunch.api.ts",
+    "method": "GET",
+    "endpoint": "/v1/miss-punch/me/"
+  },
+  {
+    "file": "services\\missPunch.api.ts",
+    "method": "GET",
+    "endpoint": "/v1/workflows/pending/"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/companies/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/branches/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/departments/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/designations/?"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/shifts/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/holidays/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/salary-structures/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/salary-components/?limit=500"
+  },
+  {
+    "file": "services\\organization.api.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/essl-machines/?limit=500"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "GET",
+    "endpoint": "/v2/payroll/payroll-settings/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/payroll-settings/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "GET",
+    "endpoint": "/v2/payroll/pf-rules/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/pf-rules/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "GET",
+    "endpoint": "/v2/payroll/esi-rules/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/esi-rules/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "GET",
+    "endpoint": "/v2/payroll/pt-rules/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "POST",
+    "endpoint": "/v2/payroll/pt-rules/"
+  },
+  {
+    "file": "services\\payrollRulesApi.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/salary-components/"
+  },
+  {
+    "file": "services\\policyService.ts",
+    "method": "GET",
+    "endpoint": "/v1/policy/attendance/"
+  },
+  {
+    "file": "services\\policyService.ts",
+    "method": "PUT",
+    "endpoint": "/v1/policy/attendance/"
+  },
+  {
+    "file": "services\\policyService.ts",
+    "method": "GET",
+    "endpoint": "/v2/attendance-policy/attendancePolicys/"
+  },
+  {
+    "file": "services\\policyService.ts",
+    "method": "POST",
+    "endpoint": "/v2/attendance-policy/attendancePolicys/"
+  },
+  {
+    "file": "services\\shiftService.ts",
+    "method": "GET",
+    "endpoint": "/v2/organization/shifts/"
+  },
+  {
+    "file": "services\\shiftService.ts",
+    "method": "POST",
+    "endpoint": "/v2/organization/shifts/"
+  },
+  {
+    "file": "services\\weeklyOffService.ts",
+    "method": "GET",
+    "endpoint": "/v2/attendance-policy/weekly-off-policy/"
+  },
+  {
+    "file": "services\\weeklyOffService.ts",
+    "method": "POST",
+    "endpoint": "/v2/attendance-policy/weekly-off-policy/"
+  }
+]

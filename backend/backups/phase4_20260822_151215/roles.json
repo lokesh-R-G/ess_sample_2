@@ -1,0 +1,72 @@
+[
+  {
+    "_id": "ROLE_EMPLOYEE",
+    "description": "Standard employee role",
+    "name": "Employee",
+    "roleId": "ROLE_EMPLOYEE",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "ROLE_MANAGER",
+    "description": "Managers can manage their team",
+    "name": "Manager",
+    "roleId": "ROLE_MANAGER",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "ROLE_HR",
+    "description": "Human Resources",
+    "name": "HR",
+    "roleId": "ROLE_HR",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "ROLE_ADMIN",
+    "description": "Company admin",
+    "name": "Admin",
+    "roleId": "ROLE_ADMIN",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "ROLE_ACCOUNTS",
+    "description": "Accounts department",
+    "name": "Accounts",
+    "roleId": "ROLE_ACCOUNTS",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "ROLE_ACCOUNTS_MD",
+    "description": "Accounts MD role",
+    "name": "Accounts MD",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "ROLE_SUPER_ADMIN",
+    "description": "Global super admin",
+    "name": "Super Admin",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "isActive": true,
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  }
+]

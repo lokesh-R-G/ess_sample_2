@@ -111,3 +111,26 @@ class BaseRepository(Generic[T]):
             query["deletedAt"] = None
         doc = await self.collection.find_one(query, {"_id": 1})
         return doc is not None
+
+    async def get_by_code_and_date(self, code_field: str, code_value: str, target_date: datetime) -> Optional[T]:
+        """
+        Resolves the configuration using businessCode + attendanceDate.
+        Effective rule: effectiveFrom <= attendanceDate < effectiveTo
+        If effectiveTo is null: effectiveFrom <= attendanceDate
+        """
+        query = {
+            code_field: code_value,
+            "deletedAt": None,
+            "effectiveFrom": {"$lte": target_date},
+            "$or": [
+                {"effectiveTo": None},
+                {"effectiveTo": {"$gt": target_date}}
+            ]
+        }
+        
+        # We sort by version descending just in case there's an overlap bug, 
+        # picking the highest version that matches the date.
+        doc = await self.collection.find_one(query, sort=[("version", -1)])
+        if doc:
+            return self.model_class(**self._prepare_doc(doc))
+        return None

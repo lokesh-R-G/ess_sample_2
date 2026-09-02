@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { GenericCRUDPage } from '../../components/ui/GenericCRUDPage';
+import { AdminShifts } from './AdminShifts';
+import { AdminHolidays } from './AdminHolidays';
 export const AdminOrganization: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Organization');
 
@@ -14,12 +16,14 @@ export const AdminOrganization: React.FC = () => {
         return (
           <GenericCRUDPage
             title="Companies"
-            endpoint="/v2/organization/companys/"
+            endpoint="/v2/organization/companies/"
             columns={[
+              { key: 'code', label: 'Company Code' },
               { key: 'name', label: 'Company Name' },
               { key: 'status', label: 'Status' }
             ]}
             formFields={[
+              { key: 'code', label: 'Company Code', type: 'text', required: true },
               { key: 'name', label: 'Company Name', type: 'text', required: true }
             ]}
           />
@@ -28,14 +32,16 @@ export const AdminOrganization: React.FC = () => {
         return (
           <GenericCRUDPage
             title="Branches"
-            endpoint="/v2/organization/branchs/"
+            endpoint="/v2/organization/branches/"
             columns={[
+              { key: 'companyId', label: 'Company', labelField: 'companyName' },
+              { key: 'code', label: 'Branch Code' },
               { key: 'name', label: 'Branch Name' },
-              { key: 'companyId', label: 'Company ID' },
               { key: 'esslMachineId', label: 'eSSL Machine', render: (val, row) => row.esslMachine?.serialNumber || val || '-' }
             ]}
             formFields={[
               { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
+              { key: 'code', label: 'Branch Code', type: 'text', required: true },
               { key: 'name', label: 'Branch Name', type: 'text', required: true },
               { key: 'address', label: 'Address', type: 'text' },
               { key: 'city', label: 'City', type: 'text' },
@@ -53,11 +59,13 @@ export const AdminOrganization: React.FC = () => {
             title="Departments"
             endpoint="/v2/organization/departments/"
             columns={[
-              { key: 'name', label: 'Department Name' },
-              { key: 'companyId', label: 'Company ID' }
+              { key: 'companyId', label: 'Company', labelField: 'companyName' },
+              { key: 'code', label: 'Department Code' },
+              { key: 'name', label: 'Department Name' }
             ]}
             formFields={[
               { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
+              { key: 'code', label: 'Department Code', type: 'text', required: true },
               { key: 'name', label: 'Department Name', type: 'text', required: true }
             ]}
           />
@@ -68,50 +76,22 @@ export const AdminOrganization: React.FC = () => {
             title="Designations"
             endpoint="/v2/organization/designations/"
             columns={[
-              { key: 'name', label: 'Designation Name' },
-              { key: 'departmentId', label: 'Department ID' }
+              { key: 'departmentId', label: 'Department', labelField: 'departmentName' },
+              { key: 'code', label: 'Designation Code' },
+              { key: 'name', label: 'Designation Name' }
             ]}
             formFields={[
               { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
               { key: 'departmentId', label: 'Department', type: 'lookup', entity: 'Department', required: true },
+              { key: 'code', label: 'Designation Code', type: 'text', required: true },
               { key: 'name', label: 'Designation Name', type: 'text', required: true }
             ]}
           />
         );
       case 'Shift':
-        return (
-          <GenericCRUDPage
-            title="Shifts"
-            endpoint="/v2/organization/shifts/"
-            columns={[
-              { key: 'name', label: 'Shift Name' },
-              { key: 'startTime', label: 'Start Time' },
-              { key: 'endTime', label: 'End Time' }
-            ]}
-            formFields={[
-              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
-              { key: 'name', label: 'Shift Name', type: 'text', required: true },
-              { key: 'startTime', label: 'Start Time (HH:MM)', type: 'text', required: true },
-              { key: 'endTime', label: 'End Time (HH:MM)', type: 'text', required: true }
-            ]}
-          />
-        );
+        return <AdminShifts />;
       case 'Holiday':
-        return (
-          <GenericCRUDPage
-            title="Holidays"
-            endpoint="/v2/organization/holidays/"
-            columns={[
-              { key: 'name', label: 'Holiday Name' },
-              { key: 'date', label: 'Date' }
-            ]}
-            formFields={[
-              { key: 'companyId', label: 'Company', type: 'lookup', entity: 'Company', required: true },
-              { key: 'name', label: 'Holiday Name', type: 'text', required: true },
-              { key: 'date', label: 'Date', type: 'date', required: true }
-            ]}
-          />
-        );
+        return <AdminHolidays />;
       case 'eSSL Machine':
         return (
           <GenericCRUDPage
@@ -155,7 +135,8 @@ export const AdminOrganization: React.FC = () => {
                 { value: 'Formula', label: 'Formula' }
               ], required: true },
               { key: 'percentageValue', label: 'Percentage Value (%)', type: 'number' },
-              { key: 'percentageDerivedFrom', label: 'Derived From (e.g. Gross Salary)', type: 'text' },
+              { key: 'percentageDerivedFromComponentId', label: 'Derived From Component', type: 'lookup', entity: 'SalaryComponent' },
+              { key: 'isBasicComponent', label: 'Is Basic Component', type: 'checkbox' },
               { key: 'isTaxable', label: 'Taxable', type: 'checkbox' },
               { key: 'pfApplicable', label: 'PF Applicable', type: 'checkbox' },
               { key: 'esiApplicable', label: 'ESI Applicable', type: 'checkbox' }

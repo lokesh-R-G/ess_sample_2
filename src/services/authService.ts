@@ -12,31 +12,63 @@ export interface LoginResponse {
 }
 
 export interface UserProfile {
-  empId: string;
-  employeeId?: string | null;
-  employeeCode?: string | null;
-  role: 'Employee' | 'Admin';
-  firstLogin: boolean;
-  name?: string;
-  designation?: string;
-  department?: string;
-  branch?: string;
-  email?: string;
-  phone?: string;
-  joiningDate?: string;
-  employeeType?: string;
-  reportingTo?: string;
-  address?: string;
-  bankDetails?: {
-    bankName?: string;
-    accountNumber?: string;
-    ifscCode?: string;
+  personal: {
+    employeeId?: string;
+    employeeCode?: string;
+    firstName?: string;
+    lastName?: string;
+    dob?: string;
+    gender?: string;
+    bloodGroup?: string;
+    maritalStatus?: string;
   };
-  emergencyContact?: {
+  contact: {
+    mobilePhone?: string;
+    personalEmail?: string;
+    workEmail?: string;
+  };
+  address: {
+    currentAddressLine1?: string;
+    currentCity?: string;
+    currentState?: string;
+    currentCountry?: string;
+    currentPincode?: string;
+  };
+  emergencyContact: {
     name?: string;
     relationship?: string;
     phone?: string;
   };
+  bank: {
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    accountType?: string;
+  };
+  employment: {
+    dateOfJoining?: string;
+    organization?: string;
+    branch?: string;
+    department?: string;
+    designation?: string;
+    reportingManager?: string;
+    employmentType?: string;
+    status?: string;
+  };
+  permissions: {
+    canEditMobile: boolean;
+    canEditAddress: boolean;
+    canEditBank: boolean;
+    canEditEmergencyContact?: boolean;
+    canEditEmployment?: boolean;
+    [key: string]: boolean | string[] | undefined;
+  };
+  empId?: string;
+  employeeId?: string;
+  employeeCode?: string;
+  role?: string;
+  roleId?: string;
+  firstLogin?: boolean;
 }
 
 export async function login(empId: string, password: string) {
@@ -54,13 +86,24 @@ export async function getCurrentUser() {
 }
 
 export async function getProfile() {
-  return api.get<UserProfile>('/v1/profile/me/');
+  return api.get<UserProfile>('/v2/employees/me/profile/');
 }
 
 export async function updateProfile(data: any) {
-  return api.put<UserProfile>('/v1/profile/me/', data);
+  return api.patch<UserProfile>('/v2/employees/me/profile/', data);
 }
 
 export function logout() {
   clearAuthStorage();
 }
+
+export const authApi = {
+  forgotPassword: (employeeCode: string, email: string) => 
+    api.post<{ message: string }>('/v1/auth/forgot-password/', { employeeCode, email }),
+    
+  verifyResetOtp: (employeeCode: string, email: string, otp: string) =>
+    api.post<{ message: string; resetToken: string }>('/v1/auth/verify-reset-otp/', { employeeCode, email, otp }),
+    
+  resetPassword: (employeeCode: string, resetToken: string, newPassword: string, confirmPassword: string) =>
+    api.post<{ message: string }>('/v1/auth/reset-password/', { employeeCode, resetToken, newPassword, confirmPassword }),
+};

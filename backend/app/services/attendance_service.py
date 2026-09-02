@@ -10,8 +10,8 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def create_fingerprint(emp_id: str, timestamp: datetime, raw_payload: str) -> str:
-    payload = f"{emp_id}|{timestamp.isoformat()}|{raw_payload}".encode("utf-8")
+def create_fingerprint(emp_id: str, timestamp: datetime, raw_payload: str, serial_number: str) -> str:
+    payload = f"{emp_id}|{timestamp.isoformat()}|{raw_payload}|{serial_number}".encode("utf-8")
     return sha256(payload).hexdigest()
 
 
@@ -22,6 +22,8 @@ def build_raw_log_document(record: dict, sync_batch_id: str) -> dict:
         "rawPayload": record["rawPayload"],
         "source": record.get("source", "essl"),
         "fingerprint": record["fingerprint"],
+        "machineId": record.get("machineId"),
+        "serialNumber": record.get("serialNumber"),
         "syncBatchId": sync_batch_id,
         "createdAt": _utc_now(),
         "updatedAt": _utc_now(),
@@ -65,74 +67,123 @@ from app.services.policy_service import get_attendance_policy
 from app.services.policy_engine import PolicyEngine
 from app.core.datetime_utils import to_utc, to_ist, get_current_ist
 
-async def build_daily_summaries(db, logs):
-    grouped = defaultdict(list)
+from app.services.attendance_context_resolver import AttendanceContextResolver
 
+async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_date: datetime | None = None):
+    grouped = defaultdict(list)
     import pytz
+    from datetime import timedelta
     ist = pytz.timezone("Asia/Kolkata")
     
     for log in logs:
         if isinstance(log["timestamp"], str):
             log["timestamp"] = datetime.fromisoformat(log["timestamp"].replace("Z", "+00:00"))
         elif getattr(log["timestamp"], "tzinfo", None) is None:
-            # Naive datetime from PyMongo is UTC
             log["timestamp"] = log["timestamp"].replace(tzinfo=timezone.utc).astimezone(ist)
         else:
-            # Ensure it is in IST
             log["timestamp"] = log["timestamp"].astimezone(ist)
             
         date_key = log["timestamp"].date()
         grouped[(log["empId"], date_key)].append(log)
 
-    summaries = []
+    # Determine processing boundaries
+    emp_ids = list(set([k[0] for k in grouped.keys()]))
+    if not emp_ids:
+        # If no logs but we need to process, we need emp_ids. Since we don't have them, return []
+        return []
+        
+    dates_in_logs = [k[1] for k in grouped.keys()]
+    process_from = from_date.date() if from_date else min(dates_in_logs)
+    process_to = to_date.date() if to_date else max(dates_in_logs)
+
+    resolver = AttendanceContextResolver(db)
     
-    # Load policy once
-    policy = await get_attendance_policy(db)
-    engine = PolicyEngine(db, policy)
+    # Pre-fetch monthly aggregates for this batch
+    months = set()
+    d = process_from
+    while d <= process_to:
+        months.add(d.strftime("%Y-%m"))
+        d += timedelta(days=1)
+    
+    monthly_records = []
+    if emp_ids and months:
+        month_regex = "^(" + "|".join(list(months)) + ")"
+        cursor = db.attendance.find({
+            "empId": {"$in": emp_ids},
+            "date": {"$regex": month_regex}
+        })
+        monthly_records = await cursor.to_list(length=None)
 
-    for (empId, date_val), items in grouped.items():
-        items.sort(key=lambda x: x["timestamp"])
-        timestamps = [x["timestamp"] for x in items]
-        fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
+    summaries = []
 
-        in_time = timestamps[0]
-        out_time = timestamps[-1] if len(timestamps) > 1 else None
+    for empId in emp_ids:
+        current_date = process_from
+        while current_date <= process_to:
+            items = grouped.get((empId, current_date), [])
+            
+            ctx = await resolver.resolve_context(empId, current_date)
+            if not ctx or not ctx.get("policy"):
+                current_date += timedelta(days=1)
+                continue
 
-        # Evaluate attendance using policy engine
-        # Note: date_val is currently a naive date from the log's timestamp (which is UTC or IST?).
-        # Wait, the logs' timestamps from eSSL are parsed as IST using datetime_utils if they came from essl_service.
-        # Let's ensure we just pass them as is, because they are timezone aware.
-        # Actually, in build_raw_log_document we might have naive datetimes if we aren't careful.
-        # Let's assume in_time and out_time are proper datetimes.
-        metrics = await engine.evaluate_attendance(empId, datetime.combine(date_val, datetime.min.time()), in_time, out_time)
+            engine = PolicyEngine(
+                shift=ctx.get("shift"),
+                policy=ctx.get("policy"),
+                holiday_dates=ctx.get("holidayDates"),
+                today_schedule=ctx.get("todaySchedule"),
+                monthly_records=monthly_records,
+                approved_requests=ctx.get("approvedRequests", [])
+            )
 
-        # Work hours calculated strictly as diff
-        work_hours = (out_time - in_time).total_seconds() / 3600 if len(timestamps) > 1 else 0
+            in_time = None
+            out_time = None
+            fingerprints = []
+            
+            if items:
+                items.sort(key=lambda x: x["timestamp"])
+                timestamps = [x["timestamp"] for x in items]
+                fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
+                in_time = timestamps[0]
+                out_time = timestamps[-1] if len(timestamps) > 1 else None
 
-        summary = {
-            "empId": empId,
-            "date": date_val.isoformat(),
-            "inTime": in_time.isoformat(),
-            "outTime": out_time.isoformat() if out_time else None,
-            "workHours": work_hours,
-            "status": metrics["status"],
-            "lateMinutes": metrics.get("lateMinutes", 0),
-            "lateCount": metrics.get("lateCount", 0),
-            "permissionHoursUsed": metrics.get("permissionHoursUsed", 0.0),
-            "permissionHoursExceeded": metrics.get("permissionHoursExceeded", 0.0),
-            "lopHours": metrics.get("lopHours", 0.0),
-            "halfDayCount": metrics.get("halfDayCount", 0.0),
-            "sourceLogFingerprints": fingerprints,
-            "policyVersion": "v0.1",
-            "timezone": "Asia/Kolkata"
-        }
-        summaries.append(summary)
+            # Phase 6 & 8 Integration: Evaluate every day, even without punches
+            metrics = engine.evaluate_attendance(empId, datetime.combine(current_date, datetime.min.time()), in_time, out_time)
+
+            work_hours = (out_time - in_time).total_seconds() / 3600 if (in_time and out_time and len(items) > 1) else 0
+
+            # Phase 7: Snapshot integration
+            summary = {
+                "empId": empId,
+                "date": current_date.isoformat(),
+                "shiftId": str(getattr(ctx.get("shift"), "id", getattr(ctx.get("shift"), "_id", None))) if ctx.get("shift") else None,
+                "attendancePolicyId": str(getattr(ctx.get("policy"), "id", getattr(ctx.get("policy"), "_id", None))) if ctx.get("policy") else None,
+                "weeklyOffPolicyId": str(getattr(ctx.get("weeklyOffPolicy"), "id", getattr(ctx.get("weeklyOffPolicy"), "_id", None))) if ctx.get("weeklyOffPolicy") else None,
+                "holidayCalendarId": ctx.get("holidayCalendar"),
+                "todaySchedule": ctx.get("todaySchedule"),
+                "inTime": in_time.isoformat() if in_time else None,
+                "outTime": out_time.isoformat() if out_time else None,
+                "workHours": work_hours,
+                "status": metrics["status"],
+                "lateMinutes": metrics.get("lateMinutes", 0),
+                "lateCount": metrics.get("lateCount", 0),
+                "permissionHoursUsed": metrics.get("permissionHoursUsed", 0.0),
+                "permissionHoursExceeded": metrics.get("permissionHoursExceeded", 0.0),
+                "lopHours": metrics.get("lopHours", 0.0),
+                "halfDayCount": metrics.get("halfDayCount", 0.0),
+                "sourceLogFingerprints": fingerprints,
+                "engineVersion": "v0.2",
+                "processedAt": datetime.now(timezone.utc).isoformat(),
+                "timezone": "Asia/Kolkata"
+            }
+            summaries.append(summary)
+            current_date += timedelta(days=1)
 
     return summaries
 
 def infer_attendance_status(record: dict) -> str:
     status = record.get("status")
-    if status in {"present", "absent", "leave", "weekoff", "od", "partial"}:
+    # Support both V1 (lowercase) and V2 (capitalized) status types
+    if status in {"present", "absent", "leave", "weekoff", "od", "partial", "On Duty", "Absent", "Holiday", "Week Off", "Week Off Worked", "Half Day", "Present", "Leave"}:
         return status
 
     # check common timestamp fields used by daily summaries
@@ -150,28 +201,52 @@ def infer_attendance_status(record: dict) -> str:
     return "absent"
 
 
-async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict[str, int]:
+async def upsert_raw_logs(db, records: list[dict], sync_batch_id: str) -> dict:
+    from pymongo.errors import DuplicateKeyError
+    import logging
+    logger = logging.getLogger("attendance_service")
+
+    received = len(records)
     inserted = 0
-    updated = 0
+    matched = 0
+    modified = 0
+    rejected = 0
+    errors = []
 
     for record in records:
         document = build_raw_log_document(record, sync_batch_id)
         try:
             result = await db.attendance_logs.update_one(
                 {"fingerprint": document["fingerprint"]},
-                {"$set": document},
+                {"$setOnInsert": document},
                 upsert=True,
             )
             if result.upserted_id is not None:
                 inserted += 1
             elif result.modified_count > 0:
-                updated += 1
+                modified += 1
+            else:
+                matched += 1
+        except DuplicateKeyError as e:
+            logger.error(f"DuplicateKeyError during raw log upsert: {e}")
+            rejected += 1
+            errors.append(f"DuplicateKeyError: {str(e)}")
         except Exception as e:
-            # log but continue on duplicate or other errors
-            pass
+            logger.exception(f"Unexpected error in upsert_raw_logs: {e}")
+            rejected += 1
+            errors.append(str(e))
 
-    print(f"   Raw logs: inserted={inserted}, updated={updated}")
-    return {"inserted": inserted, "updated": updated}
+    print(f"   Raw logs: received={received}, inserted={inserted}, matched_existing={matched}, modified={modified}, rejected={rejected}")
+    return {
+        "received": received,
+        "valid": received,
+        "duplicates_in_batch": 0,
+        "inserted": inserted,
+        "matched_existing": matched,
+        "modified": modified,
+        "rejected": rejected,
+        "errors": errors
+    }
 
 
 async def upsert_daily_attendance(db, summaries: list[dict]) -> int:
@@ -227,9 +302,23 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
         today_ist = get_current_ist().date()
         end_date_ist = min(end_date_ist, today_ist)
         
-        holidays_cursor = db.holidays.find({}, {"_id": 0, "date": 1, "name": 1})
-        holidays_list = await holidays_cursor.to_list(length=None)
-        holiday_dates = {h.get("date"): h.get("name") for h in holidays_list if h.get("date")}
+        resolver = AttendanceContextResolver(db)
+        # We can resolve once for the from_date (assuming same year)
+        ctx = await resolver.resolve_context(emp_id, from_date.date())
+        holiday_dates = []
+        if ctx and ctx.get("holidayDates"):
+            holiday_dates = ctx["holidayDates"]
+            
+        weekly_off_policy = None
+        if ctx and "weeklyOffPolicy" in ctx:
+            weekly_off_policy = ctx["weeklyOffPolicy"]
+            
+        holiday_dict = {}
+        for hd in holiday_dates:
+            d_val = hd.get("holidayDate") if isinstance(hd, dict) else getattr(hd, "holidayDate", None)
+            name_val = hd.get("holidayName") if isinstance(hd, dict) else getattr(hd, "holidayName", None)
+            if d_val:
+                holiday_dict[str(d_val)] = name_val
 
         while current_date_ist <= end_date_ist:
             date_str = current_date_ist.isoformat()
@@ -237,18 +326,20 @@ async def get_attendance_for_employee(db, emp_id: str, from_date: datetime | Non
                 rec = record_dict[date_str]
                 # Apply priority logic
                 if rec.get("source") != "override":
-                    if current_date_ist.weekday() == 6:
-                        rec["status"] = "weekoff"
-                    elif date_str in holiday_dates:
-                        rec["status"] = "holiday"
+                    today_sched = resolver.resolve_today_schedule(weekly_off_policy, current_date_ist)
+                    if today_sched.get("dayType") == "WEEKOFF":
+                        rec["status"] = "Week Off Worked" if rec.get("inTime") else "Week Off"
+                    elif date_str in holiday_dict:
+                        rec["status"] = "Holiday"
                 filled_records.append(rec)
             else:
-                if current_date_ist.weekday() == 6:
-                    status = "weekoff"
-                elif date_str in holiday_dates:
-                    status = "holiday"
+                today_sched = resolver.resolve_today_schedule(weekly_off_policy, current_date_ist)
+                if today_sched.get("dayType") == "WEEKOFF":
+                    status = "Week Off"
+                elif date_str in holiday_dict:
+                    status = "Holiday"
                 else:
-                    status = "absent"
+                    status = "Absent"
                     
                 filled_records.append({
                     "empId": emp_id,

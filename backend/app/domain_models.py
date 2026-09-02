@@ -183,6 +183,8 @@ class SalaryComponent(BaseModel):
     componentType: Optional[Literal["Earning", "Deduction"]] = None
     calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = "Flat"
     percentageValue: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
+    # Deprecated string-based field
     percentageDerivedFrom: Optional[str] = None
     defaultFormula: Optional[str] = None
     isTaxable: bool = True
@@ -208,6 +210,8 @@ class SalaryComponent(BaseModel):
     isStatutory: bool = False
     isEmployerContribution: bool = False
     isEmployeeContribution: bool = False
+    isBasicComponent: bool = False
+    isReimbursement: bool = False
     
     displayOrder: int = 1
     isActive: bool = True
@@ -247,13 +251,57 @@ class EmployeeSalaryComponent(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     employeeId: str
     salaryComponentId: str
+    componentCode: Optional[str] = None
+    componentName: str
+    componentType: Optional[str] = None
+    calculationMethod: Optional[str] = None
+    percentage: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
+    includeInGross: bool = True
+    attendanceDependent: bool = True
+    pfApplicable: bool = False
+    esiApplicable: bool = False
+    ptApplicable: bool = False
+    isBasicComponent: bool = False
     monthlyAmount: float
     annualAmount: float
     formulaUsed: Optional[str] = None
     distributionRatio: Optional[float] = None
-    effectiveDate: datetime
+    effectiveFrom: datetime
+    effectiveTo: Optional[datetime] = None
     version: int = 1
+    isCurrent: bool = True
     status: Literal["Active", "Archived"] = "Active"
+
+class EmployeeStatutoryProfile(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    employeeId: str
+    companyId: Optional[str] = None
+    
+    effectiveFrom: datetime
+    effectiveTo: Optional[datetime] = None
+    status: Literal["Active", "Archived"] = "Active"
+    version: int = 1
+    isCurrent: bool = True
+    
+    # PF Settings
+    wantsPf: bool = True
+    wantsPension: bool = True
+    pfCalculationMode: Optional[str] = "Actual"
+    useCeiling: bool = False
+    isFresher: bool = False
+    isExistingPensionMember: bool = False
+    
+    # ESI Settings
+    esiEnabled: bool = True
+    
+    # PT Settings
+    ptState: Optional[str] = None
+    
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    createdBy: Optional[str] = None
+    updatedBy: Optional[str] = None
 
 # ==========================================
 # 3.5 PAYROLL RULE ENGINE
@@ -273,16 +321,22 @@ class PayrollSettings(RuleBase):
     roundOffMethod: Literal["Nearest Rupee", "Nearest 10", "None"] = "Nearest Rupee"
     payrollStartDate: int = 1 # day of month
     payrollEndDate: int = 31  # day of month (or last day)
+    employeeSubmissionCutoffDay: int = 25 # day of month
+    managerApprovalCutoffDay: int = 28 # day of month
+    payrollLockDate: int = 5 # day of month
+    payslipGenerationDate: int = 7 # day of month
     lockPayrollAfterProcessing: bool = True
     allowRetroPayroll: bool = False
     defaultPayrollCalendar: str = "Standard"
     defaultSalaryCalculationMethod: Literal["Calendar Days", "Working Days", "Attendance Based", "Fixed 30 Days"] = "Calendar Days"
     defaultCurrencySymbol: str = "₹"
-    payrollLockDate: int = 5 # day of month
-    payslipGenerationDate: int = 7 # day of month
+    bankExportFormat: Literal["CSV", "PDF", "Both"] = "CSV"
+    payslipPublicationBehavior: Literal["Manual", "Automatic On Lock"] = "Manual"
 
 class PFRule(RuleBase):
     id: Optional[str] = Field(default=None, alias="_id")
+    policyCode: str = "DEFAULT_PF"
+    isCurrent: bool = True
     pfEnabled: bool = True
     mandatoryBelowGross: float = 15000.0
     optionalAboveGross: float = 15000.0
@@ -302,6 +356,8 @@ class PFRule(RuleBase):
 
 class ESIRule(RuleBase):
     id: Optional[str] = Field(default=None, alias="_id")
+    policyCode: str = "DEFAULT_ESI"
+    isCurrent: bool = True
     esiEnabled: bool = True
     eligibilityGross: float = 21000.0
     employeePercent: float = 0.75
@@ -369,20 +425,45 @@ class LeaveBalance(BaseModel):
 
 class PayrollCycle(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
-    companyId: str
     name: str
     startDate: datetime
     endDate: datetime
-    processingStatus: Literal["Draft", "Processing", "Completed"] = "Draft"
+    processingStatus: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
+
+class PayrollRun(BaseModel):
+    id: Optional[str] = Field(default=None, alias="_id")
+    cycleId: str
+    companyId: str
+    status: Literal["DRAFT", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "CLOSED"] = "DRAFT"
+    attendanceSummary: dict = Field(default_factory=dict)
+    calculationSummary: dict = Field(default_factory=dict)
+    createdAt: datetime = Field(default_factory=datetime.utcnow)
+    updatedAt: datetime = Field(default_factory=datetime.utcnow)
 
 class Payroll(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     cycleId: str
+    companyId: str
+    branchId: Optional[str] = None
+    payrollCode: Optional[str] = None
     employeeId: str
+    employeeCode: Optional[str] = None
     grossEarnings: float = 0.0
     grossDeductions: float = 0.0
     netPay: float = 0.0
+    pfAmount: float = 0.0
+    esiAmount: float = 0.0
+    ptAmount: float = 0.0
+    reimbursementAmount: float = 0.0
+    lopDays: float = 0.0
     status: Literal["Generated", "Paid"] = "Generated"
+    version: int = 1
+    isActive: bool = True
+    previousVersionId: Optional[str] = None
+    recalculatedBy: Optional[str] = None
+    recalculationReason: Optional[str] = None
+    calculatedAt: datetime = Field(default_factory=datetime.utcnow)
+    payloadSnapshot: dict = Field(default_factory=dict)
 
 class PayrollLineItem(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
@@ -403,6 +484,9 @@ class Payslip(BaseModel):
     cycleId: str
     generatedDate: datetime
     pdfUrl: Optional[str] = None
+    payrollVersion: int = 1
+    status: Literal["GENERATED", "PUBLISHED", "REVOKED"] = "GENERATED"
+    publishedAt: Optional[datetime] = None
     payloadSnapshot: dict = Field(default_factory=dict)
 
 # ==========================================

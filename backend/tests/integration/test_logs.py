@@ -1,0 +1,15 @@
+import pytest
+from datetime import datetime
+from app.db.mongo import get_database
+from app.services.policy_engine import PolicyEngine
+from app.models import AttendancePolicy
+
+@pytest.mark.asyncio
+async def test_evaluate_attendance():
+    db = get_database()
+    policy = AttendancePolicy()
+    engine = PolicyEngine(policy=policy)
+    in_t = datetime(2026, 7, 18, 9, 40, 34)
+    out_t = datetime(2026, 7, 18, 17, 35, 12)
+    result = await engine.evaluate_attendance('5188', in_t, in_t, out_t)
+    assert result is not None

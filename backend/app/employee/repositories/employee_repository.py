@@ -38,6 +38,50 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
             {"$unwind": {"path": "$personal", "preserveNullAndEmptyArrays": True}},
             {"$unwind": {"path": "$contact", "preserveNullAndEmptyArrays": True}},
             {"$unwind": {"path": "$employment", "preserveNullAndEmptyArrays": True}},
+            {"$addFields": {
+                "compObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.companyId", None]}, {"$ne": ["$employment.companyId", ""]}]},
+                        "then": {"$toObjectId": "$employment.companyId"},
+                        "else": None
+                    }
+                },
+                "deptObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.departmentId", None]}, {"$ne": ["$employment.departmentId", ""]}]},
+                        "then": {"$toObjectId": "$employment.departmentId"},
+                        "else": None
+                    }
+                },
+                "desgObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.designationId", None]}, {"$ne": ["$employment.designationId", ""]}]},
+                        "then": {"$toObjectId": "$employment.designationId"},
+                        "else": None
+                    }
+                }
+            }},
+            {"$lookup": {
+                "from": "companies",
+                "localField": "compObjId",
+                "foreignField": "_id",
+                "as": "companyDoc"
+            }},
+            {"$lookup": {
+                "from": "departments",
+                "localField": "deptObjId",
+                "foreignField": "_id",
+                "as": "deptDoc"
+            }},
+            {"$lookup": {
+                "from": "designations",
+                "localField": "desgObjId",
+                "foreignField": "_id",
+                "as": "desgDoc"
+            }},
+            {"$unwind": {"path": "$companyDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$deptDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$desgDoc", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
                 "employeeId": {"$toString": "$employeeId"},
@@ -50,9 +94,11 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
                 "lastName": "$personal.lastName",
                 "personalEmail": "$contact.personalEmail",
                 "companyId": "$employment.companyId",
-                "branchId": "$employment.branchId",
+                "companyName": "$companyDoc.name",
                 "departmentId": "$employment.departmentId",
-                "designationId": "$employment.designationId"
+                "departmentName": "$deptDoc.name",
+                "designationId": "$employment.designationId",
+                "designationName": "$desgDoc.name"
             }},
             {"$skip": skip},
             {"$limit": limit}
@@ -67,6 +113,69 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
             "data": docs,
             "total": total
         }
+
+    async def get_company_employees(self, company_id: str, branch_id: Optional[str] = None, cycle_start: Optional[datetime] = None, cycle_end: Optional[datetime] = None) -> List[dict]:
+        match_stage = {"employment.companyId": company_id, "deletedAt": None}
+        if branch_id:
+            match_stage["employment.branchId"] = branch_id
+
+        if cycle_end:
+            emp_pipeline = [
+                {"$match": {
+                    "$expr": {"$and": [
+                        {"$eq": ["$employeeId", "$$empId"]},
+                        {"$lte": ["$effectiveFrom", cycle_end]}
+                    ]},
+                    "deletedAt": None
+                }},
+                {"$sort": {"effectiveFrom": -1}},
+                {"$limit": 1}
+            ]
+        else:
+            emp_pipeline = [
+                {"$match": {
+                    "$expr": {"$and": [
+                        {"$eq": ["$employeeId", "$$empId"]},
+                        {"$eq": ["$isCurrent", True]}
+                    ]},
+                    "deletedAt": None
+                }}
+            ]
+
+        pipeline = [
+            {"$match": {"deletedAt": None}},
+            {"$lookup": {
+                "from": "employee_employment_histories",
+                "let": {"empId": "$employeeId"},
+                "pipeline": emp_pipeline,
+                "as": "employment"
+            }},
+            {"$unwind": {"path": "$employment", "preserveNullAndEmptyArrays": False}},
+            {"$match": match_stage},
+            {"$lookup": {
+                "from": "employee_personals",
+                "let": {"empId": "$employeeId"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$and": [{"$eq": ["$employeeId", "$$empId"]}, {"$eq": ["$isCurrent", True]}]}}}
+                ],
+                "as": "personal"
+            }},
+            {"$unwind": {"path": "$personal", "preserveNullAndEmptyArrays": True}},
+            {"$project": {
+                "_id": 0,
+                "employeeId": {"$toString": "$employeeId"},
+                "employeeCode": 1,
+                "firstName": "$personal.firstName",
+                "lastName": "$personal.lastName",
+                "companyId": "$employment.companyId",
+                "branchId": "$employment.branchId",
+                "status": 1
+            }}
+        ]
+        
+        cursor = self.collection.aggregate(pipeline)
+        docs = await cursor.to_list(length=10000)
+        return docs
 
     async def get_by_employee_id(self, employee_id: str) -> Optional[EmployeeModel]:
         doc = await self.collection.find_one({

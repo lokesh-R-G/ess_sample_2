@@ -19,6 +19,11 @@ def _csv_env(name: str, default: str = "") -> list[str]:
 class Settings:
     mongo_uri: str
     mongo_db_name: str
+    mongo_server_selection_timeout_ms: int
+    mongo_connect_timeout_ms: int
+    mongo_socket_timeout_ms: int
+    mongo_index_retry_attempts: int
+    mongo_index_retry_backoff_seconds: float
     jwt_secret_key: str
     jwt_algorithm: str
     jwt_expire_minutes: int
@@ -26,7 +31,6 @@ class Settings:
     essl_wsdl_url: str
     essl_api_username: str
     essl_api_password: str
-    essl_serial_number: str
     frontend_origins: list[str]
     
     # SMTP Configuration
@@ -45,11 +49,15 @@ def get_settings() -> Settings:
     essl_wsdl_url = os.getenv("ESSL_URL") or os.getenv("ESSL_WSDL_URL", "")
     essl_api_username = os.getenv("ESSL_USERNAME") or os.getenv("ESSL_API_USERNAME", "")
     essl_api_password = os.getenv("ESSL_PASSWORD") or os.getenv("ESSL_API_PASSWORD", "")
-    essl_serial_number = os.getenv("ESSL_SERIAL_NUMBER", "")
 
     settings = Settings(
         mongo_uri=os.getenv("MONGODB_URI", ""),
         mongo_db_name=os.getenv("MONGODB_DB_NAME", "ess_payroll"),
+        mongo_server_selection_timeout_ms=int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "10000")),
+        mongo_connect_timeout_ms=int(os.getenv("MONGO_CONNECT_TIMEOUT_MS", "10000")),
+        mongo_socket_timeout_ms=int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "30000")),
+        mongo_index_retry_attempts=int(os.getenv("MONGO_INDEX_RETRY_ATTEMPTS", "5")),
+        mongo_index_retry_backoff_seconds=float(os.getenv("MONGO_INDEX_RETRY_BACKOFF_SECONDS", "1.0")),
         jwt_secret_key=os.getenv("JWT_SECRET_KEY", "change-this-secret"),
         jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
         jwt_expire_minutes=int(os.getenv("JWT_EXPIRE_MINUTES", "480")),
@@ -57,7 +65,6 @@ def get_settings() -> Settings:
         essl_wsdl_url=essl_wsdl_url,
         essl_api_username=essl_api_username,
         essl_api_password=essl_api_password,
-        essl_serial_number=essl_serial_number,
         frontend_origins=_csv_env("FRONTEND_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
         smtp_host=os.getenv("SMTP_HOST", "sandbox.smtp.mailtrap.io"),
         smtp_port=int(os.getenv("SMTP_PORT", "2525")),
@@ -75,6 +82,5 @@ def get_settings() -> Settings:
     print(f"   ESSL_WSDL_URL: {settings.essl_wsdl_url}")
     print(f"   ESSL_API_USERNAME: {settings.essl_api_username}")
     print(f"   ESSL_API_PASSWORD: {'*' * len(settings.essl_api_password) if settings.essl_api_password else 'Not Configured'}")
-    print(f"   ESSL_SERIAL_NUMBER: {settings.essl_serial_number}")
     return settings
 

@@ -34,35 +34,9 @@ export const AdminEmployees: React.FC = () => {
     }
   };
 
-  const fetchOrgData = async () => {
-    try {
-      const [companies, branches, departments, designations] = await Promise.all([
-        organizationApi.getCompanies(),
-        organizationApi.getBranches(),
-        organizationApi.getDepartments(),
-        organizationApi.getDesignations(),
-      ]);
-      setOrgData({
-        companies: companies?.data || companies || [],
-        branches: branches?.data || branches || [],
-        departments: departments?.data || departments || [],
-        designations: designations?.data || designations || [],
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   useEffect(() => {
     fetchEmployees();
-    fetchOrgData();
   }, []);
-
-  const getEntityName = (list: any[], id: string) => {
-    if (!id) return '-';
-    const found = list.find((i: any) => i._id === id || i.id === id);
-    return found ? found.name : id;
-  };
 
   const handleOpenInvite = (emp: DirectoryEmployee) => {
     setSelectedEmployee(emp);
@@ -106,13 +80,13 @@ export const AdminEmployees: React.FC = () => {
                       {`${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'No Name'}
                     </td>
                     <td className="py-3 px-4 text-sm">
-                      {getEntityName(orgData.companies, emp.companyId || '')}
+                      {(emp as any).companyName || '-'}
                     </td>
                     <td className="py-3 px-4 text-sm">
-                      {getEntityName(orgData.departments, emp.departmentId || '')}
+                      {(emp as any).departmentName || '-'}
                     </td>
                     <td className="py-3 px-4 text-sm">
-                      {getEntityName(orgData.designations, emp.designationId || '')}
+                      {(emp as any).designationName || '-'}
                     </td>
                     <td className="py-3 px-4">
                       <StatusBadge

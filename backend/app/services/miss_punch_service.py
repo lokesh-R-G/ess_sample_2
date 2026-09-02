@@ -23,11 +23,20 @@ async def create_miss_punch_request(
         if wf and wf.get("status") == "PENDING":
             raise ValueError("A pending miss punch request already exists for this date and type.")
 
-    # Find the employee's manager
-    user = await db.users.find_one({"empId": employee_id})
-    manager_id = user.get("managerId")
+    # Find the employee's manager authoritatively from employment history
+    emp_hist = await db.employee_employment_histories.find_one({
+        "employeeId": employee_id,
+        "isCurrent": True,
+        "deletedAt": None
+    })
+    
+    if not emp_hist:
+        raise ValueError("No active employment history found for this employee.")
+        
+    manager_id = emp_hist.get("managerId")
     if not manager_id:
-        raise ValueError("No reporting manager assigned to this employee.")
+        # If managerId is null, they are top-level and their own effective manager
+        manager_id = employee_id
 
     # Insert request
     doc = {

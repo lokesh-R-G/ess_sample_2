@@ -90,7 +90,7 @@ export default function PayrollSettingsTab() {
     <div className="space-y-6">
       <GlassCard className="p-6">
         <h3 className="text-lg font-bold text-neutral-900 mb-4">General Payroll Settings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Select
             label="Payroll Frequency"
             value={settings.payrollFrequency}
@@ -143,17 +143,83 @@ export default function PayrollSettingsTab() {
             value={settings.payrollEndDate}
             onChange={(e) => handleChange('payrollEndDate', Number(e.target.value))}
           />
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={settings.lockPayrollAfterProcessing}
-              onChange={(e) => handleChange('lockPayrollAfterProcessing', e.target.checked)}
-              className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
-            />
-            <span className="text-sm font-medium text-neutral-700">Lock Payroll After Processing</span>
-          </label>
         </div>
-        <div className="mt-6 flex justify-end">
+        
+        <h3 className="text-lg font-bold text-neutral-900 mt-8 mb-4">Workflow Cutoffs & Automations</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Input
+            label="Employee Submission Cutoff Day"
+            type="number"
+            min="1"
+            max="31"
+            value={settings.employeeSubmissionCutoffDay || 25}
+            onChange={(e) => handleChange('employeeSubmissionCutoffDay', Number(e.target.value))}
+          />
+          <Input
+            label="Manager Approval Cutoff Day"
+            type="number"
+            min="1"
+            max="31"
+            value={settings.managerApprovalCutoffDay || 28}
+            onChange={(e) => handleChange('managerApprovalCutoffDay', Number(e.target.value))}
+          />
+          <Input
+            label="Payroll Lock Date"
+            type="number"
+            min="1"
+            max="31"
+            value={settings.payrollLockDate || 5}
+            onChange={(e) => handleChange('payrollLockDate', Number(e.target.value))}
+          />
+          <Input
+            label="Payslip Generation Date"
+            type="number"
+            min="1"
+            max="31"
+            value={settings.payslipGenerationDate || 7}
+            onChange={(e) => handleChange('payslipGenerationDate', Number(e.target.value))}
+          />
+          <Select
+            label="Bank Export Format"
+            value={settings.bankExportFormat || 'CSV'}
+            onChange={(e) => handleChange('bankExportFormat', e.target.value)}
+            options={[
+              { value: 'CSV', label: 'CSV' },
+              { value: 'PDF', label: 'PDF' },
+              { value: 'Both', label: 'Both' }
+            ]}
+          />
+          <Select
+            label="Payslip Publication Behavior"
+            value={settings.payslipPublicationBehavior || 'Manual'}
+            onChange={(e) => handleChange('payslipPublicationBehavior', e.target.value)}
+            options={[
+              { value: 'Manual', label: 'Manual' },
+              { value: 'Automatic On Lock', label: 'Automatic On Lock' }
+            ]}
+          />
+          <div className="flex flex-col gap-2 mt-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={settings.lockPayrollAfterProcessing}
+                onChange={(e) => handleChange('lockPayrollAfterProcessing', e.target.checked)}
+                className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-sm font-medium text-neutral-700">Lock Payroll After Processing</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={settings.allowRetroPayroll}
+                onChange={(e) => handleChange('allowRetroPayroll', e.target.checked)}
+                className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-sm font-medium text-neutral-700">Allow Retroactive Payroll Adjustments</span>
+            </label>
+          </div>
+        </div>
+        <div className="mt-8 flex justify-end pt-4 border-t border-neutral-200">
           <AnimatedButton onClick={handleSave}>Save Settings</AnimatedButton>
         </div>
       </GlassCard>

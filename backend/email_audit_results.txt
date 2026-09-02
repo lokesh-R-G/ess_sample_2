@@ -1,0 +1,275 @@
+
+==================================================
+Keyword: send_email
+==================================================
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:42  -->  async def _send_email_task(
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:88  -->  await self._send_email_task([recipient], subject, "welcome.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:92  -->  await self._send_email_task([recipient], subject, "forgot_password_otp.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:96  -->  await self._send_email_task([recipient], subject, "password_changed.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:100  -->  await self._send_email_task([recipient], subject, "account_created.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:104  -->  await self._send_email_task([recipient], subject, "account_locked.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:109  -->  await self._send_email_task([recipient], subject, template, context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:113  -->  await self._send_email_task([recipient], subject, "workflow_notification.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:117  -->  await self._send_email_task([recipient], subject, "payslip_email.html", context, attachments)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:120  -->  await self._send_email_task([recipient], subject, "general_notification.html", context)
+c:\ess\ess_sample_2\backend\app\scripts\gen_ent_part3.py:70  -->  async def send_email():
+
+==================================================
+Keyword: email_service
+==================================================
+c:\ess\ess_sample_2\backend\scaffold.py:24  -->  "email_service": ["email_templates"],
+c:\ess\ess_sample_2\backend\app\main.py:49  -->  from app.email_service.routes.router import router as v2_email_router
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:16  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:215  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:222  -->  asyncio.create_task(email_service.send_welcome_email(email, context))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:10  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:16  -->  self.email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:75  -->  asyncio.create_task(self.email_service.send_password_reset_otp(recipient=email, context=context))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:165  -->  asyncio.create_task(self.email_service.send_password_changed_notification(recipient=contact_email, context=context))
+c:\ess\ess_sample_2\backend\app\email_service\repositories\email_log_repository.py:1  -->  from app.email_service.repositories.base_repository import BaseRepository
+c:\ess\ess_sample_2\backend\app\email_service\repositories\email_log_repository.py:3  -->  from app.email_service.models.email_log import EmailLogModel
+c:\ess\ess_sample_2\backend\app\email_service\repositories\email_template_repository.py:2  -->  from app.email_service.repositories.base_repository import BaseRepository
+c:\ess\ess_sample_2\backend\app\email_service\repositories\email_template_repository.py:3  -->  from app.email_service.models.email_template import EmailTemplateModel
+c:\ess\ess_sample_2\backend\app\email_service\routes\router.py:4  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\email_service\routes\router.py:23  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\email_service\routes\router.py:32  -->  email_service.send_custom_email,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:12  -->  from app.email_service.schemas.email_log import EmailLogCreate
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:13  -->  from app.email_service.repositories.email_log_repository import EmailLogRepository
+c:\ess\ess_sample_2\backend\app\employee\services\employee_service.py:10  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\employee\services\employee_service.py:17  -->  self.email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\leave\services\leave_approval_service.py:9  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\leave\services\leave_approval_service.py:16  -->  self.email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\leave\services\leave_approval_service.py:47  -->  self.email_service.send_leave_status_email(
+c:\ess\ess_sample_2\backend\app\payslip\routes\router.py:3  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\payslip\routes\router.py:44  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\payslip\routes\router.py:56  -->  email_service.send_payslip_email,
+c:\ess\ess_sample_2\backend\app\scripts\gen_ent_part3.py:64  -->  def write_email_service(base_path):
+c:\ess\ess_sample_2\backend\app\scripts\gen_ent_part3.py:65  -->  mod = base_path / "email_service"
+c:\ess\ess_sample_2\backend\app\scripts\gen_ent_part3.py:79  -->  modules = ["scheduler", "report_generator", "pdf_service", "email_service"]
+c:\ess\ess_sample_2\backend\app\scripts\gen_ent_part3.py:84  -->  write_email_service(base)
+c:\ess\ess_sample_2\backend\app\services\auth_service.py:12  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\services\auth_service.py:110  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\services\auth_service.py:119  -->  asyncio.create_task(email_service.send_password_changed_notification(recipient=contact_email, context=context))
+c:\ess\ess_sample_2\backend\app\workflow\routes\router.py:3  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\workflow\routes\router.py:19  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\workflow\routes\router.py:29  -->  email_service.send_workflow_notification,
+
+==================================================
+Keyword: MailService
+==================================================
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:16  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:215  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:10  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:16  -->  self.email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\email_service\routes\router.py:4  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\email_service\routes\router.py:23  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:33  -->  class EmailService:
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:83  -->  print(f"[EmailService Error] Failed to send email to {recipients}: {e}")
+c:\ess\ess_sample_2\backend\app\employee\services\employee_service.py:10  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\employee\services\employee_service.py:17  -->  self.email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\leave\services\leave_approval_service.py:9  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\leave\services\leave_approval_service.py:16  -->  self.email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\payslip\routes\router.py:3  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\payslip\routes\router.py:44  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\services\auth_service.py:12  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\services\auth_service.py:110  -->  email_service = EmailService(db)
+c:\ess\ess_sample_2\backend\app\workflow\routes\router.py:3  -->  from app.email_service.services.email_service import EmailService
+c:\ess\ess_sample_2\backend\app\workflow\routes\router.py:19  -->  email_service = EmailService(db)
+
+==================================================
+Keyword: SMTP
+==================================================
+c:\ess\ess_sample_2\backend\app\core\config.py:32  -->  # SMTP Configuration
+c:\ess\ess_sample_2\backend\app\core\config.py:33  -->  smtp_host: str
+c:\ess\ess_sample_2\backend\app\core\config.py:34  -->  smtp_port: int
+c:\ess\ess_sample_2\backend\app\core\config.py:35  -->  smtp_username: str
+c:\ess\ess_sample_2\backend\app\core\config.py:36  -->  smtp_password: str
+c:\ess\ess_sample_2\backend\app\core\config.py:37  -->  smtp_from_email: str
+c:\ess\ess_sample_2\backend\app\core\config.py:38  -->  smtp_from_name: str
+c:\ess\ess_sample_2\backend\app\core\config.py:39  -->  smtp_tls: bool
+c:\ess\ess_sample_2\backend\app\core\config.py:40  -->  smtp_ssl: bool
+c:\ess\ess_sample_2\backend\app\core\config.py:62  -->  smtp_host=os.getenv("SMTP_HOST", "sandbox.smtp.mailtrap.io"),
+c:\ess\ess_sample_2\backend\app\core\config.py:63  -->  smtp_port=int(os.getenv("SMTP_PORT", "2525")),
+c:\ess\ess_sample_2\backend\app\core\config.py:64  -->  smtp_username=os.getenv("SMTP_USERNAME", ""),
+c:\ess\ess_sample_2\backend\app\core\config.py:65  -->  smtp_password=os.getenv("SMTP_PASSWORD", ""),
+c:\ess\ess_sample_2\backend\app\core\config.py:66  -->  smtp_from_email=os.getenv("SMTP_FROM_EMAIL", "no-reply@enterprise-hrms.com"),
+c:\ess\ess_sample_2\backend\app\core\config.py:67  -->  smtp_from_name=os.getenv("SMTP_FROM_NAME", "HRMS Support"),
+c:\ess\ess_sample_2\backend\app\core\config.py:68  -->  smtp_tls=os.getenv("SMTP_TLS", "True").lower() in ("true", "1", "yes"),
+c:\ess\ess_sample_2\backend\app\core\config.py:69  -->  smtp_ssl=os.getenv("SMTP_SSL", "False").lower() in ("true", "1", "yes"),
+c:\ess\ess_sample_2\backend\app\email_service\routes\router.py:38  -->  return {"status": "Success", "message": "Email enqueued for SMTP delivery."}
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:20  -->  MAIL_USERNAME=settings.smtp_username,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:21  -->  MAIL_PASSWORD=settings.smtp_password,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:22  -->  MAIL_FROM=settings.smtp_from_email,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:23  -->  MAIL_PORT=settings.smtp_port,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:24  -->  MAIL_SERVER=settings.smtp_host,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:25  -->  MAIL_FROM_NAME=settings.smtp_from_name,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:26  -->  MAIL_STARTTLS=settings.smtp_tls,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:27  -->  MAIL_SSL_TLS=settings.smtp_ssl,
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:28  -->  USE_CREDENTIALS=bool(settings.smtp_username),
+c:\ess\ess_sample_2\backend\app\payslip\utils\payslip_utils.py:19  -->  # Simulated SMTP sending
+c:\ess\ess_sample_2\backend\app\scripts\gen_ent_part3.py:71  -->  return {"status": "Success", "message": "Email enqueued for SMTP delivery."}
+c:\ess\ess_sample_2\backend\app\scripts\gen_payslip_engine.py:84  -->  # Simulated SMTP sending
+c:\ess\ess_sample_2\backend\scripts\generate_backend_docs.py:42  -->  SMTP_HOST=smtp.mailtrap.io
+c:\ess\ess_sample_2\backend\scripts\generate_backend_docs.py:43  -->  SMTP_PORT=587
+c:\ess\ess_sample_2\backend\scripts\generate_backend_docs.py:44  -->  SMTP_USER=user
+c:\ess\ess_sample_2\backend\scripts\generate_backend_docs.py:45  -->  SMTP_PASS=pass
+c:\ess\ess_sample_2\backend\scripts\write_readme.py:85  -->  - **Notification & Email Services:** Manages async delivery (SMTP, In-App).
+c:\ess\ess_sample_2\backend\scripts\write_readme.py:154  -->  - `SMTP_*`: Configurations for the Email Service.
+
+==================================================
+Keyword: personalEmail
+==================================================
+c:\ess\ess_sample_2\backend\app\api\routes\profile_v2.py:17  -->  personalEmail: Optional[str] = None
+c:\ess\ess_sample_2\backend\app\api\routes\profile_v2.py:118  -->  "personalEmail": contact.get("personalEmail"),
+c:\ess\ess_sample_2\backend\app\api\routes\profile_v2.py:183  -->  if "personalEmail" in data:
+c:\ess\ess_sample_2\backend\app\api\routes\profile_v2.py:184  -->  contact_updates["personalEmail"] = data["personalEmail"]
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:23  -->  {"personalEmail": identifier}
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:35  -->  email = employee.get("officialEmail") or employee.get("personalEmail")
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:154  -->  contact_email = employee.get("officialEmail") or employee.get("personalEmail")
+c:\ess\ess_sample_2\backend\app\employee\models\employee_contact.py:10  -->  personalEmail: Optional[str] = None
+c:\ess\ess_sample_2\backend\app\employee\repositories\employee_repository.py:95  -->  "personalEmail": "$contact.personalEmail",
+c:\ess\ess_sample_2\backend\app\employee\schemas\employee_contact.py:8  -->  personalEmail: Optional[str] = None
+c:\ess\ess_sample_2\backend\app\employee\schemas\employee_contact.py:18  -->  personalEmail: Optional[str] = None
+c:\ess\ess_sample_2\src\components\admin\InviteESSDialog.tsx:11  -->  personalEmail?: string | null;
+c:\ess\ess_sample_2\src\components\admin\InviteESSDialog.tsx:65  -->  email: employee.personalEmail || '',
+c:\ess\ess_sample_2\src\pages\admin\employee\wizard-steps\ContactAddressStep.tsx:31  -->  value={data.personalEmail || ''}
+c:\ess\ess_sample_2\src\pages\admin\employee\wizard-steps\ContactAddressStep.tsx:32  -->  onChange={(e) => handleChange('personalEmail', e.target.value)}
+c:\ess\ess_sample_2\src\pages\admin\employee\wizard-steps\ContactAddressStep.tsx:33  -->  error={errors.personalEmail}
+c:\ess\ess_sample_2\src\pages\employee\Profile.tsx:17  -->  personalEmail: '',
+c:\ess\ess_sample_2\src\pages\employee\Profile.tsx:43  -->  personalEmail: profile.contact?.personalEmail || '',
+c:\ess\ess_sample_2\src\pages\employee\Profile.tsx:139  -->  { icon: Mail, label: 'Work Email', value: contact.personalEmail || 'Not available' },
+c:\ess\ess_sample_2\src\pages\employee\Profile.tsx:255  -->  value={editForm.personalEmail}
+c:\ess\ess_sample_2\src\pages\employee\Profile.tsx:256  -->  onChange={(e) => setEditForm({ ...editForm, personalEmail: e.target.value })}
+c:\ess\ess_sample_2\src\services\authService.ts:27  -->  personalEmail?: string;
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:6  -->  const uiData = { workEmail: 'test@work.com', mobilePhone: '1234567890', personalEmail: 'test@home.com' };
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:12  -->  expect(backendData.personalEmail).toBe('test@home.com');
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:16  -->  const backendData = { officialEmail: 'test@work.com', officialMobile: '1234567890', personalEmail: 'test@home.com' };
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:22  -->  expect(uiData.personalEmail).toBe('test@home.com');
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:18  -->  personalEmail?: string;
+
+==================================================
+Keyword: officialEmail
+==================================================
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:22  -->  {"officialEmail": identifier},
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:35  -->  email = employee.get("officialEmail") or employee.get("personalEmail")
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:154  -->  contact_email = employee.get("officialEmail") or employee.get("personalEmail")
+c:\ess\ess_sample_2\backend\app\employee\schemas\employee_contact.py:6  -->  officialEmail: Optional[str] = None
+c:\ess\ess_sample_2\backend\app\employee\schemas\employee_contact.py:16  -->  officialEmail: Optional[str] = None
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:8  -->  expect(backendData.officialEmail).toBe('test@work.com');
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:16  -->  const backendData = { officialEmail: 'test@work.com', officialMobile: '1234567890', personalEmail: 'test@home.com' };
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:20  -->  expect(uiData.officialEmail).toBeUndefined();
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:55  -->  officialEmail: data.workEmail,
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:65  -->  workEmail: data.officialEmail || '',
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:67  -->  officialEmail: undefined,
+
+==================================================
+Keyword: workEmail
+==================================================
+c:\ess\ess_sample_2\backend\app\api\routes\profile_v2.py:119  -->  "workEmail": contact.get("workEmail")
+c:\ess\ess_sample_2\backend\app\employee\models\employee_contact.py:8  -->  workEmail: Optional[str] = None
+c:\ess\ess_sample_2\src\pages\admin\employee\EmployeeWizard.tsx:113  -->  if (!formData.workEmail) errors.workEmail = "Work Email is required";
+c:\ess\ess_sample_2\src\pages\admin\employee\wizard-steps\ContactAddressStep.tsx:23  -->  value={data.workEmail || ''}
+c:\ess\ess_sample_2\src\pages\admin\employee\wizard-steps\ContactAddressStep.tsx:24  -->  onChange={(e) => handleChange('workEmail', e.target.value)}
+c:\ess\ess_sample_2\src\pages\admin\employee\wizard-steps\ContactAddressStep.tsx:25  -->  error={errors.workEmail}
+c:\ess\ess_sample_2\src\services\authService.ts:28  -->  workEmail?: string;
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:6  -->  const uiData = { workEmail: 'test@work.com', mobilePhone: '1234567890', personalEmail: 'test@home.com' };
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:10  -->  expect(backendData.workEmail).toBeUndefined();
+c:\ess\ess_sample_2\src\services\employeeMappers.test.ts:18  -->  expect(uiData.workEmail).toBe('test@work.com');
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:16  -->  workEmail?: string;
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:55  -->  officialEmail: data.workEmail,
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:57  -->  workEmail: undefined,
+c:\ess\ess_sample_2\src\services\employeeMappers.ts:65  -->  workEmail: data.officialEmail || '',
+
+==================================================
+Keyword: payload.email
+==================================================
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:176  -->  email = payload.email.strip().lower()
+
+==================================================
+Keyword: forgot password
+==================================================
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:45  -->  # "Limit Forgot Password requests. Example: Maximum 5 requests per hour per employee/IP. Prevent brute-force attacks."
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:147  -->  "details": "Password reset successfully via Forgot Password flow"
+c:\ess\ess_sample_2\src\pages\auth\LoginPage.tsx:83  -->  <button type="button" className="text-sm text-primary-500 hover:text-primary-600 transition-colors">Forgot Password?</button>
+
+==================================================
+Keyword: OTP
+==================================================
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\models\otp.py:5  -->  class PasswordResetOtpModel(BaseModel):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\models\otp.py:9  -->  otpHash: str
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:3  -->  from app.auth.forgot_password.models.otp import PasswordResetOtpModel
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:7  -->  class OtpRepository(BaseRepository[PasswordResetOtpModel]):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:9  -->  super().__init__(db, "password_reset_otps", PasswordResetOtpModel)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:12  -->  async def invalidate_previous_otps(self, employee_id: str):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:19  -->  async def find_active_otp(self, employee_id: str) -> PasswordResetOtpModel | None:
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:26  -->  return PasswordResetOtpModel(**doc)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:29  -->  async def increment_attempts(self, otp_id: str):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:31  -->  {"_id": otp_id},
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:35  -->  async def mark_verified(self, otp_id: str):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:37  -->  {"_id": otp_id},
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:41  -->  async def mark_used(self, otp_id: str):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:43  -->  {"_id": otp_id},
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\repositories\otp_repository.py:47  -->  async def count_recent_otps(self, employee_id: str, since: datetime) -> int:
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:4  -->  ForgotPasswordRequest, VerifyOtpRequest, ResetPasswordRequest,
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:5  -->  GenericSuccessResponse, VerifyOtpResponse
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:7  -->  from app.auth.forgot_password.services.forgot_password_service import ForgotPasswordService
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:13  -->  async def forgot_password(payload: ForgotPasswordRequest, db: AsyncIOMotorDatabase = Depends(get_database)):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:14  -->  service = ForgotPasswordService(db)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:17  -->  @router.post("/verify-reset-otp/", response_model=VerifyOtpResponse)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:18  -->  async def verify_reset_otp(payload: VerifyOtpRequest, db: AsyncIOMotorDatabase = Depends(get_database)):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:19  -->  service = ForgotPasswordService(db)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:20  -->  return await service.verify_otp(payload.employeeId, payload.otp)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\routes\router.py:24  -->  service = ForgotPasswordService(db)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\schemas\forgot_password.py:4  -->  class ForgotPasswordRequest(BaseModel):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\schemas\forgot_password.py:7  -->  class VerifyOtpRequest(BaseModel):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\schemas\forgot_password.py:9  -->  otp: str
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\schemas\forgot_password.py:11  -->  class VerifyOtpResponse(BaseModel):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:6  -->  from app.auth.forgot_password.repositories.otp_repository import OtpRepository
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:7  -->  from app.auth.forgot_password.models.otp import PasswordResetOtpModel
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:12  -->  class ForgotPasswordService:
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:15  -->  self.otp_repo = OtpRepository(db)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:41  -->  recent_count = await self.otp_repo.count_recent_otps(emp_id, one_hour_ago)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:49  -->  # Invalidate previous OTPs
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:50  -->  await self.otp_repo.invalidate_previous_otps(emp_id)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:52  -->  # Generate 6 digit OTP
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:53  -->  otp = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:54  -->  otp_hash = hash_password(otp)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:59  -->  otp_doc = PasswordResetOtpModel(
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:62  -->  otpHash=otp_hash,
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:67  -->  await self.otp_repo.create(otp_doc.model_dump(by_alias=True, exclude_none=True))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:72  -->  "otp": otp,
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:75  -->  asyncio.create_task(self.email_service.send_password_reset_otp(recipient=email, context=context))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:79  -->  async def verify_otp(self, employee_id: str, otp: str):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:80  -->  otp_doc = await self.otp_repo.find_active_otp(employee_id)
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:81  -->  if not otp_doc:
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:82  -->  raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:84  -->  if otp_doc.attemptCount >= otp_doc.maxAttempts:
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:85  -->  await self.otp_repo.mark_used(str(otp_doc.id))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:86  -->  raise HTTPException(status_code=400, detail="Maximum OTP attempts exceeded. Please request a new one.")
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:88  -->  if not verify_password(otp, otp_doc.otpHash):
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:89  -->  await self.otp_repo.increment_attempts(str(otp_doc.id))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:90  -->  raise HTTPException(status_code=400, detail="Invalid OTP")
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:92  -->  # OTP is valid
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:93  -->  await self.otp_repo.mark_verified(str(otp_doc.id))
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:97  -->  {"empId": employee_id, "purpose": "password_reset", "otpId": str(otp_doc.id)},
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:101  -->  return {"message": "OTP verified successfully", "resetToken": token}
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:115  -->  otp_id = payload.get("otpId")
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:119  -->  # Check if OTP was already used
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:120  -->  otp_doc = await self.db.password_reset_otps.find_one({"_id": otp_id, "used": False, "verified": True})
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:121  -->  if not otp_doc:
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:139  -->  # Invalidate OTP
+c:\ess\ess_sample_2\backend\app\auth\forgot_password\services\forgot_password_service.py:140  -->  await self.otp_repo.mark_used(otp_id)
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:90  -->  async def send_password_reset_otp(self, recipient: str, context: dict):
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:91  -->  subject = "Password Reset OTP"
+c:\ess\ess_sample_2\backend\app\email_service\services\email_service.py:92  -->  await self._send_email_task([recipient], subject, "forgot_password_otp.html", context)
+c:\ess\ess_sample_2\backend\app\email_service\templates\forgot_password_otp.html:5  -->  <p>Your One-Time Password (OTP) is:</p>
+c:\ess\ess_sample_2\backend\app\email_service\templates\forgot_password_otp.html:6  -->  <h2 style="font-size: 32px; letter-spacing: 5px; color: #2c3e50; text-align: center;">{{ otp }}</h2>
+c:\ess\ess_sample_2\backend\app\email_service\templates\forgot_password_otp.html:7  -->  <p>This OTP will expire at {{ expiry_time }}.</p>
+c:\ess\ess_sample_2\backend\app\email_service\templates\forgot_password_otp.html:9  -->  Warning: Never share this OTP with anyone, including HR or IT support.
+
+==================================================
+Keyword: welcome email
+==================================================
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:212  -->  # 8. Send welcome email (fire-and-forget — failure does NOT roll back user creation)
+c:\ess\ess_sample_2\backend\app\api\routes\admin.py:226  -->  print(f"[InviteEmployee] Welcome email failed for {resolved_code}: {exc}")
+c:\ess\ess_sample_2\src\components\admin\InviteESSDialog.tsx:205  -->  Welcome email with temporary password will be sent here

@@ -10,6 +10,29 @@ import {
 
 export const employeeApi = {
   // Base Employee
+  getEmployees: () => api.get('/v2/employee/employees/'),
+  getDirectory: () => api.get('/v2/employee/employees/directory/?limit=1000'),
+  getAllDirectoryEmployees: async () => {
+    let allEmployees: any[] = [];
+    let skip = 0;
+    const limit = 1000;
+    
+    while (true) {
+      const response = await api.get<any>(`/v2/employee/employees/directory/?skip=${skip}&limit=${limit}`);
+      const data = response?.data || response;
+      const items = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      const total = typeof data?.total === 'number' ? data.total : items.length;
+      
+      allEmployees = [...allEmployees, ...items];
+      
+      if (allEmployees.length >= total || items.length === 0) {
+        break;
+      }
+      skip += limit;
+    }
+    
+    return allEmployees;
+  },
   getEmployee: (id: string) => api.get(`/v2/employee/employees/${id}`),
   createEmployee: (data: any) => api.post('/v2/employee/employees/', data),
   updateEmployee: (id: string, data: any) => api.put(`/v2/employee/employees/${id}`, data),
@@ -70,5 +93,6 @@ export const employeeApi = {
   calculatePayslipPreview: (data: any) => api.post('/v2/payroll/calculate-preview', data),
 
   // Assign Salary & Store Snapshot
-  assignSalary: (data: any) => api.post('/v2/payroll/assign', data)
+  assignSalary: (data: any) => api.post('/v2/payroll/assign', data),
+  getSalaryConfig: (employeeId: string) => api.get(`/v2/payroll/assign/${employeeId}`)
 };

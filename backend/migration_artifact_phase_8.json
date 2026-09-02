@@ -1,0 +1,42 @@
+{
+  "ccb45a55-14e4-4544-96c6-75a4d131e812": {
+    "employeeId": "100001",
+    "employeeCode": "5188"
+  },
+  "9dcf3954-27e1-439d-9832-47af55e6c7b1": {
+    "employeeId": "100002",
+    "employeeCode": "202201"
+  },
+  "ccb9fb60-801b-447b-b138-5165cb3b0be7": {
+    "employeeId": "100003",
+    "employeeCode": "202102"
+  },
+  "leave-test-uuid-001": {
+    "employeeId": "100004",
+    "employeeCode": "LEAVETEST_001"
+  },
+  "manager-uuid-001": {
+    "employeeId": "100005",
+    "employeeCode": "MGR001"
+  },
+  "6c89c452-2b0e-4cd0-aa56-f833bd1d33c5": {
+    "employeeId": "100006",
+    "employeeCode": null
+  },
+  "2210fa53-8d6e-4179-bd80-12b22c7f9283": {
+    "employeeId": "100007",
+    "employeeCode": "1021"
+  },
+  "17811e5f-8c68-4258-a12b-d5aec62c3bff": {
+    "employeeId": "100008",
+    "employeeCode": "5182"
+  },
+  "61cac404-4c66-4312-8e93-5e9a70f7c9fe": {
+    "employeeId": "100009",
+    "employeeCode": null
+  },
+  "17dfbabb-b3c3-4a0f-886b-aa7223752647": {
+    "employeeId": "100010",
+    "employeeCode": null
+  }
+}

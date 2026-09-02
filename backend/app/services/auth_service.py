@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 
 from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
-from app.services.sync_service import sync_essl_logs
+from app.services.essl_service import build_essl_client
 import asyncio
 from app.email_service.services.email_service import EmailService
 
@@ -15,11 +15,15 @@ from app.email_service.services.email_service import EmailService
 settings = get_settings()
 
 
-def serialize_user(user: dict) -> dict:
+async def serialize_user(user: dict) -> dict:
+    """Prepare user dict for token and response, including DB‑driven roleId and scope info."""
     return {
         "empId": user["empId"],
         "role": user.get("role", "Employee"),
+        "roleId": user.get("roleId"),
         "firstLogin": bool(user.get("firstLogin", True)),
+        "companyId": user.get("companyId"),
+        "branchId": user.get("branchId"),
     }
 
 
@@ -35,16 +39,30 @@ async def authenticate_user(db, emp_id: str, password: str) -> dict:
     return user
 
 
-async def validate_employee_with_essl(emp_id: str) -> bool:
-    try:
-        client = build_essl_client()
-    except RuntimeError:
+async def validate_employee_with_essl(db, emp_id: str) -> bool:
+    cursor = db.essl_machines.find({"status": "Active"})
+    machines = await cursor.to_list(length=None)
+    
+    if not machines:
         return False
-
+        
     to_date = datetime.now(timezone.utc)
     from_date = to_date - timedelta(days=365)
-    records = await asyncio.to_thread(client.fetch_transactions, from_date, to_date)
-    return any(record.get("empId") == emp_id for record in records)
+    
+    for machine in machines:
+        serial_number = machine.get("serialNumber")
+        if not serial_number:
+            continue
+            
+        try:
+            client = build_essl_client(serial_number)
+            records = await asyncio.to_thread(client.fetch_transactions, from_date, to_date)
+            if any(record.get("empId") == emp_id for record in records):
+                return True
+        except Exception:
+            continue
+            
+    return False
 
 
 async def create_provisioned_user(db, emp_id: str, role: str = "Employee") -> dict:
@@ -72,7 +90,7 @@ async def create_provisioned_user(db, emp_id: str, role: str = "Employee") -> di
 async def authenticate_or_provision_user(db, emp_id: str, password: str) -> dict:
     user = await db.users.find_one({"empId": emp_id})
     if user is None:
-        if not await validate_employee_with_essl(emp_id):
+        if not await validate_employee_with_essl(db, emp_id):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         user = await create_provisioned_user(db, emp_id)
         # Do not perform a full sync here to avoid blocking login; scheduling of per-user sync
@@ -108,15 +126,20 @@ async def change_password(db, emp_id: str, current_password: str, new_password: 
     
     # Email Integration
     email_service = EmailService(db)
-    # Typically, you'd fetch the employee's official email from the employees collection here.
-    # For now we'll attempt to send it to the emp_id if it's an email, or to a placeholder.
-    contact_email = emp_id if "@" in emp_id else f"{emp_id}@enterprise-hrms.com"
-    context = {
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
-        "ip_address": "Security Context"
-    }
-    asyncio.create_task(email_service.send_password_changed_notification(recipient=contact_email, context=context))
+    
+    employee_id = updated.get("employeeId") if updated else user.get("employeeId")
+    if employee_id:
+        from app.employee.services.email_resolver import get_employee_personal_email
+        try:
+            contact_email = await get_employee_personal_email(db, employee_id)
+            context = {
+                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+                "ip_address": "Security Context"
+            }
+            asyncio.create_task(email_service.send_password_changed_notification(recipient=contact_email, context=context))
+        except ValueError as e:
+            print(f"[AuthService] Cannot send password changed notification: {e}")
     
     return updated or user
 

@@ -9,8 +9,10 @@ class SalaryComponentCreate(BaseModel):
     calculationMethod: Literal["Flat", "Percentage", "Formula"] = "Flat"
     # Percentage-specific fields — only relevant when calculationMethod == "Percentage"
     percentageValue: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
     percentageDerivedFrom: Optional[str] = None   # e.g. "Gross Salary", "Basic Pay"
     defaultFormula: Optional[str] = None
+    isBasicComponent: bool = False
     isTaxable: bool = True
     pfApplicable: bool = False
     esiApplicable: bool = False
@@ -24,8 +26,10 @@ class SalaryComponentUpdate(BaseModel):
     componentType: Optional[Literal["Earning", "Deduction"]] = None
     calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = None
     percentageValue: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
     percentageDerivedFrom: Optional[str] = None
     defaultFormula: Optional[str] = None
+    isBasicComponent: Optional[bool] = None
     isTaxable: Optional[bool] = None
     pfApplicable: Optional[bool] = None
     esiApplicable: Optional[bool] = None
@@ -41,8 +45,10 @@ class SalaryComponentResponse(BaseModel):
     componentType: Optional[str] = None
     calculationMethod: Optional[str] = None
     percentageValue: Optional[float] = None
+    percentageDerivedFromComponentId: Optional[str] = None
     percentageDerivedFrom: Optional[str] = None
     defaultFormula: Optional[str] = None
+    isBasicComponent: Optional[bool] = None
     isTaxable: Optional[bool] = None
     pfApplicable: Optional[bool] = None
     esiApplicable: Optional[bool] = None

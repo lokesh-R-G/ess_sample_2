@@ -18,9 +18,11 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/reports': { title: 'Reports', subtitle: 'Analytics & insights' },
   '/admin': { title: 'Admin Dashboard', subtitle: 'System overview' },
   '/admin/employees': { title: 'Employee Management', subtitle: 'Manage all employees' },
-  '/admin/payroll': { title: 'Payroll', subtitle: 'Process payroll' },
+  '/admin/payroll': { title: 'Payroll Configuration', subtitle: 'Manage payroll rules' },
+  '/admin/payroll/control': { title: 'Payroll Control', subtitle: 'Calculate and process payroll' },
   '/admin/branches': { title: 'Branch Management', subtitle: 'Manage branches' },
   '/admin/attendance': { title: 'Attendance Monitor', subtitle: 'Monitor all attendance' },
+  '/admin/attendance/sync': { title: 'Attendance Sync', subtitle: 'Manage ESSL Sync Settings' },
   '/admin/approvals': { title: 'Approvals', subtitle: 'Pending approvals' },
   '/admin/settings': { title: 'Settings', subtitle: 'System configuration' },
 };

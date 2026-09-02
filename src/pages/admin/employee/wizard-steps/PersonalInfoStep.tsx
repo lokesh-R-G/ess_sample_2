@@ -18,6 +18,13 @@ export default function PersonalInfoStep({ data, onChange, errors = {} }: Person
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Input
+          label="Employee Code (ESSL ID)"
+          value={data.employeeCode || ''}
+          onChange={(e) => handleChange('employeeCode', e.target.value)}
+          error={errors.employeeCode}
+          required
+        />
+        <Input
           label="First Name"
           value={data.firstName || ''}
           onChange={(e) => handleChange('firstName', e.target.value)}

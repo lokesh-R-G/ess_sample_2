@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header, Request
+from app.rbac.engine import authorize, has_permission
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import decode_access_token
 from app.db.mongo import get_database
 from bson import ObjectId
+
+
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -31,13 +34,33 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
     for k, v in list(user.items()):
         if isinstance(v, ObjectId):
             user[k] = str(v)
-    # Supplement with JWT claims for convenience
-    user.setdefault("employeeId", payload.get("employeeId"))
-    user.setdefault("employeeCode", payload.get("employeeCode"))
+    # Fetch authoritative employee mapping
+    employee = await db.employees.find_one({"$or": [{"employeeCode": emp_id}, {"empId": emp_id}]})
+    if employee:
+        user["employeeId"] = employee.get("employeeId")
+        user["employeeCode"] = employee.get("employeeCode", emp_id)
+        
+        # Fetch authoritative employment history data for branch and company
+        emp_hist = await db.employee_employment_histories.find_one({
+            "employeeId": user["employeeId"],
+            "isCurrent": True,
+            "deletedAt": None
+        })
+        if emp_hist:
+            user["branchId"] = emp_hist.get("branchId")
+            user["companyId"] = emp_hist.get("companyId")
+            user["managerId"] = emp_hist.get("managerId")
+    else:
+        user.setdefault("employeeId", payload.get("employeeId"))
+        user.setdefault("employeeCode", payload.get("employeeCode"))
+        
     return user
 
 
 def require_roles(*allowed_roles: str):
+    """Legacy role‑based guard – retained for backward compatibility only.
+    New code should use ``require_permission`` instead.
+    """
     async def _role_guard(user=Depends(get_current_user)):
         user_role = (user.get("role") or "").lower()
         allowed = [r.lower() for r in allowed_roles]
@@ -46,3 +69,28 @@ def require_roles(*allowed_roles: str):
         return user
 
     return _role_guard
+
+
+def require_permission(permission_code: str, resource_context_provider: callable | None = None):
+    """Permission‑based dependency.
+    * ``permission_code`` – canonical permission identifier (e.g. ``"attendance.read"``).
+    * ``resource_context_provider`` – optional callable that FastAPI will natively resolve via Depends.
+    If omitted, an empty context is used (only GLOBAL permissions succeed).
+    """
+    if resource_context_provider is None:
+        async def _perm_guard_simple(user=Depends(get_current_user)):
+            if not await has_permission(user, permission_code, {}):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+            return user
+        return _perm_guard_simple
+    else:
+        async def _perm_guard_complex(
+            user=Depends(get_current_user),
+            rc=Depends(resource_context_provider)
+        ):
+            if not isinstance(rc, dict):
+                rc = {}
+            if not await has_permission(user, permission_code, rc):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+            return user
+        return _perm_guard_complex

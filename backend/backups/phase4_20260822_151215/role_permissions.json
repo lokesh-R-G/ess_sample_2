@@ -1,0 +1,1082 @@
+[
+  {
+    "_id": "6a884062c56e845067fa16ed",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionCode": "leave.read",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "leave.read",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16ee",
+    "permissionCode": "leave.apply",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "leave.apply",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16ef",
+    "permissionCode": "leave.manage",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "leave.manage",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f0",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionCode": "leave.approve",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "leave.approve",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f1",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionCode": "attendance.read",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "attendance.read",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f2",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionCode": "attendance.manage",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "attendance.manage",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f3",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionCode": "payroll.read",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "payroll.read",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f4",
+    "permissionCode": "payroll.calculate",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "payroll.calculate",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f5",
+    "permissionCode": "payroll.publish",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "payroll.publish",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a884062c56e845067fa16f6",
+    "permissionCode": "organization.manage",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "isActive": true,
+    "scope": "GLOBAL",
+    "permissionId": "organization.manage",
+    "createdAt": "2026-08-22T09:30:21.277000",
+    "updatedAt": "2026-08-22T09:30:21.277000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e896a",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "employee.read",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e896c",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "employee.read",
+    "scope": "TEAM",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e896e",
+    "roleId": "ROLE_HR",
+    "permissionId": "employee.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e8970",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "employee.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e8972",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "employee.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e8974",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "employee.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e8976",
+    "roleId": "ROLE_HR",
+    "permissionId": "employee.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968947217ba75409e8978",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "employee.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e897a",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "employee.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e897c",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "attendance.read",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e897e",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "attendance.read",
+    "scope": "TEAM",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8980",
+    "roleId": "ROLE_HR",
+    "permissionId": "attendance.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8982",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "attendance.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8984",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "attendance.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8986",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "attendance.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8988",
+    "roleId": "ROLE_HR",
+    "permissionId": "attendance.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e898a",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "attendance.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e898c",
+    "roleId": "ROLE_HR",
+    "permissionId": "attendance.sync",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e898e",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "attendance.sync",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8990",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "attendance.sync",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8992",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "leave.read",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8994",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "leave.read",
+    "scope": "TEAM",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8996",
+    "roleId": "ROLE_HR",
+    "permissionId": "leave.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968957217ba75409e8998",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "leave.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e899a",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "leave.apply",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e899c",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "leave.apply",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e899e",
+    "roleId": "ROLE_HR",
+    "permissionId": "leave.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89a0",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "leave.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89a2",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "leave.approve",
+    "scope": "TEAM",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89a4",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "reimbursement.read",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89a6",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "reimbursement.read",
+    "scope": "TEAM",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89a8",
+    "roleId": "ROLE_HR",
+    "permissionId": "reimbursement.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89aa",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "reimbursement.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89ac",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "reimbursement.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89ae",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "reimbursement.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89b0",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "reimbursement.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89b2",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "reimbursement.create",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89b4",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "reimbursement.create",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89b6",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "reimbursement.create",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89b8",
+    "roleId": "ROLE_HR",
+    "permissionId": "reimbursement.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968967217ba75409e89ba",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "reimbursement.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89bc",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "reimbursement.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89be",
+    "roleId": "ROLE_MANAGER",
+    "permissionId": "reimbursement.approve",
+    "scope": "TEAM",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89c0",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "reimbursement.approve",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89c2",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "payroll.read",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89c4",
+    "roleId": "ROLE_HR",
+    "permissionId": "payroll.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89c6",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "payroll.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89c8",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "payroll.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89ca",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89cc",
+    "roleId": "ROLE_EMPLOYEE",
+    "permissionId": "payroll.salary.read",
+    "scope": "SELF",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89ce",
+    "roleId": "ROLE_HR",
+    "permissionId": "payroll.salary.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89d0",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "payroll.salary.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89d2",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.salary.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89d4",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "payroll.salary.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89d6",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "payroll.pf.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89d8",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.pf.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968977217ba75409e89da",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "payroll.pf.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89dc",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "payroll.esi.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89de",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.esi.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89e0",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "payroll.esi.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89e2",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "payroll.branch_summary.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89e4",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.branch_summary.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89e6",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "payroll.branch_summary.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89e8",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "payroll.calculate",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89ea",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.calculate",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89ec",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "payroll.publish",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89ee",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.publish",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89f0",
+    "roleId": "ROLE_ACCOUNTS",
+    "permissionId": "payroll.cycle.read",
+    "scope": "COMPANY",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89f2",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.cycle.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89f4",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "payroll.cycle.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89f6",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "payroll.cycle.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89f8",
+    "roleId": "ROLE_ACCOUNTS_MD",
+    "permissionId": "payroll.cycle.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968987217ba75409e89fa",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "payroll.cycle.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e89fc",
+    "roleId": "ROLE_HR",
+    "permissionId": "organization.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e89fe",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "organization.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a00",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "organization.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a02",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "organization.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a04",
+    "roleId": "ROLE_HR",
+    "permissionId": "policy.attendance.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a06",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "policy.attendance.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a08",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "policy.attendance.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a0a",
+    "roleId": "ROLE_HR",
+    "permissionId": "policy.leave.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a0c",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "policy.leave.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a0e",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "policy.leave.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a10",
+    "roleId": "ROLE_HR",
+    "permissionId": "policy.reimbursement.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a12",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "policy.reimbursement.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a14",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "policy.reimbursement.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a16",
+    "roleId": "ROLE_HR",
+    "permissionId": "policy.weekly_off.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a18",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "policy.weekly_off.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a1a",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "policy.weekly_off.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a8968997217ba75409e8a1c",
+    "roleId": "ROLE_HR",
+    "permissionId": "policy.shift.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a1e",
+    "roleId": "ROLE_ADMIN",
+    "permissionId": "policy.shift.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a20",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "policy.shift.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a22",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "workflow.read",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a24",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "workflow.manage",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a26",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "workflow.approve",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a28",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "essl.sync",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  },
+  {
+    "_id": "6a89689a7217ba75409e8a2a",
+    "roleId": "ROLE_SUPER_ADMIN",
+    "permissionId": "essl.recovery_sync",
+    "scope": "GLOBAL",
+    "isActive": true,
+    "createdAt": "2026-08-22T09:15:00.208000",
+    "updatedAt": "2026-08-22T09:15:00.208000",
+    "version": 1
+  }
+]
