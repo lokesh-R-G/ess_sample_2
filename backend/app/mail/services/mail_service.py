@@ -2,8 +2,10 @@ from typing import List, Tuple
 from app.mail.models.message import MessageModel
 from app.mail.models.conversation import ConversationModel
 from app.mail.repositories.mail_repository import MailRepository
-from app.mail.services.presence_service import PresenceService
+import logging
+logger = logging.getLogger(__name__)
 from app.mail.services.realtime_service import RealtimeService
+from app.mail.services.presence_service import PresenceService
 
 class MailService:
     def __init__(self, repository: MailRepository):

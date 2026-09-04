@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:7.0
+    container_name: ess-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: ess_production
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - ess-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: ess-backend
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      DB_NAME: ess_production
+      JWT_SECRET: ${JWT_SECRET:-your_super_secret_key_change_in_production}
+      JWT_ALGORITHM: HS256
+      SMTP_HOST: ${SMTP_HOST:-smtp.mailtrap.io}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-user}
+      SMTP_PASS: ${SMTP_PASS:-pass}
+      FRONTEND_URL: http://localhost:5173
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ess-network
+    restart: unless-stopped
+    profiles: [""]
+
+  # React frontend with Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ess-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - ess-network
+    restart: unless-stopped
+    profiles: [""]
+
+networks:
+  ess-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_config:

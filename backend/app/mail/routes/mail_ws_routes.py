@@ -1,8 +1,10 @@
 import asyncio
 import json
+import logging
+logger = logging.getLogger(__name__)
+import uuid
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
-import uuid
 
 from app.core.security import decode_access_token
 from app.db.mongo import get_database
@@ -10,6 +12,7 @@ from app.mail.repositories.mail_repository import MailRepository
 from app.mail.services.mail_service import MailService
 from app.mail.services.presence_service import PresenceService
 from app.mail.services.realtime_service import RealtimeService
+
 
 router = APIRouter(prefix="/v2/mail", tags=["Mailbox WebSocket"])
 
@@ -22,6 +25,7 @@ async def mail_websocket(
     try:
         payload = decode_access_token(token)
         emp_id = payload.get("sub") or payload.get("empId")
+                
     except Exception:
         await websocket.close(code=1008, reason="Invalid token")
         return
@@ -41,6 +45,7 @@ async def mail_websocket(
         return
 
     await websocket.accept()
+    
     ws_id = str(uuid.uuid4())
     
     # Mark online
@@ -55,9 +60,10 @@ async def mail_websocket(
     # Send pending offline messages
     pending = await service.handle_websocket_connect(employee_id)
     for p in pending:
+        payload = p.model_dump(by_alias=False, mode="json")
         await websocket.send_json({
             "type": "message:new",
-            "payload": p.model_dump(by_alias=False, mode="json")
+            "payload": payload
         })
 
     async def listen_redis():

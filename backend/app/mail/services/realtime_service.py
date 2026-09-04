@@ -1,4 +1,6 @@
 import json
+import logging
+logger = logging.getLogger(__name__)
 import asyncio
 from app.core.redis import RedisManager
 

@@ -63,7 +63,7 @@ export const InboxList = ({ onSelect }: { onSelect: (c: MailConversation) => voi
           >
             <option value="">Select Employee...</option>
             {employees.map(e => (
-              <option key={e.empId} value={e.employeeId}>{e.name || e.firstName} ({e.empId})</option>
+              <option key={e.employeeId || e.id || e.empId} value={e.employeeId || e.id}>{e.name || `${e.firstName} ${e.lastName}`} ({e.employeeCode || e.empId})</option>
             ))}
           </select>
           <button className="bg-blue-500 text-white px-3 rounded" onClick={handleCreateNew}>Chat</button>

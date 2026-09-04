@@ -25,22 +25,24 @@ export interface MailMessage {
 
 export const mailApi = {
   getConversations: async (): Promise<MailConversation[]> => {
-    return api.get<MailConversation[]>('/v2/mail/conversations');
+    const res = await api.get<MailConversation[]>('/conversations');
+        return res;
   },
   
   getConversationMessages: async (conversationId: string): Promise<MailMessage[]> => {
-    return api.get<MailMessage[]>(`/v2/mail/conversations/${conversationId}/messages`);
+    const res = await api.get<MailMessage[]>(`/conversations/${conversationId}/messages`);
+        return res;
   },
   
   sendMessage: async (data: { receiverEmployeeId: string, clientMessageId: string, body: string, subject?: string }): Promise<MailMessage> => {
-    return api.post<MailMessage>('/v2/mail/messages', data);
+    return api.post<MailMessage>('/messages', data);
   },
   
   markRead: async (conversationId: string): Promise<void> => {
-    return api.patch(`/v2/mail/conversations/${conversationId}/read`, {});
+    return api.patch(`/conversations/${conversationId}/read`, {});
   },
   
   getUnreadCount: async (): Promise<{ unreadCount: number }> => {
-    return api.get<{ unreadCount: number }>('/v2/mail/unread-count');
+    return api.get<{ unreadCount: number }>('/unread-count');
   }
 };

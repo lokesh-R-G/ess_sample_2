@@ -15,13 +15,15 @@ export const ConversationView = ({ conversation }: { conversation: MailConversat
       setMessages([]);
       return;
     }
-    mailApi.getConversationMessages(conversation.id).then(setMessages);
+    mailApi.getConversationMessages(conversation.id).then(msgs => {
+            setMessages(msgs);
+    });
     mailApi.markRead(conversation.id);
 
     const handleNew = (msg: MailMessage) => {
-      if (msg.conversationId === conversation.id) {
-        setMessages(prev => [...prev, msg]);
-        mailApi.markRead(conversation.id);
+            if (msg.conversationId === conversation.id) {
+                setMessages(prev => [...prev, msg]);
+                mailApi.markRead(conversation.id);
       }
     };
     
@@ -34,6 +36,7 @@ export const ConversationView = ({ conversation }: { conversation: MailConversat
     const receiver = conversation.participants.find(p => p !== user.employeeId);
     if (!receiver) return;
 
+    
     const msg = await mailApi.sendMessage({
       receiverEmployeeId: receiver,
       clientMessageId: uuidv4(),

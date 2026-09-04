@@ -10,7 +10,10 @@ from app.mail.services.mail_service import MailService
 from app.mail.models.conversation import ConversationResponse
 from app.mail.models.message import MessageModel
 
-router = APIRouter(prefix="/v2/mail", tags=["Mailbox"])
+import logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["Mailbox"])
 
 class SendMessageRequest(BaseModel):
     receiverEmployeeId: str
