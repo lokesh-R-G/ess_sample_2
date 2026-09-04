@@ -29,6 +29,7 @@ import AdminEmployeeSalaryConfig from './pages/admin/AdminEmployeeSalaryConfig';
 import AdminPayrollControl from './pages/admin/payroll/AdminPayrollControl';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendanceMonitor from './pages/admin/attendance/AdminAttendanceMonitor';
+import { MailboxLayout } from './pages/mail/MailboxLayout';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import ManualRecalculation from './pages/admin/attendance/ManualRecalculation';
 import HistoricalCorrections from './pages/admin/attendance/HistoricalCorrections';
@@ -110,6 +111,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Reimbursements />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mail"
+          element={
+            <ProtectedRoute>
+              <MailboxLayout />
             </ProtectedRoute>
           }
         />

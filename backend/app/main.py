@@ -61,6 +61,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    from app.core.redis import RedisManager
+    await RedisManager.init()
     await init_indexes()
     # Idempotently add canonical permissions and mappings before protected
     # routes are served (including scheduler.configure).
@@ -72,6 +74,8 @@ async def lifespan(_: FastAPI):
     try:
         yield
     finally:
+        from app.core.redis import RedisManager
+        await RedisManager.close()
         close_mongo_connection()
 
 
@@ -141,6 +145,11 @@ app.include_router(v2_emp_router, prefix="/api/v2/employee")
 app.include_router(v2_salary_router, prefix="/api/v2/salary")
 app.include_router(v2_policy_router, prefix="/api/v2/attendance-policy")
 app.include_router(v2_permission_router, prefix="/api/v2/permission")
+from app.mail.routes.mail_rest_routes import router as mail_router
+from app.mail.routes.mail_ws_routes import router as mail_ws_router
+
+app.include_router(mail_router, prefix="/api")
+app.include_router(mail_ws_router, prefix="/api")
 app.include_router(v2_attendance_router, prefix="/api/v2/attendance")
 app.include_router(profile_v2_router, prefix="/api/v2/employees")
 app.include_router(dashboard_v2_router, prefix="/api/v2")

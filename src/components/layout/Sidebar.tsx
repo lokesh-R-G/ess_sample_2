@@ -15,6 +15,7 @@ import {
   LogOut,
   Shield,
   RefreshCw,
+  Mail,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,6 +39,7 @@ const employeeNavItems: NavItem[] = [
   { path: '/payslip', label: 'Payslip', icon: Receipt },
   { path: '/reimbursements', label: 'Reimbursements & Claims', icon: Receipt },
   { path: '/profile', label: 'Profile', icon: User },
+  { path: '/mail', label: 'Mailbox', icon: Mail },
 ];
 
 const adminNavItems: NavItem[] = [

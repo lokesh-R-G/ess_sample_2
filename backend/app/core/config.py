@@ -42,6 +42,9 @@ class Settings:
     smtp_from_name: str
     smtp_tls: bool
     smtp_ssl: bool
+    
+    # Redis Configuration
+    redis_url: str
 
 
 @lru_cache(maxsize=1)
@@ -74,6 +77,7 @@ def get_settings() -> Settings:
         smtp_from_name=os.getenv("SMTP_FROM_NAME", "HRMS Support"),
         smtp_tls=os.getenv("SMTP_TLS", "True").lower() in ("true", "1", "yes"),
         smtp_ssl=os.getenv("SMTP_SSL", "False").lower() in ("true", "1", "yes"),
+        redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
     )
 
     print("[Settings] Loaded Configuration:")
