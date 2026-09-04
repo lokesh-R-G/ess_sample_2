@@ -86,3 +86,44 @@ export interface RecalculateResponse {
 export async function recalculateAttendance(payload: RecalculateRequestPayload) {
   return api.post<RecalculateResponse>('/v2/attendance/recalculate', payload);
 }
+
+export interface MobilePunchRequest {
+  punchType: 'IN' | 'OUT';
+  occurredAt: string;
+  clientEventId: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationAccuracy?: number | null;
+  deviceId?: string | null;
+}
+
+export interface MobilePunchResponse {
+  status: string;
+  punchId: string;
+  punchType: 'IN' | 'OUT';
+  occurredAt: string;
+  serverReceivedAt: string;
+  source: string;
+  isNew: boolean;
+}
+
+export interface MobilePunch {
+  punchId: string;
+  punchType: 'IN' | 'OUT';
+  occurredAt: string;
+  source: string;
+  location?: any;
+}
+
+export interface MobilePunchesTodayResponse {
+  empId: string;
+  records: MobilePunch[];
+}
+
+export async function submitMobilePunch(payload: MobilePunchRequest) {
+  return api.post<MobilePunchResponse>('/v2/attendance/mobile/punch', payload);
+}
+
+export async function getTodayPunches() {
+  return api.get<MobilePunchesTodayResponse>('/v2/attendance/mobile/punches/today');
+}

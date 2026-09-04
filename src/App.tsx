@@ -8,6 +8,7 @@ import LoginPage from './pages/auth/LoginPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import Dashboard from './pages/employee/Dashboard';
 import Attendance from './pages/employee/Attendance';
+import MobilePunchPage from './pages/employee/MobilePunch';
 import LeaveManagement from './pages/employee/LeaveManagement';
 import Payslip from './pages/employee/Payslip';
 import Profile from './pages/employee/Profile';
@@ -79,6 +80,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Attendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance/mobile-punch"
+          element={
+            <ProtectedRoute>
+              <MobilePunchPage />
             </ProtectedRoute>
           }
         />

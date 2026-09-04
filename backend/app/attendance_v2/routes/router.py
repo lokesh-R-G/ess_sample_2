@@ -20,9 +20,11 @@ from app.attendance_v2.routes.correction_log_routes import router as correction_
 from app.attendance_v2.routes.permission_ledger_routes import router as permission_ledger_router
 
 from app.attendance_v2.routes.admin_attendance_routes import router as admin_attendance_router
+from app.attendance_v2.routes.mobile_punch_routes import router as mobile_punch_router
 
 attendance_v2_router = APIRouter()
 attendance_v2_router.include_router(admin_attendance_router)
+attendance_v2_router.include_router(mobile_punch_router)
 attendance_v2_router.include_router(attendance_router)
 attendance_v2_router.include_router(attendance_log_router)
 attendance_v2_router.include_router(daily_attendance_router)

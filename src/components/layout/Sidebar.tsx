@@ -16,6 +16,7 @@ import {
   Shield,
   RefreshCw,
   Mail,
+  Smartphone,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,6 +36,7 @@ interface NavItem {
 const employeeNavItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/attendance', label: 'Attendance', icon: Calendar },
+  { path: '/attendance/mobile-punch', label: 'Mobile Punch', icon: Smartphone },
   { path: '/leave', label: 'Leave Management', icon: FileText },
   { path: '/payslip', label: 'Payslip', icon: Receipt },
   { path: '/reimbursements', label: 'Reimbursements & Claims', icon: Receipt },
