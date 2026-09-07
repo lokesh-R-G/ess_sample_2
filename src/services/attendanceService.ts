@@ -115,15 +115,21 @@ export interface MobilePunch {
   location?: any;
 }
 
-export interface MobilePunchesTodayResponse {
-  empId: string;
-  records: MobilePunch[];
-}
-
 export async function submitMobilePunch(payload: MobilePunchRequest) {
   return api.post<MobilePunchResponse>('/v2/attendance/mobile/punch', payload);
 }
 
-export async function getTodayPunches() {
-  return api.get<MobilePunchesTodayResponse>('/v2/attendance/mobile/punches/today');
+export interface AdminPunchesResponse {
+  empCode: string;
+  date: string;
+  punches: MobilePunch[];
+}
+
+export async function getAdminPunchesForDate(empCode: string, date: string, companyId?: string, branchId?: string) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('date', date);
+  if (companyId) searchParams.set('companyId', companyId);
+  if (branchId) searchParams.set('branchId', branchId);
+  const query = searchParams.toString();
+  return api.get<AdminPunchesResponse>(`/v2/attendance/monitor/${empCode}/punches?${query}`);
 }

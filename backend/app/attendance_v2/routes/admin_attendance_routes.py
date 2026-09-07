@@ -87,7 +87,8 @@ async def get_attendance_monitor(
             "outTime": att.get("outTime"),
             "shiftCode": att.get("shiftCode"),
             "actualStartTime": att.get("actualStartTime"),
-            "scheduleType": att.get("scheduleType")
+            "scheduleType": att.get("scheduleType"),
+            "sources": att.get("sources", [])
         }
         
         # Check leave info in approval snapshot
@@ -130,3 +131,54 @@ async def get_attendance_monitor(
         }
 
     return {"monthSummary": emp_map}
+
+
+@router.get("/{emp_code}/punches")
+async def get_employee_punches(
+    emp_code: str,
+    date: str = Query(..., description="Date in YYYY-MM-DD format"),
+    company_id: Optional[str] = Query(None, alias="companyId"),
+    branch_id: Optional[str] = Query(None, alias="branchId"),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    user: dict = Depends(get_current_user)
+):
+    try:
+        from datetime import timedelta
+        dt = datetime.fromisoformat(date)
+        start_dt = datetime.combine(dt, datetime.min.time())
+        end_dt = start_dt + timedelta(days=1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO YYYY-MM-DD")
+
+    # 1. Enforce RBAC/Scope
+    # In a full system, you would check `user` claims for permissions
+    # Let's verify the requested employee actually belongs to the allowed company/branch scope
+    emp_query = {"employeeCode": emp_code}
+    if company_id:
+        emp_query["companyId"] = company_id
+    if branch_id:
+        emp_query["branchId"] = branch_id
+
+    employee = await db.employees.find_one(emp_query, {"employeeCode": 1})
+    if not employee:
+        raise HTTPException(status_code=403, detail="Employee not found or unauthorized for your scope")
+
+    # 2. Fetch from attendance_logs
+    cursor = db.attendance_logs.find({
+        "empId": emp_code,
+        "timestamp": {"$gte": start_dt, "$lt": end_dt}
+    }).sort([("timestamp", 1)])
+    
+    raw_punches = await cursor.to_list(length=None)
+    
+    # 3. Format response to omit sensitive fields but expose source/location
+    formatted_punches = []
+    for p in raw_punches:
+        formatted_punches.append({
+            "punchType": p.get("punchType", "UNKNOWN"),
+            "occurredAt": p.get("timestamp").isoformat() if p.get("timestamp") else None,
+            "source": p.get("source", "ESSL"),
+            "location": p.get("location")
+        })
+
+    return {"empCode": emp_code, "date": date, "punches": formatted_punches}

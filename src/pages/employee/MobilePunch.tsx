@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../../components/layout';
 import { 
   submitMobilePunch, 
-  getTodayPunches, 
   MobilePunch,
   getMyAttendance
 } from '../../services/attendanceService';
@@ -11,7 +10,6 @@ import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 
 export default function MobilePunchPage() {
-  const { user } = useAuth();
   const [punches, setPunches] = useState<MobilePunch[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -27,37 +25,57 @@ export default function MobilePunchPage() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch both today's raw punches and today's attendance status
-      const [punchesRes, attendanceRes] = await Promise.all([
-        getTodayPunches(),
-        getMyAttendance(
-          format(new Date(), 'yyyy-MM-dd'),
-          format(new Date(), 'yyyy-MM-dd')
-        )
-      ]);
+      console.log("[MobilePunch] Requesting attendance for today");
+      const attendanceRes = await getMyAttendance(
+        format(new Date(), 'yyyy-MM-dd'),
+        format(new Date(), 'yyyy-MM-dd')
+      );
       
-      setPunches(punchesRes.data.records);
-
-      // Determine current status
-      const todayRecord = attendanceRes.data.records[0];
+      console.log("[MobilePunch] Response shape:", Object.keys(attendanceRes));
+      
+      const records = attendanceRes.records || [];
+      console.log("[MobilePunch] Parsed attendance count:", records.length);
+      
+      const todayRecord = records[0];
+      
       if (todayRecord) {
-        if (todayRecord.inTime && !todayRecord.outTime) {
+        console.log("[MobilePunch] Today's status:", todayRecord.status);
+        
+        // Build punches array from IN/OUT summary
+        const displayPunches: any[] = [];
+        if (todayRecord.inTime || todayRecord.firstIn) {
+          displayPunches.push({
+            punchId: 'in-summary',
+            punchType: 'IN',
+            occurredAt: todayRecord.inTime || todayRecord.firstIn,
+            source: todayRecord.sources?.[0] || 'Summary'
+          });
+        }
+        if (todayRecord.outTime || todayRecord.lastOut) {
+          displayPunches.push({
+            punchId: 'out-summary',
+            punchType: 'OUT',
+            occurredAt: todayRecord.outTime || todayRecord.lastOut,
+            source: todayRecord.sources?.[todayRecord.sources.length - 1] || 'Summary'
+          });
+        }
+        
+        setPunches(displayPunches);
+
+        // Determine current status
+        if ((todayRecord.inTime || todayRecord.firstIn) && !(todayRecord.outTime || todayRecord.lastOut)) {
           setStatus('Punched In');
         } else {
           setStatus('Not Punched In');
         }
       } else {
-        // Fallback to deriving from raw punches if no attendance record yet
-        if (punchesRes.data.records.length > 0) {
-          const lastPunch = punchesRes.data.records[punchesRes.data.records.length - 1];
-          setStatus(lastPunch.punchType === 'IN' ? 'Punched In' : 'Not Punched In');
-        } else {
-          setStatus('Not Punched In');
-        }
+        setPunches([]);
+        setStatus('Not Punched In');
       }
 
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load today\'s punches.');
+      console.error("[MobilePunch] API Error", err);
+      setError(err.response?.data?.detail || 'Failed to load today\'s attendance.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +85,7 @@ export default function MobilePunchPage() {
     setSubmitting(true);
     setError(null);
 
-    const punchType = status === 'Punched In' ? 'OUT' : 'IN';
+    const punchType: 'IN' | 'OUT' = status === 'Punched In' ? 'OUT' : 'IN';
     const payload = {
       punchType,
       occurredAt: new Date().toISOString(),

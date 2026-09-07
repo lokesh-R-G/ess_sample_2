@@ -143,6 +143,7 @@ async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_
                 items.sort(key=lambda x: x["timestamp"])
                 timestamps = [x["timestamp"] for x in items]
                 fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
+                raw_sources = [str(x.get("source", "ESSL")).upper() for x in items]
                 in_time = timestamps[0]
                 out_time = timestamps[-1] if len(timestamps) > 1 else None
 
@@ -171,6 +172,7 @@ async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_
                 "lopHours": metrics.get("lopHours", 0.0),
                 "halfDayCount": metrics.get("halfDayCount", 0.0),
                 "sourceLogFingerprints": fingerprints,
+                "sources": list(set(raw_sources)) if items else [],
                 "engineVersion": "v0.2",
                 "processedAt": datetime.now(timezone.utc).isoformat(),
                 "timezone": "Asia/Kolkata"

@@ -203,6 +203,18 @@ export const Attendance: React.FC = () => {
                             <span>Out Time</span>
                             <span className="font-medium text-neutral-900">{formatTimeIST(outTimeStr)}</span>
                           </div>
+                          {attendance.sources && attendance.sources.length > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span>Source</span>
+                              <span className="font-medium text-neutral-900">
+                                {attendance.sources.length === 1 && attendance.sources[0] === 'MOBILE'
+                                  ? 'Mobile Punch'
+                                  : attendance.sources.includes('MOBILE')
+                                  ? `Mixed (${attendance.sources.join(', ')})`
+                                  : attendance.sources.join(', ')}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         {(status.includes('present') || status === 'half day' || status === 'od' || status === 'partial') && (
                           <div className="space-y-3">

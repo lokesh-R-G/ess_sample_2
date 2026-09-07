@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../../../components/ui';
 import { api } from '../../../lib/api';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, AlertCircle, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, Clock, Smartphone } from 'lucide-react';
+import { AdminPunchDetailMap } from '../../../components/attendance/AdminPunchDetailMap';
 
 export const AdminAttendanceMonitor: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -143,7 +144,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
                     const isLate = att?.isLate || false;
                     
                     return (
-                      <td key={dateStr} className="px-1 py-2 border-l border-neutral-100 text-center">
+                      <td key={dateStr} className="px-1 py-2 border-l border-neutral-100 text-center relative">
                         <button
                           onClick={() => att && setSelectedCell({ employeeId: emp.employeeId, date: dateStr, details: att, empDetails: emp })}
                           className={`w-full h-8 rounded flex items-center justify-center font-medium text-xs transition-transform hover:scale-105 ${getStatusColor(status, isLate)} ${!att ? 'cursor-default' : 'cursor-pointer'}`}
@@ -151,6 +152,11 @@ export const AdminAttendanceMonitor: React.FC = () => {
                         >
                           {getStatusAbbr(status)}
                         </button>
+                        {att?.sources?.includes('MOBILE') && (
+                          <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-neutral-200">
+                            <Smartphone className="w-3 h-3 text-blue-600" />
+                          </div>
+                        )}
                       </td>
                     );
                   })}
@@ -221,7 +227,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
 
               <div>
                 <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-3">Shift & Punches</h3>
-                <div className="bg-neutral-50 p-4 rounded-xl space-y-3">
+                <div className="bg-neutral-50 p-4 rounded-xl space-y-3 mb-6">
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-600">Shift</span>
                     <span className="font-medium text-neutral-900">{selectedCell.details.shiftCode || 'N/A'}</span>
@@ -250,6 +256,13 @@ export const AdminAttendanceMonitor: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider mb-3">Raw Punches</h3>
+                <AdminPunchDetailMap 
+                  empCode={selectedCell.empDetails.employeeCode || selectedCell.empDetails.employeeId} 
+                  date={selectedCell.date} 
+                  companyId={selectedCell.empDetails.companyId}
+                />
               </div>
             </div>
             
