@@ -208,7 +208,7 @@ class PayrollProcessor:
             ptAmount=pt,
             reimbursementAmount=core["total_reimbursements"],
             lopDays=core["lop_result"].totalLopDays,
-            status="CALCULATED",
+            status="Generated",
             version=version,
             isActive=True,
             previousVersionId=previous_version_id,

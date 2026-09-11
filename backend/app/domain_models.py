@@ -428,13 +428,12 @@ class PayrollCycle(BaseModel):
     name: str
     startDate: datetime
     endDate: datetime
-    processingStatus: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
 
 class PayrollRun(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     cycleId: str
     companyId: str
-    status: Literal["DRAFT", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "CLOSED"] = "DRAFT"
+    status: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
     attendanceSummary: dict = Field(default_factory=dict)
     calculationSummary: dict = Field(default_factory=dict)
     createdAt: datetime = Field(default_factory=datetime.utcnow)

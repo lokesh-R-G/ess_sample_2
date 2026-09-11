@@ -31,6 +31,10 @@ export const payrollCycleApi = {
     return api.get<PayrollCycle[]>('/v2/payroll/cycles');
   },
   
+  getCycle: async (cycleId: string): Promise<any> => {
+    return api.get<any>(`/v2/payroll/cycles/${cycleId}`);
+  },
+  
   createCycle: async (data: any): Promise<PayrollCycle> => {
     return api.post<PayrollCycle>('/v2/payroll/cycles', data);
   },

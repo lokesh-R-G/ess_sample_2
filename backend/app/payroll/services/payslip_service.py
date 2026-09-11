@@ -55,8 +55,15 @@ class PayslipService:
 
     async def publish_payslips(self, cycle_id: str, company_id: Optional[str] = None) -> int:
         cycle = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
-        if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED"]:
-            raise ValueError("Cycle must be finalized before publishing payslips")
+        if not cycle:
+            raise ValueError("Cycle not found")
+            
+        if not company_id:
+            raise ValueError("Company ID is required to publish payslips")
+            
+        run = await self.db.payroll_runs.find_one({"cycleId": cycle_id, "companyId": company_id})
+        if not run or run.get("status") not in ["FINALIZED", "PUBLISHED"]:
+            raise ValueError("Company payroll run must be finalized before publishing payslips")
 
         # Get all active payrolls for this cycle
         payroll_query = {"cycleId": cycle_id, "isActive": True}
@@ -102,13 +109,6 @@ class PayslipService:
             upsert=True,
         )
         
-        remaining_runs = await self.db.payroll_runs.count_documents({"cycleId": cycle_id, "status": {"$ne": "PUBLISHED"}})
-        if remaining_runs == 0:
-            await self.db.payroll_cycles.update_one(
-                {"_id": ObjectId(cycle_id)},
-                {"$set": {"processingStatus": "PUBLISHED"}}
-            )
-        
         # Integrate with the centralized personal email resolver to dispatch emails
         email_service = EmailService(self.db)
         import asyncio
@@ -116,27 +116,26 @@ class PayslipService:
         async def send_emails():
             for ps in payslips_to_publish:
                 emp_id = ps.get("employeeId")
-                emp = await self.db.employees.find_one({"_id": ObjectId(emp_id)})
-                if not emp:
-                    continue
-                emp_personal = await self.db.employee_personals.find_one({"employeeId": emp_id})
-                
-                personal_email = None
-                if emp_personal and emp_personal.get("contactInfo"):
-                    personal_email = emp_personal["contactInfo"].get("personalEmail")
-                
-                email = personal_email or emp.get("email")
-                
-                if email:
+                try:
+                    emp = await self.db.employees.find_one({"employeeId": emp_id, "isCurrent": True, "deletedAt": None})
+                    if not emp:
+                        continue
+                        
+                    from app.employee.services.email_resolver import get_employee_personal_email
+                    try:
+                        email = await get_employee_personal_email(self.db, emp_id)
+                    except ValueError as ve:
+                        print(f"Skipping payslip email for {emp_id}: {ve}")
+                        continue
+                    
                     context = {
                         "payrollMonth": cycle.get("name", "Current Month"),
                         "employeeName": f"{emp.get('firstName', '')} {emp.get('lastName', '')}".strip(),
                         "netPay": ps.get("payloadSnapshot", {}).get("netPay", 0)
                     }
-                    try:
-                        await email_service.send_payslip_email(email, context, [])
-                    except Exception as e:
-                        print(f"Error dispatching payslip to {email}: {e}")
+                    await email_service.send_payslip_email(email, context, [])
+                except Exception as e:
+                    print(f"Error dispatching payslip email for employeeId {emp_id} (Payslip ID: {ps.get('_id')}): {e}")
         
         # Run email dispatch in background to prevent HTTP timeout
         asyncio.create_task(send_emails())

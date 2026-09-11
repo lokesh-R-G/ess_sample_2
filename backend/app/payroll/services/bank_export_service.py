@@ -11,8 +11,15 @@ class BankExportService:
 
     async def generate_csv_export(self, cycle_id: str, generated_by: str, company_id: str | None = None) -> str:
         cycle = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
-        if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED", "EXPORTED"]:
-            raise ValueError("Cycle must be finalized before exporting")
+        if not cycle:
+            raise ValueError("Cycle not found")
+        
+        if not company_id:
+            raise ValueError("Company ID is required to export")
+            
+        run = await self.db.payroll_runs.find_one({"cycleId": cycle_id, "companyId": company_id})
+        if not run or run.get("status") not in ["FINALIZED", "PUBLISHED", "EXPORTED"]:
+            raise ValueError("Company payroll run must be finalized before exporting")
 
         payroll_query = {"cycleId": cycle_id, "isActive": True}
         if company_id:
@@ -83,12 +90,5 @@ class BankExportService:
             {"$set": {"status": "EXPORTED", "updatedAt": datetime.utcnow()}},
             upsert=True,
         )
-
-        remaining_runs = await self.db.payroll_runs.count_documents({"cycleId": cycle_id, "status": {"$ne": "EXPORTED"}})
-        if remaining_runs == 0:
-            await self.db.payroll_cycles.update_one(
-                {"_id": ObjectId(cycle_id)},
-                {"$set": {"processingStatus": "EXPORTED"}}
-            )
 
         return csv_content

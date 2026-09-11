@@ -97,10 +97,12 @@ const AdminPayrollControl: React.FC = () => {
   const [savingAdjustments, setSavingAdjustments] = useState(false);
   const [processingPayroll, setProcessingPayroll] = useState(false);
   const [publishingPayroll, setPublishingPayroll] = useState(false);
+  const [exportingCSV, setExportingCSV] = useState(false);
   const [adjustments, setAdjustments] = useState<AdjustmentRecord[]>([]);
   const [adjustmentDrafts, setAdjustmentDrafts] = useState<Record<string, AdjustmentDraft>>({});
   const [deductionIndex, setDeductionIndex] = useState<Record<string, Record<string, any>>>({});
   const [currentCycle, setCurrentCycle] = useState<PayrollCycle | null>(null);
+  const [currentCompanyRun, setCurrentCompanyRun] = useState<any>(null);
 
   const selectedCompany = useMemo(() => companies.find((company) => company.id === selectedCompanyId) || null, [companies, selectedCompanyId]);
   const selectedBranch = useMemo(() => branches.find((branch) => branch.id === selectedBranchId) || null, [branches, selectedBranchId]);
@@ -229,6 +231,9 @@ const AdminPayrollControl: React.FC = () => {
         const cycle = cycles.find((item) => item.id === selectedCycleId) || null;
         setCurrentCycle(cycle);
 
+        const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+        setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
+
         const [attendanceResult, payrollResult, reimbursementResult, deductionResult] = await Promise.allSettled([
           payrollCycleApi.getAttendanceLedger(selectedCycleId, selectedCompanyId, selectedBranchId || undefined),
           payrollReviewApi.getPayrollsForCycle(selectedCycleId, selectedCompanyId),
@@ -337,9 +342,11 @@ const AdminPayrollControl: React.FC = () => {
         toast.error(error?.message || 'Failed to load payroll cycle data');
         setAttendanceLedger([]);
         setAdjustments([]);
+        setAdjustments([]);
         setPayrolls([]);
         setAdjustmentDrafts({});
         setDeductionIndex({});
+        setCurrentCompanyRun(null);
       } finally {
         setLoadingPayrolls(false);
       }
@@ -445,8 +452,14 @@ const AdminPayrollControl: React.FC = () => {
       toast.success(`Payroll calculated for ${summary?.successfullyCalculated ?? 0} employees`);
       const payrollList = await payrollReviewApi.getPayrollsForCycle(selectedCycleId, selectedCompanyId);
       setPayrolls(normalizeArray<PayrollRecord>(payrollList));
+      const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+      setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to calculate payroll');
+      try {
+        const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+        setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
+      } catch (e) {}
     } finally {
       setProcessingPayroll(false);
     }
@@ -471,24 +484,51 @@ const AdminPayrollControl: React.FC = () => {
     }
   };
 
-  const updateCycleStatus = async (status: string) => {
-    if (!selectedCycleId) return;
+  const exportBankCSV = async () => {
+    if (!selectedCompanyId || !selectedCycleId) {
+      toast.error('Select a company and payroll cycle first');
+      return;
+    }
+
+    setExportingCSV(true);
     try {
-      await payrollCycleApi.updateStatus(selectedCycleId, status);
-      toast.success(`Cycle moved to ${status}`);
-      const refreshed = await payrollCycleApi.getCycles();
-      const cycleList = normalizeArray<PayrollCycle>(refreshed).map((cycle) => ({ ...cycle, id: String((cycle as any).id || (cycle as any)._id || '') }));
-      setCycles(cycleList);
-      setCurrentCycle(cycleList.find((cycle) => cycle.id === selectedCycleId) || null);
+      const csvContent = await payrollCycleApi.exportCsv(selectedCycleId, selectedCompanyId);
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `bank_export_${selectedCycleId}_${selectedCompanyId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Bank export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export bank file');
+    } finally {
+      setExportingCSV(false);
+    }
+  };
+
+  const updateCycleStatus = async (status: string) => {
+    if (!selectedCycleId || !selectedCompanyId) return;
+    try {
+      await api.patch(`/v2/payroll/cycles/${selectedCycleId}/status`, { status, companyId: selectedCompanyId });
+      toast.success(`Run moved to ${status}`);
+      
+      // refresh company run specifically
+      const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+      setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update cycle status');
     }
   };
 
-  const currentCycleStatus = currentCycle?.processingStatus || 'DRAFT';
+  const currentCycleStatus = currentCompanyRun?.status || 'DRAFT';
 
   const companyOptions = companies.map((company) => ({ value: company.id, label: company.code ? `${company.name} (${company.code})` : company.name }));
-  const cycleOptions = cycles.map((cycle) => ({ value: cycle.id, label: `${cycle.name} · ${cycle.processingStatus}` }));
+  const cycleOptions = cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }));
 
   return (
     <div className="min-h-screen bg-slate-50/70">
@@ -611,6 +651,17 @@ const AdminPayrollControl: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CheckCircle className="h-4 w-4" /> Finalize Payroll
+            </button>
+            <button
+              type="button"
+              onClick={exportBankCSV}
+              disabled={!['FINALIZED', 'PUBLISHED', 'EXPORTED'].includes(currentCycleStatus || '') || exportingCSV}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg> 
+              {exportingCSV ? 'Exporting...' : 'Bank Export'}
             </button>
             <button
               type="button"

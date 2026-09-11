@@ -250,8 +250,8 @@ async def create_deduction(
         
     # Check cycle status
     if payload.payrollCycleId:
-        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(payload.payrollCycleId)})
-        if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
+        run = await db.payroll_runs.find_one({"cycleId": payload.payrollCycleId, "companyId": payload.companyId})
+        if run and run.get("status") in ["CALCULATED", "PUBLISHED"]:
             raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
 
     payload.createdBy = current_user.get("employeeId")
@@ -276,8 +276,8 @@ async def update_deduction(
 
     cycle_id = doc.get("payrollCycleId")
     if cycle_id:
-        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
-        if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
+        run = await db.payroll_runs.find_one({"cycleId": cycle_id, "companyId": doc.get("companyId")})
+        if run and run.get("status") in ["CALCULATED", "PUBLISHED"]:
             raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
 
     # Archive old
@@ -320,8 +320,8 @@ async def delete_deduction(
         
     cycle_id = doc.get("payrollCycleId")
     if cycle_id:
-        cycle = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
-        if cycle and cycle.get("processingStatus") in ["CALCULATED", "PUBLISHED"]:
+        run = await db.payroll_runs.find_one({"cycleId": cycle_id, "companyId": doc.get("companyId")})
+        if run and run.get("status") in ["CALCULATED", "PUBLISHED"]:
             raise HTTPException(status_code=400, detail="Cannot modify deductions for a calculated or published cycle.")
             
     await db.manual_payroll_adjustments.update_one(
@@ -371,10 +371,10 @@ async def calculate_payroll_for_company(
         except Exception as e:
             errors.append({"employeeId": emp["employeeId"], "error": str(e)})
             
-    # Update cycle status if needed
-    await db.payroll_cycles.update_one(
-        {"_id": ObjectId(cycle_id)},
-        {"$set": {"processingStatus": "CALCULATED"}}
+    # Update run status if needed
+    await db.payroll_runs.update_one(
+        {"cycleId": cycle_id, "companyId": company_id},
+        {"$set": {"status": "CALCULATED", "updatedAt": datetime.utcnow()}}
     )
             
     return {"success": len(results), "errors": errors}
@@ -592,24 +592,10 @@ async def publish_payroll(
     current_user: dict = Depends(get_current_user),
     _admin = Depends(require_permission("payroll.publish", resource_context_provider=cycle_context))
 ):
-        
     payslip_service = PayslipService(db)
     
-    payrolls = await db.payrolls.find({"cycleId": cycle_id, "isActive": True}).to_list(length=1000)
-    success = 0
-    errors = []
-    
-    for p in payrolls:
-        try:
-            # Reuses existing payslip publisher
-            await payslip_service.generate_and_publish_payslip(str(p["_id"]))
-            success += 1
-        except Exception as e:
-            errors.append({"employeeId": p["employeeId"], "error": str(e)})
-            
-    await db.payroll_cycles.update_one(
-        {"_id": ObjectId(cycle_id)},
-        {"$set": {"processingStatus": "PUBLISHED"}}
-    )
-    
-    return {"success": success, "errors": errors}
+    try:
+        success = await payslip_service.publish_payslips(cycle_id, company_id)
+        return {"success": success, "errors": []}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

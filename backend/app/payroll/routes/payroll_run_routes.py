@@ -20,6 +20,7 @@ class CreateCycleReq(BaseModel):
 
 class UpdateStatusReq(BaseModel):
     status: str
+    companyId: Optional[str] = None
 
 async def global_context() -> dict:
     return {}
@@ -58,14 +59,47 @@ async def list_cycles(db: AsyncIOMotorDatabase = Depends(get_database), current_
     # Use by_alias=False to expose 'id' instead of '_id'
     return [c.model_dump(by_alias=False) for c in cycles]
 
+@router.get("/cycles/{cycle_id}")
+async def get_cycle(cycle_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user), _admin = Depends(require_permission("payroll.cycle.read", resource_context_provider=global_context))):
+    if not ObjectId.is_valid(cycle_id):
+        raise HTTPException(status_code=400, detail="Invalid cycle ID")
+    
+    cycle_doc = await db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
+    if not cycle_doc:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+        
+    cycle_doc["id"] = str(cycle_doc.pop("_id"))
+    
+    # Fetch all company runs for this cycle
+    runs = await db.payroll_runs.find({"cycleId": cycle_id}).to_list(length=100)
+    for run in runs:
+        run["id"] = str(run.pop("_id"))
+        
+        # Optionally, join with company info if you have it in db
+        company = await db.companies.find_one({"_id": ObjectId(run["companyId"])})
+        if company:
+            run["companyName"] = company.get("name", "Unknown")
+            
+    cycle_doc["companies"] = runs
+    return cycle_doc
+
+class UpdateStatusReq(BaseModel):
+    status: str
+    companyId: Optional[str] = None
+
 @router.patch("/cycles/{cycle_id}/status")
 async def update_cycle_status(cycle_id: str, req: UpdateStatusReq, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user), _admin = Depends(require_permission("payroll.cycle.manage", resource_context_provider=global_context))):
     if not ObjectId.is_valid(cycle_id):
         raise HTTPException(status_code=400, detail="Invalid cycle ID")
-    service = PayrollCycleService(db)
+    
+    company_id = req.companyId or current_user.get("companyId")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="companyId is required")
+
+    service = PayrollRunService(db)
     try:
-        cycle = await service.update_status(cycle_id, req.status, current_user.get("employeeId"))
-        return cycle.model_dump(by_alias=False)
+        run = await service.update_status(cycle_id, company_id, req.status, current_user.get("employeeId"))
+        return run
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -73,15 +107,14 @@ async def update_cycle_status(cycle_id: str, req: UpdateStatusReq, db: AsyncIOMo
 async def process_cycle(cycle_id: str, req: ProcessCycleReq, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user), _admin = Depends(require_permission("payroll.calculate", resource_context_provider=payload_company_context))):
     if not ObjectId.is_valid(cycle_id):
         raise HTTPException(status_code=400, detail="Invalid cycle ID")
-    service = PayrollCycleService(db)
-    processor = PayrollProcessor(db)
     run_service = PayrollRunService(db)
     company_id = req.companyId or current_user.get("companyId")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="companyId is required")
+        
     try:
-        await run_service.get_or_create(cycle_id, company_id)
-        await run_service.update(cycle_id, company_id, status="PROCESSING")
-        summary = await service.process_cycle(cycle_id, company_id, processor, current_user.get("employeeId"))
-        await run_service.update(cycle_id, company_id, status="CALCULATED", calculationSummary=summary)
+        processor = PayrollProcessor(db)
+        summary = await run_service.process_cycle(cycle_id, company_id, processor, current_user.get("employeeId"))
         return summary
     except Exception as e:
         if company_id:

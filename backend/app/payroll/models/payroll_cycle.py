@@ -5,5 +5,4 @@ class PayrollCycleModel(BaseDBModel):
     name: str
     startDate: str
     endDate: str
-    processingStatus: str = "DRAFT"
     companyId: Optional[str] = None
