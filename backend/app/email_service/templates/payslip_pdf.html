@@ -16,65 +16,11 @@
     }
     body {
         font-family: Helvetica, Arial, sans-serif;
-        font-size: 10pt;
-        color: #333333;
+        font-size: 9pt;
+        color: #000000;
     }
-    h1, h2, h3, h4 {
-        margin: 0;
-        padding: 0;
-    }
-    .header-table {
-        width: 100%;
-        border-bottom: 2px solid #2c3e50;
-        padding-bottom: 10px;
-        margin-bottom: 20px;
-    }
-    .company-name {
-        font-size: 18pt;
-        font-weight: bold;
-        color: #2c3e50;
-    }
-    .payslip-title {
-        font-size: 14pt;
-        font-weight: bold;
-        text-align: right;
-    }
-    .section-title {
-        font-size: 12pt;
-        font-weight: bold;
-        background-color: #ecf0f1;
-        padding: 5px;
-        margin-top: 15px;
-        margin-bottom: 10px;
-        border: 1px solid #bdc3c7;
-    }
-    .info-table {
-        width: 100%;
-        margin-bottom: 15px;
-    }
-    .info-table td {
-        padding: 3px 5px;
-    }
-    .label {
-        font-weight: bold;
-        width: 25%;
-    }
-    .value {
-        width: 25%;
-    }
-    
-    .financial-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
-    .financial-table th, .financial-table td {
-        border: 1px solid #bdc3c7;
-        padding: 6px;
-    }
-    .financial-table th {
-        background-color: #ecf0f1;
-        text-align: left;
+    .text-center {
+        text-align: center;
     }
     .text-right {
         text-align: right;
@@ -82,156 +28,248 @@
     .font-bold {
         font-weight: bold;
     }
+    .company-name {
+        font-size: 16pt;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    .company-address {
+        font-size: 9pt;
+        margin-top: 5px;
+    }
+    .header-divider {
+        border-bottom: 1px solid #000;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .title-table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .title-table td {
+        font-weight: bold;
+        font-size: 11pt;
+    }
+    
+    .employee-table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .employee-table td {
+        padding: 3px 0;
+    }
+    .label-col {
+        width: 18%;
+        font-weight: bold;
+    }
+    .value-col {
+        width: 32%;
+    }
+    
+    .financial-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #000;
+        margin-bottom: 15px;
+    }
+    .financial-table th, .financial-table td {
+        border: 1px solid #000;
+        padding: 5px;
+        vertical-align: top;
+    }
+    .financial-table th {
+        font-weight: bold;
+        background-color: #f2f2f2;
+    }
+    
+    .inner-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .inner-table td {
+        border: none;
+        padding: 3px 0;
+    }
+    
+    .net-pay-box {
+        width: 100%;
+        border: 1px solid #000;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    .net-pay-amount {
+        font-size: 14pt;
+        font-weight: bold;
+    }
+    
+    .leave-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #000;
+    }
+    .leave-table th, .leave-table td {
+        border: 1px solid #000;
+        padding: 5px;
+        text-align: center;
+    }
+    .leave-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    
     .footer {
         text-align: center;
         font-size: 8pt;
-        color: #7f8c8d;
+        color: #555;
     }
 </style>
 </head>
 <body>
 
-<table class="header-table">
+<div class="text-center">
+    <div class="company-name">{{ companyName }}</div>
+    {% if companyAddress %}<div class="company-address">{{ companyAddress }}</div>{% endif %}
+</div>
+
+<div class="header-divider"></div>
+
+<table class="title-table">
     <tr>
-        <td width="60%">
-            <div class="company-name">{{ companyName }}</div>
-            {% if branchName %}<div>Branch: {{ branchName }}</div>{% endif %}
-            {% if companyAddress %}<div>{{ companyAddress }}</div>{% endif %}
-        </td>
-        <td width="40%" class="payslip-title">
-            PAYSLIP<br>
-            <span style="font-size: 10pt; font-weight: normal;">For the month of {{ payrollMonth }}</span>
-        </td>
+        <td style="text-align: left;">PAY SLIP / LEAVE DETAILS FOR THE MONTH</td>
+        <td style="text-align: right;">{{ payrollMonth }}</td>
     </tr>
 </table>
 
-<div class="section-title">Employee Details</div>
-<table class="info-table">
+<table class="employee-table">
     <tr>
-        <td class="label">Employee Name:</td><td class="value">{{ employeeName }}</td>
-        <td class="label">Employee ID:</td><td class="value">{{ employeeCode }}</td>
+        <td class="label-col">EMPLOYEE'S NO</td><td class="value-col">{{ employeeCode }}</td>
+        <td class="label-col">DATE OF BIRTH</td><td class="value-col">{{ dob }}</td>
     </tr>
     <tr>
-        <td class="label">Designation:</td><td class="value">{{ designation }}</td>
-        <td class="label">Department:</td><td class="value">{{ department }}</td>
+        <td class="label-col">EMPLOYEE'S NAME</td><td class="value-col">{{ employeeName }}</td>
+        <td class="label-col">DATE OF JOINING</td><td class="value-col">{{ dateOfJoining }}</td>
     </tr>
     <tr>
-        <td class="label">Date of Joining:</td><td class="value">{{ dateOfJoining or 'N/A' }}</td>
-        <td class="label">Email:</td><td class="value">{{ email or 'N/A' }}</td>
+        <td class="label-col">FATHER/HUSBAND</td><td class="value-col">{{ fatherHusbandName }}</td>
+        <td class="label-col">DEPARTMENT</td><td class="value-col">{{ department }}</td>
     </tr>
     <tr>
-        <td class="label">Phone:</td><td class="value">{{ phone or 'N/A' }}</td>
-        <td class="label">Payment Mode:</td><td class="value">{{ paymentMode }}</td>
-    </tr>
-    {% if bankName %}
-    <tr>
-        <td class="label">Bank Name:</td><td class="value">{{ bankName }}</td>
-        <td class="label">Account Number:</td><td class="value">{{ accountNumberMasked }}</td>
+        <td class="label-col">BANK ACCOUNT NO</td><td class="value-col">{{ accountNumberMasked }}</td>
+        <td class="label-col">DESIGNATION</td><td class="value-col">{{ designation }}</td>
     </tr>
     <tr>
-        <td class="label">IFSC Code:</td><td class="value">{{ ifscCode or 'N/A' }}</td>
-        <td class="label"></td><td class="value"></td>
-    </tr>
-    {% endif %}
-</table>
-
-<div class="section-title">Attendance & Leave Details</div>
-<table class="info-table">
-    <tr>
-        <td class="label">Total Working Days:</td><td class="value">{{ workingDays }}</td>
-        <td class="label">Payable Days:</td><td class="value">{{ payableDays }}</td>
-    </tr>
-    <tr>
-        <td class="label">Present Days:</td><td class="value">{{ presentDays if presentDays is not none else 'N/A' }}</td>
-        <td class="label">Absent Days:</td><td class="value">{{ absentDays if absentDays is not none else 'N/A' }}</td>
-    </tr>
-    <tr>
-        <td class="label">LOP Days:</td><td class="value">{{ lopDays }}</td>
-        <td class="label">Leave Balance:</td>
-        <td class="value">
-            {% if historicalLeaveBalance is not none %}
-                {{ historicalLeaveBalance }}
-            {% else %}
-                N/A (Not in snapshot)
-            {% endif %}
-        </td>
+        <td class="label-col">UAN</td><td class="value-col">{{ uan }}</td>
+        <td class="label-col">PAN</td><td class="value-col">{{ pan }}</td>
     </tr>
 </table>
 
-<div class="section-title">Salary Details</div>
-<table width="100%">
+<table class="financial-table">
     <tr>
-        <td width="48%" valign="top">
-            <table class="financial-table">
-                <tr>
-                    <th>Earnings</th>
-                    <th class="text-right">Amount</th>
-                </tr>
+        <th width="33%" style="text-align: left;">EARNINGS</th>
+        <th width="12%" style="text-align: right;">SCALE</th>
+        <th width="12%" style="text-align: right;">EAR. AMT</th>
+        <th width="28%" style="text-align: left;">DEDUCTIONS</th>
+        <th width="15%" style="text-align: right;">AMT</th>
+    </tr>
+    <tr>
+        <!-- EARNINGS COLUMNS -->
+        <td colspan="3" style="padding: 0; border: none; border-right: 1px solid #000;">
+            <table class="inner-table">
                 {% for item in earnings %}
                 <tr>
-                    <td>{{ item.name }}</td>
-                    <td class="text-right">{{ "%.2f"|format(item.amount) }}</td>
+                    <td width="58%" style="padding-left: 5px;">{{ item.name }}</td>
+                    <td width="21%" style="text-align: right;">{{ item.scale }}</td>
+                    <td width="21%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(item.amount) }}</td>
                 </tr>
                 {% endfor %}
-                <tr>
-                    <td class="font-bold">Gross Earnings</td>
-                    <td class="text-right font-bold">{{ "%.2f"|format(grossEarnings) }}</td>
-                </tr>
             </table>
         </td>
-        <td width="4%"></td>
-        <td width="48%" valign="top">
-            <table class="financial-table">
-                <tr>
-                    <th>Deductions</th>
-                    <th class="text-right">Amount</th>
-                </tr>
+        
+        <!-- DEDUCTIONS COLUMNS -->
+        <td colspan="2" style="padding: 0; border: none;">
+            <table class="inner-table">
                 {% for item in deductions %}
                 <tr>
-                    <td>{{ item.name }}</td>
-                    <td class="text-right">{{ "%.2f"|format(item.amount) }}</td>
+                    <td width="65%" style="padding-left: 5px;">{{ item.name }}</td>
+                    <td width="35%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(item.amount) }}</td>
                 </tr>
                 {% endfor %}
                 {% if not deductions %}
                 <tr>
-                    <td>No Deductions</td>
-                    <td class="text-right">0.00</td>
+                    <td width="65%" style="padding-left: 5px;">No Deductions</td>
+                    <td width="35%" style="text-align: right; padding-right: 5px;">0.00</td>
                 </tr>
                 {% endif %}
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <!-- EARNINGS TOTALS -->
+        <td style="border: none; border-top: 1px solid #000; border-right: 1px solid #000; border-bottom: none; font-weight: bold;" colspan="3">
+            <table class="inner-table">
                 <tr>
-                    <td class="font-bold">Total Deductions</td>
-                    <td class="text-right font-bold">{{ "%.2f"|format(grossDeductions) }}</td>
+                    <td width="58%" style="padding-left: 5px;">TOTAL EARNINGS</td>
+                    <td width="21%"></td>
+                    <td width="21%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossEarnings) }}</td>
+                </tr>
+            </table>
+        </td>
+        
+        <!-- DEDUCTIONS TOTALS -->
+        <td style="border: none; border-top: 1px solid #000; border-bottom: none; font-weight: bold;" colspan="2">
+            <table class="inner-table">
+                <tr>
+                    <td width="65%" style="padding-left: 5px;">TOTAL DEDUCTION</td>
+                    <td width="35%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossDeductions) }}</td>
                 </tr>
             </table>
         </td>
     </tr>
 </table>
 
-<table class="financial-table" style="margin-top: 20px;">
+<div class="net-pay-box">
+    <div style="float: left; width: 60%;">
+        <strong>Amount in words:</strong><br>
+        {{ netPayWords }}
+    </div>
+    <div style="float: right; width: 40%; text-align: right;" class="net-pay-amount">
+        NET PAY : ₹ {{ "%.2f"|format(netPay) }}
+    </div>
+    <div style="clear: both;"></div>
+</div>
+
+<div class="font-bold" style="margin-bottom: 5px;">LEAVE DETAILS</div>
+<table class="leave-table">
     <tr>
-        <th width="70%" style="font-size: 12pt;">Net Pay</th>
-        <th width="30%" class="text-right" style="font-size: 12pt;">{{ "%.2f"|format(netPay) }}</th>
+        <th width="20%">Leave Type</th>
+        <th width="20%">Opening</th>
+        <th width="20%">Availed</th>
+        <th width="20%">Closing</th>
+        <th width="20%">L.O.P. Days</th>
     </tr>
-</table>
-
-{% if netPayWords %}
-<p style="margin-top: 10px;"><strong>Amount in words:</strong> {{ netPayWords }}</p>
-{% endif %}
-
-{% if employerContributions and employerContributions|length > 0 %}
-<div class="section-title">Employer Contributions (Not deducted from Net Pay)</div>
-<table class="info-table" style="width: 50%;">
-    {% for item in employerContributions %}
+    {% for leave in leaveDetails %}
     <tr>
-        <td class="label" style="width: 50%;">{{ item.name }}:</td>
-        <td class="text-right">{{ "%.2f"|format(item.amount) }}</td>
+        <td>{{ leave.type }}</td>
+        <td>{{ leave.opening }}</td>
+        <td>{{ leave.availed }}</td>
+        <td>{{ leave.closing }}</td>
+        <td>{{ leave.lop }}</td>
     </tr>
     {% endfor %}
+    {% if not leaveDetails %}
+    <tr>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>{{ lopDays }}</td>
+    </tr>
+    {% endif %}
 </table>
-{% endif %}
 
 <div id="footerContent" class="footer">
-    Generated by ESS HRMS &bull; Payroll Period: {{ periodStart }} to {{ periodEnd }}
+    This is a computer generated payslip. No signature is required.
 </div>
 
 </body>

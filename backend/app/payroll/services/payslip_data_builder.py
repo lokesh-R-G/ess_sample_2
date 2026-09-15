@@ -3,8 +3,6 @@ from datetime import datetime
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.payroll.models.payslip_data import PayslipData
-from num2words import num2words # Let's see if this is installed. If not we can implement a basic one or just omit. Wait, I should implement a basic one or check if it exists.
-import re
 
 class PayslipDataBuilder:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -12,7 +10,7 @@ class PayslipDataBuilder:
 
     def _mask_account_number(self, acc_num: str) -> str:
         if not acc_num:
-            return ""
+            return "-"
         acc_num = str(acc_num).strip()
         if len(acc_num) <= 4:
             return acc_num
@@ -21,9 +19,11 @@ class PayslipDataBuilder:
     def _amount_in_words(self, amount: float) -> str:
         try:
             from num2words import num2words
-            # Indian numbering system
-            words = num2words(int(amount), lang='en_IN').title()
-            return f"Rupees {words} Only"
+            int_part = int(amount)
+            dec_part = int(round((amount - int_part) * 100))
+            words_int = num2words(int_part, lang='en_IN').title()
+            words_dec = num2words(dec_part, lang='en_IN').title() if dec_part > 0 else "Zero"
+            return f"Rupees {words_int} and {words_dec} Paise Only"
         except ImportError:
             return ""
 
@@ -31,20 +31,43 @@ class PayslipDataBuilder:
         emp_id = payroll_doc.get("employeeId")
         company_id = payroll_doc.get("companyId")
         
-        # 1. Employee
+        # 1. Company
+        comp = await self.db.companies.find_one({"_id": ObjectId(company_id)}) if len(str(company_id))==24 else await self.db.companies.find_one({"_id": company_id})
+        company_name = comp.get("name", "Unknown Company") if comp else "Unknown Company"
+        
+        company_address = None
+        if comp:
+            address_parts = [
+                comp.get("addressLine1"), comp.get("addressLine2"), 
+                comp.get("city"), comp.get("state"), comp.get("zipCode")
+            ]
+            valid_parts = [str(p).strip() for p in address_parts if p and str(p).strip()]
+            if valid_parts:
+                company_address = ", ".join(valid_parts)
+        
+        # 2. Employee & Personal
         emp = await self.db.employees.find_one({"employeeId": emp_id, "isCurrent": True})
         if not emp:
             emp = {"employeeId": emp_id, "employeeCode": payroll_doc.get("employeeCode", "")}
             
         emp_personal = await self.db.employee_personals.find_one({"employeeId": emp_id, "isCurrent": True})
+        
         first_name = emp_personal.get("firstName", "") if emp_personal else emp.get("firstName", "")
         last_name = emp_personal.get("lastName", "") if emp_personal else emp.get("lastName", "")
         employee_name = f"{first_name} {last_name}".strip()
+        
+        father_husband = "-"
+        dob_str = "-"
+        if emp_personal:
+            fh = emp_personal.get("fatherName") or emp_personal.get("husbandName")
+            if fh: father_husband = fh
+            dob = emp_personal.get("dateOfBirth")
+            if dob:
+                dob_str = dob.strftime("%d-%m-%Y") if isinstance(dob, datetime) else str(dob)
 
-        # 2. Contact
+        # 3. Contact
         email = None
         phone = None
-        address_str = None
         
         from app.employee.services.email_resolver import get_employee_personal_email
         try:
@@ -55,42 +78,23 @@ class PayslipDataBuilder:
         emp_contact = await self.db.employee_contacts.find_one({"employeeId": emp_id, "isCurrent": True})
         if emp_contact:
             phone = emp_contact.get("mobilePhone")
-            
-        emp_address = await self.db.employee_addresses.find_one({"employeeId": emp_id, "addressType": "Current"})
-        if emp_address:
-            address_parts = [
-                emp_address.get("street"),
-                emp_address.get("city"),
-                emp_address.get("state"),
-                emp_address.get("zipCode"),
-                emp_address.get("country")
-            ]
-            address_str = ", ".join([str(p) for p in address_parts if p])
 
-        # 3. Employment History -> Org Entities
+        # 4. Employment History -> Org Entities
         employment = await self.db.employee_employment_histories.find_one({
             "employeeId": emp_id,
+            "companyId": company_id,
             "isCurrent": True
         })
         
-        company_name = "Unknown Company"
-        branch_name = "Unknown Branch"
-        department_name = "Unknown Department"
-        designation_name = "Unknown Designation"
-        doj = None
-        emp_type = None
+        branch_name = "-"
+        department_name = "-"
+        designation_name = "-"
+        doj_str = "-"
         
         if employment:
-            doj_dt = employment.get("effectiveFrom")
+            doj_dt = employment.get("effectiveFrom") or employment.get("dateOfJoining")
             if doj_dt:
-                doj = doj_dt.strftime("%Y-%m-%d") if isinstance(doj_dt, datetime) else str(doj_dt)
-                
-            emp_type = employment.get("employmentType")
-            
-            c_id = employment.get("companyId")
-            if c_id:
-                comp = await self.db.companies.find_one({"_id": ObjectId(c_id)}) if len(str(c_id))==24 else await self.db.companies.find_one({"_id": c_id})
-                if comp: company_name = comp.get("name", company_name)
+                doj_str = doj_dt.strftime("%d-%m-%Y") if isinstance(doj_dt, datetime) else str(doj_dt)
                 
             b_id = employment.get("branchId")
             if b_id:
@@ -107,22 +111,24 @@ class PayslipDataBuilder:
                 desig = await self.db.designations.find_one({"_id": ObjectId(des_id)}) if len(str(des_id))==24 else await self.db.designations.find_one({"_id": des_id})
                 if desig: designation_name = desig.get("name", designation_name)
 
-        # 4. Bank / Payment
+        # 5. Bank / Payment
         bank = await self.db.employee_bank_accounts.find_one({"employeeId": emp_id})
-        bank_name = None
-        masked_acc = None
-        ifsc = None
-        acc_holder = None
+        masked_acc = "-"
         
         if bank:
-            bank_name = bank.get("bankName")
             acc_num = bank.get("accountNumber")
             if acc_num:
-                masked_acc = self._mask_account_number(acc_num)
-            ifsc = bank.get("ifscCode")
-            acc_holder = bank.get("nameAsPerBank")
-
-        # 5. Attendance & LOP from Snapshot
+                masked_acc = str(acc_num)
+                
+        # 6. Statutory
+        statutory = await self.db.employee_statutory_profiles.find_one({"employeeId": emp_id, "isCurrent": True})
+        uan = "-"
+        pan = "-"
+        if statutory:
+            if statutory.get("uan"): uan = str(statutory.get("uan"))
+            if statutory.get("pan"): pan = str(statutory.get("pan"))
+            
+        # 7. Attendance & LOP from Snapshot
         snapshot = payroll_doc.get("payloadSnapshot", {})
         working_days = snapshot.get("workingDays", 0)
         lop_breakdown = snapshot.get("lopBreakdown", {})
@@ -131,98 +137,110 @@ class PayslipDataBuilder:
         payable_days = lop_breakdown.get("payableDays", working_days - lop_days)
         absent_days = lop_breakdown.get("absenceLopDays", 0)
         
-        # We don't have a strict "presentDays" in snapshot, infer from payable and working if needed
-        # Or just leave as None if not explicitly persisted. Let's calculate present days roughly.
         present_days = payable_days - lop_breakdown.get("leaveLopDays", 0) if payable_days >= 0 else 0
 
-        # Leave (We omit balance because there's no historical snapshot)
-        historical_leave_balance = None
-        
-        # 6. Earnings & Deductions
+        # Leave Details
+        # As there's no historical leave balance snapshot in payroll_doc, we output "-" to remain honest.
+        leave_details = []
+
+        # 8. Earnings & Deductions
         components = snapshot.get("components", [])
-        earnings = []
-        for c in components:
-            if c.get("componentType") == "Earning":
-                earnings.append({
-                    "name": c.get("componentName", "Unknown"),
-                    "amount": round(c.get("proratedAmount", 0), 2)
-                })
-                
-        gross_earnings = payroll_doc.get("grossEarnings", 0)
         
+        earnings = []
         deductions = []
+        
+        # We need the scale from Salary Assignment if available
+        # Fetching current salary assignment (fallback for scale since we don't have historical scale snapshot)
+        salary_assignment = await self.db.employee_salary_assignments.find_one({"employeeId": emp_id, "status": "Active"})
+        scale_map = {}
+        if salary_assignment:
+            for sc in salary_assignment.get("components", []):
+                scale_map[str(sc.get("salaryComponentId"))] = sc.get("monthlyAmount", 0)
+
+        for c in components:
+            name = c.get("componentName", "Unknown").upper()
+            earned = round(c.get("proratedAmount", 0), 2)
+            c_id = c.get("salaryComponentId")
+            
+            # If scale is not available, we use "-" as per instructions
+            scale = scale_map.get(str(c_id), "-") if c_id else "-"
+            
+            if c.get("componentType") == "Earning":
+                earnings.append({"name": name, "scale": scale, "amount": earned})
+            else:
+                deductions.append({"name": name, "scale": "-", "amount": earned})
+                
+        reimb_amt = payroll_doc.get("reimbursementAmount", 0)
+        if reimb_amt > 0:
+            earnings.append({"name": "REIMBURSEMENT", "scale": "-", "amount": reimb_amt})
+                
         pf_amt = payroll_doc.get("pfAmount", 0)
         if pf_amt > 0:
-            deductions.append({"name": "Provident Fund (PF)", "amount": pf_amt})
+            deductions.append({"name": "PROVIDENT FUND", "scale": "-", "amount": pf_amt})
             
         esi_amt = payroll_doc.get("esiAmount", 0)
         if esi_amt > 0:
-            deductions.append({"name": "ESI", "amount": esi_amt})
+            deductions.append({"name": "ESI", "scale": "-", "amount": esi_amt})
             
         pt_amt = payroll_doc.get("ptAmount", 0)
         if pt_amt > 0:
-            deductions.append({"name": "Professional Tax (PT)", "amount": pt_amt})
+            deductions.append({"name": "PROFESSIONAL TAX", "scale": "-", "amount": pt_amt})
             
         manual_ded = snapshot.get("manualDeductionsTotal", 0)
         if manual_ded > 0:
-            deductions.append({"name": "Manual Deductions", "amount": manual_ded})
+            deductions.append({"name": "MANUAL DEDUCTION", "scale": "-", "amount": manual_ded})
             
-        # Optional: Add LOP deduction if it exists as a separate amount. Usually LOP reduces gross.
-        
+        gross_earnings = payroll_doc.get("grossEarnings", 0)
         gross_deductions = payroll_doc.get("grossDeductions", 0)
         net_pay = payroll_doc.get("netPay", 0)
         
-        # Employer Contributions
-        employer_contrib = []
-        pf_calc = snapshot.get("pfCalculation", {})
-        esi_calc = snapshot.get("esiCalculation", {})
+        p_start = cycle_doc.get("startDate") or cycle_doc.get("periodStart")
+        p_end = cycle_doc.get("endDate") or cycle_doc.get("periodEnd")
         
-        er_pf = pf_calc.get("employerPf", 0)
-        er_pen = pf_calc.get("employerPension", 0)
-        if er_pf > 0:
-            employer_contrib.append({"name": "Employer PF", "amount": er_pf})
-        if er_pen > 0:
-            employer_contrib.append({"name": "Employer Pension", "amount": er_pen})
-            
-        er_esi = esi_calc.get("employerEsi", 0)
-        if er_esi > 0:
-            employer_contrib.append({"name": "Employer ESI", "amount": er_esi})
-            
-        p_start = cycle_doc.get("periodStart")
-        p_end = cycle_doc.get("periodEnd")
+        period_str = ""
+        if p_start:
+            month_abbr = p_start.strftime("%b")
+            year_short = p_start.strftime("%y")
+            period_str = f"{month_abbr}-{year_short}"
+        else:
+            period_str = cycle_doc.get("name", "")
 
         return PayslipData(
             companyName=company_name,
-            companyAddress=None,
+            companyAddress=company_address,
             branchName=branch_name,
-            payrollMonth=cycle_doc.get("name", ""),
+            payrollMonth=period_str,
             periodStart=p_start.strftime("%Y-%m-%d") if isinstance(p_start, datetime) else str(p_start),
             periodEnd=p_end.strftime("%Y-%m-%d") if isinstance(p_end, datetime) else str(p_end),
             
             employeeId=emp_id,
             employeeCode=payroll_doc.get("employeeCode", emp.get("employeeCode", "")),
             employeeName=employee_name,
+            fatherHusbandName=father_husband,
             email=email,
             phone=phone,
-            address=address_str,
+            address=None,
+            dob=dob_str,
             
             department=department_name,
             designation=designation_name,
-            dateOfJoining=doj,
-            employmentType=emp_type,
+            dateOfJoining=doj_str,
+            employmentType=None,
             
             paymentMode="Bank Transfer" if bank else "Cash/Cheque",
-            bankName=bank_name,
+            bankName="-",
             accountNumberMasked=masked_acc,
-            ifscCode=ifsc,
-            accountHolderName=acc_holder,
+            ifscCode="-",
+            accountHolderName="-",
+            uan=uan,
+            pan=pan,
             
             workingDays=working_days,
             payableDays=payable_days,
             presentDays=present_days,
             absentDays=absent_days,
             
-            historicalLeaveBalance=historical_leave_balance,
+            leaveDetails=leave_details,
             
             lopDays=lop_days,
             lopBreakdown=lop_breakdown,
@@ -233,5 +251,5 @@ class PayslipDataBuilder:
             grossDeductions=gross_deductions,
             netPay=net_pay,
             netPayWords=self._amount_in_words(net_pay),
-            employerContributions=employer_contrib
+            employerContributions=[]
         )

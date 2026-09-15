@@ -134,10 +134,7 @@ class PayslipService:
                     # 2. Build normalized data
                     payslip_data = await builder.build(payroll_doc, cycle)
                     
-                    # 3. Compile PDF
-                    pdf_bytes = compiler.compile(payslip_data)
-                    
-                    # 4. Save Locally
+                    # Storage Directory Path
                     c_id = payroll_doc.get("companyId", "unknown_company")
                     p_start = payslip_data.periodStart
                     if p_start and "-" in p_start:
@@ -147,16 +144,20 @@ class PayslipService:
                     else:
                         year = "unknown_year"
                         month = "unknown_month"
-                    
-                    # backend/storage/payslips/<year>/<month>/<companyId>/
+                        
                     storage_dir = os.path.join(os.getcwd(), "storage", "payslips", year, month, str(c_id))
                     os.makedirs(storage_dir, exist_ok=True)
                     
-                    filename = f"{payslip_data.employeeCode}_{cycle_id}_Payslip.pdf"
+                    payslip_version = ps.get("version", 1)
+                    filename = f"{payslip_data.employeeCode}_{cycle_id}_v{payslip_version}_Payslip.pdf"
                     file_path = os.path.join(storage_dir, filename)
                     
-                    with open(file_path, "wb") as f:
-                        f.write(pdf_bytes)
+                    if not os.path.exists(file_path):
+                        # 3. Compile PDF
+                        pdf_bytes = compiler.compile(payslip_data)
+                        
+                        with open(file_path, "wb") as f:
+                            f.write(pdf_bytes)
                         
                     # 5. Retrieve email
                     from app.employee.services.email_resolver import get_employee_personal_email

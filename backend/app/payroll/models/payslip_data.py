@@ -14,22 +14,28 @@ class PayslipData(BaseModel):
     employeeId: str
     employeeCode: str
     employeeName: str
+    fatherHusbandName: Optional[str] = "-"
     email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    dob: Optional[str] = "-"
     
     # Employment
     department: str
     designation: str
-    dateOfJoining: Optional[str] = None
+    dateOfJoining: Optional[str] = "-"
     employmentType: Optional[str] = None
     
     # Payment & Bank
     paymentMode: Optional[str] = "Bank Transfer"
-    bankName: Optional[str] = None
-    accountNumberMasked: Optional[str] = None
-    ifscCode: Optional[str] = None
-    accountHolderName: Optional[str] = None
+    bankName: Optional[str] = "-"
+    accountNumberMasked: Optional[str] = "-"
+    ifscCode: Optional[str] = "-"
+    accountHolderName: Optional[str] = "-"
+    
+    # Statutory
+    uan: Optional[str] = "-"
+    pan: Optional[str] = "-"
     
     # Attendance
     workingDays: float
@@ -38,10 +44,8 @@ class PayslipData(BaseModel):
     absentDays: Optional[float] = None
     halfDays: Optional[float] = None
     
-    # Leave
-    approvedLeave: Optional[float] = None
-    leaveByType: Optional[Dict[str, float]] = None
-    historicalLeaveBalance: Optional[float] = None
+    # Leave Details
+    leaveDetails: Optional[List[Dict[str, Any]]] = None
     
     # LOP
     lopDays: float
