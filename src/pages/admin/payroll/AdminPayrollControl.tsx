@@ -98,6 +98,7 @@ const AdminPayrollControl: React.FC = () => {
   const [processingPayroll, setProcessingPayroll] = useState(false);
   const [publishingPayroll, setPublishingPayroll] = useState(false);
   const [exportingCSV, setExportingCSV] = useState(false);
+  const [exportingXLSX, setExportingXLSX] = useState(false);
   const [adjustments, setAdjustments] = useState<AdjustmentRecord[]>([]);
   const [adjustmentDrafts, setAdjustmentDrafts] = useState<Record<string, AdjustmentDraft>>({});
   const [deductionIndex, setDeductionIndex] = useState<Record<string, Record<string, any>>>({});
@@ -511,6 +512,46 @@ const AdminPayrollControl: React.FC = () => {
     }
   };
 
+  const exportPayrollXLSX = async () => {
+    const runId = getId(currentCompanyRun);
+    if (!runId) {
+      toast.error('No payroll run available. Please calculate payroll first.');
+      return;
+    }
+
+    setExportingXLSX(true);
+    try {
+      const response = await api.get(`/v2/payroll/runs/${runId}/export/payroll`, {
+        responseType: 'blob'
+      });
+      
+      // Attempt to extract filename from Content-Disposition header
+      let filename = `Payroll_Export_${runId}.xlsx`;
+      const disposition = response.headers['content-disposition'];
+      if (disposition && disposition.includes('filename="')) {
+        const matches = /filename="([^"]+)"/.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1];
+        }
+      }
+
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Payroll export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export payroll file');
+    } finally {
+      setExportingXLSX(false);
+    }
+  };
+
   const updateCycleStatus = async (status: string) => {
     if (!selectedCycleId || !selectedCompanyId) return;
     try {
@@ -662,6 +703,17 @@ const AdminPayrollControl: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg> 
               {exportingCSV ? 'Exporting...' : 'Bank Export'}
+            </button>
+            <button
+              type="button"
+              onClick={exportPayrollXLSX}
+              disabled={!['CALCULATED', 'ADMIN_REVIEW', 'FINALIZED', 'PUBLISHED', 'EXPORTED'].includes(currentCycleStatus || '') || exportingXLSX}
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {exportingXLSX ? 'Exporting...' : 'Payroll Export'}
             </button>
             <button
               type="button"

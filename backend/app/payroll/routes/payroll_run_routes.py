@@ -276,6 +276,25 @@ async def export_bank_csv(cycle_id: str, companyId: Optional[str] = None, db: As
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+from app.payroll.services.payroll_export_service import PayrollExportService
+from fastapi.responses import StreamingResponse
+import io
+
+@router.get("/runs/{run_id}/export/payroll")
+async def export_payroll_xlsx(run_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user), _admin = Depends(require_permission("payroll.cycle.read", resource_context_provider=query_company_context))):
+    if not ObjectId.is_valid(run_id):
+        raise HTTPException(status_code=400, detail="Invalid run ID")
+    service = PayrollExportService(db)
+    try:
+        content, filename = await service.generate_payroll_export(run_id, generated_by=current_user.get("employeeId"))
+        return StreamingResponse(
+            io.BytesIO(content),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=\"{filename}\""}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/cycles/{cycle_id}/payrolls")
 async def get_cycle_payrolls(cycle_id: str, companyId: Optional[str] = None, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user), _admin = Depends(require_permission("payroll.cycle.read", resource_context_provider=query_company_context))):
     if not ObjectId.is_valid(cycle_id):
