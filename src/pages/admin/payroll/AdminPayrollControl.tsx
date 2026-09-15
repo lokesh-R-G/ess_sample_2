@@ -522,12 +522,11 @@ const AdminPayrollControl: React.FC = () => {
     setExportingXLSX(true);
     try {
       const response = await api.get(`/v2/payroll/runs/${runId}/export/payroll`, {
-        responseType: 'blob'
-      });
+        responseType: 'raw'
+      }) as Response;
       
-      // Attempt to extract filename from Content-Disposition header
       let filename = `Payroll_Export_${runId}.xlsx`;
-      const disposition = response.headers['content-disposition'];
+      const disposition = response.headers.get('content-disposition');
       if (disposition && disposition.includes('filename="')) {
         const matches = /filename="([^"]+)"/.exec(disposition);
         if (matches != null && matches[1]) { 
@@ -535,7 +534,7 @@ const AdminPayrollControl: React.FC = () => {
         }
       }
 
-      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
@@ -543,6 +542,7 @@ const AdminPayrollControl: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
       toast.success('Payroll export downloaded successfully');
     } catch (error: any) {
