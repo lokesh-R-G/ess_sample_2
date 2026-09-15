@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: A4;
+        margin: 1cm;
+        @frame footer {
+            -pdf-frame-content: footerContent;
+            bottom: 1cm;
+            margin-left: 1cm;
+            margin-right: 1cm;
+            height: 1cm;
+        }
+    }
+    body {
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+        color: #333333;
+    }
+    h1, h2, h3, h4 {
+        margin: 0;
+        padding: 0;
+    }
+    .header-table {
+        width: 100%;
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .company-name {
+        font-size: 18pt;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    .payslip-title {
+        font-size: 14pt;
+        font-weight: bold;
+        text-align: right;
+    }
+    .section-title {
+        font-size: 12pt;
+        font-weight: bold;
+        background-color: #ecf0f1;
+        padding: 5px;
+        margin-top: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #bdc3c7;
+    }
+    .info-table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .info-table td {
+        padding: 3px 5px;
+    }
+    .label {
+        font-weight: bold;
+        width: 25%;
+    }
+    .value {
+        width: 25%;
+    }
+    
+    .financial-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    .financial-table th, .financial-table td {
+        border: 1px solid #bdc3c7;
+        padding: 6px;
+    }
+    .financial-table th {
+        background-color: #ecf0f1;
+        text-align: left;
+    }
+    .text-right {
+        text-align: right;
+    }
+    .font-bold {
+        font-weight: bold;
+    }
+    .footer {
+        text-align: center;
+        font-size: 8pt;
+        color: #7f8c8d;
+    }
+</style>
+</head>
+<body>
+
+<table class="header-table">
+    <tr>
+        <td width="60%">
+            <div class="company-name">{{ companyName }}</div>
+            {% if branchName %}<div>Branch: {{ branchName }}</div>{% endif %}
+            {% if companyAddress %}<div>{{ companyAddress }}</div>{% endif %}
+        </td>
+        <td width="40%" class="payslip-title">
+            PAYSLIP<br>
+            <span style="font-size: 10pt; font-weight: normal;">For the month of {{ payrollMonth }}</span>
+        </td>
+    </tr>
+</table>
+
+<div class="section-title">Employee Details</div>
+<table class="info-table">
+    <tr>
+        <td class="label">Employee Name:</td><td class="value">{{ employeeName }}</td>
+        <td class="label">Employee ID:</td><td class="value">{{ employeeCode }}</td>
+    </tr>
+    <tr>
+        <td class="label">Designation:</td><td class="value">{{ designation }}</td>
+        <td class="label">Department:</td><td class="value">{{ department }}</td>
+    </tr>
+    <tr>
+        <td class="label">Date of Joining:</td><td class="value">{{ dateOfJoining or 'N/A' }}</td>
+        <td class="label">Email:</td><td class="value">{{ email or 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td class="label">Phone:</td><td class="value">{{ phone or 'N/A' }}</td>
+        <td class="label">Payment Mode:</td><td class="value">{{ paymentMode }}</td>
+    </tr>
+    {% if bankName %}
+    <tr>
+        <td class="label">Bank Name:</td><td class="value">{{ bankName }}</td>
+        <td class="label">Account Number:</td><td class="value">{{ accountNumberMasked }}</td>
+    </tr>
+    <tr>
+        <td class="label">IFSC Code:</td><td class="value">{{ ifscCode or 'N/A' }}</td>
+        <td class="label"></td><td class="value"></td>
+    </tr>
+    {% endif %}
+</table>
+
+<div class="section-title">Attendance & Leave Details</div>
+<table class="info-table">
+    <tr>
+        <td class="label">Total Working Days:</td><td class="value">{{ workingDays }}</td>
+        <td class="label">Payable Days:</td><td class="value">{{ payableDays }}</td>
+    </tr>
+    <tr>
+        <td class="label">Present Days:</td><td class="value">{{ presentDays if presentDays is not none else 'N/A' }}</td>
+        <td class="label">Absent Days:</td><td class="value">{{ absentDays if absentDays is not none else 'N/A' }}</td>
+    </tr>
+    <tr>
+        <td class="label">LOP Days:</td><td class="value">{{ lopDays }}</td>
+        <td class="label">Leave Balance:</td>
+        <td class="value">
+            {% if historicalLeaveBalance is not none %}
+                {{ historicalLeaveBalance }}
+            {% else %}
+                N/A (Not in snapshot)
+            {% endif %}
+        </td>
+    </tr>
+</table>
+
+<div class="section-title">Salary Details</div>
+<table width="100%">
+    <tr>
+        <td width="48%" valign="top">
+            <table class="financial-table">
+                <tr>
+                    <th>Earnings</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+                {% for item in earnings %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.amount) }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td class="font-bold">Gross Earnings</td>
+                    <td class="text-right font-bold">{{ "%.2f"|format(grossEarnings) }}</td>
+                </tr>
+            </table>
+        </td>
+        <td width="4%"></td>
+        <td width="48%" valign="top">
+            <table class="financial-table">
+                <tr>
+                    <th>Deductions</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+                {% for item in deductions %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.amount) }}</td>
+                </tr>
+                {% endfor %}
+                {% if not deductions %}
+                <tr>
+                    <td>No Deductions</td>
+                    <td class="text-right">0.00</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td class="font-bold">Total Deductions</td>
+                    <td class="text-right font-bold">{{ "%.2f"|format(grossDeductions) }}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table class="financial-table" style="margin-top: 20px;">
+    <tr>
+        <th width="70%" style="font-size: 12pt;">Net Pay</th>
+        <th width="30%" class="text-right" style="font-size: 12pt;">{{ "%.2f"|format(netPay) }}</th>
+    </tr>
+</table>
+
+{% if netPayWords %}
+<p style="margin-top: 10px;"><strong>Amount in words:</strong> {{ netPayWords }}</p>
+{% endif %}
+
+{% if employerContributions and employerContributions|length > 0 %}
+<div class="section-title">Employer Contributions (Not deducted from Net Pay)</div>
+<table class="info-table" style="width: 50%;">
+    {% for item in employerContributions %}
+    <tr>
+        <td class="label" style="width: 50%;">{{ item.name }}:</td>
+        <td class="text-right">{{ "%.2f"|format(item.amount) }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+<div id="footerContent" class="footer">
+    Generated by ESS HRMS &bull; Payroll Period: {{ periodStart }} to {{ periodEnd }}
+</div>
+
+</body>
+</html>

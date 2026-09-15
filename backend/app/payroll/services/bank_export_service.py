@@ -42,18 +42,24 @@ class BankExportService:
             net = p.get("netPay", 0.0)
             
             # Fetch bank details
-            bank = await self.db.employee_banks.find_one({"employeeId": emp_id, "isPrimary": True})
+            bank = await self.db.employee_bank_accounts.find_one({"employeeId": emp_id, "status": "Active"})
             
             if not bank:
-                errors.append(f"Employee {emp_id} has no primary bank configured.")
+                errors.append(f"Employee {emp_id} has no active bank configured.")
                 continue
                 
             account_number = bank.get("accountNumber", "")
             ifsc_code = bank.get("ifscCode", "")
             bank_name = bank.get("bankName", "")
             
-            if not account_number or not ifsc_code:
-                errors.append(f"Employee {emp_id} is missing account number or IFSC code.")
+            if not account_number and not ifsc_code:
+                errors.append(f"Employee {emp_id} is missing account number and IFSC code.")
+                continue
+            elif not account_number:
+                errors.append(f"Employee {emp_id} is missing account number.")
+                continue
+            elif not ifsc_code:
+                errors.append(f"Employee {emp_id} is missing IFSC code.")
                 continue
                 
             export_data.append([emp_id, account_number, ifsc_code, f"{net:.2f}", bank_name])

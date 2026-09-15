@@ -112,30 +112,96 @@ class PayslipService:
         # Integrate with the centralized personal email resolver to dispatch emails
         email_service = EmailService(self.db)
         import asyncio
+        import os
+        from app.payroll.services.payslip_data_builder import PayslipDataBuilder
+        from app.payroll.services.payslip_pdf_compiler import PayslipPDFCompiler
+        from app.email_service.schemas.email_log import EmailLogCreate
         
         async def send_emails():
+            builder = PayslipDataBuilder(self.db)
+            compiler = PayslipPDFCompiler()
+            
             for ps in payslips_to_publish:
                 emp_id = ps.get("employeeId")
+                payroll_id = ps.get("payrollId")
+                
                 try:
-                    emp = await self.db.employees.find_one({"employeeId": emp_id, "isCurrent": True, "deletedAt": None})
-                    if not emp:
+                    # 1. Fetch exact finalized payroll
+                    payroll_doc = await self.db.payrolls.find_one({"_id": ObjectId(payroll_id)}) if len(str(payroll_id))==24 else await self.db.payrolls.find_one({"_id": payroll_id})
+                    if not payroll_doc:
                         continue
                         
+                    # 2. Build normalized data
+                    payslip_data = await builder.build(payroll_doc, cycle)
+                    
+                    # 3. Compile PDF
+                    pdf_bytes = compiler.compile(payslip_data)
+                    
+                    # 4. Save Locally
+                    c_id = payroll_doc.get("companyId", "unknown_company")
+                    p_start = payslip_data.periodStart
+                    if p_start and "-" in p_start:
+                        parts = p_start.split("-")
+                        year = parts[0]
+                        month = parts[1] if len(parts) > 1 else "unknown_month"
+                    else:
+                        year = "unknown_year"
+                        month = "unknown_month"
+                    
+                    # backend/storage/payslips/<year>/<month>/<companyId>/
+                    storage_dir = os.path.join(os.getcwd(), "storage", "payslips", year, month, str(c_id))
+                    os.makedirs(storage_dir, exist_ok=True)
+                    
+                    filename = f"{payslip_data.employeeCode}_{cycle_id}_Payslip.pdf"
+                    file_path = os.path.join(storage_dir, filename)
+                    
+                    with open(file_path, "wb") as f:
+                        f.write(pdf_bytes)
+                        
+                    # 5. Retrieve email
                     from app.employee.services.email_resolver import get_employee_personal_email
                     try:
                         email = await get_employee_personal_email(self.db, emp_id)
                     except ValueError as ve:
+                        # Log failure for missing email but keep PDF
+                        log_entry = EmailLogCreate(
+                            recipient=f"employeeId:{emp_id}",
+                            subject=f"Salary Payslip - {cycle.get('name')}",
+                            template="payslip_email.html",
+                            status="Failed",
+                            failure_reason=f"Missing email: {ve}",
+                            attachment=filename
+                        )
+                        await email_service._log_email(log_entry)
                         print(f"Skipping payslip email for {emp_id}: {ve}")
                         continue
                     
+                    # 6. Send Email with Attachment
                     context = {
                         "payrollMonth": cycle.get("name", "Current Month"),
-                        "employeeName": f"{emp.get('firstName', '')} {emp.get('lastName', '')}".strip(),
-                        "netPay": ps.get("payloadSnapshot", {}).get("netPay", 0)
+                        "employeeName": payslip_data.employeeName,
+                        "netPay": payslip_data.netPay
                     }
-                    await email_service.send_payslip_email(email, context, [])
+                    attachments = [{
+                        "file": file_path,
+                        "headers": {"Content-Disposition": f'attachment; filename="{filename}"'},
+                        "mime_type": "application/pdf"
+                    }]
+                    
+                    await email_service.send_payslip_email(email, context, attachments)
+                    
                 except Exception as e:
-                    print(f"Error dispatching payslip email for employeeId {emp_id} (Payslip ID: {ps.get('_id')}): {e}")
+                    # Catch and log entire PDF/Email pipeline failures per employee
+                    log_entry = EmailLogCreate(
+                        recipient=f"employeeId:{emp_id}",
+                        subject=f"Salary Payslip - {cycle.get('name', '')}",
+                        template="payslip_email.html",
+                        status="Failed",
+                        failure_reason=f"Pipeline error: {str(e)}",
+                        attachment=None
+                    )
+                    await email_service._log_email(log_entry)
+                    print(f"Error dispatching payslip for employeeId {emp_id} (Payslip ID: {ps.get('_id')}): {e}")
         
         # Run email dispatch in background to prevent HTTP timeout
         asyncio.create_task(send_emails())
