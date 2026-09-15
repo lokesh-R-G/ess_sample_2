@@ -28,6 +28,7 @@ import AdminEmployeeSalaryList from './pages/admin/AdminEmployeeSalaryList';
 import AdminEmployeeSalaryConfig from './pages/admin/AdminEmployeeSalaryConfig';
 
 import AdminPayrollControl from './pages/admin/payroll/AdminPayrollControl';
+import CompanyBankAccounts from './pages/admin/payroll/CompanyBankAccounts';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendanceMonitor from './pages/admin/attendance/AdminAttendanceMonitor';
 import { MailboxLayout } from './pages/mail/MailboxLayout';
@@ -142,7 +143,8 @@ function AppRoutes() {
           <Route path="reimbursement-approvals" element={<ProtectedRoute requireAnyPermission={['reimbursement.approve']}><AdminReimbursementApprovals /></ProtectedRoute>} />
           <Route path="holidays" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminHolidays /></ProtectedRoute>} />
           <Route path="sync" element={<ProtectedRoute requireAnyPermission={['essl.sync']}><AdminSync /></ProtectedRoute>} />
-          <Route path="settings/payroll" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminPayrollRules /></ProtectedRoute>} />
+          <Route path="payroll/rules" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminPayrollRules /></ProtectedRoute>} />
+          <Route path="payroll/company-banks" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><CompanyBankAccounts /></ProtectedRoute>} />
           <Route path="payroll/preview" element={<ProtectedRoute requireAnyPermission={['payroll.manage', 'payroll.read']}><SalaryPreviewPage /></ProtectedRoute>} />
           <Route path="payroll/cycles" element={<ProtectedRoute requireAnyPermission={['payroll.cycle.manage', 'payroll.cycle.read']}><AdminPayrollCycles /></ProtectedRoute>} />
           <Route path="payroll/control" element={<ProtectedRoute requireAnyPermission={['payroll.read', 'payroll.calculate']}><AdminPayrollControl /></ProtectedRoute>} />

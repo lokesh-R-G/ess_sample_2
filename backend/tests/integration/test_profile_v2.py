@@ -34,7 +34,7 @@ async def setup_v2_profile_data():
     })
     
     # 4. Bank
-    await db.employee_banks.insert_one({
+    await db.employee_bank_accounts.insert_one({
         "employeeId": "test-profile-emp-001",
         "bankName": "Test Bank",
         "accountNumber": "000123456"
@@ -66,7 +66,7 @@ async def setup_v2_profile_data():
     await db.employees.delete_many({"employeeId": "test-profile-emp-001"})
     await db.employee_personals.delete_many({"employeeId": "test-profile-emp-001"})
     await db.employee_contacts.delete_many({"employeeId": "test-profile-emp-001"})
-    await db.employee_banks.delete_many({"employeeId": "test-profile-emp-001"})
+    await db.employee_bank_accounts.delete_many({"employeeId": "test-profile-emp-001"})
     await db.employee_addresses.delete_many({"employeeId": "test-profile-emp-001"})
     await db.employee_employment_histories.delete_many({"employeeId": "test-profile-emp-001"})
     await db.organizations.delete_many({"_id": org_id.inserted_id})
@@ -131,5 +131,5 @@ async def test_profile_v2_flow(setup_v2_profile_data):
         
         # Verify in DB that it didn't change
         db = get_database()
-        bank = await db.employee_banks.find_one({"employeeId": "test-profile-emp-001"})
+        bank = await db.employee_bank_accounts.find_one({"employeeId": "test-profile-emp-001"})
         assert bank["bankName"] == "Test Bank"

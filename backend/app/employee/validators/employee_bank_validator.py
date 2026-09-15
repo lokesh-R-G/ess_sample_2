@@ -6,7 +6,7 @@ from bson import ObjectId
 class EmployeeBankValidator:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-        self.collection = db["employee_banks"]
+        self.collection = db["employee_bank_accounts"]
         
     async def validate_create(self, data: EmployeeBankCreate):
         pass # add cross collection validation if needed

@@ -47,7 +47,7 @@ async def get_my_profile(current_user=Depends(get_current_user)):
     personal = await db.employee_personals.find_one({"employeeId": emp_uuid}) or {}
     contact = await db.employee_contacts.find_one({"employeeId": emp_uuid}) or {}
     address = await db.employee_addresses.find_one({"employeeId": emp_uuid}) or {}
-    bank = await db.employee_banks.find_one({"employeeId": emp_uuid}) or {}
+    bank = await db.employee_bank_accounts.find_one({"employeeId": emp_uuid}) or {}
     
     # Fetch active employment history
     emp_history = await db.employee_employment_histories.find_one(
