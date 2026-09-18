@@ -130,6 +130,7 @@ class SalaryCalculationEngine:
             
             # Create an instance matching what PayrollCalculationEngine expects
             c_dict = sc.copy()
+            c_dict["amount"] = amount
             c_dict["monthlyAmount"] = amount
             c_dict["formulaUsed"] = formula_used
             

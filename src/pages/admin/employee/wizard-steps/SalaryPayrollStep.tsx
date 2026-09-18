@@ -65,7 +65,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
         }
       });
       if (changed) {
-        onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false });
+        onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false, finalSalaryPreview: null });
         setStage(1);
         setGrossPreview(null);
         setPreview(null);
@@ -75,15 +75,15 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
 
   useEffect(() => {
     if (data.isSalaryPreviewCalculated && stage === 1) {
-      onChange({ ...data, isSalaryPreviewCalculated: false });
+      onChange({ ...data, isSalaryPreviewCalculated: false, finalSalaryPreview: null });
       setPreview(null);
       setGrossPreview(null);
     }
-  }, [data.salaryStructureId, data.basicSalary, data.customComponents]);
+  }, [data.salaryStructureId, data.customComponents]);
 
   const handleChange = (field: string, value: any) => {
-    onChange({ ...data, [field]: value, isSalaryPreviewCalculated: false });
-    if (stage === 2 && ['salaryStructureId', 'basicSalary'].includes(field)) {
+    onChange({ ...data, [field]: value, isSalaryPreviewCalculated: false, finalSalaryPreview: null });
+    if (stage === 2 && ['salaryStructureId'].includes(field)) {
         setStage(1);
         setGrossPreview(null);
         setPreview(null);
@@ -91,7 +91,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
   };
 
   const handleMultipleChanges = (updates: any) => {
-    onChange({ ...data, ...updates, isSalaryPreviewCalculated: false });
+    onChange({ ...data, ...updates, isSalaryPreviewCalculated: false, finalSalaryPreview: null });
     setStage(1);
     setGrossPreview(null);
     setPreview(null);
@@ -99,19 +99,18 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
 
   const handleCustomComponentChange = (cid: string, value: number) => {
     const newCustomComps = { ...(data.customComponents || {}), [cid]: value };
-    onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false });
+    onChange({ ...data, customComponents: newCustomComps, isSalaryPreviewCalculated: false, finalSalaryPreview: null });
     setStage(1);
     setGrossPreview(null);
     setPreview(null);
   };
 
   const generateGross = async () => {
-    if (!data.salaryStructureId || !data.basicSalary) return;
+    if (!data.salaryStructureId) return;
     setLoading(true);
     try {
       const res = await employeeApi.calculateGross({
         salaryStructureId: data.salaryStructureId,
-        basicSalary: Number(data.basicSalary),
         customComponents: data.customComponents || {}
       });
       setGrossPreview(res?.data || res || null);
@@ -124,7 +123,8 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
           wantsPension: data.wantsPension ?? true, 
           pfCalculationMode: data.pfCalculationMode && data.pfCalculationMode !== 'Default' ? data.pfCalculationMode : 'Actual',
           isExistingPensionMember: data.isExistingPensionMember ?? false,
-          isSalaryPreviewCalculated: false
+          isSalaryPreviewCalculated: false,
+          finalSalaryPreview: null
       });
       setPreview(null);
       setStage(2);
@@ -136,12 +136,11 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
   };
 
   const generatePreview = async () => {
-    if (!data.salaryStructureId || !data.basicSalary) return;
+    if (!data.salaryStructureId) return;
     setLoading(true);
     try {
       const res = await employeeApi.calculatePayslipPreview({
         salaryStructureId: data.salaryStructureId,
-        basicSalary: Number(data.basicSalary),
         ptState: data.ptState || 'None',
         customComponents: data.customComponents || {},
         isFresher: data.isFresher ?? true,
@@ -152,7 +151,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
         esiEnabled: data.esiEnabled ?? true
       });
       setPreview(res?.data || res || null);
-      onChange({ ...data, isSalaryPreviewCalculated: true });
+      onChange({ ...data, isSalaryPreviewCalculated: true, finalSalaryPreview: res?.data || res || null });
     } catch (e) {
       console.error("Preview failed", e);
     } finally {
@@ -204,15 +203,6 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                     ]}
                     required
                   />
-                  
-                  <Input
-                    label="Basic Salary (₹)"
-                    type="number"
-                    value={data.basicSalary || ''}
-                    onChange={(e) => handleChange('basicSalary', Number(e.target.value))}
-                    error={errors.basicSalary}
-                    required
-                  />
 
                   {currentStructure && flatComponents.length > 0 && (
                     <div className="p-4 bg-white border border-neutral-200 shadow-sm rounded-lg space-y-4">
@@ -260,7 +250,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                   {stage === 1 && (
                       <button
                         onClick={(e) => { e.preventDefault(); generateGross(); }}
-                        disabled={loading || !data.salaryStructureId || !data.basicSalary}
+                        disabled={loading || !data.salaryStructureId}
                         className="w-full flex items-center justify-center px-4 py-3 bg-neutral-800 text-white rounded-lg hover:bg-neutral-900 disabled:bg-neutral-200 disabled:text-neutral-400 font-semibold transition-colors"
                       >
                         {loading ? 'Calculating...' : 'Generate Gross'}
@@ -467,7 +457,7 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
 
                   <button
                     onClick={(e) => { e.preventDefault(); generatePreview(); }}
-                    disabled={loading || !data.salaryStructureId || !data.basicSalary}
+                    disabled={loading || !data.salaryStructureId}
                     className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-neutral-200 disabled:text-neutral-400 focus:ring-green-500 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                   >
                     <Calculator className="w-5 h-5 mr-2" />

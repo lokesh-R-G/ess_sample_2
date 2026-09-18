@@ -116,6 +116,7 @@ class InviteEmployeeRequest(BaseModel):
     employeeCode: str        # HR assigns/confirms this value in the dialog
     email: str               # Personal email for welcome notification
     role: str = "Employee"
+    roleId: str | None = None
 
 
 
@@ -198,6 +199,7 @@ async def invite_employee(
         "username": resolved_code,
         "email": email,
         "role": payload.role,
+        "roleId": payload.roleId,
         "passwordHash": hash_password(temp_password),
         "firstLogin": True,
         "isActive": True,

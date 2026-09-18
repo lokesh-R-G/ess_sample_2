@@ -9,3 +9,4 @@ class RoleUpdate(BaseModel):
 
 class RoleResponse(RoleCreate):
     id: str = Field(alias="_id")
+    roleId: str

@@ -207,7 +207,7 @@ export default function CompanyBankAccounts() {
               {banks.map((bank) => {
                 const comp = companies.find(c => c.code === bank.companyCode);
                 return (
-                <tr key={bank._id} className="hover:bg-gray-50">
+                <tr key={bank._id || bank.accountNumber || Math.random().toString()} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{comp?.name || bank.companyCode}</div>
                     <div className="text-gray-500 text-xs">{bank.companyCode}</div>

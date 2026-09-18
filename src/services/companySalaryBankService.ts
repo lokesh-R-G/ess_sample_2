@@ -18,8 +18,8 @@ export const companySalaryBankService = {
   getAll: async (companyCode?: string): Promise<CompanySalaryBank[]> => {
     const params = new URLSearchParams();
     if (companyCode) params.append('companyCode', companyCode);
-    const response = await api.get('/v2/payroll/company-salary-banks?' + params.toString());
-    return response.data;
+    const response = await api.get<CompanySalaryBank[]>('/v2/payroll/company-salary-banks?' + params.toString());
+    return response;
   },
 
   getByCompanyCode: async (companyCode: string): Promise<CompanySalaryBank[]> => {

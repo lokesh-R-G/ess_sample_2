@@ -39,7 +39,7 @@ class SalaryAssignmentService:
         else:
             effective_date = effective_from_raw
             
-        if not employee_id or not structure_id or basic_salary <= 0:
+        if not employee_id or not structure_id:
             raise HTTPException(status_code=400, detail="Invalid salary assignment payload")
             
         # Fetch components to build snapshot
@@ -66,6 +66,8 @@ class SalaryAssignmentService:
                 if cid in custom_comps:
                     doc["amount"] = custom_comps[cid]
                     doc["monthlyAmount"] = custom_comps[cid]
+                    if doc.get("isBasicComponent") or doc.get("name", "").upper() == "BASIC":
+                        basic_salary = float(custom_comps[cid])
         
         # Fetch actual rules dynamically instead of mocking
         target_dt_utc = datetime.utcnow()
