@@ -11,13 +11,23 @@ class PayrollCalculationEngine:
     """
 
     @staticmethod
-    def calculateMonthlyGross(gross: float, working_days: float, lop: float) -> float:
+    def calculateMonthlyGross(gross: float, salary_divisor: float, lop: float, round_off_method: str = "Nearest Rupee") -> float:
         """Calculate Monthly Gross after Loss of Pay (LOP) deduction."""
-        if working_days <= 0:
+        if salary_divisor <= 0:
             return 0.0
-        per_day_salary = gross / working_days
-        monthly_gross = gross - (per_day_salary * lop)
-        return max(0.0, monthly_gross)
+            
+        per_day_salary = gross / salary_divisor
+        lop_amount = per_day_salary * lop
+        monthly_gross = gross - lop_amount
+        
+        # Apply configured rounding to the final gross
+        import math
+        if round_off_method == "Nearest Rupee":
+            monthly_gross = round(monthly_gross)
+        elif round_off_method == "Nearest 10":
+            monthly_gross = round(monthly_gross / 10.0) * 10.0
+            
+        return max(0.0, float(monthly_gross))
 
     @staticmethod
     def calculateDistributionRatios(structure_components: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

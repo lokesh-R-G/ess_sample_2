@@ -31,6 +31,10 @@ class PayrollCalculationInput(BaseModel):
     ptSlabs: List[ProfessionalTaxSlab]
     reimbursementsTotal: float = 0.0
     manualDeductionsTotal: float = 0.0
+    # Settings Context
+    salaryCalculationMethod: str = "Calendar Days"
+    salaryDivisor: float = 30.0
+    roundOffMethod: str = "Nearest Rupee"
     # Additional context
     reimbursementRecords: List[Dict[str, Any]] = []
     manualDeductionRecords: List[Dict[str, Any]] = []
@@ -43,6 +47,8 @@ class PayrollInputBuilder:
         self.salary_repo = EmployeeSalaryComponentRepository(db)
         self.pf_repo = PFRuleRepository(db)
         self.esi_repo = ESIRuleRepository(db)
+        from app.payroll.repositories.payroll_setting_repository import PayrollSettingRepository
+        self.setting_repo = PayrollSettingRepository(db)
 
     async def build(
         self,
@@ -133,7 +139,12 @@ class PayrollInputBuilder:
         # 4. Resolve Attendance / LOP
         lop_result_obj = None
         lop_days = 0.0
-        working_days = (end_date - start_date).days + 1
+        
+        # Determine actual calendar days in period
+        calendar_days = (end_date - start_date).days + 1
+        
+        # Still determine attendance working days for LOP aggregation
+        working_days = calendar_days
         
         if ui_components is None:
             attendance_cursor = self.db.attendance.find({
@@ -143,9 +154,25 @@ class PayrollInputBuilder:
             attendance_records = [doc async for doc in attendance_cursor]
             lop_result_obj = LopAggregator.aggregate_lop(attendance_records)
             lop_days = lop_result_obj.totalLopDays
+            working_days = lop_result_obj.workingDays
         else:
             if working_days <= 1:
                 working_days = 30
+                calendar_days = 30
+
+        # 4.5 Resolve Salary Divisor from Payroll Settings
+        payroll_settings = await self.setting_repo.get_active_setting(start_date)
+        calc_method = payroll_settings.defaultSalaryCalculationMethod if payroll_settings else "Calendar Days"
+        round_off_method = payroll_settings.roundOffMethod if payroll_settings else "Nearest Rupee"
+        
+        salary_divisor = float(calendar_days)
+        if calc_method == "Fixed 30 Days":
+            salary_divisor = 30.0
+        elif calc_method == "Calendar Days":
+            salary_divisor = float(calendar_days)
+        elif calc_method == "Working Days" or calc_method == "Attendance Based":
+            # Preserve existing behavior for these explicit settings: fallback to attendance length
+            salary_divisor = float(working_days)
 
         # 5. Resolve Manual Additions/Deductions
         reimbursements = []
@@ -184,5 +211,8 @@ class PayrollInputBuilder:
             reimbursementRecords=reimbursements,
             manualDeductionRecords=manual_deductions,
             lopBreakdown=lop_result_obj.model_dump() if lop_result_obj else {},
-            empChoice=emp_choice
+            empChoice=emp_choice,
+            salaryCalculationMethod=calc_method,
+            salaryDivisor=salary_divisor,
+            roundOffMethod=round_off_method
         )

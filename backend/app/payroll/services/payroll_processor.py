@@ -53,7 +53,12 @@ class PayrollProcessor:
         total_gross = PayrollCalculationEngine.calculateGross(structure_components)
         working_days = payroll_input.workingDays
         
-        monthly_gross = PayrollCalculationEngine.calculateMonthlyGross(total_gross, working_days, lop_result.totalLopDays)
+        monthly_gross = PayrollCalculationEngine.calculateMonthlyGross(
+            total_gross, 
+            payroll_input.salaryDivisor, 
+            lop_result.totalLopDays,
+            payroll_input.roundOffMethod
+        )
         prorated_components = PayrollCalculationEngine.splitSalaryComponents(monthly_gross, structure_components)
 
         pf_gross = PayrollCalculationEngine.calculatePfGross(prorated_components, pf_rule)
@@ -93,7 +98,10 @@ class PayrollProcessor:
             "total_manual_deductions": total_manual_deductions,
             "total_deductions": total_deductions,
             "monthly_gross": monthly_gross,
-            "net_pay": net_pay
+            "net_pay": net_pay,
+            "salary_divisor": payroll_input.salaryDivisor,
+            "salary_calculation_method": payroll_input.salaryCalculationMethod,
+            "round_off_method": payroll_input.roundOffMethod
         }
 
     async def calculate_employee_preview(self, employee_id: str, start_date: datetime, end_date: datetime) -> dict:
@@ -119,7 +127,10 @@ class PayrollProcessor:
             "calculatedAt": datetime.utcnow().isoformat(),
             "grossEarnings": core["monthly_gross"],
             "grossDeductions": core["total_deductions"],
-            "netPay": core["net_pay"]
+            "netPay": core["net_pay"],
+            "salaryDivisor": core["salary_divisor"],
+            "salaryCalculationMethod": core["salary_calculation_method"],
+            "roundOffMethod": core["round_off_method"]
         }
         return snapshot
 
@@ -187,9 +198,11 @@ class PayrollProcessor:
             "recalculatedBy": recalculated_by,
             "recalculationReason": reason,
             "reimbursementsTotal": core["total_reimbursements"],
-            "reimbursementIds": [str(r["_id"]) for r in reimbursements],
             "manualDeductionsTotal": core["total_manual_deductions"],
-            "calculatedAt": datetime.utcnow().isoformat()
+            "calculatedAt": datetime.utcnow().isoformat(),
+            "salaryDivisor": core["salary_divisor"],
+            "salaryCalculationMethod": core["salary_calculation_method"],
+            "roundOffMethod": core["round_off_method"]
         }
 
         # 7. Persist Payroll
