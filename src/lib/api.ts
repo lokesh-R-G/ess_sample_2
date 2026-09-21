@@ -27,6 +27,17 @@ export function getStoredUser<T>() {
   }
 }
 
+export class ApiError extends Error {
+  status: number;
+  response: any;
+  constructor(message: string, status: number, response?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.response = response;
+  }
+}
+
 export type ApiOptions = RequestInit & { responseType?: 'json' | 'text' | 'blob' | 'raw' };
 
 async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
@@ -51,13 +62,14 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
   if (!response.ok) {
     const contentType = response.headers.get('content-type') ?? '';
     let message = 'Request failed';
+    let errorBody = null;
     if (contentType.includes('application/json')) {
-      const errorBody = await response.json();
+      errorBody = await response.json();
       message = typeof errorBody === 'object' && errorBody && 'detail' in errorBody ? String((errorBody as { detail: unknown }).detail) : message;
     } else {
       message = await response.text();
     }
-    throw new Error(message);
+    throw new ApiError(message, response.status, { status: response.status, data: errorBody });
   }
 
   if (responseType === 'raw') {

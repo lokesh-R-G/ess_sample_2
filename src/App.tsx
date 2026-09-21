@@ -44,6 +44,8 @@ import AdminWeeklyOffPolicy from './pages/admin/AdminWeeklyOffPolicy';
 import AdminShifts from './pages/admin/AdminShifts';
 import LeavePolicySettings from './pages/admin/LeavePolicySettings';
 import ReimbursementPolicySettings from './pages/admin/ReimbursementPolicySettings';
+import NotFoundPage from './pages/errors/NotFoundPage';
+import AccessRestrictedPage from './pages/errors/AccessRestrictedPage';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -135,7 +137,7 @@ function AppRoutes() {
         <Route path="/admin" element={<ProtectedRoute requireAnyPermission={[
           'employee.read', 'leave.read', 'device.sync', 'payroll.read', 'organization.manage', 'attendance.read', 'attendance.sync', 'scheduler.configure'
         ]}><AdminLayout /></ProtectedRoute>}>
-          <Route index element={<AdminDashboard />} />
+          <Route index element={<ProtectedRoute requireAnyPermission={['organization.manage', 'organization.read']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="employees" element={<ProtectedRoute requireAnyPermission={['employee.read']}><AdminEmployees /></ProtectedRoute>} />
           <Route path="employees/new" element={<ProtectedRoute requireAnyPermission={['employee.manage']}><EmployeeWizard /></ProtectedRoute>} />
           <Route path="employees/edit/:id" element={<ProtectedRoute requireAnyPermission={['employee.manage']}><EmployeeWizard /></ProtectedRoute>} />
@@ -166,8 +168,9 @@ function AppRoutes() {
           <Route path="settings" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminSettings /></ProtectedRoute>} />
         </Route>
 
+        <Route path="/access-restricted" element={<AccessRestrictedPage />} />
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );
