@@ -174,21 +174,40 @@ class PayslipDataBuilder:
         if reimb_amt > 0:
             earnings.append({"name": "REIMBURSEMENT", "scale": "-", "amount": reimb_amt})
                 
-        pf_amt = payroll_doc.get("pfAmount", 0)
-        if pf_amt > 0:
-            deductions.append({"name": "PROVIDENT FUND", "scale": "-", "amount": pf_amt})
+        pf_calc = snapshot.get("pfCalculation", {})
+        emp_pf = pf_calc.get("employeePf", 0)
+        employer_pf = pf_calc.get("employerPf", 0)
+        employer_pension = pf_calc.get("employerPension", 0)
+        pf_admin = pf_calc.get("pfAdminCharges", 0)
+        if emp_pf > 0:
+            deductions.append({"name": "Employee PF", "scale": "-", "amount": emp_pf})
             
-        esi_amt = payroll_doc.get("esiAmount", 0)
-        if esi_amt > 0:
-            deductions.append({"name": "ESI", "scale": "-", "amount": esi_amt})
+        esi_calc = snapshot.get("esiCalculation", {})
+        emp_esi = esi_calc.get("employeeEsi", 0)
+        employer_esi = esi_calc.get("employerEsi", 0)
+        if emp_esi > 0:
+            deductions.append({"name": "Employee ESI", "scale": "-", "amount": emp_esi})
             
         pt_amt = payroll_doc.get("ptAmount", 0)
         if pt_amt > 0:
-            deductions.append({"name": "PROFESSIONAL TAX", "scale": "-", "amount": pt_amt})
+            deductions.append({"name": "Professional Tax", "scale": "-", "amount": pt_amt})
             
-        manual_ded = snapshot.get("manualDeductionsTotal", 0)
-        if manual_ded > 0:
-            deductions.append({"name": "MANUAL DEDUCTION", "scale": "-", "amount": manual_ded})
+        manual_ded_list = snapshot.get("manualDeductions", [])
+        for d in manual_ded_list:
+            ded_type = d.get("deductionType", "Manual Deduction")
+            amt = d.get("amount", 0.0)
+            if amt > 0:
+                deductions.append({"name": ded_type, "scale": "-", "amount": amt})
+        
+        employer_contributions = []
+        if employer_pf > 0:
+            employer_contributions.append({"name": "Employer PF", "amount": employer_pf})
+        if employer_pension > 0:
+            employer_contributions.append({"name": "Employer Pension / EPS", "amount": employer_pension})
+        if pf_admin > 0:
+            employer_contributions.append({"name": "PF Admin Charges", "amount": pf_admin})
+        if employer_esi > 0:
+            employer_contributions.append({"name": "Employer ESI", "amount": employer_esi})
             
         gross_earnings = payroll_doc.get("grossEarnings", 0)
         gross_deductions = payroll_doc.get("grossDeductions", 0)
@@ -251,5 +270,5 @@ class PayslipDataBuilder:
             grossDeductions=gross_deductions,
             netPay=net_pay,
             netPayWords=self._amount_in_words(net_pay),
-            employerContributions=[]
+            employerContributions=employer_contributions
         )

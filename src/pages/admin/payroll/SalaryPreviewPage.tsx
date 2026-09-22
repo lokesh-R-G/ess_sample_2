@@ -213,8 +213,8 @@ export default function SalaryPreviewPage() {
                       </div>
                     ))}
                     <div className="flex justify-between text-sm py-2 mt-2 border-t border-neutral-100 font-bold">
-                      <span>Total Contribution</span>
-                      <span className="text-neutral-700">₹{preview.summary?.employerContribution?.toFixed(2)}</span>
+                      <span>Total Employer Contribution</span>
+                      <span className="text-neutral-700">₹{preview.employerContributions?.reduce((sum: number, ec: any) => sum + (ec.amount || 0), 0).toFixed(2) || '0.00'}</span>
                     </div>
                   </div>
 

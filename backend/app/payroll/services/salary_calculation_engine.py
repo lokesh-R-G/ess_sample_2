@@ -236,7 +236,9 @@ class SalaryCalculationEngine:
         employer_contribution = PayrollCalculationEngine.calculateEmployerContribution(pf_result, esi_result)
 
         employer_preview = []
-        if pf_preview["totalEmployerPf"] > 0: employer_preview.append({"name": "Employer PF (incl. Pension & Admin)", "amount": pf_preview["totalEmployerPf"]})
+        if pf_preview["employerPf"] > 0: employer_preview.append({"name": "Employer PF", "amount": pf_preview["employerPf"]})
+        if pf_preview["employerPension"] > 0: employer_preview.append({"name": "Employer Pension / EPS", "amount": pf_preview["employerPension"]})
+        if pf_preview["adminCharges"] > 0: employer_preview.append({"name": "PF Admin Charges", "amount": pf_preview["adminCharges"]})
         if esi_result["employerEsi"] > 0: employer_preview.append({"name": "Employer ESI", "amount": esi_result["employerEsi"]})
 
         # 9. CTC

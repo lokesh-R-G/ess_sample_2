@@ -198,25 +198,78 @@ export const Payslip = () => {
                     <div>
                       <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700">Deductions</h3>
                       <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-neutral-600">Provident Fund (PF)</span>
-                          <span className="font-medium text-neutral-900">{payslip.payloadSnapshot?.pfCalculation?.employeePf?.toFixed(2) || '0.00'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-neutral-600">ESI</span>
-                          <span className="font-medium text-neutral-900">{payslip.payloadSnapshot?.esiCalculation?.employeeEsi?.toFixed(2) || '0.00'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-neutral-600">Professional Tax (PT)</span>
-                          <span className="font-medium text-neutral-900">{payslip.payloadSnapshot?.ptAmount?.toFixed(2) || '0.00'}</span>
-                        </div>
+                        {payslip.payloadSnapshot?.pfCalculation?.employeePf > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Employee PF</span>
+                            <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.pfCalculation.employeePf.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {payslip.payloadSnapshot?.esiCalculation?.employeeEsi > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Employee ESI</span>
+                            <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.esiCalculation.employeeEsi.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {payslip.payloadSnapshot?.ptAmount > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Professional Tax (PT)</span>
+                            <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.ptAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {payslip.payloadSnapshot?.manualDeductions?.map((d: any, idx: number) => (
+                          <div key={d._id || idx} className="flex justify-between">
+                            <span className="text-neutral-600">{d.deductionType || 'Manual Deduction'}</span>
+                            <span className="font-medium text-neutral-900">{d.amount?.toFixed(2)}</span>
+                          </div>
+                        ))}
                         <div className="flex justify-between border-t pt-2 mt-4 font-bold">
-                          <span>Total Deductions</span>
+                          <span>Total Deduction</span>
                           <span>{payslip.payloadSnapshot?.grossDeductions?.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
+                  
+                  {(payslip.payloadSnapshot?.pfCalculation?.employerPf > 0 || payslip.payloadSnapshot?.esiCalculation?.employerEsi > 0) && (
+                    <div className="mt-8">
+                      <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700">Employer Contributions</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                          <div className="space-y-3 text-sm">
+                            {payslip.payloadSnapshot?.pfCalculation?.employerPf > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-neutral-600">Employer PF</span>
+                                <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.pfCalculation.employerPf.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {payslip.payloadSnapshot?.pfCalculation?.employerPension > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-neutral-600">Employer Pension / EPS</span>
+                                <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.pfCalculation.employerPension.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {payslip.payloadSnapshot?.pfCalculation?.pfAdminCharges > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-neutral-600">PF Admin Charges</span>
+                                <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.pfCalculation.pfAdminCharges.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {payslip.payloadSnapshot?.esiCalculation?.employerEsi > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-neutral-600">Employer ESI</span>
+                                <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.esiCalculation.employerEsi.toFixed(2)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between border-t pt-2 mt-4 font-bold">
+                              <span>Total Employer Contribution</span>
+                              <span>{((payslip.payloadSnapshot?.pfCalculation?.employerPf || 0) + (payslip.payloadSnapshot?.pfCalculation?.employerPension || 0) + (payslip.payloadSnapshot?.pfCalculation?.pfAdminCharges || 0) + (payslip.payloadSnapshot?.esiCalculation?.employerEsi || 0)).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div></div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="bg-neutral-50 p-4 rounded mt-6 text-sm text-neutral-600">
                     <strong>Attendance & LOP Summary:</strong> Working Days: {payslip.payloadSnapshot?.workingDays} | 
@@ -312,25 +365,78 @@ export const Payslip = () => {
                   <div>
                     <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700">Estimated Deductions</h3>
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">Provident Fund (PF)</span>
-                        <span className="font-medium text-neutral-900">{previewData.pfCalculation?.employeePf?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">ESI</span>
-                        <span className="font-medium text-neutral-900">{previewData.esiCalculation?.employeeEsi?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">Professional Tax (PT)</span>
-                        <span className="font-medium text-neutral-900">{previewData.ptAmount?.toFixed(2) || '0.00'}</span>
-                      </div>
+                      {previewData.pfCalculation?.employeePf > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-600">Employee PF</span>
+                          <span className="font-medium text-neutral-900">{previewData.pfCalculation.employeePf.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {previewData.esiCalculation?.employeeEsi > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-600">Employee ESI</span>
+                          <span className="font-medium text-neutral-900">{previewData.esiCalculation.employeeEsi.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {previewData.ptAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-600">Professional Tax (PT)</span>
+                          <span className="font-medium text-neutral-900">{previewData.ptAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {previewData.manualDeductions?.map((d: any, idx: number) => (
+                        <div key={d._id || idx} className="flex justify-between">
+                          <span className="text-neutral-600">{d.deductionType || 'Manual Deduction'}</span>
+                          <span className="font-medium text-neutral-900">{d.amount?.toFixed(2)}</span>
+                        </div>
+                      ))}
                       <div className="flex justify-between border-t pt-2 mt-4 font-bold">
-                        <span>Total Deductions</span>
+                        <span>Total Deduction</span>
                         <span>{previewData.grossDeductions?.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {(previewData.pfCalculation?.employerPf > 0 || previewData.esiCalculation?.employerEsi > 0) && (
+                  <div className="px-6 pb-6 mt-2">
+                    <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700">Estimated Employer Contributions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div>
+                        <div className="space-y-3 text-sm">
+                          {previewData.pfCalculation?.employerPf > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-neutral-600">Employer PF</span>
+                              <span className="font-medium text-neutral-900">{previewData.pfCalculation.employerPf.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {previewData.pfCalculation?.employerPension > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-neutral-600">Employer Pension / EPS</span>
+                              <span className="font-medium text-neutral-900">{previewData.pfCalculation.employerPension.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {previewData.pfCalculation?.pfAdminCharges > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-neutral-600">PF Admin Charges</span>
+                              <span className="font-medium text-neutral-900">{previewData.pfCalculation.pfAdminCharges.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {previewData.esiCalculation?.employerEsi > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-neutral-600">Employer ESI</span>
+                              <span className="font-medium text-neutral-900">{previewData.esiCalculation.employerEsi.toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between border-t pt-2 mt-4 font-bold">
+                            <span>Total Employer Contribution</span>
+                            <span>{((previewData.pfCalculation?.employerPf || 0) + (previewData.pfCalculation?.employerPension || 0) + (previewData.pfCalculation?.pfAdminCharges || 0) + (previewData.esiCalculation?.employerEsi || 0)).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div></div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-neutral-50 p-4 border-t text-sm text-neutral-600">
                   <strong>Attendance Used:</strong> {previewData.workingDays} working days, {previewData.lopBreakdown?.totalLopDays} LOP days.
