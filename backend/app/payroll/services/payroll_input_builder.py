@@ -184,7 +184,10 @@ class PayrollInputBuilder:
                 "status": "PAYROLL_ELIGIBLE",
                 "deletedAt": None
             })
-            reimbursements = [doc async for doc in reimbursements_cursor]
+            raw_reimb = [doc async for doc in reimbursements_cursor]
+            for rr in raw_reimb:
+                rr["_id"] = str(rr["_id"])
+                reimbursements.append(rr)
             
             deductions_query = {
                 "employeeId": employee_id,
@@ -195,7 +198,10 @@ class PayrollInputBuilder:
                 deductions_query["payrollCycleId"] = cycle_id
             else:
                 deductions_query["payrollPeriod"] = start_date.strftime("%Y-%m")
-            manual_deductions = [doc async for doc in self.db.manual_payroll_adjustments.find(deductions_query)]
+            raw_manual = [doc async for doc in self.db.manual_payroll_adjustments.find(deductions_query)]
+            for rm in raw_manual:
+                rm["_id"] = str(rm["_id"])
+                manual_deductions.append(rm)
             
         # 6. Resolve Leave Balances (for snapshotting only, not for LOP)
         leave_balances = []
@@ -206,7 +212,10 @@ class PayrollInputBuilder:
                 "employeeId": employee_id,
                 "calendarYear": start_date.year
             }
-            leave_balances = [doc async for doc in self.db.leave_ledgers.find(leave_query)]
+            raw_balances = [doc async for doc in self.db.leave_ledgers.find(leave_query)]
+            for rb in raw_balances:
+                rb["_id"] = str(rb["_id"])
+                leave_balances.append(rb)
 
         return PayrollCalculationInput(
             employeeId=employee_id,

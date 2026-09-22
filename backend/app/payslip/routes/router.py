@@ -2,8 +2,11 @@ from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from app.db.mongo import get_database
 from app.email_service.services.email_service import EmailService
 from pydantic import BaseModel
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.dependencies import get_current_user
+from app.payroll.services.payslip_service import PayslipService
 
-router = APIRouter(prefix="/payslip", tags=["Payslip Engine"])
+router = APIRouter(tags=["Payslip Engine"])
 
 class GenerateRequest(BaseModel):
     payrollRunId: str
@@ -13,6 +16,31 @@ class PublishRequest(BaseModel):
 
 class RegenerateRequest(BaseModel):
     payslipId: str
+
+@router.get("/me/{year}/{month}")
+async def get_my_payslip(year: int, month: int, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user)):
+    service = PayslipService(db)
+    # The authenticated user is expected to have "employeeId" mapped
+    payslip = await service.get_employee_payslip(current_user["employeeId"], year, month)
+    
+    if not payslip:
+        return {"status": "NOT_PROCESSED", "message": "Payroll has not yet been processed for this month."}
+        
+    if payslip.status != "PUBLISHED":
+        return {"status": "UNPUBLISHED", "message": "Payslip is not yet published."}
+        
+    dump = payslip.model_dump(by_alias=True)
+    def convert_oids(obj):
+        from bson import ObjectId
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        if isinstance(obj, dict):
+            return {k: convert_oids(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [convert_oids(v) for v in obj]
+        return obj
+    
+    return convert_oids(dump)
 
 @router.post("/generate")
 async def generate_payslips(req: GenerateRequest):
