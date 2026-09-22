@@ -38,6 +38,7 @@ class PayrollCalculationInput(BaseModel):
     # Additional context
     reimbursementRecords: List[Dict[str, Any]] = []
     manualDeductionRecords: List[Dict[str, Any]] = []
+    leaveBalances: List[Dict[str, Any]] = []
     lopBreakdown: Dict[str, Any] = {}
     empChoice: Dict[str, Any] = {}
 
@@ -195,6 +196,17 @@ class PayrollInputBuilder:
             else:
                 deductions_query["payrollPeriod"] = start_date.strftime("%Y-%m")
             manual_deductions = [doc async for doc in self.db.manual_payroll_adjustments.find(deductions_query)]
+            
+        # 6. Resolve Leave Balances (for snapshotting only, not for LOP)
+        leave_balances = []
+        if ui_components is None:
+            # We fetch active leave balances for the year in which the payroll period falls
+            # (Assuming the leave ledger year corresponds to targetDate.year)
+            leave_query = {
+                "employeeId": employee_id,
+                "calendarYear": start_date.year
+            }
+            leave_balances = [doc async for doc in self.db.leave_ledgers.find(leave_query)]
 
         return PayrollCalculationInput(
             employeeId=employee_id,
@@ -210,6 +222,7 @@ class PayrollInputBuilder:
             manualDeductionsTotal=sum(d.get("amount", 0.0) for d in manual_deductions),
             reimbursementRecords=reimbursements,
             manualDeductionRecords=manual_deductions,
+            leaveBalances=leave_balances,
             lopBreakdown=lop_result_obj.model_dump() if lop_result_obj else {},
             empChoice=emp_choice,
             salaryCalculationMethod=calc_method,

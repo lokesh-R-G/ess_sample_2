@@ -58,12 +58,21 @@ class PayslipDataBuilder:
         
         father_husband = "-"
         dob_str = "-"
-        if emp_personal:
-            fh = emp_personal.get("fatherName") or emp_personal.get("husbandName")
-            if fh: father_husband = fh
-            dob = emp_personal.get("dateOfBirth")
-            if dob:
-                dob_str = dob.strftime("%d-%m-%Y") if isinstance(dob, datetime) else str(dob)
+        
+        # Father/Husband is on emp document
+        fh = emp.get("fatherName") or emp.get("husbandName")
+        if fh: 
+            father_husband = fh
+            
+        # DOB is either on emp_personal (dob) or emp (dateOfBirth)
+        dob = None
+        if emp_personal and emp_personal.get("dob"):
+            dob = emp_personal.get("dob")
+        elif emp.get("dateOfBirth"):
+            dob = emp.get("dateOfBirth")
+            
+        if dob:
+            dob_str = dob.strftime("%d-%m-%Y") if isinstance(dob, datetime) else str(dob)
 
         # 3. Contact
         email = None
@@ -121,12 +130,16 @@ class PayslipDataBuilder:
                 masked_acc = str(acc_num)
                 
         # 6. Statutory
-        statutory = await self.db.employee_statutory_profiles.find_one({"employeeId": emp_id, "isCurrent": True})
+        gov_id = await self.db.employee_government_ids.find_one({"employeeId": emp_id, "isCurrent": True})
+        if not gov_id:
+            # Fallback if there is no current record, get any record
+            gov_id = await self.db.employee_government_ids.find_one({"employeeId": emp_id})
+            
         uan = "-"
         pan = "-"
-        if statutory:
-            if statutory.get("uan"): uan = str(statutory.get("uan"))
-            if statutory.get("pan"): pan = str(statutory.get("pan"))
+        if gov_id:
+            if gov_id.get("uanNumber"): uan = str(gov_id.get("uanNumber"))
+            if gov_id.get("panNumber"): pan = str(gov_id.get("panNumber"))
             
         # 7. Attendance & LOP from Snapshot
         snapshot = payroll_doc.get("payloadSnapshot", {})
@@ -140,8 +153,15 @@ class PayslipDataBuilder:
         present_days = payable_days - lop_breakdown.get("leaveLopDays", 0) if payable_days >= 0 else 0
 
         # Leave Details
-        # As there's no historical leave balance snapshot in payroll_doc, we output "-" to remain honest.
         leave_details = []
+        leave_balances = snapshot.get("leaveBalances", [])
+        for lb in leave_balances:
+            leave_details.append({
+                "leaveType": lb.get("leaveType", "Leave"),
+                "openingBalance": lb.get("openingBalance", 0.0),
+                "consumed": lb.get("consumed", 0.0),
+                "availableBalance": lb.get("availableBalance", 0.0)
+            })
 
         # 8. Earnings & Deductions
         components = snapshot.get("components", [])

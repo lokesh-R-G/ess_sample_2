@@ -162,6 +162,26 @@ export const Payslip = () => {
                       Version: {payslip.payloadSnapshot?.version || 1} <br/>
                       Generated: {new Date(payslip.generatedDate).toLocaleDateString()}
                     </div>
+                    
+                    <div className="flex-1 px-4 md:px-8 grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-neutral-500 block">DOB</span>
+                        <span className="font-medium text-neutral-900">{payslip.dob || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">Father/Husband Name</span>
+                        <span className="font-medium text-neutral-900">{payslip.fatherHusbandName || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">UAN</span>
+                        <span className="font-medium text-neutral-900">{payslip.uan || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">PAN</span>
+                        <span className="font-medium text-neutral-900">{payslip.pan || '-'}</span>
+                      </div>
+                    </div>
+
                     <div className="text-right">
                       <span className="text-sm text-neutral-500">Net Pay</span>
                       <p className="text-2xl font-bold text-brand-600">
@@ -271,9 +291,38 @@ export const Payslip = () => {
                     </div>
                   )}
                   
-                  <div className="bg-neutral-50 p-4 rounded mt-6 text-sm text-neutral-600">
-                    <strong>Attendance & LOP Summary:</strong> Working Days: {payslip.payloadSnapshot?.workingDays} | 
-                    Total LOP: {payslip.payloadSnapshot?.lopBreakdown?.totalLopDays} days
+                  <div className="bg-neutral-50 p-4 rounded mt-6">
+                    <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700 text-sm">Leave Details & Attendance Summary</h3>
+                    
+                    {payslip.leaveDetails && payslip.leaveDetails.length > 0 && (
+                      <div className="mb-4 overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-xs text-neutral-500 uppercase bg-neutral-100">
+                            <tr>
+                              <th className="px-4 py-2">Leave Type</th>
+                              <th className="px-4 py-2">Opening</th>
+                              <th className="px-4 py-2">Availed</th>
+                              <th className="px-4 py-2">Closing</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {payslip.leaveDetails.map((ld: any, idx: number) => (
+                              <tr key={idx} className="border-b">
+                                <td className="px-4 py-2 font-medium">{ld.leaveType}</td>
+                                <td className="px-4 py-2">{ld.openingBalance?.toFixed(1)}</td>
+                                <td className="px-4 py-2">{ld.consumed?.toFixed(1)}</td>
+                                <td className="px-4 py-2">{ld.availableBalance?.toFixed(1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-neutral-600">
+                      <strong>Attendance & LOP Summary:</strong> Working Days: {payslip.workingDays || payslip.payloadSnapshot?.workingDays} | 
+                      Total LOP: {payslip.lopDays ?? payslip.payloadSnapshot?.lopBreakdown?.totalLopDays} days
+                    </div>
                   </div>
                 </div>
               </GlassCard>

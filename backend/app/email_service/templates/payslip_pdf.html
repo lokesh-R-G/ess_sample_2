@@ -302,11 +302,11 @@
     </tr>
     {% for leave in leaveDetails %}
     <tr>
-        <td>{{ leave.type }}</td>
-        <td>{{ leave.opening }}</td>
-        <td>{{ leave.availed }}</td>
-        <td>{{ leave.closing }}</td>
-        <td>{{ leave.lop }}</td>
+        <td>{{ leave.leaveType }}</td>
+        <td>{{ "%.1f"|format(leave.openingBalance) }}</td>
+        <td>{{ "%.1f"|format(leave.consumed) }}</td>
+        <td>{{ "%.1f"|format(leave.availableBalance) }}</td>
+        <td>{% if loop.first %}{{ lopDays }}{% else %}-{% endif %}</td>
     </tr>
     {% endfor %}
     {% if not leaveDetails %}
