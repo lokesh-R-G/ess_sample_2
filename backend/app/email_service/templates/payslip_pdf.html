@@ -81,17 +81,10 @@
     .financial-table th {
         font-weight: bold;
         background-color: #f2f2f2;
+        padding: 6px 8px;
     }
     
-    .inner-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .inner-table td {
-        border: none;
-        padding: 3px 0;
-    }
-    
+
     .net-pay-box {
         width: 100%;
         border: 1px solid #000;
@@ -198,65 +191,56 @@
 
 <table class="financial-table">
     <tr>
-        <th width="33%" style="text-align: left;">EARNINGS</th>
-        <th width="12%" style="text-align: right;">SCALE</th>
-        <th width="12%" style="text-align: right;">EAR. AMT</th>
-        <th width="28%" style="text-align: left;">DEDUCTIONS</th>
+        <th width="35%" style="text-align: left;">EARNINGS</th>
+        <th width="15%" style="text-align: right;">SCALE</th>
+        <th width="15%" style="text-align: right;">EAR. AMT</th>
+        <th width="20%" style="text-align: left;">DEDUCTIONS</th>
         <th width="15%" style="text-align: right;">AMT</th>
     </tr>
+    {% set count = earnings|length %}
+    {% if deductions|length > count %}
+        {% set count = deductions|length %}
+    {% endif %}
+    {% for i in range(count) %}
     <tr>
         <!-- EARNINGS COLUMNS -->
-        <td colspan="3" style="padding: 0; border: none; border-right: 1px solid #000;">
-            <table class="inner-table">
-                {% for item in earnings %}
-                <tr>
-                    <td width="58%" style="padding-left: 5px;">{{ item.name }}</td>
-                    <td width="21%" style="text-align: right;">{{ item.scale }}</td>
-                    <td width="21%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(item.amount) }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-        </td>
+        {% if i < earnings|length %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;">{{ earnings[i].name }}</td>
+            <td style="text-align: right; border-top: none; border-bottom: none;">{{ earnings[i].scale }}</td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ "%.2f"|format(earnings[i].amount) }}</td>
+        {% else %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
+            <td style="text-align: right; border-top: none; border-bottom: none;"></td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
+        {% endif %}
         
         <!-- DEDUCTIONS COLUMNS -->
-        <td colspan="2" style="padding: 0; border: none;">
-            <table class="inner-table">
-                {% for item in deductions %}
-                <tr>
-                    <td width="65%" style="padding-left: 5px;">{{ item.name }}</td>
-                    <td width="35%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(item.amount) }}</td>
-                </tr>
-                {% endfor %}
-                {% if not deductions %}
-                <tr>
-                    <td width="65%" style="padding-left: 5px;">No Deductions</td>
-                    <td width="35%" style="text-align: right; padding-right: 5px;">0.00</td>
-                </tr>
-                {% endif %}
-            </table>
-        </td>
+        {% if i < deductions|length %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;">{{ deductions[i].name }}</td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ "%.2f"|format(deductions[i].amount) }}</td>
+        {% else %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
+        {% endif %}
     </tr>
+    {% endfor %}
+    
+    {% if count == 0 %}
+    <tr>
+        <td colspan="5" style="text-align: center; border-top: none; border-bottom: none; padding: 10px;">No Earnings or Deductions</td>
+    </tr>
+    {% endif %}
+    
+    <!-- TOTALS ROW -->
     <tr>
         <!-- EARNINGS TOTALS -->
-        <td style="border: none; border-top: 1px solid #000; border-right: 1px solid #000; border-bottom: none; font-weight: bold;" colspan="3">
-            <table class="inner-table">
-                <tr>
-                    <td width="58%" style="padding-left: 5px;">TOTAL EARNINGS</td>
-                    <td width="21%"></td>
-                    <td width="21%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossEarnings) }}</td>
-                </tr>
-            </table>
-        </td>
+        <td style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL EARNINGS</td>
+        <td style="border-top: 1px solid #000;"></td>
+        <td style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossEarnings) }}</td>
         
         <!-- DEDUCTIONS TOTALS -->
-        <td style="border: none; border-top: 1px solid #000; border-bottom: none; font-weight: bold;" colspan="2">
-            <table class="inner-table">
-                <tr>
-                    <td width="65%" style="padding-left: 5px;">TOTAL DEDUCTION</td>
-                    <td width="35%" style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossDeductions) }}</td>
-                </tr>
-            </table>
-        </td>
+        <td style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL DEDUCTION</td>
+        <td style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossDeductions) }}</td>
     </tr>
 </table>
 
@@ -271,25 +255,7 @@
     <div style="clear: both;"></div>
 </div>
 
-{% if employerContributions %}
-<div class="font-bold" style="margin-top: 15px; margin-bottom: 5px;">EMPLOYER CONTRIBUTIONS</div>
-<table class="financial-table">
-    <tr>
-        <th width="70%" style="text-align: left;">Contribution Type</th>
-        <th width="30%" style="text-align: right;">Amount</th>
-    </tr>
-    {% for emp_c in employerContributions %}
-    <tr>
-        <td style="padding-left: 5px;">{{ emp_c.name }}</td>
-        <td style="text-align: right; padding-right: 5px;">{{ "%.2f"|format(emp_c.amount) }}</td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <td style="padding-left: 5px; font-weight: bold;">TOTAL EMPLOYER CONTRIBUTION</td>
-        <td style="text-align: right; padding-right: 5px; font-weight: bold;">{{ "%.2f"|format(employerContributions | sum(attribute='amount')) }}</td>
-    </tr>
-</table>
-{% endif %}
+
 
 <div class="font-bold" style="margin-bottom: 5px;">LEAVE DETAILS</div>
 <table class="leave-table">

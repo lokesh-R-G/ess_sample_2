@@ -169,55 +169,62 @@ class PayslipDataBuilder:
         earnings = []
         deductions = []
         
-        # We need the scale from Salary Assignment if available
-        # Fetching current salary assignment (fallback for scale since we don't have historical scale snapshot)
-        salary_assignment = await self.db.employee_salary_assignments.find_one({"employeeId": emp_id, "status": "Active"})
+        # Fetching effective-dated salary components active for the cycle
+        sc_cursor = self.db.employee_salary_components.find({"employeeId": emp_id, "isCurrent": True})
+        assigned_components = await sc_cursor.to_list(None)
+        
         scale_map = {}
-        if salary_assignment:
-            for sc in salary_assignment.get("components", []):
-                scale_map[str(sc.get("salaryComponentId"))] = sc.get("monthlyAmount", 0)
+        for sc in assigned_components:
+            scale_map[str(sc.get("salaryComponentId"))] = sc.get("monthlyAmount", 0.0)
 
+        # 1. Earnings (from snapshot components)
         for c in components:
+            if c.get("componentType") != "Earning":
+                continue
             name = c.get("componentName", "Unknown").upper()
             earned = round(c.get("proratedAmount", 0), 2)
             c_id = c.get("salaryComponentId")
             
-            # If scale is not available, we use "-" as per instructions
-            scale = scale_map.get(str(c_id), "-") if c_id else "-"
+            scale_val = scale_map.get(str(c_id), None) if c_id else None
+            scale = "{:.2f}".format(scale_val) if scale_val is not None else "-"
             
-            if c.get("componentType") == "Earning":
-                earnings.append({"name": name, "scale": scale, "amount": earned})
-            else:
-                deductions.append({"name": name, "scale": "-", "amount": earned})
+            earnings.append({"name": name, "scale": scale, "amount": earned})
                 
+        # Reimbursements (Transaction only - append only if applicable)
         reimb_amt = payroll_doc.get("reimbursementAmount", 0)
-        if reimb_amt > 0:
-            earnings.append({"name": "REIMBURSEMENT", "scale": "-", "amount": reimb_amt})
+        reimbursements_total = snapshot.get("reimbursementsTotal", 0)
+        if reimb_amt > 0 or reimbursements_total > 0:
+            earnings.append({"name": "REIMBURSEMENT", "scale": "-", "amount": round(max(reimb_amt, reimbursements_total), 2)})
                 
+        # 2. Statutory Deductions
+        statutory_choice = snapshot.get("statutoryChoice", {})
         pf_calc = snapshot.get("pfCalculation", {})
-        emp_pf = pf_calc.get("employeePf", 0)
-        employer_pf = pf_calc.get("employerPf", 0)
-        employer_pension = pf_calc.get("employerPension", 0)
-        pf_admin = pf_calc.get("pfAdminCharges", 0)
-        if emp_pf > 0:
-            deductions.append({"name": "Employee PF", "scale": "-", "amount": emp_pf})
-            
         esi_calc = snapshot.get("esiCalculation", {})
-        emp_esi = esi_calc.get("employeeEsi", 0)
-        employer_esi = esi_calc.get("employerEsi", 0)
-        if emp_esi > 0:
-            deductions.append({"name": "Employee ESI", "scale": "-", "amount": emp_esi})
+        
+        if statutory_choice.get("wantsPf") is True:
+            emp_pf = pf_calc.get("employeePf", 0.0)
+            deductions.append({"name": "Employee PF", "scale": "-", "amount": round(emp_pf, 2)})
             
-        pt_amt = payroll_doc.get("ptAmount", 0)
-        if pt_amt > 0:
-            deductions.append({"name": "Professional Tax", "scale": "-", "amount": pt_amt})
+        if statutory_choice.get("esiEnabled") is True:
+            emp_esi = esi_calc.get("employeeEsi", 0.0)
+            deductions.append({"name": "Employee ESI", "scale": "-", "amount": round(emp_esi, 2)})
             
+        pt_state = statutory_choice.get("ptState")
+        if pt_state and pt_state != "None":
+            pt_amt = payroll_doc.get("ptAmount", 0.0)
+            deductions.append({"name": "Professional Tax", "scale": "-", "amount": round(pt_amt, 2)})
+            
+        # 3. Manual Deductions
         manual_ded_list = snapshot.get("manualDeductions", [])
         for d in manual_ded_list:
             ded_type = d.get("deductionType", "Manual Deduction")
             amt = d.get("amount", 0.0)
-            if amt > 0:
-                deductions.append({"name": ded_type, "scale": "-", "amount": amt})
+            deductions.append({"name": ded_type, "scale": "-", "amount": round(amt, 2)})
+            
+        employer_pf = pf_calc.get("employerPf", 0)
+        employer_pension = pf_calc.get("employerPension", 0)
+        pf_admin = pf_calc.get("pfAdminCharges", 0)
+        employer_esi = esi_calc.get("employerEsi", 0)
         
         employer_contributions = []
         if employer_pf > 0:
