@@ -96,8 +96,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           initial={false}
           animate={{ opacity: 1 }}
         >
-          <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-sm">IDS</span>
+          <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shadow-md overflow-hidden">
+            <img src="/favicon.svg" alt="IDS Logo" className="w-full h-full object-contain p-1" />
           </div>
           <AnimatePresence>
             {!isCollapsed && (

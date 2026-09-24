@@ -16,7 +16,13 @@ class PayslipPDFCompiler:
 
     def compile(self, payslip_data: PayslipData) -> bytes:
         template = self.template_env.get_template("payslip_pdf.html")
-        html_out = template.render(**payslip_data.model_dump())
+        
+        # Resolve path to canonical public/favicon.svg
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.abspath(os.path.join(current_dir, "..", "..", "..", "..", "public", "favicon.svg"))
+        # Convert path to file URI for xhtml2pdf if necessary, though absolute paths usually work
+        
+        html_out = template.render(logo_path=logo_path, **payslip_data.model_dump())
         
         pdf_file = BytesIO()
         pisa_status = pisa.CreatePDF(
