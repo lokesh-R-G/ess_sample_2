@@ -150,6 +150,8 @@ class PayrollCalculationEngine:
             "employerPension": 0.0,
             "pfAdminCharges": 0.0,
             "edli": 0.0,
+            "epfBase": 0.0,
+            "edliBase": 0.0
         }
 
         if not pf_rules.pfEnabled:
@@ -212,6 +214,8 @@ class PayrollCalculationEngine:
         result["employerPension"] = round(employer_pension)
         result["pfAdminCharges"] = round(admin_charges)
         result["edli"] = round(edli)
+        result["epfBase"] = employee_pf_base
+        result["edliBase"] = employee_pf_base
         return result
 
     @staticmethod

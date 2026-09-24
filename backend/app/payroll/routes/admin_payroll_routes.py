@@ -599,3 +599,37 @@ async def publish_payroll(
         return {"success": success, "errors": []}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+from app.payroll.services.statutory_export_service import StatutoryExportService
+from fastapi import Response
+
+@router.get("/export/pf/{payroll_run_id}")
+async def export_pf(
+    payroll_run_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.calculate")) 
+):
+    try:
+        service = StatutoryExportService(db)
+        content_bytes, filename = await service.export_pf(payroll_run_id, current_user.get("empId"))
+
+        return Response(
+            content=content_bytes,
+            media_type="text/plain",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/export/esi/{payroll_run_id}")
+async def export_esi(
+    payroll_run_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.calculate"))
+):
+    raise HTTPException(status_code=501, detail="ESIC format specification is missing. Expected precise column structure from Revenue Manual cannot be verified.")

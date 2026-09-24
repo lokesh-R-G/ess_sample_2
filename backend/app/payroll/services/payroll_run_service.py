@@ -45,7 +45,7 @@ class PayrollRunService:
 
         valid_transitions = {
             "DRAFT": ["OPEN", "ATTENDANCE_FINALIZED"],
-            "OPEN": ["APPROVAL_PENDING"],
+            "OPEN": ["APPROVAL_PENDING", "ATTENDANCE_FINALIZED"],
             "APPROVAL_PENDING": ["APPROVAL_LOCKED"],
             "APPROVAL_LOCKED": ["ATTENDANCE_FINALIZED"],
             "ATTENDANCE_FINALIZED": ["PROCESSING"],

@@ -61,6 +61,19 @@ class PayrollProcessor:
         )
         prorated_components = PayrollCalculationEngine.splitSalaryComponents(monthly_gross, structure_components)
 
+        # Merge Manual Earnings AFTER proration to bypass LOP
+        manual_earnings = getattr(payroll_input, "manualEarningRecords", [])
+        total_manual_earnings = getattr(payroll_input, "manualEarningsTotal", 0.0)
+        
+        for me in manual_earnings:
+            # Reconstruct component format for engine consumption
+            me_copy = me.copy()
+            me_copy["monthlyAmount"] = me.get("amount", 0.0)
+            me_copy["proratedAmount"] = me.get("amount", 0.0)
+            prorated_components.append(me_copy)
+            
+        monthly_gross += total_manual_earnings
+
         pf_gross = PayrollCalculationEngine.calculatePfGross(prorated_components, pf_rule)
         esi_gross = PayrollCalculationEngine.calculateEsiGross(prorated_components)
         

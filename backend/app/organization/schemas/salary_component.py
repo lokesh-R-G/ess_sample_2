@@ -7,6 +7,7 @@ class SalaryComponentCreate(BaseModel):
     code: Optional[str] = None
     componentType: Literal["Earning", "Deduction"]
     calculationMethod: Literal["Flat", "Percentage", "Formula"] = "Flat"
+    inputMode: Literal["CALCULATED", "MANUAL"] = "CALCULATED"
     # Percentage-specific fields — only relevant when calculationMethod == "Percentage"
     percentageValue: Optional[float] = None
     percentageDerivedFromComponentId: Optional[str] = None
@@ -25,6 +26,7 @@ class SalaryComponentUpdate(BaseModel):
     code: Optional[str] = None
     componentType: Optional[Literal["Earning", "Deduction"]] = None
     calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = None
+    inputMode: Optional[Literal["CALCULATED", "MANUAL"]] = None
     percentageValue: Optional[float] = None
     percentageDerivedFromComponentId: Optional[str] = None
     percentageDerivedFrom: Optional[str] = None
@@ -44,6 +46,7 @@ class SalaryComponentResponse(BaseModel):
     code: Optional[str] = None
     componentType: Optional[str] = None
     calculationMethod: Optional[str] = None
+    inputMode: Optional[str] = None
     percentageValue: Optional[float] = None
     percentageDerivedFromComponentId: Optional[str] = None
     percentageDerivedFrom: Optional[str] = None

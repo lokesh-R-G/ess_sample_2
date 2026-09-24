@@ -181,6 +181,7 @@ class SalaryComponent(BaseModel):
     name: str
     code: Optional[str] = None
     componentType: Optional[Literal["Earning", "Deduction"]] = None
+    inputMode: Literal["CALCULATED", "MANUAL"] = "CALCULATED"
     calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = "Flat"
     percentageValue: Optional[float] = None
     percentageDerivedFromComponentId: Optional[str] = None

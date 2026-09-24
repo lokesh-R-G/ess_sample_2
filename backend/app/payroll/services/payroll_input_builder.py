@@ -30,6 +30,7 @@ class PayrollCalculationInput(BaseModel):
     esiRule: Optional[ESIRule]
     ptSlabs: List[ProfessionalTaxSlab]
     reimbursementsTotal: float = 0.0
+    manualEarningsTotal: float = 0.0
     manualDeductionsTotal: float = 0.0
     # Settings Context
     salaryCalculationMethod: str = "Calendar Days"
@@ -37,6 +38,7 @@ class PayrollCalculationInput(BaseModel):
     roundOffMethod: str = "Nearest Rupee"
     # Additional context
     reimbursementRecords: List[Dict[str, Any]] = []
+    manualEarningRecords: List[Dict[str, Any]] = []
     manualDeductionRecords: List[Dict[str, Any]] = []
     leaveBalances: List[Dict[str, Any]] = []
     lopBreakdown: Dict[str, Any] = {}
@@ -177,6 +179,7 @@ class PayrollInputBuilder:
 
         # 5. Resolve Manual Additions/Deductions
         reimbursements = []
+        manual_earnings = []
         manual_deductions = []
         if ui_components is None:
             reimbursements_cursor = self.db.reimbursement_claims.find({
@@ -189,6 +192,14 @@ class PayrollInputBuilder:
                 rr["_id"] = str(rr["_id"])
                 reimbursements.append(rr)
             
+            # Fetch all active manual SalaryComponents
+            manual_components_cursor = self.db.salary_components.find({
+                "inputMode": "MANUAL",
+                "isActive": True,
+                "deletedAt": None
+            })
+            manual_components = {str(c["_id"]): c async for c in manual_components_cursor}
+
             deductions_query = {
                 "employeeId": employee_id,
                 "status": "Active",
@@ -199,9 +210,48 @@ class PayrollInputBuilder:
             else:
                 deductions_query["payrollPeriod"] = start_date.strftime("%Y-%m")
             raw_manual = [doc async for doc in self.db.manual_payroll_adjustments.find(deductions_query)]
+            
+            # Group adjustments by componentId or fallback to legacy deductionType mapping
+            adj_by_comp = {}
             for rm in raw_manual:
-                rm["_id"] = str(rm["_id"])
-                manual_deductions.append(rm)
+                if "componentId" in rm and rm["componentId"]:
+                    adj_by_comp[rm["componentId"]] = rm
+                elif "deductionType" in rm:
+                    adj_by_comp[rm["deductionType"]] = rm # legacy fallback
+
+            # Create full records for all manual components (defaults to 0)
+            for comp_id, comp in manual_components.items():
+                adj = adj_by_comp.get(comp_id)
+                if not adj and "name" in comp:
+                    adj = adj_by_comp.get(comp["name"]) # legacy match by name
+                
+                amount = float(adj.get("amount", 0.0)) if adj else 0.0
+                
+                record = {
+                    "componentId": comp_id,
+                    "componentCode": comp.get("code"),
+                    "componentName": comp.get("name"),
+                    "deductionType": comp.get("name"), # Ensure backward compat with payslip builder
+                    "componentType": comp.get("componentType"),
+                    "inputMode": "MANUAL",
+                    "amount": amount,
+                    "pfApplicable": comp.get("pfApplicable", False),
+                    "esiApplicable": comp.get("esiApplicable", False),
+                    "ptApplicable": comp.get("ptApplicable", False),
+                    "includeInGross": comp.get("includeInGross", True)
+                }
+                
+                if comp.get("componentType") == "Earning":
+                    manual_earnings.append(record)
+                else:
+                    manual_deductions.append(record)
+            
+            # Also include any legacy deductions that didn't match a component (to not lose data)
+            for rm in raw_manual:
+                if rm.get("componentId") not in manual_components and rm.get("deductionType") and rm.get("deductionType") not in [c.get("name") for c in manual_components.values()]:
+                    rm["_id"] = str(rm["_id"])
+                    rm["componentName"] = rm["deductionType"]
+                    manual_deductions.append(rm)
             
         # 6. Resolve Leave Balances (for snapshotting only, not for LOP)
         leave_balances = []
@@ -228,8 +278,10 @@ class PayrollInputBuilder:
             esiRule=esi_rule,
             ptSlabs=pt_slabs,
             reimbursementsTotal=sum(r.get("calculatedAmount", 0.0) for r in reimbursements),
+            manualEarningsTotal=sum(e.get("amount", 0.0) for e in manual_earnings),
             manualDeductionsTotal=sum(d.get("amount", 0.0) for d in manual_deductions),
             reimbursementRecords=reimbursements,
+            manualEarningRecords=manual_earnings,
             manualDeductionRecords=manual_deductions,
             leaveBalances=leave_balances,
             lopBreakdown=lop_result_obj.model_dump() if lop_result_obj else {},
