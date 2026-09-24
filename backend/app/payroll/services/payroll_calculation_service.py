@@ -156,46 +156,56 @@ class PayrollCalculationEngine:
             return result
 
         wants_pf = employee_choice.get("wantsPf", True)
-        wants_pension = employee_choice.get("wantsPension", True)
         is_fresher = employee_choice.get("isFresher", True)
         is_existing_pension = employee_choice.get("isExistingPensionMember", False)
         use_ceiling = employee_choice.get("useCeiling", False)
 
-        # Case 1: Fresher <= Ceiling -> Forced PF & Pension
-        if is_fresher and pf_gross <= pf_rules.pfCeilingAmount:
-            wants_pf = True
-            wants_pension = True
-            calc_base = pf_gross
-        elif wants_pf:
-            if wants_pension:
-                # PF + Pension -> Auto Ceiling Wage
-                calc_base = min(pf_gross, pf_rules.pfCeilingAmount)
-            else:
-                # PF only -> Choice of Ceiling or Actual
-                calc_base = min(pf_gross, pf_rules.pfCeilingAmount) if use_ceiling else pf_gross
+        ceiling = pf_rules.pfCeilingAmount
+        employee_pf_base = 0.0
+        pension_base = 0.0
+
+        if pf_gross <= ceiling:
+            if is_fresher or is_existing_pension:
+                employee_pf_base = pf_gross
+                pension_base = pf_gross
+            elif wants_pf:
+                # Fallback for someone who is neither (though matrix focuses on fresher/existing)
+                employee_pf_base = pf_gross
+                pension_base = pf_gross if employee_choice.get("wantsPension", True) else 0.0
         else:
-            return result # Wants neither
+            if wants_pf:
+                if is_fresher:
+                    employee_pf_base = ceiling if use_ceiling else pf_gross
+                    pension_base = 0.0
+                elif is_existing_pension:
+                    employee_pf_base = ceiling if use_ceiling else pf_gross
+                    pension_base = ceiling
+                else:
+                    # Fallback
+                    employee_pf_base = ceiling if use_ceiling else pf_gross
+                    pension_base = ceiling if employee_choice.get("wantsPension", True) else 0.0
+
+        if employee_pf_base <= 0:
+            return result
 
         # Calculate Employee PF
-        employee_pf = calc_base * (pf_rules.employeePfPercent / 100.0)
+        employee_pf = employee_pf_base * (pf_rules.employeePfPercent / 100.0)
 
         # Calculate Employer Pension
-        employer_pension = 0.0
-        if wants_pension:
-            pension_base = min(calc_base, pf_rules.pfCeilingAmount)
-            employer_pension = pension_base * (pf_rules.employerPensionPercent / 100.0)
-            employer_pension = min(employer_pension, pf_rules.maxPensionAmount)
+        employer_pension = pension_base * (pf_rules.employerPensionPercent / 100.0)
+        if employer_pension > pf_rules.maxPensionAmount:
+            employer_pension = pf_rules.maxPensionAmount
 
         # Employer PF receives the remainder
         employer_pf = employee_pf - employer_pension
 
         # Admin Charges and EDLI (EDLI defaults to 0.5% if not present in rule)
         edli_percent = getattr(pf_rules, 'edliPercent', 0.5)
-        edli = calc_base * (edli_percent / 100.0)
+        edli = employee_pf_base * (edli_percent / 100.0)
         
         admin_charges = 0.0
         if pf_rules.processingFeeEnabled:
-            admin_charges = calc_base * (pf_rules.processingFeePercent / 100.0)
+            admin_charges = employee_pf_base * (pf_rules.processingFeePercent / 100.0)
 
         result["employeePf"] = round(employee_pf)
         result["employerPf"] = round(employer_pf)

@@ -325,13 +325,13 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                       </div>
                                   ) : (
                                       <div className="space-y-4 pl-4 border-l-2 border-brand-200">
-                                          <div className="text-sm text-neutral-600 mb-2">PF Gross (₹{pfGross}) exceeds ceiling (₹{pfCeiling}).</div>
+                                          <div className="text-sm text-neutral-600 mb-2">PF Gross (₹{pfGross}) is above the PF Ceiling (₹{pfCeiling}).</div>
                                           
                                           <div className="space-y-2">
-                                              <label className="text-sm font-medium text-neutral-700 block">Do they want PF?</label>
+                                              <label className="text-sm font-medium text-neutral-700 block">Do you want PF?</label>
                                               <div className="flex gap-4">
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                      <input type="radio" checked={data.wantsPf === true} onChange={() => handleChange('wantsPf', true)} className="text-brand-600 focus:ring-brand-500" />
+                                                      <input type="radio" checked={data.wantsPf === true} onChange={() => handleMultipleChanges({ wantsPf: true, wantsPension: false, pfCalculationMode: 'Actual' })} className="text-brand-600 focus:ring-brand-500" />
                                                       <span>Yes</span>
                                                   </label>
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
@@ -343,38 +343,19 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
 
                                           {data.wantsPf && (
                                               <div className="space-y-2">
-                                                  <label className="text-sm font-medium text-neutral-700 block">Do they want Pension?</label>
-                                                  <div className="flex gap-4">
-                                                      <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                          <input type="radio" checked={data.wantsPension === true} onChange={() => handleMultipleChanges({ wantsPension: true, pfCalculationMode: 'Ceiling' })} className="text-brand-600 focus:ring-brand-500" />
-                                                          <span>Yes</span>
-                                                      </label>
-                                                      <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                          <input type="radio" checked={data.wantsPension === false} onChange={() => handleChange('wantsPension', false)} className="text-brand-600 focus:ring-brand-500" />
-                                                          <span>No</span>
-                                                      </label>
-                                                  </div>
-                                              </div>
-                                          )}
-
-                                          {data.wantsPf && data.wantsPension && (
-                                              <div className="text-sm text-green-700 p-2 bg-green-50 rounded border border-green-100 flex items-start">
-                                                  <CheckCircle2 className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                                                  Ceiling Wage logic will be automatically applied.
-                                              </div>
-                                          )}
-
-                                          {data.wantsPf && !data.wantsPension && (
-                                              <div className="space-y-2">
-                                                  <label className="text-sm font-medium text-neutral-700 block">PF Calculation Mode</label>
+                                                  <label className="text-sm font-medium text-neutral-700 block">How should PF be calculated?</label>
                                                   <Select
                                                     value={data.pfCalculationMode || 'Actual'}
                                                     onChange={(e) => handleChange('pfCalculationMode', e.target.value)}
                                                     options={[
-                                                      { value: 'Ceiling', label: `Ceiling Wage (₹${pfCeiling})` },
-                                                      { value: 'Actual', label: `Actual PF Wage (₹${pfGross})` }
+                                                      { value: 'Actual', label: `Actual Wage (₹${pfGross})` },
+                                                      { value: 'Ceiling', label: `PF Ceiling (₹${pfCeiling})` }
                                                     ]}
                                                   />
+                                                  <div className="text-sm text-neutral-500 mt-2">
+                                                      PF: Enabled <br/>
+                                                      Pension: Not Applicable
+                                                  </div>
                                               </div>
                                           )}
                                       </div>
@@ -398,56 +379,42 @@ export default function SalaryPayrollStep({ data, onChange, errors = {} }: Salar
                                           </div>
                                       </div>
 
-                                      <div className="space-y-2">
-                                          <label className="text-sm font-medium text-neutral-700 block">Do they want PF?</label>
-                                          <div className="flex gap-4">
-                                              <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                  <input type="radio" checked={data.wantsPf === true} onChange={() => handleChange('wantsPf', true)} className="text-brand-600 focus:ring-brand-500" />
-                                                  <span>Yes</span>
-                                              </label>
-                                              <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                  <input type="radio" checked={data.wantsPf === false} onChange={() => handleMultipleChanges({ wantsPf: false, wantsPension: false })} className="text-brand-600 focus:ring-brand-500" />
-                                                  <span>No</span>
-                                              </label>
+                                      {data.isExistingPensionMember && isPfBelowCeiling ? (
+                                          <div className="text-sm text-green-700 p-3 bg-green-50 rounded border border-green-100 flex items-start mt-2">
+                                              <CheckCircle2 className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                                              <div>PF Gross (₹{pfGross}) is below ceiling (₹{pfCeiling}).<br/><strong>PF + Pension</strong> will be automatically calculated.</div>
                                           </div>
-                                      </div>
-
-                                      {data.wantsPf && data.isExistingPensionMember && (
+                                      ) : (
+                                        <>
                                           <div className="space-y-2">
-                                              <label className="text-sm font-medium text-neutral-700 block">Do they want Pension?</label>
+                                              <label className="text-sm font-medium text-neutral-700 block">Do you want PF?</label>
                                               <div className="flex gap-4">
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                      <input type="radio" checked={data.wantsPension === true} onChange={() => handleMultipleChanges({ wantsPension: true, pfCalculationMode: 'Ceiling' })} className="text-brand-600 focus:ring-brand-500" />
+                                                      <input type="radio" checked={data.wantsPf === true} onChange={() => handleChange('wantsPf', true)} className="text-brand-600 focus:ring-brand-500" />
                                                       <span>Yes</span>
                                                   </label>
                                                   <label className="flex items-center space-x-2 text-sm cursor-pointer">
-                                                      <input type="radio" checked={data.wantsPension === false} onChange={() => handleChange('wantsPension', false)} className="text-brand-600 focus:ring-brand-500" />
-                                                  <span>No</span>
+                                                      <input type="radio" checked={data.wantsPf === false} onChange={() => handleMultipleChanges({ wantsPf: false, wantsPension: false })} className="text-brand-600 focus:ring-brand-500" />
+                                                      <span>No</span>
                                                   </label>
                                               </div>
                                           </div>
-                                      )}
 
-                                      {data.wantsPf && data.isExistingPensionMember && data.wantsPension && (
-                                          <div className="text-sm text-green-700 p-2 bg-green-50 rounded border border-green-100 flex items-start">
-                                              <CheckCircle2 className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                                              Ceiling Wage logic will be automatically applied.
-                                          </div>
-                                      )}
-
-                                      {data.wantsPf && (!data.isExistingPensionMember || !data.wantsPension) && (
-                                          <div className="space-y-2">
-                                              <label className="text-sm font-medium text-neutral-700 block">PF Calculation Mode</label>
-                                              <Select
-                                                value={data.pfCalculationMode || 'Actual'}
-                                                onChange={(e) => handleChange('pfCalculationMode', e.target.value)}
-                                                options={[
-                                                  { value: 'Ceiling', label: `Ceiling Wage (₹${pfCeiling})` },
-                                                  { value: 'Actual', label: `Actual PF Wage (₹${pfGross})` }
-                                                ]}
-                                              />
-                                              {!data.isExistingPensionMember && <div className="text-xs text-neutral-500 mt-1">Entire employer contribution goes to EPF. No Pension.</div>}
-                                          </div>
+                                          {data.wantsPf && (
+                                              <div className="space-y-2">
+                                                  <label className="text-sm font-medium text-neutral-700 block">How should PF be calculated?</label>
+                                                  <Select
+                                                    value={data.pfCalculationMode || 'Actual'}
+                                                    onChange={(e) => handleChange('pfCalculationMode', e.target.value)}
+                                                    options={[
+                                                      { value: 'Actual', label: `Actual Wage (₹${pfGross})` },
+                                                      { value: 'Ceiling', label: `PF Ceiling (₹${pfCeiling})` }
+                                                    ]}
+                                                  />
+                                                  {!data.isExistingPensionMember && <div className="text-xs text-neutral-500 mt-1">Entire employer contribution goes to EPF. No Pension.</div>}
+                                              </div>
+                                          )}
+                                        </>
                                       )}
                                   </div>
                               )}
