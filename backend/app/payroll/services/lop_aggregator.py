@@ -17,6 +17,7 @@ class LopAggregator:
     @staticmethod
     def aggregate_lop(attendance_records: List[Dict[str, Any]], hours_per_day: float = 8.0) -> LopAggregationResult:
         result = LopAggregationResult()
+        processed_perm_months = set()
         
         for record in attendance_records:
             date_str = record.get("date")
@@ -32,11 +33,15 @@ class LopAggregator:
                 continue
 
             # Permission LOP
-            perm_lop_mins = record.get("permissionLopGenerated", 0.0)
-            if perm_lop_mins > 0:
-                perm_lop_days = perm_lop_mins / (hours_per_day * 60)
-                result.permissionLopDays += perm_lop_days
-                result.breakdown.append({"date": date_str, "type": "Permission", "days": perm_lop_days, "reason": "Excess Permission"})
+            # Ensure we only count the monthly LOP generated once per month for this employee
+            month_str = date_str[:7] if date_str else ""
+            if month_str and month_str not in processed_perm_months:
+                # PermissionLedger returns lopGenerated directly in DAYS (e.g. 0.5 or 1.0)
+                perm_lop_days = record.get("permissionLopGenerated", 0.0)
+                if perm_lop_days > 0:
+                    result.permissionLopDays += perm_lop_days
+                    result.breakdown.append({"date": month_str, "type": "Permission", "days": perm_lop_days, "reason": "Excess Permission"})
+                processed_perm_months.add(month_str)
 
             # Remaining LOP Hours
             lop_hours = record.get("lopHours", 0.0)

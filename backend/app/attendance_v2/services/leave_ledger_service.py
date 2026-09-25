@@ -13,19 +13,18 @@ class LeaveLedgerService:
         if not doj_str: return None
         return datetime.strptime(doj_str, "%Y-%m-%d").date()
 
-    async def get_or_create_ledger(self, emp_id: str, emp_code: str, year: int, leave_type: str):
-        ledger = await self.db.leave_ledgers.find_one({
-            "employeeId": emp_id,
-            "calendarYear": year,
-            "leaveType": leave_type
-        })
-        if ledger:
-            return ledger
-
+    async def get_or_create_ledger(self, emp_id: str, emp_code: str, target_date_or_year, leave_type: str):
         now = datetime.now(timezone.utc)
-        target_date = now if year == now.year else datetime(year, 1, 1, tzinfo=timezone.utc)
+        
+        if isinstance(target_date_or_year, int):
+            year = target_date_or_year
+            target_date = now if year == now.year else datetime(year, 1, 1, tzinfo=timezone.utc)
+        else:
+            target_date = target_date_or_year
+            if isinstance(target_date, date) and not isinstance(target_date, datetime):
+                target_date = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
 
-        # Query active policy
+        # Query active policy first to determine cycle
         query = {
             "deletedAt": None,
             "effectiveFrom": {"$lte": target_date},
@@ -42,6 +41,28 @@ class LeaveLedgerService:
             return None
 
         policy = docs[0]
+        
+        doj = await self._get_employee_doj(emp_id)
+        cycle_year = target_date.year
+        
+        if policy.get("leaveCycleStartType") == "DATE_OF_JOINING" and doj:
+            try:
+                cycle_start_this_year = datetime(target_date.year, doj.month, doj.day, tzinfo=timezone.utc)
+            except ValueError:
+                # Leap year edge case
+                cycle_start_this_year = datetime(target_date.year, doj.month, doj.day - 1, tzinfo=timezone.utc)
+                
+            if target_date < cycle_start_this_year:
+                cycle_year = target_date.year - 1
+
+        ledger = await self.db.leave_ledgers.find_one({
+            "employeeId": emp_id,
+            "calendarYear": cycle_year,
+            "leaveType": leave_type
+        })
+        if ledger:
+            return ledger
+
         type_config = next((t for t in policy.get("leaveTypes", []) if t.get("code") == leave_type), None)
         
         if not type_config or not type_config.get("enabled", True):
@@ -54,7 +75,7 @@ class LeaveLedgerService:
 
         doj = await self._get_employee_doj(emp_id)
         if doj:
-            anniversary_date = date(doj.year + 1, doj.month, doj.day)
+            anniversary_date = date(cycle_year + 1, doj.month, doj.day)
             
             anniversary_eligibility_enabled = type_config.get("anniversaryEligibilityEnabled", True)
             joining_year_proration_enabled = type_config.get("joiningYearProrationEnabled", True)
@@ -67,20 +88,20 @@ class LeaveLedgerService:
                 return annual_entitlement
 
             if anniversary_eligibility_enabled:
-                if year == anniversary_date.year:
+                if cycle_year == anniversary_date.year:
                     if now.date() >= anniversary_date:
                         anniversary_entitlement = annual_entitlement
                         credited = anniversary_entitlement
                     else:
                         credited = 0.0
-                elif year > anniversary_date.year:
+                elif cycle_year > anniversary_date.year:
                     credited = annual_entitlement
                 else:
                     credited = 0.0
             else:
-                if year == doj.year:
+                if cycle_year == doj.year:
                     credited = calc_prorated()
-                elif year > doj.year:
+                elif cycle_year > doj.year:
                     credited = annual_entitlement
                 else:
                     credited = 0.0
@@ -90,7 +111,7 @@ class LeaveLedgerService:
         ledger_doc = {
             "employeeId": emp_id,
             "employeeCode": emp_code,
-            "calendarYear": year,
+            "calendarYear": cycle_year,
             "leaveType": leave_type,
             "policyCode": policy.get("policyCode"),
             "policyVersion": policy.get("version"),
@@ -115,7 +136,7 @@ class LeaveLedgerService:
             # Handle potential race condition on insert
             ledger = await self.db.leave_ledgers.find_one({
                 "employeeId": emp_id,
-                "calendarYear": year,
+                "calendarYear": cycle_year,
                 "leaveType": leave_type
             })
             if ledger:
@@ -333,3 +354,93 @@ class LeaveLedgerService:
                         "leaveType": ledger.get("leaveType")
                     }
         return None
+
+    async def consume_for_permission(self, emp_id: str, month_str: str, days_needed: float) -> float:
+        if days_needed <= 0:
+            return 0.0
+
+        # We will attempt to consume from CL, then EL
+        emp = await self.db.employees.find_one({"employeeId": emp_id})
+        emp_code = emp.get("employeeCode", "UNKNOWN") if emp else "UNKNOWN"
+        
+        # Use the end of the month as the target date for resolution
+        y, m = map(int, month_str.split("-"))
+        import calendar
+        last_day = calendar.monthrange(y, m)[1]
+        target_date = date(y, m, last_day)
+        
+        now = datetime.now(timezone.utc)
+        if target_date > now.date():
+            target_date = now.date()
+            
+        target_date_str = target_date.isoformat()
+        
+        leave_types = ["CL", "EL"]
+        total_consumed = 0.0
+        remaining_needed = days_needed
+        
+        approval_id = f"permission_conversion_{month_str}"
+        
+        for lt in leave_types:
+            if remaining_needed <= 0:
+                break
+                
+            ledger_base = await self.get_or_create_ledger(emp_id, emp_code, target_date, lt)
+            if not ledger_base:
+                continue
+                
+            async with await self.db.client.start_session() as session:
+                async with session.start_transaction():
+                    ledger = await self.db.leave_ledgers.find_one({"_id": ledger_base["_id"]}, session=session)
+                    if not ledger:
+                        continue
+                        
+                    # Idempotency check: if this month's conversion already happened, we shouldn't consume AGAIN
+                    # But if the days_needed changed, we might need to adjust.
+                    # For simplicity, if it exists, we find how much was already consumed
+                    existing_allocs = [a for a in ledger.get("allocations", []) if a.get("approvalId") == approval_id]
+                    already_consumed = sum(a.get("allocated", 0.0) for a in existing_allocs)
+                    
+                    if already_consumed >= remaining_needed:
+                        total_consumed += remaining_needed
+                        remaining_needed = 0
+                        break
+                        
+                    to_consume = remaining_needed - already_consumed
+                    
+                    balance = ledger.get("availableBalance", 0.0)
+                    if balance <= 0:
+                        total_consumed += already_consumed
+                        remaining_needed -= already_consumed
+                        continue
+                        
+                    actual_consumption = min(balance, to_consume)
+                    if actual_consumption > 0:
+                        alloc = {
+                            "date": target_date_str,
+                            "approvalId": approval_id,
+                            "allocated": actual_consumption,
+                            "lop": 0.0,
+                            "createdAt": now
+                        }
+                        
+                        await self.db.leave_ledgers.update_one(
+                            {"_id": ledger["_id"]},
+                            {
+                                "$set": {
+                                    "availableBalance": balance - actual_consumption,
+                                    "consumed": ledger.get("consumed", 0.0) + actual_consumption,
+                                    "updatedAt": now
+                                },
+                                "$push": {
+                                    "allocations": alloc
+                                },
+                                "$inc": {"version": 1}
+                            },
+                            session=session
+                        )
+                    
+                    total_consumed += (already_consumed + actual_consumption)
+                    remaining_needed -= (already_consumed + actual_consumption)
+                    
+        return total_consumed

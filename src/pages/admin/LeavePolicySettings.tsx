@@ -11,6 +11,8 @@ export const LeavePolicySettings: React.FC = () => {
     policyCode: 'NEW_POLICY',
     name: '',
     effectiveFrom: new Date().toISOString().split('T')[0],
+    permissionConversionEnabled: false,
+    leaveCycleStartType: 'CALENDAR_YEAR',
     leaveTypes: []
   });
 
@@ -104,7 +106,11 @@ export const LeavePolicySettings: React.FC = () => {
                   <Input label="Policy Code" value={formData.policyCode || ''} onChange={e => setFormData({...formData, policyCode: e.target.value})} required />
                   <Input label="Policy Name" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required />
                 </div>
-                <Input label="Effective From" type="date" value={formData.effectiveFrom?.split('T')[0] || ''} onChange={e => setFormData({...formData, effectiveFrom: e.target.value})} required />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input label="Effective From" type="date" value={formData.effectiveFrom?.split('T')[0] || ''} onChange={e => setFormData({...formData, effectiveFrom: e.target.value})} required />
+                  <Select label="Permission -> Leave Conv" value={formData.permissionConversionEnabled ? 'true' : 'false'} onChange={e => setFormData({...formData, permissionConversionEnabled: e.target.value === 'true'})} options={[{value: 'true', label: 'Yes'}, {value: 'false', label: 'No'}]} />
+                  <Select label="Leave Cycle Start" value={formData.leaveCycleStartType || 'CALENDAR_YEAR'} onChange={e => setFormData({...formData, leaveCycleStartType: e.target.value})} options={[{value: 'CALENDAR_YEAR', label: 'Calendar Year'}, {value: 'DATE_OF_JOINING', label: 'Date of Joining'}]} />
+                </div>
 
                 <div className="flex justify-between items-center mt-6 mb-4">
                   <h4 className="font-semibold text-neutral-800">Leave Types</h4>

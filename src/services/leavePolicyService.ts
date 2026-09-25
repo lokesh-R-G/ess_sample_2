@@ -26,6 +26,8 @@ export interface LeavePolicyV2 {
   effectiveTo?: string;
   status?: string;
   version?: number;
+  permissionConversionEnabled?: boolean;
+  leaveCycleStartType?: string;
   leaveTypes: LeaveTypeConfig[];
 }
 

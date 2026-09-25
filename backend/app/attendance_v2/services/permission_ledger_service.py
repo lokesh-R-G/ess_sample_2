@@ -168,10 +168,22 @@ class PermissionLedgerService:
         
         lop_generated = 0.0
         remaining_carry = 0.0
+        leave_converted_days = 0.0
         
         if carry_forward and lop_threshold > 0:
             lop_units = int(accumulated_excess // lop_threshold)
-            lop_generated = lop_units * lop_value
+            initial_lop_generated = lop_units * lop_value
+            
+            if initial_lop_generated > 0:
+                conversion_enabled = policy.get("permissionConversionEnabled", False) if policy else False
+                
+                if conversion_enabled:
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger_svc = LeaveLedgerService(self.db)
+                    leave_converted_days = await ledger_svc.consume_for_permission(emp_id, month_str, initial_lop_generated)
+                    
+                lop_generated = max(0.0, initial_lop_generated - leave_converted_days)
+            
             remaining_carry = accumulated_excess % lop_threshold
         else:
             remaining_carry = 0.0 # If carry forward is disabled, we drop the excess
@@ -184,6 +196,7 @@ class PermissionLedgerService:
             "currentExcessMinutes": current_excess,
             "previousCarriedMinutes": previous_carry,
             "accumulatedExcessMinutes": accumulated_excess,
+            "leaveConvertedDays": leave_converted_days,
             "lopGenerated": lop_generated,
             "remainingCarriedMinutes": remaining_carry,
             "updatedAt": datetime.now(timezone.utc)
