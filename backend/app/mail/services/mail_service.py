@@ -31,6 +31,25 @@ class MailService:
         if not is_new:
             return saved_msg, False
             
+        # Dispatch Notification
+        try:
+            from app.notification.services.notification_service import NotificationService, NotificationType, NotificationEvent
+            from app.db.mongo import get_database
+            db = get_database()
+            notif_service = NotificationService(db)
+            await notif_service.create_notification(
+                recipient_employee_id=receiver_id,
+                notification_type=NotificationType.MESSAGE,
+                event=NotificationEvent.NEW_MESSAGE,
+                title="New Message",
+                message=f"You have a new message.",
+                entity_type="CONVERSATION",
+                entity_id=str(conv.id),
+                actor_employee_id=sender_id
+            )
+        except Exception as e:
+            logger.error(f"Failed to create notification for message: {str(e)}")
+            
         # 2. Check Receiver Presence
         is_online = await PresenceService.is_online(receiver_id)
         

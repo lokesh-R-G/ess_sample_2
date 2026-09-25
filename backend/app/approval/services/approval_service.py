@@ -60,8 +60,27 @@ class ApprovalService:
             remarks=data.remarks,
             createdAt=self._utc_now()
         )
-        return await self.repo.create(model.model_dump(by_alias=True, exclude_none=True))
-
+        created_approval = await self.repo.create(model.model_dump(by_alias=True, exclude_none=True))
+        
+        # Dispatch Notification
+        try:
+            from app.notification.services.notification_service import NotificationService, NotificationType, get_approval_event_mapping
+            notif_service = NotificationService(self.db)
+            event_mapping = get_approval_event_mapping(data.approvalType)
+            await notif_service.create_notification(
+                recipient_employee_id=manager_uuid,
+                notification_type=NotificationType.APPROVAL,
+                event=event_mapping.get("SUBMITTED", "APPROVAL_SUBMITTED"),
+                title=f"New {data.approvalType} Request",
+                message=f"You have a new {data.approvalType} request from {data.employeeId}.",
+                entity_type="APPROVAL_REQUEST",
+                entity_id=str(created_approval.id),
+                actor_employee_id=data.employeeId
+            )
+        except Exception as e:
+            pass # Do not break transaction
+            
+        return created_approval
     async def execute_action(self, approval_id: str, action_data: ApprovalAction) -> ApprovalModel:
         approval = await self.repo.get_by_id(approval_id)
         if not approval:
@@ -144,7 +163,29 @@ class ApprovalService:
                 )
                 
             enriched = await self._enrich_approvals_with_employee_info([updated])
-            return enriched[0]
+            final_approval = enriched[0]
+            
+            # Dispatch Notification
+            try:
+                from app.notification.services.notification_service import NotificationService, NotificationType, get_approval_event_mapping
+                notif_service = NotificationService(self.db)
+                event_mapping = get_approval_event_mapping(approval.approvalType)
+                event_name = event_mapping.get(action, f"APPROVAL_{action}")
+                
+                await notif_service.create_notification(
+                    recipient_employee_id=approval.employeeId,
+                    notification_type=NotificationType.APPROVAL,
+                    event=event_name,
+                    title=f"{approval.approvalType} Request {action.capitalize()}d",
+                    message=f"Your {approval.approvalType} request was {action.lower()}d.",
+                    entity_type="APPROVAL_REQUEST",
+                    entity_id=approval_id,
+                    actor_employee_id=action_data.actedBy
+                )
+            except Exception as e:
+                pass # Do not break transaction
+                
+            return final_approval
             
         return updated
 

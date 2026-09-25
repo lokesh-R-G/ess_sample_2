@@ -12,6 +12,7 @@ import MobilePunchPage from './pages/employee/MobilePunch';
 import LeaveManagement from './pages/employee/LeaveManagement';
 import Payslip from './pages/employee/Payslip';
 import Profile from './pages/employee/Profile';
+import Notifications from './pages/employee/Notifications';
 import Reimbursements from './pages/employee/Reimbursements';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEmployees from './pages/admin/AdminEmployees';
@@ -115,6 +116,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
             </ProtectedRoute>
           }
         />
