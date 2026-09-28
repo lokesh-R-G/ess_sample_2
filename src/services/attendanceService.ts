@@ -25,6 +25,11 @@ export interface AttendanceRecord {
   engineVersion?: string;
   processedAt?: string;
   
+  // Manual Override
+  isManualOverride?: boolean;
+  manualOverrideType?: string;
+  expectedWorkingHours?: number;
+  
   // Snapshots
   shiftSnapshot?: any;
   attendancePolicySnapshot?: any;

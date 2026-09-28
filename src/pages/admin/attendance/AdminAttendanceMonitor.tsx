@@ -12,6 +12,36 @@ export const AdminAttendanceMonitor: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const [selectedCell, setSelectedCell] = useState<{employeeId: string, date: string, details: any, empDetails: any} | null>(null);
+  const [manualStatus, setManualStatus] = useState('PRESENT');
+  const [manualLopHours, setManualLopHours] = useState('');
+  const [savingManual, setSavingManual] = useState(false);
+
+  useEffect(() => {
+    if (selectedCell) {
+      const current = selectedCell.details.status?.toUpperCase() || 'PRESENT';
+      setManualStatus(current === 'LOP' ? 'LOP' : current === 'ABSENT' ? 'ABSENT' : 'PRESENT');
+      setManualLopHours(selectedCell.details.lopHours?.toString() || '');
+    }
+  }, [selectedCell]);
+
+  const handleSaveManual = async () => {
+    if (!selectedCell) return;
+    try {
+      setSavingManual(true);
+      const payload: any = { status: manualStatus };
+      if (manualStatus === 'LOP') {
+        payload.lopHours = parseFloat(manualLopHours);
+      }
+      await api.patch(`/v2/attendance/monitor/${selectedCell.employeeId}/${selectedCell.date}/manual`, payload);
+      await fetchData();
+      setSelectedCell(null); // Close modal
+    } catch (err: any) {
+      alert(err.message || 'Failed to save manual attendance');
+    } finally {
+      setSavingManual(false);
+    }
+  };
+
 
   useEffect(() => {
     fetchData();
@@ -55,6 +85,8 @@ export const AdminAttendanceMonitor: React.FC = () => {
       case 'Holiday': return 'bg-blue-100 text-blue-800';
       case 'Week Off': return 'bg-gray-100 text-gray-800';
       case 'LOP': return 'bg-rose-100 text-rose-800';
+      case 'PRESENT': return 'bg-green-100 text-green-800';
+      case 'ABSENT': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-50 text-gray-400';
     }
   };
@@ -67,6 +99,8 @@ export const AdminAttendanceMonitor: React.FC = () => {
       case 'Holiday': return 'H';
       case 'Week Off': return 'WO';
       case 'LOP': return 'LOP';
+      case 'PRESENT': return 'MP';
+      case 'ABSENT': return 'MA';
       default: return '-';
     }
   };
@@ -266,13 +300,46 @@ export const AdminAttendanceMonitor: React.FC = () => {
               </div>
             </div>
             
-            <div className="p-4 border-t border-neutral-100 flex justify-end">
-              <button 
-                onClick={() => setSelectedCell(null)}
-                className="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 font-medium transition-colors"
-              >
-                Close
-              </button>
+            <div className="p-6 border-t border-neutral-100 bg-neutral-50 flex flex-col gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900 mb-2">Manual Correction (Admin)</h3>
+                <div className="flex gap-2 mb-3">
+                  <select 
+                    value={manualStatus} 
+                    onChange={e => setManualStatus(e.target.value)}
+                    className="border border-neutral-300 rounded px-3 py-2 text-sm bg-white flex-1"
+                  >
+                    <option value="PRESENT">PRESENT</option>
+                    <option value="ABSENT">ABSENT</option>
+                    <option value="LOP">LOP</option>
+                  </select>
+                  {manualStatus === 'LOP' && (
+                    <input 
+                      type="number" 
+                      min="0" step="0.5"
+                      placeholder="LOP Hrs" 
+                      value={manualLopHours}
+                      onChange={e => setManualLopHours(e.target.value)}
+                      className="border border-neutral-300 rounded px-3 py-2 text-sm bg-white w-24"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setSelectedCell(null)}
+                  className="px-4 py-2 bg-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-300 font-medium transition-colors"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={handleSaveManual}
+                  disabled={savingManual}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center"
+                >
+                  {savingManual ? 'Saving...' : 'Save Manual'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

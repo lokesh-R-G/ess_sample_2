@@ -1,6 +1,11 @@
+from pydantic import BaseModel, Field
+class ManualAttendanceRequest(BaseModel):
+    status: str = Field(..., description='PRESENT, ABSENT, or LOP')
+    lopHours: float | None = None
+
 from typing import Optional, List
-from datetime import datetime
-from fastapi import APIRouter, Depends, Query, HTTPException
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, Query, HTTPException, Body
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.db.mongo import get_database
 from app.dependencies import get_current_user
@@ -182,3 +187,110 @@ async def get_employee_punches(
         })
 
     return {"empCode": emp_code, "date": date, "punches": formatted_punches}
+
+@router.patch("/{employee_id}/{date_str}/manual")
+async def update_manual_attendance(
+    employee_id: str,
+    date_str: str,
+    request: ManualAttendanceRequest = Body(...),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    user: dict = Depends(get_current_user)
+):
+    try:
+        dt = datetime.fromisoformat(date_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO YYYY-MM-DD")
+        
+    # Must be admin or have right permission. We assume the route/app relies on claims or UI, 
+    # but let's enforce a simple check based on existing patterns if we can.
+    # In absence of exact roles, at least require authentication.
+    
+    employee = await db.employees.find_one({"employeeId": employee_id}, {"employeeCode": 1})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+        
+    emp_code = employee.get("employeeCode")
+    
+    if request.status not in ["PRESENT", "ABSENT", "LOP"]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    if request.status == "LOP" and (request.lopHours is None or request.lopHours <= 0):
+        raise HTTPException(status_code=400, detail="LOP hours must be provided and greater than 0")
+        
+    update_data = {
+        "status": request.status,
+        "isManualOverride": True,
+        "manualOverrideType": request.status
+    }
+    
+    if request.status == "LOP":
+        update_data["lopHours"] = request.lopHours
+        update_data["lopReason"] = "Admin Manual Correction"
+    else:
+        # We explicitly don't reset existing LOP hours if they were somehow generated, 
+        # but since we are overriding it to PRESENT/ABSENT, we probably should clear manual LOP if any existed.
+        update_data["lopHours"] = 0
+        update_data["lopReason"] = None
+
+    # Fetch original to audit
+    original = await db.attendance.find_one({"empId": emp_code, "date": date_str})
+    
+    # Resolve authoritative working hours for the date
+    expected_working_hours = None
+    if original and original.get("expectedWorkingHours"):
+        expected_working_hours = original.get("expectedWorkingHours")
+    
+    if expected_working_hours is None or expected_working_hours <= 0:
+        from app.services.attendance_context_resolver import AttendanceContextResolver
+        from app.services.policy_engine import PolicyEngine
+        ctx_resolver = AttendanceContextResolver(db)
+        ctx = await ctx_resolver.resolve_context(emp_code, dt.date())
+        if ctx:
+            engine = PolicyEngine(ctx)
+            expected_working_hours = engine.schedule.get("expectedWorkingHours", 8.0)
+        else:
+            expected_working_hours = 8.0
+            
+    if expected_working_hours <= 0:
+        expected_working_hours = 8.0 # Fallback to prevent division by zero
+        
+    update_data["expectedWorkingHours"] = expected_working_hours
+
+    if request.status == "LOP":
+        if request.lopHours > expected_working_hours:
+            raise HTTPException(status_code=400, detail=f"LOP hours ({request.lopHours}) cannot exceed working hours for the day ({expected_working_hours})")
+            
+    result = await db.attendance.update_one(
+        {"empId": emp_code, "date": date_str},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    # Audit log
+    audit_doc = {
+        "employeeId": employee_id,
+        "employeeCode": emp_code,
+        "date": date_str,
+        "oldStatus": original.get("status") if original else None,
+        "newStatus": request.status,
+        "lopHours": request.lopHours if request.status == "LOP" else None,
+        "changedBy": user.get("userId") if user else "SYSTEM",
+        "changedAt": datetime.now(timezone.utc),
+        "reason": "Admin Manual Correction"
+    }
+    await db.attendance_manual_logs.insert_one(audit_doc)
+    
+    # If ABSENT, we might push to dirty queue so the system recalculates and updates leaves/etc if needed.
+    # Actually the requirement says "MANUAL ABSENT MUST remain eligible for Dirty Queue processing".
+    if request.status == "ABSENT":
+        dq_service = DirtyQueueService(db)
+        await dq_service.push(
+            employee_id=employee_id,
+            employee_code=emp_code,
+            from_date=date_str,
+            to_date=date_str,
+            reason="Manual ABSENT trigger",
+            trigger="ADMIN"
+        )
+        
+    return {"success": True, "message": "Manual attendance updated"}

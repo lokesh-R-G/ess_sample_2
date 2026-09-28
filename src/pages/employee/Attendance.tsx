@@ -195,29 +195,41 @@ export const Attendance: React.FC = () => {
                             <span>Status</span>
                             <span className="font-medium text-neutral-900 capitalize">{attendance.status || 'Absent'}</span>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span>In Time</span>
-                            <span className="font-medium text-neutral-900">{formatTimeIST(inTimeStr)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>Out Time</span>
-                            <span className="font-medium text-neutral-900">{formatTimeIST(outTimeStr)}</span>
-                          </div>
-                          {attendance.sources && attendance.sources.length > 0 && (
+                          
+                          {attendance.isManualOverride ? (
                             <div className="flex items-center justify-between">
                               <span>Source</span>
-                              <span className="font-medium text-neutral-900">
-                                {attendance.sources.length === 1 && attendance.sources[0] === 'MOBILE'
-                                  ? 'Mobile Punch'
-                                  : attendance.sources.includes('MOBILE')
-                                  ? `Mixed (${attendance.sources.join(', ')})`
-                                  : attendance.sources.join(', ')}
-                              </span>
+                              <span className="font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs border border-blue-200">Manual Correction</span>
                             </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span>In Time</span>
+                                <span className="font-medium text-neutral-900">{formatTimeIST(inTimeStr)}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span>Out Time</span>
+                                <span className="font-medium text-neutral-900">{formatTimeIST(outTimeStr)}</span>
+                              </div>
+                              {attendance.sources && attendance.sources.length > 0 && (
+                                <div className="flex items-center justify-between">
+                                  <span>Source</span>
+                                  <span className="font-medium text-neutral-900">
+                                    {attendance.sources.length === 1 && attendance.sources[0] === 'MOBILE'
+                                      ? 'Mobile Punch'
+                                      : attendance.sources.includes('MOBILE')
+                                      ? `Mixed (${attendance.sources.join(', ')})`
+                                      : attendance.sources.join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
-                        {(status.includes('present') || status === 'half day' || status === 'od' || status === 'partial') && (
+                        {(status.includes('present') || status === 'half day' || status === 'od' || status === 'partial' || attendance.lopHours || attendance.isManualOverride) && (
                           <div className="space-y-3">
+                            {!attendance.isManualOverride && (
+                              <>
                             <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-emerald-600" />
@@ -248,6 +260,8 @@ export const Attendance: React.FC = () => {
                                   Apply Miss Punch
                                 </a>
                               </div>
+                            )}
+                            </>
                             )}
                             
                             {computedHours !== undefined && computedHours > 0 && (
@@ -282,6 +296,20 @@ export const Attendance: React.FC = () => {
                                 )}
                               </div>
                             ) : null}
+                            
+                            {attendance.isManualOverride && (inTimeStr || outTimeStr) && (
+                                <div className="mt-4 pt-4 border-t border-neutral-200 space-y-2">
+                                  <h4 className="text-xs font-semibold text-neutral-500 uppercase">Original Punches</h4>
+                                  <div className="flex justify-between text-xs text-neutral-600">
+                                    <span>In Time</span>
+                                    <span className="font-medium text-neutral-900">{formatTimeIST(inTimeStr)}</span>
+                                  </div>
+                                  <div className="flex justify-between text-xs text-neutral-600">
+                                    <span>Out Time</span>
+                                    <span className="font-medium text-neutral-900">{formatTimeIST(outTimeStr)}</span>
+                                  </div>
+                                </div>
+                            )}
                             
                             {(attendance.scheduleType || attendance.scheduleSource) && (
                               <div className="mt-4 pt-4 border-t border-neutral-200 space-y-2">

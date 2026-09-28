@@ -46,7 +46,11 @@ class LopAggregator:
             # Remaining LOP Hours
             lop_hours = record.get("lopHours", 0.0)
             if lop_hours > 0:
-                lop_days = lop_hours / hours_per_day
+                day_working_hours = record.get("expectedWorkingHours")
+                if not day_working_hours or day_working_hours <= 0:
+                    day_working_hours = hours_per_day
+                    
+                lop_days = lop_hours / day_working_hours
                 
                 if not lop_reason:
                     result.otherLopDays += lop_days

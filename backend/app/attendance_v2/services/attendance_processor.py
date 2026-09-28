@@ -54,9 +54,15 @@ class AttendanceProcessor:
             # We'll fetch daily for maximum safety.
             
             while current_date <= to_date:
+                existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
+                
+                # Protect MANUAL LOP and MANUAL PRESENT from being overwritten
+                if existing and existing.get("isManualOverride") and existing.get("manualOverrideType") in ["LOP", "PRESENT"]:
+                    current_date += timedelta(days=1)
+                    continue
+
                 if not force:
                     # Check if a record already exists
-                    existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
                     if existing:
                         current_date += timedelta(days=1)
                         continue
@@ -99,6 +105,7 @@ class AttendanceProcessor:
                     "inTime": metrics.get("inTime"),
                     "outTime": metrics.get("outTime"),
                     "workHours": metrics.get("effectiveHours", 0),
+                    "expectedWorkingHours": engine.schedule.get("expectedWorkingHours", 8.0),
                     "status": metrics.get("status"),
                     "lateMinutes": metrics.get("lateMinutes", 0),
                     "lateCount": metrics.get("lateCount", 0),
