@@ -7,7 +7,7 @@ class MailWebSocket {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private listeners: Map<string, EventCallback[]> = new Map();
-  private baseWsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+  private baseWsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:8000`;
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) return;
