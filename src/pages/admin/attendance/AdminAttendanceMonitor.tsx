@@ -14,6 +14,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
   const [selectedCell, setSelectedCell] = useState<{employeeId: string, date: string, details: any, empDetails: any} | null>(null);
   const [manualStatus, setManualStatus] = useState('PRESENT');
   const [manualLopHours, setManualLopHours] = useState('');
+  const [manualHalf, setManualHalf] = useState('Full Day');
   const [savingManual, setSavingManual] = useState(false);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
       const current = selectedCell.details.status?.toUpperCase() || 'PRESENT';
       setManualStatus(current === 'LOP' ? 'LOP' : current === 'ABSENT' ? 'ABSENT' : 'PRESENT');
       setManualLopHours(selectedCell.details.lopHours?.toString() || '');
+      setManualHalf('Full Day');
     }
   }, [selectedCell]);
 
@@ -31,6 +33,8 @@ export const AdminAttendanceMonitor: React.FC = () => {
       const payload: any = { status: manualStatus };
       if (manualStatus === 'LOP') {
         payload.lopHours = parseFloat(manualLopHours);
+      } else if (manualHalf !== 'Full Day') {
+        payload.half = manualHalf;
       }
       await api.patch(`/v2/attendance/monitor/${selectedCell.employeeId}/${selectedCell.date}/manual`, payload);
       await fetchData();
@@ -322,6 +326,17 @@ export const AdminAttendanceMonitor: React.FC = () => {
                       onChange={e => setManualLopHours(e.target.value)}
                       className="border border-neutral-300 rounded px-3 py-2 text-sm bg-white w-24"
                     />
+                  )}
+                  {manualStatus !== 'LOP' && (
+                    <select
+                      value={manualHalf}
+                      onChange={e => setManualHalf(e.target.value)}
+                      className="border border-neutral-300 rounded px-3 py-2 text-sm bg-white flex-1"
+                    >
+                      <option value="Full Day">Full Day</option>
+                      <option value="First Half">First Half</option>
+                      <option value="Second Half">Second Half</option>
+                    </select>
                   )}
                 </div>
               </div>

@@ -191,7 +191,7 @@ class PolicyEngine:
                                 # Limit the interval used for Late In forgiveness
                                 end = start + timedelta(minutes=applied_mins)
                                 
-                        if app_type in ["Permission", "On Duty"]:
+                        if app_type in ["Permission", "On Duty", "Leave"]:
                             intervals.append({"start": start, "end": end, "type": app_type})
                         
                         self.approval_snapshot.append({

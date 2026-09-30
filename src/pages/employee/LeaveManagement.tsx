@@ -35,7 +35,7 @@ export const LeaveManagement: React.FC = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveTypeConfig[]>([]);
 
   // Form Data
-  const [leaveFormData, setLeaveFormData] = useState({ leaveType: '', fromDate: '', toDate: '', reason: '' });
+  const [leaveFormData, setLeaveFormData] = useState({ leaveType: '', fromDate: '', toDate: '', reason: '', isHalfDay: false, half: 'First Half' as 'First Half'|'Second Half' });
   const [permFormData, setPermFormData] = useState({ date: '', fromTime: '', toTime: '', reason: '' });
   const [odFormData, setOdFormData] = useState({ type: 'full', fromDate: '', toDate: '', fromTime: '', toTime: '', location: '', reason: '' });
   const [mpFormData, setMpFormData] = useState({ date: '', type: 'MISSING_IN', time: '', reason: '' }); // Miss Punch approval uses "Miss Punch"
@@ -86,11 +86,13 @@ export const LeaveManagement: React.FC = () => {
         leaveType: leaveFormData.leaveType,
         fromDate: leaveFormData.fromDate,
         toDate: leaveFormData.toDate,
-        reason: leaveFormData.reason
+        reason: leaveFormData.reason,
+        isHalfDay: leaveFormData.isHalfDay,
+        half: leaveFormData.half
       });
       await loadAllData();
       setShowLeaveModal(false);
-      setLeaveFormData({ leaveType: '', fromDate: '', toDate: '', reason: '' });
+      setLeaveFormData({ leaveType: '', fromDate: '', toDate: '', reason: '', isHalfDay: false, half: 'First Half' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply leave');
     }
@@ -445,6 +447,31 @@ export const LeaveManagement: React.FC = () => {
             <Input label="From Date" type="date" value={leaveFormData.fromDate} onChange={e => setLeaveFormData({...leaveFormData, fromDate: e.target.value})} required />
             <Input label="To Date" type="date" value={leaveFormData.toDate} onChange={e => setLeaveFormData({...leaveFormData, toDate: e.target.value})} required />
           </div>
+          
+          <div className="flex items-center gap-2 mt-2">
+            <input 
+              type="checkbox" 
+              id="isHalfDay" 
+              checked={leaveFormData.isHalfDay} 
+              onChange={e => setLeaveFormData({...leaveFormData, isHalfDay: e.target.checked})}
+              className="w-4 h-4 text-primary-600 rounded border-neutral-300 focus:ring-primary-500"
+            />
+            <label htmlFor="isHalfDay" className="text-sm font-medium text-neutral-700">Half Day</label>
+          </div>
+
+          {leaveFormData.isHalfDay && (
+            <Select 
+              label="Which Half?" 
+              options={[
+                { value: 'First Half', label: 'First Half' },
+                { value: 'Second Half', label: 'Second Half' }
+              ]} 
+              value={leaveFormData.half} 
+              onChange={e => setLeaveFormData({...leaveFormData, half: e.target.value as 'First Half' | 'Second Half'})} 
+              required 
+            />
+          )}
+
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Reason</label>
             <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20" rows={3} value={leaveFormData.reason} onChange={e => setLeaveFormData({...leaveFormData, reason: e.target.value})} required />

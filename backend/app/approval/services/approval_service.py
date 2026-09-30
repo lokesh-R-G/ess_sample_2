@@ -51,6 +51,26 @@ class ApprovalService:
         if not manager_uuid:
             raise HTTPException(status_code=400, detail="Reporting manager identity could not be resolved")
 
+        if data.approvalType == "Leave" and data.requestData.get("isHalfDay"):
+            shift_code = emp_hist.get("shiftCode")
+            if shift_code:
+                shift = await self.db.shifts.find_one({"shiftCode": shift_code, "deletedAt": None, "isCurrent": True})
+                if not shift:
+                    shift = await self.db.shifts.find_one({"shiftCode": shift_code, "deletedAt": None})
+                if shift:
+                    s_start = shift.get("startTime", "09:00")
+                    s_end = shift.get("endTime", "18:00")
+                    b_start = shift.get("breakStartTime", "13:00")
+                    b_end = shift.get("breakEndTime", "14:00")
+                    
+                    half_type = data.requestData.get("half")
+                    if half_type == "First Half":
+                        data.requestData["fromTime"] = s_start
+                        data.requestData["toTime"] = b_start
+                    elif half_type == "Second Half":
+                        data.requestData["fromTime"] = b_end
+                        data.requestData["toTime"] = s_end
+
         model = ApprovalModel(
             employeeId=data.employeeId,
             reportingManagerEmployeeId=manager_uuid,
