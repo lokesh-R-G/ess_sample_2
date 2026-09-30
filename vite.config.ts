@@ -4,6 +4,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ["ending-silence-molecules-hospitals.trycloudflare.com"]
+    allowedHosts: ["gutless-facedown-dentist.ngrok-free.dev"]
   }
 });

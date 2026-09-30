@@ -28,6 +28,7 @@ export interface LeavePolicyV2 {
   version?: number;
   permissionConversionEnabled?: boolean;
   leaveCycleStartType?: string;
+  rejectedLeaveAbsentLopDays?: number;
   leaveTypes: LeaveTypeConfig[];
 }
 

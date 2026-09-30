@@ -13,6 +13,7 @@ export const LeavePolicySettings: React.FC = () => {
     effectiveFrom: new Date().toISOString().split('T')[0],
     permissionConversionEnabled: false,
     leaveCycleStartType: 'CALENDAR_YEAR',
+    rejectedLeaveAbsentLopDays: 2.0,
     leaveTypes: []
   });
 
@@ -110,6 +111,7 @@ export const LeavePolicySettings: React.FC = () => {
                   <Input label="Effective From" type="date" value={formData.effectiveFrom?.split('T')[0] || ''} onChange={e => setFormData({...formData, effectiveFrom: e.target.value})} required />
                   <Select label="Permission -> Leave Conv" value={formData.permissionConversionEnabled ? 'true' : 'false'} onChange={e => setFormData({...formData, permissionConversionEnabled: e.target.value === 'true'})} options={[{value: 'true', label: 'Yes'}, {value: 'false', label: 'No'}]} />
                   <Select label="Leave Cycle Start" value={formData.leaveCycleStartType || 'CALENDAR_YEAR'} onChange={e => setFormData({...formData, leaveCycleStartType: e.target.value})} options={[{value: 'CALENDAR_YEAR', label: 'Calendar Year'}, {value: 'DATE_OF_JOINING', label: 'Date of Joining'}]} />
+                  <Input label="Rejected Leave Absent LOP" type="number" step="0.5" value={formData.rejectedLeaveAbsentLopDays ?? 2.0} onChange={e => setFormData({...formData, rejectedLeaveAbsentLopDays: parseFloat(e.target.value)})} />
                 </div>
 
                 <div className="flex justify-between items-center mt-6 mb-4">

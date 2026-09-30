@@ -444,3 +444,55 @@ class LeaveLedgerService:
                     remaining_needed -= (already_consumed + actual_consumption)
                     
         return total_consumed
+
+    async def log_rejected_leave_penalty(self, employee_code: str, approval_id: str, penalty_days: float):
+        from bson import ObjectId
+        from datetime import timezone
+        
+        app = await self.db.approvals.find_one({"_id": ObjectId(approval_id)})
+        if not app:
+            return
+            
+        emp_id = app.get("employeeId")
+        rd = app.get("requestData", {})
+        leave_type = rd.get("leaveType", "CL")
+        
+        from_date_str = rd.get("fromDate")
+        if not from_date_str: return
+        
+        from_date = datetime.strptime(from_date_str, "%Y-%m-%d").date()
+        year = from_date.year
+        
+        ledger_base = await self.get_or_create_ledger(emp_id, employee_code, year, leave_type)
+        if not ledger_base: return
+        
+        now = datetime.now(timezone.utc)
+        
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                ledger = await self.db.leave_ledgers.find_one({"_id": ledger_base["_id"]}, session=session)
+                if not ledger: return
+                
+                # Idempotency check: Ensure penalty is not duplicated for the same request
+                existing = [a for a in ledger.get("allocations", []) if str(a.get("approvalId")) == approval_id and a.get("type") == "REJECTED_ABSENCE_PENALTY"]
+                if existing:
+                    return
+                
+                alloc = {
+                    "date": from_date_str,
+                    "approvalId": approval_id,
+                    "type": "REJECTED_ABSENCE_PENALTY",
+                    "allocated": 0.0,
+                    "penaltyDays": penalty_days,
+                    "createdAt": now
+                }
+                
+                await self.db.leave_ledgers.update_one(
+                    {"_id": ledger["_id"]},
+                    {
+                        "$push": {"allocations": alloc},
+                        "$inc": {"version": 1},
+                        "$set": {"updatedAt": now}
+                    },
+                    session=session
+                )

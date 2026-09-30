@@ -42,6 +42,15 @@ class LopAggregator:
                     result.permissionLopDays += perm_lop_days
                     result.breakdown.append({"date": month_str, "type": "Permission", "days": perm_lop_days, "reason": "Excess Permission"})
                 processed_perm_months.add(month_str)
+                
+            # Rejected Leave Penalty LOP
+            rejected_leave_lop = record.get("rejectedLeaveLopDays", 0.0)
+            if rejected_leave_lop > 0:
+                result.absenceLopDays += rejected_leave_lop
+                result.breakdown.append({"date": date_str, "type": "Absence", "days": rejected_leave_lop, "reason": "Rejected Leave + Absent"})
+                
+                # IMPORTANT: If rejectedLeaveLopDays > 0, we completely ignore `lopHours` to prevent double counting
+                continue
 
             # Remaining LOP Hours
             lop_hours = record.get("lopHours", 0.0)

@@ -119,6 +119,8 @@ class AttendanceProcessor:
                     "monthlyLateCount": ctx.get("monthlyLateCount", 0),
                     "lopReason": metrics.get("lopReason", None),
                     
+                    "rejectedLeaveLopDays": metrics.get("rejectedLeaveLopDays", 0.0),
+                    
                     # Phase 10.3 (Permission Ledger fields)
                     "permissionFreeAllowance": ctx.get("permissionLedger", {}).get("freeAllowanceMinutes", 0),
                     "permissionConsumed": ctx.get("permissionLedger", {}).get("consumedMinutes", 0),
@@ -152,6 +154,14 @@ class AttendanceProcessor:
                     updated_count += 1
                 else:
                     created_count += 1
+                    
+                # Log penalty to ledger if applicable
+                rejected_approval_id = metrics.get("rejectedLeaveApprovalId")
+                rejected_lop_days = metrics.get("rejectedLeaveLopDays", 0.0)
+                if rejected_approval_id and rejected_lop_days > 0:
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger_service = LeaveLedgerService(self.db)
+                    await ledger_service.log_rejected_leave_penalty(employee_code, rejected_approval_id, rejected_lop_days)
                 
                 current_date += timedelta(days=1)
                 

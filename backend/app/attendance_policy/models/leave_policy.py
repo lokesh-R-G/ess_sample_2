@@ -31,6 +31,7 @@ class LeavePolicy(BaseModel):
     # New Rules
     permissionConversionEnabled: bool = False
     leaveCycleStartType: str = "CALENDAR_YEAR"
+    rejectedLeaveAbsentLopDays: float = 2.0
     
     leaveTypes: List[LeaveTypeConfig]
     createdAt: Optional[datetime] = None
