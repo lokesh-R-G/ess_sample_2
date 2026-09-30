@@ -414,6 +414,12 @@ class PolicyEngine:
                     if adjusted_expected_out and p["start"] <= adjusted_expected_out <= p["end"]:
                         adjusted_expected_out = p["start"]
 
+                break_start = self.schedule.get("breakStartDt")
+                break_end = self.schedule.get("breakEndDt")
+                if break_start and break_end and adjusted_expected_out:
+                    if break_start <= adjusted_expected_out <= break_end:
+                        adjusted_expected_out = break_start
+
                 raw_early_mins = 0.0
                 if original_expected_out and out_time < original_expected_out:
                     raw_early_mins = (original_expected_out - out_time).total_seconds() / 60.0
