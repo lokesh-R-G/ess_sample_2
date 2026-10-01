@@ -117,7 +117,11 @@ export const AdminEmployees: React.FC = () => {
                           Invite to ESS
                         </AnimatedButton>
                       ) : (
-                        <AnimatedButton variant="secondary" size="sm" disabled>
+                        <AnimatedButton 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => navigate(`/admin/employees/edit/${emp.employeeId}`)}
+                        >
                           Manage ESS
                         </AnimatedButton>
                       )}

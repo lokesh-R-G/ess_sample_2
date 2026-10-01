@@ -42,11 +42,19 @@ class EmployeeService:
         return await self.repo.get_all(query=query, skip=skip, limit=limit, search=search, search_fields=["employeeId"])
         
     async def get_by_id(self, id: str) -> Optional[EmployeeModel]:
-        return await self.repo.get_by_id(id)
+        doc = await self.repo.get_by_id(id)
+        if not doc:
+            doc = await self.repo.get_by_employee_id(id)
+        return doc
         
     async def update(self, id: str, data: EmployeeUpdate, user_id: str = None) -> Optional[EmployeeModel]:
         await self.validator.validate_update(id, data)
-        return await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        doc = await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        if not doc:
+            emp = await self.repo.get_by_employee_id(id)
+            if emp:
+                doc = await self.repo.update(emp.id, data.model_dump(exclude_unset=True), user_id)
+        return doc
         
     async def delete(self, id: str, user_id: str = None) -> bool:
         return await self.repo.soft_delete(id, user_id)
