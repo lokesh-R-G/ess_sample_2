@@ -248,6 +248,9 @@ class PolicyEngine:
         leave_allocation = None
         
         for req in self.approved_requests:
+            if req.get("status") != "APPROVED":
+                continue
+                
             if req.get("approvalType") in ["Leave", "On Duty"]:
                 rd = req.get("requestData", {})
                 # If it has specific times, it's a partial-day approval (interval), so do not override the whole day.

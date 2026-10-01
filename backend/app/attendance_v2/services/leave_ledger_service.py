@@ -13,6 +13,25 @@ class LeaveLedgerService:
         if not doj_str: return None
         return datetime.strptime(doj_str, "%Y-%m-%d").date()
 
+    async def _get_cycle_boundaries(self, cycle_year: int, doj: date, policy: dict):
+        start_type = policy.get("leaveCycleStartType", "CALENDAR_YEAR")
+        from datetime import timedelta
+        if start_type == "DATE_OF_JOINING" and doj:
+            try:
+                start_date = datetime(cycle_year, doj.month, doj.day, tzinfo=timezone.utc)
+            except ValueError:
+                start_date = datetime(cycle_year, doj.month, doj.day - 1, tzinfo=timezone.utc)
+            try:
+                end_date = datetime(cycle_year + 1, doj.month, doj.day, tzinfo=timezone.utc)
+            except ValueError:
+                end_date = datetime(cycle_year + 1, doj.month, doj.day - 1, tzinfo=timezone.utc)
+            end_date = end_date - timedelta(microseconds=1)
+            return start_date, end_date
+        else:
+            start_date = datetime(cycle_year, 1, 1, tzinfo=timezone.utc)
+            end_date = datetime(cycle_year, 12, 31, 23, 59, 59, 999999, tzinfo=timezone.utc)
+            return start_date, end_date
+
     async def get_or_create_ledger(self, emp_id: str, emp_code: str, target_date_or_year, leave_type: str):
         now = datetime.now(timezone.utc)
         
@@ -108,6 +127,55 @@ class LeaveLedgerService:
         else:
             credited = annual_entitlement
 
+        renewal_deduction = 0.0
+        total_absence = 0.0
+        payroll_divisor = 0.0
+        
+        if doj:
+            current_start, _ = await self._get_cycle_boundaries(cycle_year, doj, policy)
+            doj_dt = datetime(doj.year, doj.month, doj.day, tzinfo=timezone.utc)
+            if current_start > doj_dt:
+                prev_year = cycle_year - 1
+                prev_start, prev_end = await self._get_cycle_boundaries(prev_year, doj, policy)
+                
+                total_consumed = 0.0
+                cursor = self.db.leave_ledgers.find({"employeeId": emp_id, "calendarYear": prev_year})
+                async for l in cursor:
+                    total_consumed += l.get("consumed", 0.0)
+                    
+                from app.payroll.services.lop_aggregator import LopAggregator
+                att_cursor = self.db.attendance.find({
+                    "employeeId": emp_id,
+                    "date": {"$gte": prev_start.strftime("%Y-%m-%d"), "$lte": prev_end.strftime("%Y-%m-%d")}
+                })
+                att_records = [d async for d in att_cursor]
+                lop_result = LopAggregator.aggregate_lop(att_records)
+                total_lop = lop_result.totalLopDays
+                
+                total_absence = total_consumed + total_lop
+                
+                from app.payroll.repositories.payroll_setting_repository import PayrollSettingRepository
+                setting_repo = PayrollSettingRepository(self.db)
+                
+                # `target_date` passed to get_active_setting should be a datetime, not just date.
+                # Since prev_end is datetime, we can just use prev_end
+                payroll_settings = await setting_repo.get_active_setting(prev_end)
+                
+                if payroll_settings:
+                    calc_method = payroll_settings.defaultSalaryCalculationMethod
+                    if calc_method == "Fixed 26 Days":
+                        payroll_divisor = 26.0
+                    elif calc_method == "Fixed 30 Days":
+                        payroll_divisor = 30.0
+                    elif calc_method in ["Calendar Days", "Working Days", "Attendance Based"]:
+                        raise ValueError(f"Unresolved payroll divisor rule for annual renewal: {calc_method}")
+                    else:
+                        raise ValueError(f"Unknown salary calculation method: {calc_method}")
+                        
+                    if payroll_divisor > 0:
+                        renewal_deduction = total_absence / payroll_divisor
+                        credited = max(0.0, annual_entitlement - renewal_deduction)
+
         ledger_doc = {
             "employeeId": emp_id,
             "employeeCode": emp_code,
@@ -124,6 +192,9 @@ class LeaveLedgerService:
             "availableBalance": credited,
             "expired": 0.0,
             "lopDays": 0.0,
+            "renewalDeduction": renewal_deduction,
+            "totalAbsence": total_absence,
+            "payrollDivisor": payroll_divisor,
             "version": 1,
             "createdAt": now,
             "updatedAt": now,
