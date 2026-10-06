@@ -36,7 +36,7 @@ export const LeaveManagement: React.FC = () => {
 
   // Form Data
   const [leaveFormData, setLeaveFormData] = useState({ leaveType: '', fromDate: '', toDate: '', reason: '', isHalfDay: false, half: 'First Half' as 'First Half'|'Second Half' });
-  const [permFormData, setPermFormData] = useState({ date: '', fromTime: '', toTime: '', reason: '' });
+  const [permFormData, setPermFormData] = useState({ date: '', fromTime: '', toTime: '', reason: '', conversionLeaveType: '' });
   const [odFormData, setOdFormData] = useState({ type: 'full', fromDate: '', toDate: '', fromTime: '', toTime: '', location: '', reason: '' });
   const [mpFormData, setMpFormData] = useState({ date: '', type: 'MISSING_IN', time: '', reason: '' }); // Miss Punch approval uses "Miss Punch"
 
@@ -109,13 +109,14 @@ export const LeaveManagement: React.FC = () => {
         requestData: {
           date: permFormData.date,
           fromTime: permFormData.fromTime,
-          toTime: permFormData.toTime
+          toTime: permFormData.toTime,
+          conversionLeaveType: permFormData.conversionLeaveType || undefined
         },
         remarks: permFormData.reason
       });
       await loadAllData();
       setShowPermissionModal(false);
-      setPermFormData({ date: '', fromTime: '', toTime: '', reason: '' });
+      setPermFormData({ date: '', fromTime: '', toTime: '', reason: '', conversionLeaveType: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to apply permission');
     }
@@ -473,6 +474,20 @@ export const LeaveManagement: React.FC = () => {
           )}
 
           <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Leave Type for Excess Permission Conversion</label>
+            <select
+              className="w-full px-4 py-3 mb-4 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+              value={permFormData.conversionLeaveType}
+              onChange={e => setPermFormData({...permFormData, conversionLeaveType: e.target.value})}
+              required
+            >
+              <option value="">Select leave type</option>
+              {Object.keys(leaveBalance).map(lt => (
+                <option key={lt} value={lt}>{lt} (Bal: {leaveBalance[lt].balance})</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Reason</label>
             <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20" rows={3} value={leaveFormData.reason} onChange={e => setLeaveFormData({...leaveFormData, reason: e.target.value})} required />
           </div>
@@ -504,6 +519,20 @@ export const LeaveManagement: React.FC = () => {
              </div>
           )}
 
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Leave Type for Excess Permission Conversion</label>
+            <select
+              className="w-full px-4 py-3 mb-4 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+              value={permFormData.conversionLeaveType}
+              onChange={e => setPermFormData({...permFormData, conversionLeaveType: e.target.value})}
+              required
+            >
+              <option value="">Select leave type</option>
+              {Object.keys(leaveBalance).map(lt => (
+                <option key={lt} value={lt}>{lt} (Bal: {leaveBalance[lt].balance})</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Reason</label>
             <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20" rows={3} value={permFormData.reason} onChange={e => setPermFormData({...permFormData, reason: e.target.value})} required />
@@ -538,6 +567,20 @@ export const LeaveManagement: React.FC = () => {
           <Input label="Location" placeholder="Client site, etc." value={odFormData.location} onChange={e => setOdFormData({...odFormData, location: e.target.value})} required />
 
           <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Leave Type for Excess Permission Conversion</label>
+            <select
+              className="w-full px-4 py-3 mb-4 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+              value={permFormData.conversionLeaveType}
+              onChange={e => setPermFormData({...permFormData, conversionLeaveType: e.target.value})}
+              required
+            >
+              <option value="">Select leave type</option>
+              {Object.keys(leaveBalance).map(lt => (
+                <option key={lt} value={lt}>{lt} (Bal: {leaveBalance[lt].balance})</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Reason</label>
             <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20" rows={3} value={odFormData.reason} onChange={e => setOdFormData({...odFormData, reason: e.target.value})} required />
           </div>
@@ -559,6 +602,20 @@ export const LeaveManagement: React.FC = () => {
             ]} value={mpFormData.type} onChange={e => setMpFormData({...mpFormData, type: e.target.value})} required />
           </div>
           <Input label="Requested Time (HH:MM)" type="time" value={mpFormData.time} onChange={e => setMpFormData({...mpFormData, time: e.target.value})} required />
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Leave Type for Excess Permission Conversion</label>
+            <select
+              className="w-full px-4 py-3 mb-4 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+              value={permFormData.conversionLeaveType}
+              onChange={e => setPermFormData({...permFormData, conversionLeaveType: e.target.value})}
+              required
+            >
+              <option value="">Select leave type</option>
+              {Object.keys(leaveBalance).map(lt => (
+                <option key={lt} value={lt}>{lt} (Bal: {leaveBalance[lt].balance})</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Reason</label>
             <textarea className="w-full px-4 py-3 rounded-lg bg-white border border-neutral-300 text-neutral-900 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20" rows={3} value={mpFormData.reason} onChange={e => setMpFormData({...mpFormData, reason: e.target.value})} required />

@@ -426,8 +426,8 @@ class LeaveLedgerService:
                     }
         return None
 
-    async def consume_for_permission(self, emp_id: str, month_str: str, days_needed: float) -> float:
-        if days_needed <= 0:
+    async def consume_for_permission(self, emp_id: str, month_str: str, days_needed: float = 0.0, allocations: list = None) -> float:
+        if days_needed <= 0 and not allocations:
             return 0.0
 
         # We will attempt to consume from CL, then EL
@@ -446,75 +446,92 @@ class LeaveLedgerService:
             
         target_date_str = target_date.isoformat()
         
-        leave_types = ["CL", "EL"]
-        total_consumed = 0.0
-        remaining_needed = days_needed
+        if allocations is None:
+            allocations = [{"permissionId": None, "leaveType": None, "amount": days_needed}]
+            
+        overall_consumed = 0.0
         
-        approval_id = f"permission_conversion_{month_str}"
-        
-        for lt in leave_types:
-            if remaining_needed <= 0:
-                break
-                
-            ledger_base = await self.get_or_create_ledger(emp_id, emp_code, target_date, lt)
-            if not ledger_base:
+        for alloc in allocations:
+            perm_id = alloc.get("permissionId")
+            leave_type = alloc.get("leaveType")
+            amount_needed = alloc.get("amount", 0.0)
+            
+            if amount_needed <= 0:
                 continue
                 
-            async with await self.db.client.start_session() as session:
-                async with session.start_transaction():
-                    ledger = await self.db.leave_ledgers.find_one({"_id": ledger_base["_id"]}, session=session)
-                    if not ledger:
-                        continue
-                        
-                    # Idempotency check: if this month's conversion already happened, we shouldn't consume AGAIN
-                    # But if the days_needed changed, we might need to adjust.
-                    # For simplicity, if it exists, we find how much was already consumed
-                    existing_allocs = [a for a in ledger.get("allocations", []) if a.get("approvalId") == approval_id]
-                    already_consumed = sum(a.get("allocated", 0.0) for a in existing_allocs)
+            if not leave_type:
+                leave_types = ["CL", "EL"]
+                approval_id = f"permission_conversion_{month_str}"
+            else:
+                leave_types = [leave_type]
+                approval_id = f"perm_conv_{perm_id}" if perm_id else f"permission_conversion_{month_str}"
+                
+            remaining_needed = amount_needed
+            alloc_consumed = 0.0
+            
+            for lt in leave_types:
+                if remaining_needed <= 0:
+                    break
                     
-                    if already_consumed >= remaining_needed:
-                        total_consumed += remaining_needed
-                        remaining_needed = 0
-                        break
-                        
-                    to_consume = remaining_needed - already_consumed
+                ledger_base = await self.get_or_create_ledger(emp_id, emp_code, target_date, lt)
+                if not ledger_base:
+                    continue
                     
-                    balance = ledger.get("availableBalance", 0.0)
-                    if balance <= 0:
-                        total_consumed += already_consumed
-                        remaining_needed -= already_consumed
-                        continue
+                async with await self.db.client.start_session() as session:
+                    async with session.start_transaction():
+                        ledger = await self.db.leave_ledgers.find_one({"_id": ledger_base["_id"]}, session=session)
+                        if not ledger:
+                            continue
+                            
+                        existing_allocs = [a for a in ledger.get("allocations", []) if a.get("approvalId") == approval_id]
+                        already_consumed = sum(a.get("allocated", 0.0) for a in existing_allocs)
                         
-                    actual_consumption = min(balance, to_consume)
-                    if actual_consumption > 0:
-                        alloc = {
-                            "date": target_date_str,
-                            "approvalId": approval_id,
-                            "allocated": actual_consumption,
-                            "lop": 0.0,
-                            "createdAt": now
-                        }
+                        if already_consumed >= remaining_needed:
+                            alloc_consumed += remaining_needed
+                            remaining_needed = 0
+                            break
+                            
+                        to_consume = remaining_needed - already_consumed
                         
-                        await self.db.leave_ledgers.update_one(
-                            {"_id": ledger["_id"]},
-                            {
-                                "$set": {
-                                    "availableBalance": balance - actual_consumption,
-                                    "consumed": ledger.get("consumed", 0.0) + actual_consumption,
-                                    "updatedAt": now
+                        balance = ledger.get("availableBalance", 0.0)
+                        if balance <= 0:
+                            alloc_consumed += already_consumed
+                            remaining_needed -= already_consumed
+                            continue
+                            
+                        actual_consumption = min(balance, to_consume)
+                        if actual_consumption > 0:
+                            new_alloc = {
+                                "date": target_date_str,
+                                "approvalId": approval_id,
+                                "allocated": actual_consumption,
+                                "lop": 0.0,
+                                "createdAt": now
+                            }
+                            
+                            await self.db.leave_ledgers.update_one(
+                                {"_id": ledger["_id"]},
+                                {
+                                    "$set": {
+                                        "availableBalance": balance - actual_consumption,
+                                        "consumed": ledger.get("consumed", 0.0) + actual_consumption,
+                                        "updatedAt": now
+                                    },
+                                    "$push": {
+                                        "allocations": new_alloc
+                                    },
+                                    "$inc": {"version": 1}
                                 },
-                                "$push": {
-                                    "allocations": alloc
-                                },
-                                "$inc": {"version": 1}
-                            },
-                            session=session
-                        )
-                    
-                    total_consumed += (already_consumed + actual_consumption)
-                    remaining_needed -= (already_consumed + actual_consumption)
-                    
-        return total_consumed
+                                session=session
+                            )
+                        
+                        alloc_consumed += (already_consumed + actual_consumption)
+                        remaining_needed -= (already_consumed + actual_consumption)
+                        
+            overall_consumed += alloc_consumed
+            
+        return overall_consumed
+
 
     async def log_rejected_leave_penalty(self, employee_code: str, approval_id: str, penalty_days: float):
         from bson import ObjectId

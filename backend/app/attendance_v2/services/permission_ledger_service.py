@@ -129,7 +129,7 @@ class PermissionLedgerService:
 
     async def _calculate_ledger_state(self, emp_id: str, month_str: str, previous_carry: float) -> dict:
         # Get all approved permissions for this month
-        # Since requestData is flexible, we might have `date` or `fromDate`. We'll use regex on both for robustness.
+        # Since requestData is flexible, we might have date or romDate. We'll use regex on both for robustness.
         approvals = await self.db.approvals.find({
             "employeeId": emp_id,
             "approvalType": "Permission",
@@ -140,8 +140,18 @@ class PermissionLedgerService:
             ]
         }).to_list(length=None)
 
+        # Sort chronologically by date/fromDate, then createdAt
+        def get_date(app):
+            rd = app.get("requestData", {})
+            return rd.get("date") or rd.get("fromDate") or ""
+        
+        approvals.sort(key=lambda a: (get_date(a), a.get("createdAt", datetime.min)))
+
         consumed = 0.0
         total_requests = 0
+        
+        # We need to map minutes to permissions for allocation
+        permission_minutes_map = []
         
         # Get policy limits
         policy = await self._get_policy_for_month(emp_id, month_str)
@@ -171,20 +181,16 @@ class PermissionLedgerService:
                     mins = (t_dt - f_dt).total_seconds() / 60.0
                     if mins > 0:
                         total_requests += 1
-                        # We count all approved minutes towards consumed. 
-                        # The limit rules determine if it's excess.
                         consumed += mins
+                        permission_minutes_map.append({
+                            "permissionId": str(app["_id"]),
+                            "leaveType": rd.get("conversionLeaveType"),
+                            "mins": mins
+                        })
                 except Exception:
                     pass
 
         current_excess = max(0.0, consumed - free_allowance)
-        
-        # We can also add excess if count > max_count or mins > max_per_request?
-        # The prompt says: "currentExcess = max(currentMonthPermissionUsed - monthlyFreeAllowance, 0)"
-        # So consumed is just total minutes used. The daily engine decides how much to apply for Late In forgiveness.
-        # But wait, if they exceed max_count, does it generate LOP directly or just add to excess?
-        # Let's stick to the prompt's explicit formula for the ledger:
-        # "currentExcess = max(currentMonthPermissionUsed - monthlyFreeAllowance, 0)"
         
         accumulated_excess = previous_carry + current_excess
         
@@ -200,9 +206,45 @@ class PermissionLedgerService:
                 conversion_enabled = policy.get("permissionConversionEnabled", False) if policy else False
                 
                 if conversion_enabled:
+                    # ALLOCATION ANALYSIS
+                    allocations_dict = {}
+                    
+                    for unit in range(1, lop_units + 1):
+                        crossing_minute = unit * lop_threshold
+                        
+                        if crossing_minute <= previous_carry:
+                            alloc_key = "CARRY_FORWARD"
+                            leave_type = None
+                            perm_id = None
+                        else:
+                            target_perm_minute = (crossing_minute - previous_carry) + free_allowance
+                            
+                            current_perm_minute = 0
+                            alloc_key = "UNKNOWN"
+                            leave_type = None
+                            perm_id = None
+                            
+                            for p in permission_minutes_map:
+                                current_perm_minute += p["mins"]
+                                if current_perm_minute >= target_perm_minute:
+                                    perm_id = p["permissionId"]
+                                    leave_type = p["leaveType"]
+                                    alloc_key = perm_id
+                                    break
+                        
+                        if alloc_key not in allocations_dict:
+                            allocations_dict[alloc_key] = {
+                                "permissionId": perm_id,
+                                "leaveType": leave_type,
+                                "amount": 0.0
+                            }
+                        allocations_dict[alloc_key]["amount"] += lop_value
+                        
+                    allocations = list(allocations_dict.values())
+                    
                     from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
                     ledger_svc = LeaveLedgerService(self.db)
-                    leave_converted_days = await ledger_svc.consume_for_permission(emp_id, month_str, initial_lop_generated)
+                    leave_converted_days = await ledger_svc.consume_for_permission(emp_id, month_str, allocations=allocations)
                     
                 lop_generated = max(0.0, initial_lop_generated - leave_converted_days)
             
