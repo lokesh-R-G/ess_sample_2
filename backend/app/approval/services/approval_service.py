@@ -71,6 +71,26 @@ class ApprovalService:
                         data.requestData["fromTime"] = b_end
                         data.requestData["toTime"] = s_end
 
+        if data.approvalType == "Permission":
+            rd = data.requestData
+            if rd.get("fromTime") and rd.get("toTime"):
+                try:
+                    f_dt = datetime.strptime(rd["fromTime"], "%H:%M")
+                    t_dt = datetime.strptime(rd["toTime"], "%H:%M")
+                    mins = (t_dt - f_dt).total_seconds() / 60.0
+                    if mins > 0:
+                        dt_val = rd.get("date") or rd.get("fromDate") or ""
+                        if len(dt_val) >= 7:
+                            month_str = dt_val[:7]
+                            from app.attendance_v2.services.permission_ledger_service import PermissionLedgerService
+                            pls = PermissionLedgerService(self.db)
+                            await pls.validate_permission_limit(data.employeeId, month_str, mins)
+                except Exception as e:
+                    # Reraise HTTPException to allow it to propagate to the frontend
+                    if isinstance(e, HTTPException):
+                        raise e
+                    pass
+
         model = ApprovalModel(
             employeeId=data.employeeId,
             reportingManagerEmployeeId=manager_uuid,
@@ -108,6 +128,25 @@ class ApprovalService:
             
         action = action_data.action.upper()
         if action == "APPROVE":
+            if approval.approvalType == "Permission":
+                rd = approval.requestData
+                if rd.get("fromTime") and rd.get("toTime"):
+                    try:
+                        f_dt = datetime.strptime(rd["fromTime"], "%H:%M")
+                        t_dt = datetime.strptime(rd["toTime"], "%H:%M")
+                        mins = (t_dt - f_dt).total_seconds() / 60.0
+                        if mins > 0:
+                            dt_val = rd.get("date") or rd.get("fromDate") or ""
+                            if len(dt_val) >= 7:
+                                month_str = dt_val[:7]
+                                from app.attendance_v2.services.permission_ledger_service import PermissionLedgerService
+                                pls = PermissionLedgerService(self.db)
+                                await pls.validate_permission_limit(approval.employeeId, month_str, mins, exclude_approval_id=approval_id)
+                    except Exception as e:
+                        if isinstance(e, HTTPException):
+                            raise e
+                        pass
+
             approval.status = "APPROVED"
             
             # Resolve employeeCode

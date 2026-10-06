@@ -1,6 +1,7 @@
 from datetime import datetime, date, timezone
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import calendar
+from fastapi import HTTPException
 
 class PermissionLedgerService:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -201,3 +202,64 @@ class PermissionLedgerService:
             "remainingCarriedMinutes": remaining_carry,
             "updatedAt": datetime.now(timezone.utc)
         }
+
+    async def validate_permission_limit(self, emp_id: str, month_str: str, requested_minutes: float, exclude_approval_id: str = None):
+        """
+        Validates whether the requested permission duration exceeds the configured maxPermissionHoursPerMonth limit.
+        Counts both APPROVED and PENDING permissions, except for exclude_approval_id.
+        Raises HTTPException 400 if exceeded.
+        """
+        policy = await self._get_policy_for_month(emp_id, month_str)
+        if not policy:
+            return
+            
+        max_hours = policy.get("maxPermissionHoursPerMonth")
+        if max_hours is None:
+            return
+            
+        max_minutes = max_hours * 60.0
+        
+        query = {
+            "employeeId": emp_id,
+            "approvalType": "Permission",
+            "status": {"$in": ["APPROVED", "PENDING"]},
+            "$or": [
+                {"requestData.date": {"$regex": f"^{month_str}"}},
+                {"requestData.fromDate": {"$regex": f"^{month_str}"}}
+            ]
+        }
+        if exclude_approval_id:
+            from bson import ObjectId
+            if isinstance(exclude_approval_id, str) and len(exclude_approval_id) == 24:
+                query["_id"] = {"$ne": ObjectId(exclude_approval_id)}
+            else:
+                query["_id"] = {"$ne": exclude_approval_id}
+            
+        approvals = await self.db.approvals.find(query).to_list(length=None)
+        
+        consumed = 0.0
+        for app in approvals:
+            rd = app.get("requestData", {})
+            ft = rd.get("fromTime")
+            tt = rd.get("toTime")
+            if ft and tt:
+                try:
+                    f_dt = datetime.strptime(ft, "%H:%M")
+                    t_dt = datetime.strptime(tt, "%H:%M")
+                    mins = (t_dt - f_dt).total_seconds() / 60.0
+                    if mins > 0:
+                        consumed += mins
+                except Exception:
+                    pass
+                    
+        total_after_request = consumed + requested_minutes
+        
+        if total_after_request > max_minutes:
+            remaining_mins = max(0.0, max_minutes - consumed)
+            remaining_hours = remaining_mins / 60.0
+            if remaining_hours <= 0:
+                raise HTTPException(status_code=400, detail=f"You have reached your monthly permission limit of {max_hours:g} hours.")
+            else:
+                # Format remaining hours nicely, e.g. 1.5
+                formatted_remaining = f"{remaining_hours:g}"
+                raise HTTPException(status_code=400, detail=f"You can only avail {formatted_remaining} more permission hours this month.")
