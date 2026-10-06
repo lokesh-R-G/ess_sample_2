@@ -51,7 +51,7 @@ async def get_leave_balances(current_user=Depends(get_current_user)):
         
     balances = {}
     for lt in leave_types:
-        ledger = await ledger_svc.get_or_create_ledger(emp_id, emp_code, year, lt)
+        ledger = await ledger_svc.get_or_create_ledger(emp_id, emp_code, year, lt, create_if_missing=False)
         balances[lt] = {
             "total": ledger.get("openingBalance", 0.0),
             "used": ledger.get("consumed", 0.0),

@@ -32,7 +32,7 @@ class LeaveLedgerService:
             end_date = datetime(cycle_year, 12, 31, 23, 59, 59, 999999, tzinfo=timezone.utc)
             return start_date, end_date
 
-    async def get_or_create_ledger(self, emp_id: str, emp_code: str, target_date_or_year, leave_type: str):
+    async def get_or_create_ledger(self, emp_id: str, emp_code: str, target_date_or_year, leave_type: str, create_if_missing: bool = True):
         now = datetime.now(timezone.utc)
         
         if isinstance(target_date_or_year, int):
@@ -74,6 +74,11 @@ class LeaveLedgerService:
             if target_date < cycle_start_this_year:
                 cycle_year = target_date.year - 1
 
+        type_config = next((t for t in policy.get("leaveTypes", []) if t.get("code") == leave_type), None)
+        
+        if not type_config or not type_config.get("enabled", True):
+            return None
+
         ledger = await self.db.leave_ledgers.find_one({
             "employeeId": emp_id,
             "calendarYear": cycle_year,
@@ -81,11 +86,6 @@ class LeaveLedgerService:
         })
         if ledger:
             return ledger
-
-        type_config = next((t for t in policy.get("leaveTypes", []) if t.get("code") == leave_type), None)
-        
-        if not type_config or not type_config.get("enabled", True):
-            return None
 
         annual_entitlement = float(type_config.get("annualEntitlement", 0.0))
         anniversary_entitlement = 0.0
@@ -201,6 +201,12 @@ class LeaveLedgerService:
             "allocations": []
         }
         
+        if not create_if_missing:
+            ledger_doc["openingBalance"] = 0.0
+            ledger_doc["credited"] = 0.0
+            ledger_doc["availableBalance"] = 0.0
+            return ledger_doc
+            
         try:
             await self.db.leave_ledgers.insert_one(ledger_doc)
         except Exception:
