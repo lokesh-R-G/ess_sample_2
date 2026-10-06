@@ -2,6 +2,7 @@ from datetime import datetime, date, timezone
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import calendar
 from fastapi import HTTPException
+from bson import ObjectId
 
 class PermissionLedgerService:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -25,27 +26,42 @@ class PermissionLedgerService:
         if now.year == y and now.month == m:
             target_dt = now
             
+        shift_id = emp_hist.get("shiftId")
         shift_code = emp_hist.get("shiftCode")
-        if not shift_code: return None
         
         # 2. Get shift
-        shift = await self.db.shifts.find_one({"shiftCode": shift_code})
+        shift = None
+        if shift_id and ObjectId.is_valid(shift_id):
+            shift = await self.db.shifts.find_one({"_id": ObjectId(shift_id)})
+            
+        if not shift and shift_code:
+            shift = await self.db.shifts.find_one({"shiftCode": shift_code})
+            
         if not shift: return None
         
         # 3. Get policy
+        pol_id = shift.get("attendancePolicyId")
         pol_code = shift.get("attendancePolicyCode")
-        if not pol_code: return None
+        
+        pol_query_base = None
+        if pol_id and ObjectId.is_valid(pol_id):
+            pol_query_base = {"_id": ObjectId(pol_id)}
+        elif pol_code:
+            pol_query_base = {"attendancePolicyCode": pol_code}
+            
+        if not pol_query_base: return None
         
         # Resolve version based on target_dt
         target_dt_utc = datetime.combine(target_dt, datetime.min.time(), tzinfo=timezone.utc)
-        policy_cursor = await self.db.attendance_policies.find({
-            "attendancePolicyCode": pol_code,
-            "effectiveFrom": {"$lte": target_dt_utc},
-            "$or": [
-                {"effectiveTo": None},
-                {"effectiveTo": {"$gt": target_dt_utc}}
-            ]
-        }).sort([("version", -1)]).to_list(length=1)
+        
+        policy_query = pol_query_base.copy()
+        policy_query["effectiveFrom"] = {"$lte": target_dt_utc}
+        policy_query["$or"] = [
+            {"effectiveTo": None},
+            {"effectiveTo": {"$gt": target_dt_utc}}
+        ]
+        
+        policy_cursor = await self.db.attendance_policies.find(policy_query).sort([("version", -1)]).to_list(length=1)
         
         if policy_cursor:
             # We can mock a class object if needed, but dict is better. 
@@ -54,7 +70,9 @@ class PermissionLedgerService:
             return policy_cursor[0]
             
         # Fallback to current
-        pol = await self.db.attendance_policies.find_one({"attendancePolicyCode": pol_code, "isCurrent": True})
+        fallback_query = pol_query_base.copy()
+        fallback_query["isCurrent"] = True
+        pol = await self.db.attendance_policies.find_one(fallback_query)
         return pol
 
     async def get_or_calculate_ledger(self, emp_id: str, month_str: str, depth: int = 0) -> dict:
