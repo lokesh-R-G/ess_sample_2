@@ -57,7 +57,7 @@ class PermissionLedgerService:
         pol = await self.db.attendance_policies.find_one({"attendancePolicyCode": pol_code, "isCurrent": True})
         return pol
 
-    async def get_or_calculate_ledger(self, emp_id: str, month_str: str) -> dict:
+    async def get_or_calculate_ledger(self, emp_id: str, month_str: str, depth: int = 0) -> dict:
         """
         Dynamically calculates the ledger for the given month from the source of truth.
         """
@@ -81,7 +81,7 @@ class PermissionLedgerService:
         previous_carry = 0.0
         if prev_ledger:
             previous_carry = prev_ledger.get("remainingCarriedMinutes", 0.0)
-        else:
+        elif depth < 12:
             # If we need to go back indefinitely, we could recurse, but it's better to stop if no approvals exist.
             # We'll just assume 0.0 if there's no persisted ledger for the previous month.
             # In a robust system, we would calculate it. Let's do a fast check for any approvals before recursing.
@@ -89,10 +89,13 @@ class PermissionLedgerService:
                 "employeeId": emp_id,
                 "approvalType": "Permission",
                 "status": "APPROVED",
-                "requestData.date": {"$regex": f"^{prev_month_str}"}
+                "$or": [
+                    {"requestData.date": {"$regex": f"^{prev_month_str}"}},
+                    {"requestData.fromDate": {"$regex": f"^{prev_month_str}"}}
+                ]
             })
             if has_prev_approvals:
-                calc_prev = await self._calculate_ledger_state(emp_id, prev_month_str, 0.0)
+                calc_prev = await self.get_or_calculate_ledger(emp_id, prev_month_str, depth + 1)
                 previous_carry = calc_prev.get("remainingCarriedMinutes", 0.0)
 
         # 2. Calculate current month

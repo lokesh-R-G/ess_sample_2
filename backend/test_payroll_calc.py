@@ -6,7 +6,7 @@ from app.domain_models import PFRule
 def pf_rules():
     return PFRule(
         pfEnabled=True,
-        pfCeilingAmount=15000.0,
+        pfCeilingAmount=25000.0,
         employeePfPercent=12.0,
         employerPensionPercent=8.33,
         maxPensionAmount=1250.0,
@@ -62,7 +62,7 @@ def test_case_4_fresher_above_ceiling_pf_yes_ceiling(pf_rules):
         pf_rules=pf_rules,
         employee_choice={"isFresher": True, "wantsPf": True, "useCeiling": True}
     )
-    # Employee PF = 15000 * 12% = 1800
+    # Employee PF = 25000 * 12% = 1800
     # Pension = 0
     # Employer PF = 1800 - 0 = 1800
     assert result["employeePf"] == 1800
@@ -102,7 +102,7 @@ def test_case_7_existing_pension_member_above_ceiling_pf_yes_actual(pf_rules):
         employee_choice={"isFresher": False, "isExistingPensionMember": True, "wantsPf": True, "useCeiling": False}
     )
     # Employee PF Base = 30000 -> Employee PF = 3600
-    # Pension Base = 15000 -> Pension = 1250 (max)
+    # Pension Base = 25000 -> Pension = 1250 (max)
     # Employer PF = 3600 - 1250 = 2350
     assert result["employeePf"] == 3600
     assert result["employerPension"] == 1250
@@ -115,8 +115,8 @@ def test_case_8_existing_pension_member_above_ceiling_pf_yes_ceiling(pf_rules):
         pf_rules=pf_rules,
         employee_choice={"isFresher": False, "isExistingPensionMember": True, "wantsPf": True, "useCeiling": True}
     )
-    # Employee PF Base = 15000 -> Employee PF = 1800
-    # Pension Base = 15000 -> Pension = 1250 (max)
+    # Employee PF Base = 25000 -> Employee PF = 1800
+    # Pension Base = 25000 -> Pension = 1250 (max)
     # Employer PF = 1800 - 1250 = 550
     assert result["employeePf"] == 1800
     assert result["employerPension"] == 1250

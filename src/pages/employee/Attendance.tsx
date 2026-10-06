@@ -15,7 +15,7 @@ const statusConfig: Record<string, { bg: string; text: string; icon: React.Eleme
   'leave': { bg: 'bg-amber-100', text: 'text-amber-700', icon: CalendarIcon, label: 'Leave' },
   'weekoff': { bg: 'bg-blue-100', text: 'text-blue-700', icon: Coffee, label: 'Week Off' },
   'holiday': { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: Coffee, label: 'Holiday' },
-  'od': { bg: 'bg-purple-100', text: 'text-purple-700', icon: Briefcase, label: 'OD' },
+  'on duty': { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Briefcase, label: 'OD' },
   'partial': { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock, label: 'Partial' },
 };
 

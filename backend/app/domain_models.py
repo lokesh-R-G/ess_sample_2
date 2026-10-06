@@ -339,10 +339,10 @@ class PFRule(RuleBase):
     policyCode: str = "DEFAULT_PF"
     isCurrent: bool = True
     pfEnabled: bool = True
-    mandatoryBelowGross: float = 15000.0
-    optionalAboveGross: float = 15000.0
+    mandatoryBelowGross: float = 25000.0
+    optionalAboveGross: float = 25000.0
     defaultMode: Literal["Ask During Employee Creation", "Always Ceiling", "Always Actual Gross"] = "Ask During Employee Creation"
-    pfCeilingAmount: float = 15000.0
+    pfCeilingAmount: float = 25000.0
     employeePfPercent: float = 12.0
     employerPfPercent: float = 3.67
     employerPensionPercent: float = 8.33

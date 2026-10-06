@@ -151,7 +151,7 @@ export const payslipData = {
   },
   earnings: {
     basic: 35000,
-    hra: 15000,
+    hra: 25000,
     conveyance: 3000,
     medicalAllowance: 2500,
     specialAllowance: 12000,

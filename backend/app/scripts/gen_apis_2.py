@@ -96,7 +96,7 @@ sal_endpoints = [
             "employeeId": "EMP000145",
             "salaryStructureId": "STRUCT_SDE_TIER1",
             "effectiveDate": "2026-04-01",
-            "ctcOverride": 1500000,
+            "ctcOverride": 2500000,
             "componentOverrides": [
                 {"componentId": "COMP_BASIC", "overrideValue": 50000}
             ],

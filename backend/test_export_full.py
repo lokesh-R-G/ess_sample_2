@@ -48,9 +48,9 @@ async def create_and_test():
                 "employeePf": 1800,
                 "employerPf": 550,
                 "employerPension": 1250,
-                "epfBase": 15000,
-                "edliBase": 15000,
-                "pensionBase": 15000
+                "epfBase": 25000,
+                "edliBase": 25000,
+                "pensionBase": 25000
             }
         }
     }

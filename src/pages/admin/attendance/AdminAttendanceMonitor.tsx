@@ -84,6 +84,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
     if (isLate) return 'bg-orange-100 text-orange-800 border border-orange-300';
     switch (status) {
       case 'Present': return 'bg-green-100 text-green-800';
+      case 'On Duty': return 'bg-yellow-100 text-yellow-800';
       case 'Absent': return 'bg-red-100 text-red-800';
       case 'Leave': return 'bg-purple-100 text-purple-800';
       case 'Holiday': return 'bg-blue-100 text-blue-800';
@@ -105,6 +106,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
       case 'LOP': return 'LOP';
       case 'PRESENT': return 'MP';
       case 'ABSENT': return 'MA';
+      case 'On Duty': return 'OD';
       default: return '-';
     }
   };
