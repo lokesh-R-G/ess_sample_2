@@ -70,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     hasPermission: (permissionId: string) => {
       if (!user || !user.permissions) return false;
-      return Array.isArray(user.permissions[permissionId]);
+      const scopes = user.permissions[permissionId];
+      if (!Array.isArray(scopes) || scopes.length === 0) return false;
+      if (scopes.length === 1 && scopes[0] === 'SELF') return false;
+      return true;
     },
   }), [user, tokenReady]);
 

@@ -143,6 +143,7 @@ async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_
                 items.sort(key=lambda x: x["timestamp"])
                 timestamps = [x["timestamp"] for x in items]
                 fingerprints = [x.get("fingerprint") for x in items if "fingerprint" in x]
+                raw_sources = [str(x.get("source", "ESSL")).upper() for x in items]
                 in_time = timestamps[0]
                 out_time = timestamps[-1] if len(timestamps) > 1 else None
 
@@ -171,6 +172,7 @@ async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_
                 "lopHours": metrics.get("lopHours", 0.0),
                 "halfDayCount": metrics.get("halfDayCount", 0.0),
                 "sourceLogFingerprints": fingerprints,
+                "sources": list(set(raw_sources)) if items else [],
                 "engineVersion": "v0.2",
                 "processedAt": datetime.now(timezone.utc).isoformat(),
                 "timezone": "Asia/Kolkata"
@@ -182,8 +184,12 @@ async def build_daily_summaries(db, logs, from_date: datetime | None = None, to_
 
 def infer_attendance_status(record: dict) -> str:
     status = record.get("status")
-    # Support both V1 (lowercase) and V2 (capitalized) status types
-    if status in {"present", "absent", "leave", "weekoff", "od", "partial", "On Duty", "Absent", "Holiday", "Week Off", "Week Off Worked", "Half Day", "Present", "Leave"}:
+    
+    if record.get("isManualOverride") and status:
+        return status
+        
+    # Support both V1 (lowercase), V2 (capitalized), and manual override status types
+    if status and status.upper() in {"PRESENT", "ABSENT", "LEAVE", "WEEKOFF", "OD", "PARTIAL", "ON DUTY", "WEEK OFF", "WEEK OFF WORKED", "HALF DAY", "HOLIDAY", "LOP"}:
         return status
 
     # check common timestamp fields used by daily summaries

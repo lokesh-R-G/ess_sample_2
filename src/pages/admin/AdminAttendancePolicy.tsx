@@ -42,8 +42,9 @@ export const AdminAttendancePolicy: React.FC = () => {
       lateHalfDayThreshold: 3,
       lateFullDayThreshold: 6,
       permissionMinutes: 60,
-      permissionPerMonth: 2,
+      permissionPerMonth: null,
       monthlyPermissionHours: 1.0,
+      maxPermissionHoursPerMonth: null,
       permissionExcessCarryForward: true,
       permissionLopThresholdMinutes: 240,
       permissionLopValue: 0.5,
@@ -194,8 +195,9 @@ export const AdminAttendancePolicy: React.FC = () => {
           <h3 className="text-lg font-semibold flex items-center gap-2 mt-4"><Clock className="w-5 h-5 text-indigo-500"/> Permission Rules</h3>
           <div className="grid grid-cols-3 gap-4">
             <Input type="number" label="Max Mins per Request" value={editingPolicy.permissionMinutes || 60} onChange={e => handleChange('permissionMinutes', Number(e.target.value))} />
-            <Input type="number" label="Max Count per Month" value={editingPolicy.permissionPerMonth || 2} onChange={e => handleChange('permissionPerMonth', Number(e.target.value))} />
+            <Input type="number" label="Max Count per Month" value={editingPolicy.permissionPerMonth || ''} onChange={e => handleChange('permissionPerMonth', Number(e.target.value))} />
             <Input type="number" step="0.5" label="Free Monthly Hours" value={editingPolicy.monthlyPermissionHours || 1.0} onChange={e => handleChange('monthlyPermissionHours', Number(e.target.value))} />
+            <Input type="number" step="0.5" label="Maximum Monthly Hours" value={editingPolicy.maxPermissionHoursPerMonth || ''} onChange={e => handleChange('maxPermissionHoursPerMonth', e.target.value ? Number(e.target.value) : null)} />
             <Input type="number" label="LOP Threshold (Mins)" value={editingPolicy.permissionLopThresholdMinutes || 240} onChange={e => handleChange('permissionLopThresholdMinutes', Number(e.target.value))} />
             <Input type="number" step="0.5" label="LOP Value (Days)" value={editingPolicy.permissionLopValue || 0.5} onChange={e => handleChange('permissionLopValue', Number(e.target.value))} />
             <div className="flex items-center gap-2 pt-8">

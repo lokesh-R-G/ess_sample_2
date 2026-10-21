@@ -203,7 +203,7 @@ class AttendanceContextResolver:
         # for simplicity since requestData structure can vary by approvalType.
         approvals_cursor = self.db.approvals.find({
             "employeeId": employee.employeeId,
-            "status": "APPROVED"
+            "status": {"$in": ["APPROVED", "REJECTED"]}
         })
         approvals = await approvals_cursor.to_list(length=None)
         
@@ -284,6 +284,10 @@ class AttendanceContextResolver:
         raw_punches = await logs_cursor.to_list(length=None)
 
         print("Policy Engine Executed")
+        
+        # 8. Resolve Leave Policy globally
+        leave_policy_docs = await self.db.leave_policies.find({"deletedAt": None, "isCurrent": True}).sort([("version", -1)]).to_list(length=1)
+        leave_policy = leave_policy_docs[0] if leave_policy_docs else None
 
         return {
             "employee": employee,
@@ -300,5 +304,6 @@ class AttendanceContextResolver:
             "monthlyLateCount": monthly_late_count,
             "rawPunches": raw_punches,
             "permissionLedger": permission_ledger,
-            "targetDate": target_date
+            "targetDate": target_date,
+            "leavePolicy": leave_policy
         }

@@ -10,16 +10,10 @@ import { payrollReviewApi, PayrollRecord } from '../../../services/payrollReview
 
 type CompanyOption = { id: string; name: string; code?: string };
 type BranchOption = { id: string; name: string; companyId?: string };
-type DeductionColumnKey = 'salaryAdvance' | 'tds' | 'otherAdvance' | 'labourWelfare' | 'professionalTax';
-
 type AdjustmentDraft = {
   reimbursement: number;
   lta: number;
-  salaryAdvance: number;
-  tds: number;
-  otherAdvance: number;
-  labourWelfare: number;
-  professionalTax: number;
+  [key: string]: number;
 };
 
 type AdjustmentRecord = AdjustmentDraft & {
@@ -30,22 +24,9 @@ type AdjustmentRecord = AdjustmentDraft & {
   branchName?: string;
 };
 
-const DEDUCTION_COLUMNS: Array<{ key: DeductionColumnKey; label: string; deductionType: string }> = [
-  { key: 'salaryAdvance', label: 'Salary Advance', deductionType: 'Salary Advance' },
-  { key: 'tds', label: 'TDS', deductionType: 'TDS' },
-  { key: 'otherAdvance', label: 'Other Advance', deductionType: 'Other Advance' },
-  { key: 'labourWelfare', label: 'Labour Welfare', deductionType: 'Labour Welfare' },
-  { key: 'professionalTax', label: 'Professional Tax', deductionType: 'Professional Tax' },
-];
-
 const EMPTY_DRAFT: AdjustmentDraft = {
   reimbursement: 0,
   lta: 0,
-  salaryAdvance: 0,
-  tds: 0,
-  otherAdvance: 0,
-  labourWelfare: 0,
-  professionalTax: 0,
 };
 
 function normalizeArray<T>(payload: unknown): T[] {
@@ -74,9 +55,7 @@ function employeeName(employee: any): string {
   return `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || employee?.employeeCode || employee?.employeeId || 'Unnamed Employee';
 }
 
-function calcRowTotal(row: AdjustmentDraft): number {
-  return row.reimbursement + row.lta + row.salaryAdvance + row.tds + row.otherAdvance + row.labourWelfare + row.professionalTax;
-}
+
 
 const AdminPayrollControl: React.FC = () => {
   const { user, hasPermission } = useAuth();
@@ -97,10 +76,18 @@ const AdminPayrollControl: React.FC = () => {
   const [savingAdjustments, setSavingAdjustments] = useState(false);
   const [processingPayroll, setProcessingPayroll] = useState(false);
   const [publishingPayroll, setPublishingPayroll] = useState(false);
+  const [exportingCSV, setExportingCSV] = useState(false);
+  const [exportingXLSX, setExportingXLSX] = useState(false);
   const [adjustments, setAdjustments] = useState<AdjustmentRecord[]>([]);
   const [adjustmentDrafts, setAdjustmentDrafts] = useState<Record<string, AdjustmentDraft>>({});
   const [deductionIndex, setDeductionIndex] = useState<Record<string, Record<string, any>>>({});
   const [currentCycle, setCurrentCycle] = useState<PayrollCycle | null>(null);
+  const [currentCompanyRun, setCurrentCompanyRun] = useState<any>(null);
+  const [manualComponents, setManualComponents] = useState<any[]>([]);
+  const [activeLegacyColumns, setActiveLegacyColumns] = useState<string[]>([]);
+
+  const manualEarnings = useMemo(() => manualComponents.filter(c => c.componentType === 'Earning'), [manualComponents]);
+  const manualDeductions = useMemo(() => manualComponents.filter(c => c.componentType === 'Deduction'), [manualComponents]);
 
   const selectedCompany = useMemo(() => companies.find((company) => company.id === selectedCompanyId) || null, [companies, selectedCompanyId]);
   const selectedBranch = useMemo(() => branches.find((branch) => branch.id === selectedBranchId) || null, [branches, selectedBranchId]);
@@ -110,9 +97,10 @@ const AdminPayrollControl: React.FC = () => {
       setLoadingCompanies(true);
       setLoadingCycles(true);
       try {
-        const [companyPayload, cyclePayload] = await Promise.all([
+        const [companyPayload, cyclePayload, componentsPayload] = await Promise.all([
           organizationApi.getCompanies(),
           payrollCycleApi.getCycles(),
+          api.get('/v2/organization/salary-components?inputMode=MANUAL')
         ]);
 
         const companyList = normalizeArray<any>(companyPayload)
@@ -123,8 +111,13 @@ const AdminPayrollControl: React.FC = () => {
           .map((cycle) => ({ ...cycle, id: String((cycle as any).id || (cycle as any)._id || ''), processingStatus: cycle.processingStatus || 'DRAFT' }))
           .filter((cycle) => cycle.id);
 
+        const componentsList = normalizeArray<any>(componentsPayload)
+          .map((comp) => ({ ...comp, id: getId(comp) }))
+          .filter(c => c.id && c.isActive !== false);
+
         setCompanies(companyList);
         setCycles(cycleList);
+        setManualComponents(componentsList);
 
         const defaultCompany = user?.companyId && companyList.some((company) => company.id === user.companyId)
           ? user.companyId
@@ -229,6 +222,9 @@ const AdminPayrollControl: React.FC = () => {
         const cycle = cycles.find((item) => item.id === selectedCycleId) || null;
         setCurrentCycle(cycle);
 
+        const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+        setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
+
         const [attendanceResult, payrollResult, reimbursementResult, deductionResult] = await Promise.allSettled([
           payrollCycleApi.getAttendanceLedger(selectedCycleId, selectedCompanyId, selectedBranchId || undefined),
           payrollReviewApi.getPayrollsForCycle(selectedCycleId, selectedCompanyId),
@@ -292,43 +288,42 @@ const AdminPayrollControl: React.FC = () => {
           }
         }
 
+        const legacyColumns = new Set<string>();
+
         for (const deduction of deductionList) {
           const empId = String(deduction?.employeeId || '');
           if (!empId || !rowMap.has(empId)) continue;
           const current = rowMap.get(empId)!;
-          const deductionType = String(deduction?.deductionType || '').toUpperCase();
-          const amount = toNumber(deduction?.amount);
-          const key = deductionType.includes('SALARY')
-            ? 'salaryAdvance'
-            : deductionType.includes('TDS')
-              ? 'tds'
-              : deductionType.includes('OTHER')
-                ? 'otherAdvance'
-                : deductionType.includes('LABOUR') || deductionType.includes('LWF')
-                  ? 'labourWelfare'
-                  : deductionType.includes('PROFESSIONAL') || deductionType.includes('PT')
-                    ? 'professionalTax'
-                    : null;
+          
+          let compId = deduction?.componentId;
+          const deductionType = String(deduction?.deductionType || '');
+          
+          if (!compId && deductionType) {
+             const nameMatch = manualComponents.find(c => (c.name || '').toLowerCase() === deductionType.toLowerCase());
+             if (nameMatch) {
+               compId = nameMatch.id;
+             } else {
+               compId = `legacy_${deductionType}`;
+               legacyColumns.add(deductionType);
+             }
+          }
 
-          if (key) {
-            current[key] += amount;
+          const amount = toNumber(deduction?.amount);
+          if (compId) {
+            current[compId] = (current[compId] || 0) + amount;
             deductionMap[empId] = deductionMap[empId] || {};
-            deductionMap[empId][key] = deduction;
+            deductionMap[empId][compId] = deduction;
           }
         }
+        setActiveLegacyColumns(Array.from(legacyColumns));
 
         setAdjustments(Array.from(rowMap.values()).sort((left, right) => left.employeeName.localeCompare(right.employeeName)));
         setAdjustmentDrafts(
           Array.from(rowMap.values()).reduce<Record<string, AdjustmentDraft>>((accumulator, row) => {
-            accumulator[row.employeeId] = {
-              reimbursement: row.reimbursement,
-              lta: row.lta,
-              salaryAdvance: row.salaryAdvance,
-              tds: row.tds,
-              otherAdvance: row.otherAdvance,
-              labourWelfare: row.labourWelfare,
-              professionalTax: row.professionalTax,
-            };
+            const draft: AdjustmentDraft = { reimbursement: row.reimbursement, lta: row.lta };
+            for (const c of manualComponents) draft[c.id] = row[c.id] || 0;
+            for (const l of legacyColumns) draft[`legacy_${l}`] = row[`legacy_${l}`] || 0;
+            accumulator[row.employeeId] = draft;
             return accumulator;
           }, {})
         );
@@ -337,9 +332,11 @@ const AdminPayrollControl: React.FC = () => {
         toast.error(error?.message || 'Failed to load payroll cycle data');
         setAttendanceLedger([]);
         setAdjustments([]);
+        setAdjustments([]);
         setPayrolls([]);
         setAdjustmentDrafts({});
         setDeductionIndex({});
+        setCurrentCompanyRun(null);
       } finally {
         setLoadingPayrolls(false);
       }
@@ -353,7 +350,7 @@ const AdminPayrollControl: React.FC = () => {
     return currentCycle.startDate.slice(0, 7);
   }, [currentCycle?.startDate]);
 
-  const handleDraftChange = (employeeId: string, key: DeductionColumnKey, value: string) => {
+  const handleDraftChange = (employeeId: string, key: string, value: string) => {
     const amount = Number(value);
     setAdjustmentDrafts((current) => ({
       ...current,
@@ -365,26 +362,80 @@ const AdminPayrollControl: React.FC = () => {
   };
 
   const saveAdjustments = async (): Promise<boolean> => {
-    if (!selectedCompanyId || !selectedCycleId) return;
+    if (!selectedCompanyId || !selectedCycleId) return false;
+    
+    // Explicitly fail if no payrollRunId exists
+    if (!currentCompanyRun?.id) {
+      toast.error('Payroll Run not initialized. Cannot save adjustments.');
+      return false;
+    }
+    
     setSavingAdjustments(true);
     try {
       const saveJobs: Promise<unknown>[] = [];
 
       for (const row of adjustments) {
         const draft = adjustmentDrafts[row.employeeId] || EMPTY_DRAFT;
-        for (const column of DEDUCTION_COLUMNS) {
-          const amount = toNumber(draft[column.key]);
-          const existing = deductionIndex[row.employeeId]?.[column.key];
+        
+        const processItems: Array<{
+          key: string;
+          componentId?: string;
+          adjustmentType: 'EARNING' | 'DEDUCTION';
+          deductionType: string;
+          description: string;
+        }> = [];
+
+        for (const c of manualEarnings) {
+          processItems.push({
+            key: c.id,
+            componentId: c.id,
+            adjustmentType: 'EARNING',
+            deductionType: c.name,
+            description: c.name
+          });
+        }
+
+        for (const c of manualDeductions) {
+          processItems.push({
+            key: c.id,
+            componentId: c.id,
+            adjustmentType: 'DEDUCTION',
+            deductionType: c.name,
+            description: c.name
+          });
+        }
+
+        for (const l of activeLegacyColumns) {
+          processItems.push({
+            key: `legacy_${l}`,
+            componentId: undefined,
+            adjustmentType: 'DEDUCTION',
+            deductionType: l,
+            description: l
+          });
+        }
+
+        for (const item of processItems) {
+          const amount = toNumber(draft[item.key]);
+          const existing = deductionIndex[row.employeeId]?.[item.key];
+          
+          if (amount === 0 && !existing) continue;
+
           const payload = {
             companyId: selectedCompanyId,
             branchId: row.branchId || selectedBranchId || undefined,
             employeeId: row.employeeId,
             payrollCycleId: selectedCycleId,
+            payrollRunId: currentCompanyRun.id,
             payrollPeriod: payrollMonth,
-            deductionType: column.deductionType,
+            componentId: item.componentId,
+            adjustmentType: item.adjustmentType,
+            deductionType: item.deductionType,
             amount,
-            description: column.label,
+            description: item.description,
           };
+
+          console.log('[PAYROLL ADJUSTMENT SAVE PAYLOAD]', payload);
 
           if (amount > 0) {
             if (existing?._id) {
@@ -403,23 +454,26 @@ const AdminPayrollControl: React.FC = () => {
       const refreshed = await api.get(`/v2/payroll/admin/deductions?payrollCycleId=${selectedCycleId}&companyId=${selectedCompanyId}${selectedBranchId ? `&branchId=${selectedBranchId}` : ''}`);
       const deductionList = normalizeArray<any>(refreshed);
       const deductionMap: Record<string, Record<string, any>> = {};
+      
       for (const deduction of deductionList) {
         const empId = String(deduction?.employeeId || '');
-        const deductionType = String(deduction?.deductionType || '').toUpperCase();
-        const key = deductionType.includes('SALARY')
-          ? 'salaryAdvance'
-          : deductionType.includes('TDS')
-            ? 'tds'
-            : deductionType.includes('OTHER')
-              ? 'otherAdvance'
-              : deductionType.includes('LABOUR') || deductionType.includes('LWF')
-                ? 'labourWelfare'
-                : deductionType.includes('PROFESSIONAL') || deductionType.includes('PT')
-                  ? 'professionalTax'
-                  : null;
-        if (!empId || !key) continue;
-        deductionMap[empId] = deductionMap[empId] || {};
-        deductionMap[empId][key] = deduction;
+        if (!empId) continue;
+        let compId = deduction?.componentId;
+        const deductionType = String(deduction?.deductionType || '');
+        
+        if (!compId && deductionType) {
+           const nameMatch = manualComponents.find(c => (c.name || '').toLowerCase() === deductionType.toLowerCase());
+           if (nameMatch) {
+             compId = nameMatch.id;
+           } else {
+             compId = `legacy_${deductionType}`;
+           }
+        }
+        
+        if (compId) {
+           deductionMap[empId] = deductionMap[empId] || {};
+           deductionMap[empId][compId] = deduction;
+        }
       }
       setDeductionIndex(deductionMap);
       return true;
@@ -445,8 +499,14 @@ const AdminPayrollControl: React.FC = () => {
       toast.success(`Payroll calculated for ${summary?.successfullyCalculated ?? 0} employees`);
       const payrollList = await payrollReviewApi.getPayrollsForCycle(selectedCycleId, selectedCompanyId);
       setPayrolls(normalizeArray<PayrollRecord>(payrollList));
+      const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+      setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to calculate payroll');
+      try {
+        const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+        setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
+      } catch (e) {}
     } finally {
       setProcessingPayroll(false);
     }
@@ -471,24 +531,200 @@ const AdminPayrollControl: React.FC = () => {
     }
   };
 
-  const updateCycleStatus = async (status: string) => {
-    if (!selectedCycleId) return;
+  const exportBankCSV = async () => {
+    if (!selectedCompanyId || !selectedCycleId) {
+      toast.error('Select a company and payroll cycle first');
+      return;
+    }
+
+    setExportingCSV(true);
     try {
-      await payrollCycleApi.updateStatus(selectedCycleId, status);
-      toast.success(`Cycle moved to ${status}`);
-      const refreshed = await payrollCycleApi.getCycles();
-      const cycleList = normalizeArray<PayrollCycle>(refreshed).map((cycle) => ({ ...cycle, id: String((cycle as any).id || (cycle as any)._id || '') }));
-      setCycles(cycleList);
-      setCurrentCycle(cycleList.find((cycle) => cycle.id === selectedCycleId) || null);
+      const csvContent = await payrollCycleApi.exportCsv(selectedCycleId, selectedCompanyId);
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `bank_export_${selectedCycleId}_${selectedCompanyId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Bank export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export bank file');
+    } finally {
+      setExportingCSV(false);
+    }
+  };
+
+  const exportPayrollXLSX = async () => {
+    const runId = getId(currentCompanyRun);
+    if (!runId) {
+      toast.error('No payroll run available. Please calculate payroll first.');
+      return;
+    }
+
+    setExportingXLSX(true);
+    try {
+      const response = await api.get(`/v2/payroll/runs/${runId}/export/payroll`, {
+        responseType: 'raw'
+      }) as Response;
+      
+      let filename = `Payroll_Export_${runId}.xlsx`;
+      const disposition = response.headers.get('content-disposition');
+      if (disposition && disposition.includes('filename="')) {
+        const matches = /filename="([^"]+)"/.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1];
+        }
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Payroll export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export payroll file');
+    } finally {
+      setExportingXLSX(false);
+    }
+  };
+
+  
+  /*const exportPF = async () => {
+    const runId = currentCompanyRun?.id || currentCompanyRun?._id;
+    if (!runId) {
+      toast.error('No payroll run available.');
+      return;
+    }
+    try {
+      const response = await api.get(`/v2/payroll/admin/export/pf/${runId}`, {
+        responseType: 'raw'
+      }) as Response;
+      
+      let filename = `PF_Export_${runId}.txt`;
+      const disposition = response.headers.get('content-disposition');
+      if (disposition && disposition.includes('filename="')) {
+        const matches = /filename="([^"]+)"/.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1];
+        }
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('PF export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export PF file');
+    }
+  };
+
+  const exportESI = async () => {
+    const runId = currentCompanyRun?.id || currentCompanyRun?._id;
+    if (!runId) {
+      toast.error('No payroll run available.');
+      return;
+    }
+    try {
+      const response = await api.get(`/v2/payroll/admin/export/esi/${runId}`, {
+        responseType: 'raw'
+      }) as Response;
+      
+      let filename = `ESI_Export_${runId}.csv`;
+      const disposition = response.headers.get('content-disposition');
+      if (disposition && disposition.includes('filename="')) {
+        const matches = /filename="([^"]+)"/.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1];
+        }
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('ESI export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export ESI file');
+    }
+  };*/
+
+  const exportPF = async () => {
+    const runId = currentCompanyRun?.id || currentCompanyRun?._id;
+    if (!runId) {
+      toast.error('No payroll run available.');
+      return;
+    }
+    try {
+      const response = await api.get(`/v2/payroll/admin/export/pf/${runId}`, {
+        responseType: 'blob'
+      }) as Response;
+      
+      let filename = `PF_Export_${runId}.txt`;
+      // Since we use Axios, headers is an object/map
+      const disposition = (response.headers as any)['content-disposition'];
+      if (disposition && disposition.includes('filename="')) {
+        const matches = /filename="([^"]+)"/.exec(disposition);
+        if (matches != null && matches[1]) { 
+          filename = matches[1];
+        }
+      }
+
+      const url = URL.createObjectURL(response.data as any);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('PF export downloaded successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to export PF file');
+    }
+  };
+
+  const updateCycleStatus = async (status: string) => {
+    if (!selectedCycleId || !selectedCompanyId) return;
+    try {
+      await api.patch(`/v2/payroll/cycles/${selectedCycleId}/status`, { status, companyId: selectedCompanyId });
+      toast.success(`Run moved to ${status}`);
+      
+      // refresh company run specifically
+      const detailedCycle = await payrollCycleApi.getCycle(selectedCycleId);
+      setCurrentCompanyRun(detailedCycle?.companies?.find((c: any) => c.companyId === selectedCompanyId) || null);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update cycle status');
     }
   };
 
-  const currentCycleStatus = currentCycle?.processingStatus || 'DRAFT';
+  const currentCycleStatus = currentCompanyRun?.status || 'UNINITIALIZED';
 
   const companyOptions = companies.map((company) => ({ value: company.id, label: company.code ? `${company.name} (${company.code})` : company.name }));
-  const cycleOptions = cycles.map((cycle) => ({ value: cycle.id, label: `${cycle.name} · ${cycle.processingStatus}` }));
+  const cycleOptions = cycles.map((cycle) => ({ value: cycle.id, label: cycle.name }));
 
   return (
     <div className="min-h-screen bg-slate-50/70">
@@ -572,10 +808,31 @@ const AdminPayrollControl: React.FC = () => {
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
+            {cycles.length === 0 ? (
+              <div className="w-full rounded-xl border border-orange-200 bg-orange-50 p-4 text-orange-800">
+                <p className="font-medium">No payroll cycles available.</p>
+                <p className="text-sm">Create a global payroll cycle to begin processing.</p>
+              </div>
+            ) : !currentCompanyRun && selectedCompanyId && selectedCycleId ? (
+              <div className="flex w-full items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-800">
+                <div>
+                  <p className="font-medium">Payroll run not initialized for this company and cycle.</p>
+                  <p className="text-sm">Initialize the run to begin attendance review and adjustments.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateCycleStatus('OPEN')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500"
+                >
+                  Initialize Payroll Run
+                </button>
+              </div>
+            ) : null}
+
             <button
               type="button"
               onClick={() => updateCycleStatus('ATTENDANCE_FINALIZED')}
-              disabled={!selectedCycleId}
+              disabled={!currentCompanyRun || !['DRAFT', 'OPEN', 'APPROVAL_LOCKED'].includes(currentCycleStatus)}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ShieldCheck className="h-4 w-4" /> Finalize Attendance
@@ -583,7 +840,7 @@ const AdminPayrollControl: React.FC = () => {
             <button
               type="button"
               onClick={saveAdjustments}
-              disabled={!selectedCompanyId || !selectedCycleId || savingAdjustments}
+              disabled={!currentCompanyRun || savingAdjustments}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Save className="h-4 w-4" /> {savingAdjustments ? 'Saving...' : 'Save Adjustments'}
@@ -591,7 +848,7 @@ const AdminPayrollControl: React.FC = () => {
             <button
               type="button"
               onClick={recalculatePayroll}
-              disabled={!selectedCompanyId || !selectedCycleId || processingPayroll}
+              disabled={!currentCompanyRun || processingPayroll || currentCycleStatus !== 'ATTENDANCE_FINALIZED'}
               className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Calculator className="h-4 w-4" /> {processingPayroll ? 'Calculating...' : 'Calculate Payroll'}
@@ -614,11 +871,55 @@ const AdminPayrollControl: React.FC = () => {
             </button>
             <button
               type="button"
+              onClick={exportBankCSV}
+              disabled={!['FINALIZED', 'PUBLISHED', 'EXPORTED'].includes(currentCycleStatus || '') || exportingCSV}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg> 
+              {exportingCSV ? 'Exporting...' : 'Bank Export'}
+            </button>
+            <button
+              type="button"
+              onClick={exportPayrollXLSX}
+              disabled={!['CALCULATED', 'ADMIN_REVIEW', 'FINALIZED', 'PUBLISHED', 'EXPORTED'].includes(currentCycleStatus || '') || exportingXLSX}
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-teal-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {exportingXLSX ? 'Exporting...' : 'Payroll Export'}
+            </button>
+            <button
+              type="button"
               onClick={publishPayroll}
               disabled={currentCycleStatus !== 'FINALIZED' || publishingPayroll}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw className="h-4 w-4" /> {publishingPayroll ? 'Publishing...' : 'Publish'}
+            </button>
+            <button
+              type="button"
+              onClick={exportPF}
+              disabled={!['CALCULATED', 'ADMIN_REVIEW', 'FINALIZED', 'PUBLISHED', 'EXPORTED'].includes(currentCycleStatus || '')}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export PF
+            </button>
+            <button
+              type="button"
+              disabled={true}
+              title="Specification Pending"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-300 px-4 py-2 text-sm font-medium text-slate-500 shadow-sm cursor-not-allowed opacity-60"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export ESI (Spec Pending)
             </button>
           </div>
         </div>
@@ -703,12 +1004,23 @@ const AdminPayrollControl: React.FC = () => {
                   <th className="px-4 py-3">Employee</th>
                   <th className="px-4 py-3 text-right">Reimbursement</th>
                   <th className="px-4 py-3 text-right">LTA</th>
-                  {DEDUCTION_COLUMNS.map((column) => (
-                    <th key={column.key} className="px-4 py-3 text-right">
-                      {column.label}
+                  {manualEarnings.map((c) => (
+                    <th key={c.id} className="px-4 py-3 text-right text-emerald-600">
+                      {c.name}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-right">Total</th>
+                  {manualDeductions.map((c) => (
+                    <th key={c.id} className="px-4 py-3 text-right text-rose-600">
+                      {c.name}
+                    </th>
+                  ))}
+                  {activeLegacyColumns.map((l) => (
+                    <th key={`legacy_${l}`} className="px-4 py-3 text-right text-slate-500">
+                      {l}
+                    </th>
+                  ))}
+                  <th className="px-4 py-3 text-right">Total Earnings</th>
+                  <th className="px-4 py-3 text-right">Total Deductions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
@@ -730,19 +1042,48 @@ const AdminPayrollControl: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 text-right text-slate-900">{formatCurrency(row.reimbursement)}</td>
                         <td className="px-4 py-3 text-right text-slate-900">{formatCurrency(row.lta)}</td>
-                        {DEDUCTION_COLUMNS.map((column) => (
-                          <td key={column.key} className="px-4 py-3 text-right">
+                        {manualEarnings.map((c) => (
+                          <td key={c.id} className="px-4 py-3 text-right">
                             <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={draft[column.key]}
-                              onChange={(event) => handleDraftChange(row.employeeId, column.key, event.target.value)}
+                              type="number" min="0" step="0.01"
+                              value={draft[c.id] ?? 0}
+                              onChange={(event) => handleDraftChange(row.employeeId, c.id, event.target.value)}
+                              className="w-28 rounded-lg border border-emerald-200 bg-white px-2 py-1 text-right text-sm text-slate-900 outline-none focus:border-emerald-400"
+                            />
+                          </td>
+                        ))}
+                        {manualDeductions.map((c) => (
+                          <td key={c.id} className="px-4 py-3 text-right">
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={draft[c.id] ?? 0}
+                              onChange={(event) => handleDraftChange(row.employeeId, c.id, event.target.value)}
+                              className="w-28 rounded-lg border border-rose-200 bg-white px-2 py-1 text-right text-sm text-slate-900 outline-none focus:border-rose-400"
+                            />
+                          </td>
+                        ))}
+                        {activeLegacyColumns.map((l) => (
+                          <td key={`legacy_${l}`} className="px-4 py-3 text-right">
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={draft[`legacy_${l}`] ?? 0}
+                              onChange={(event) => handleDraftChange(row.employeeId, `legacy_${l}`, event.target.value)}
                               className="w-28 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-sm text-slate-900 outline-none focus:border-slate-400"
                             />
                           </td>
                         ))}
-                        <td className="px-4 py-3 text-right font-semibold text-slate-900">{formatCurrency(calcRowTotal(draft))}</td>
+                                                <td className="px-4 py-3 text-right font-semibold text-emerald-700">
+                          {formatCurrency(
+                            draft.reimbursement + draft.lta +
+                            manualEarnings.reduce((acc, c) => acc + toNumber(draft[c.id]), 0)
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold text-rose-700">
+                          {formatCurrency(
+                            manualDeductions.reduce((acc, c) => acc + toNumber(draft[c.id]), 0) +
+                            activeLegacyColumns.reduce((acc, l) => acc + toNumber(draft[`legacy_${l}`]), 0)
+                          )}
+                        </td>
                       </tr>
                     );
                   })

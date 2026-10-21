@@ -8,9 +8,11 @@ import LoginPage from './pages/auth/LoginPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import Dashboard from './pages/employee/Dashboard';
 import Attendance from './pages/employee/Attendance';
+import MobilePunchPage from './pages/employee/MobilePunch';
 import LeaveManagement from './pages/employee/LeaveManagement';
 import Payslip from './pages/employee/Payslip';
 import Profile from './pages/employee/Profile';
+import Notifications from './pages/employee/Notifications';
 import Reimbursements from './pages/employee/Reimbursements';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEmployees from './pages/admin/AdminEmployees';
@@ -27,8 +29,10 @@ import AdminEmployeeSalaryList from './pages/admin/AdminEmployeeSalaryList';
 import AdminEmployeeSalaryConfig from './pages/admin/AdminEmployeeSalaryConfig';
 
 import AdminPayrollControl from './pages/admin/payroll/AdminPayrollControl';
+import CompanyBankAccounts from './pages/admin/payroll/CompanyBankAccounts';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminAttendanceMonitor from './pages/admin/attendance/AdminAttendanceMonitor';
+import { MailboxLayout } from './pages/mail/MailboxLayout';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import ManualRecalculation from './pages/admin/attendance/ManualRecalculation';
 import HistoricalCorrections from './pages/admin/attendance/HistoricalCorrections';
@@ -41,6 +45,8 @@ import AdminWeeklyOffPolicy from './pages/admin/AdminWeeklyOffPolicy';
 import AdminShifts from './pages/admin/AdminShifts';
 import LeavePolicySettings from './pages/admin/LeavePolicySettings';
 import ReimbursementPolicySettings from './pages/admin/ReimbursementPolicySettings';
+import NotFoundPage from './pages/errors/NotFoundPage';
+import AccessRestrictedPage from './pages/errors/AccessRestrictedPage';
 
 function AppRoutes() {
   const { isAuthenticated, user, tokenReady } = useAuth();
@@ -82,6 +88,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/attendance/mobile-punch"
+          element={
+            <ProtectedRoute>
+              <MobilePunchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/leave"
           element={
             <ProtectedRoute>
@@ -106,6 +120,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/reimbursements"
           element={
             <ProtectedRoute>
@@ -113,10 +135,18 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/mail"
+          element={
+            <ProtectedRoute>
+              <MailboxLayout />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/admin" element={<ProtectedRoute requireAnyPermission={[
           'employee.read', 'leave.read', 'device.sync', 'payroll.read', 'organization.manage', 'attendance.read', 'attendance.sync', 'scheduler.configure'
         ]}><AdminLayout /></ProtectedRoute>}>
-          <Route index element={<AdminDashboard />} />
+          <Route index element={<ProtectedRoute requireAnyPermission={['organization.manage', 'organization.read']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="employees" element={<ProtectedRoute requireAnyPermission={['employee.read']}><AdminEmployees /></ProtectedRoute>} />
           <Route path="employees/new" element={<ProtectedRoute requireAnyPermission={['employee.manage']}><EmployeeWizard /></ProtectedRoute>} />
           <Route path="employees/edit/:id" element={<ProtectedRoute requireAnyPermission={['employee.manage']}><EmployeeWizard /></ProtectedRoute>} />
@@ -124,7 +154,8 @@ function AppRoutes() {
           <Route path="reimbursement-approvals" element={<ProtectedRoute requireAnyPermission={['reimbursement.approve']}><AdminReimbursementApprovals /></ProtectedRoute>} />
           <Route path="holidays" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminHolidays /></ProtectedRoute>} />
           <Route path="sync" element={<ProtectedRoute requireAnyPermission={['essl.sync']}><AdminSync /></ProtectedRoute>} />
-          <Route path="settings/payroll" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminPayrollRules /></ProtectedRoute>} />
+          <Route path="payroll/rules" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminPayrollRules /></ProtectedRoute>} />
+          <Route path="payroll/company-banks" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><CompanyBankAccounts /></ProtectedRoute>} />
           <Route path="payroll/preview" element={<ProtectedRoute requireAnyPermission={['payroll.manage', 'payroll.read']}><SalaryPreviewPage /></ProtectedRoute>} />
           <Route path="payroll/cycles" element={<ProtectedRoute requireAnyPermission={['payroll.cycle.manage', 'payroll.cycle.read']}><AdminPayrollCycles /></ProtectedRoute>} />
           <Route path="payroll/control" element={<ProtectedRoute requireAnyPermission={['payroll.read', 'payroll.calculate']}><AdminPayrollControl /></ProtectedRoute>} />
@@ -146,8 +177,9 @@ function AppRoutes() {
           <Route path="settings" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminSettings /></ProtectedRoute>} />
         </Route>
 
+        <Route path="/access-restricted" element={<AccessRestrictedPage />} />
         <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

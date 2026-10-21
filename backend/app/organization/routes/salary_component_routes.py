@@ -77,12 +77,14 @@ async def get_components(
     search: Optional[str] = None,
     companyId: Optional[str] = None,
     status: Optional[str] = None,
+    inputMode: Optional[str] = None,
     service: GenericService = Depends(get_service),
     user: dict = Depends(get_current_user)
 ):
     query = {}
     if companyId: query["companyId"] = companyId
     if status: query["status"] = status
+    if inputMode: query["inputMode"] = inputMode
     return await service.get_all(query, skip, limit, search, ["name"])
 
 @router.get("/{id}", response_model=SalaryComponentResponse)

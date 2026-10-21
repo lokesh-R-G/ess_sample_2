@@ -27,6 +27,12 @@ class LeavePolicy(BaseModel):
     effectiveFrom: datetime
     effectiveTo: Optional[datetime] = None
     status: str = "Draft"
+    
+    # New Rules
+    permissionConversionEnabled: bool = False
+    leaveCycleStartType: str = "CALENDAR_YEAR"
+    rejectedLeaveAbsentLopDays: float = 2.0
+    
     leaveTypes: List[LeaveTypeConfig]
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None

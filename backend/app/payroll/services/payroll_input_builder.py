@@ -30,10 +30,17 @@ class PayrollCalculationInput(BaseModel):
     esiRule: Optional[ESIRule]
     ptSlabs: List[ProfessionalTaxSlab]
     reimbursementsTotal: float = 0.0
+    manualEarningsTotal: float = 0.0
     manualDeductionsTotal: float = 0.0
+    # Settings Context
+    salaryCalculationMethod: str = "Calendar Days"
+    salaryDivisor: float = 30.0
+    roundOffMethod: str = "Nearest Rupee"
     # Additional context
     reimbursementRecords: List[Dict[str, Any]] = []
+    manualEarningRecords: List[Dict[str, Any]] = []
     manualDeductionRecords: List[Dict[str, Any]] = []
+    leaveBalances: List[Dict[str, Any]] = []
     lopBreakdown: Dict[str, Any] = {}
     empChoice: Dict[str, Any] = {}
 
@@ -43,6 +50,8 @@ class PayrollInputBuilder:
         self.salary_repo = EmployeeSalaryComponentRepository(db)
         self.pf_repo = PFRuleRepository(db)
         self.esi_repo = ESIRuleRepository(db)
+        from app.payroll.repositories.payroll_setting_repository import PayrollSettingRepository
+        self.setting_repo = PayrollSettingRepository(db)
 
     async def build(
         self,
@@ -133,7 +142,12 @@ class PayrollInputBuilder:
         # 4. Resolve Attendance / LOP
         lop_result_obj = None
         lop_days = 0.0
-        working_days = (end_date - start_date).days + 1
+        
+        # Determine actual calendar days in period
+        calendar_days = (end_date - start_date).days + 1
+        
+        # Still determine attendance working days for LOP aggregation
+        working_days = calendar_days
         
         if ui_components is None:
             attendance_cursor = self.db.attendance.find({
@@ -143,12 +157,29 @@ class PayrollInputBuilder:
             attendance_records = [doc async for doc in attendance_cursor]
             lop_result_obj = LopAggregator.aggregate_lop(attendance_records)
             lop_days = lop_result_obj.totalLopDays
+            working_days = lop_result_obj.workingDays
         else:
             if working_days <= 1:
                 working_days = 30
+                calendar_days = 30
+
+        # 4.5 Resolve Salary Divisor from Payroll Settings
+        payroll_settings = await self.setting_repo.get_active_setting(start_date)
+        calc_method = payroll_settings.defaultSalaryCalculationMethod if payroll_settings else "Calendar Days"
+        round_off_method = payroll_settings.roundOffMethod if payroll_settings else "Nearest Rupee"
+        
+        salary_divisor = float(calendar_days)
+        if calc_method == "Fixed 30 Days":
+            salary_divisor = 30.0
+        elif calc_method == "Calendar Days":
+            salary_divisor = float(calendar_days)
+        elif calc_method == "Working Days" or calc_method == "Attendance Based":
+            # Preserve existing behavior for these explicit settings: fallback to attendance length
+            salary_divisor = float(working_days)
 
         # 5. Resolve Manual Additions/Deductions
         reimbursements = []
+        manual_earnings = []
         manual_deductions = []
         if ui_components is None:
             reimbursements_cursor = self.db.reimbursement_claims.find({
@@ -156,8 +187,19 @@ class PayrollInputBuilder:
                 "status": "PAYROLL_ELIGIBLE",
                 "deletedAt": None
             })
-            reimbursements = [doc async for doc in reimbursements_cursor]
+            raw_reimb = [doc async for doc in reimbursements_cursor]
+            for rr in raw_reimb:
+                rr["_id"] = str(rr["_id"])
+                reimbursements.append(rr)
             
+            # Fetch all active manual SalaryComponents
+            manual_components_cursor = self.db.salary_components.find({
+                "inputMode": "MANUAL",
+                "isActive": True,
+                "deletedAt": None
+            })
+            manual_components = {str(c["_id"]): c async for c in manual_components_cursor}
+
             deductions_query = {
                 "employeeId": employee_id,
                 "status": "Active",
@@ -167,7 +209,63 @@ class PayrollInputBuilder:
                 deductions_query["payrollCycleId"] = cycle_id
             else:
                 deductions_query["payrollPeriod"] = start_date.strftime("%Y-%m")
-            manual_deductions = [doc async for doc in self.db.manual_payroll_adjustments.find(deductions_query)]
+            raw_manual = [doc async for doc in self.db.manual_payroll_adjustments.find(deductions_query)]
+            
+            # Group adjustments by componentId or fallback to legacy deductionType mapping
+            adj_by_comp = {}
+            for rm in raw_manual:
+                if "componentId" in rm and rm["componentId"]:
+                    adj_by_comp[rm["componentId"]] = rm
+                elif "deductionType" in rm:
+                    adj_by_comp[rm["deductionType"]] = rm # legacy fallback
+
+            # Create full records for all manual components (defaults to 0)
+            for comp_id, comp in manual_components.items():
+                adj = adj_by_comp.get(comp_id)
+                if not adj and "name" in comp:
+                    adj = adj_by_comp.get(comp["name"]) # legacy match by name
+                
+                amount = float(adj.get("amount", 0.0)) if adj else 0.0
+                
+                record = {
+                    "componentId": comp_id,
+                    "componentCode": comp.get("code"),
+                    "componentName": comp.get("name"),
+                    "deductionType": comp.get("name"), # Ensure backward compat with payslip builder
+                    "componentType": comp.get("componentType"),
+                    "inputMode": "MANUAL",
+                    "amount": amount,
+                    "pfApplicable": comp.get("pfApplicable", False),
+                    "esiApplicable": comp.get("esiApplicable", False),
+                    "ptApplicable": comp.get("ptApplicable", False),
+                    "includeInGross": comp.get("includeInGross", True)
+                }
+                
+                if comp.get("componentType") == "Earning":
+                    manual_earnings.append(record)
+                else:
+                    manual_deductions.append(record)
+            
+            # Also include any legacy deductions that didn't match a component (to not lose data)
+            for rm in raw_manual:
+                if rm.get("componentId") not in manual_components and rm.get("deductionType") and rm.get("deductionType") not in [c.get("name") for c in manual_components.values()]:
+                    rm["_id"] = str(rm["_id"])
+                    rm["componentName"] = rm["deductionType"]
+                    manual_deductions.append(rm)
+            
+        # 6. Resolve Leave Balances (for snapshotting only, not for LOP)
+        leave_balances = []
+        if ui_components is None:
+            # We fetch active leave balances for the year in which the payroll period falls
+            # (Assuming the leave ledger year corresponds to targetDate.year)
+            leave_query = {
+                "employeeId": employee_id,
+                "calendarYear": start_date.year
+            }
+            raw_balances = [doc async for doc in self.db.leave_ledgers.find(leave_query)]
+            for rb in raw_balances:
+                rb["_id"] = str(rb["_id"])
+                leave_balances.append(rb)
 
         return PayrollCalculationInput(
             employeeId=employee_id,
@@ -180,9 +278,15 @@ class PayrollInputBuilder:
             esiRule=esi_rule,
             ptSlabs=pt_slabs,
             reimbursementsTotal=sum(r.get("calculatedAmount", 0.0) for r in reimbursements),
+            manualEarningsTotal=sum(e.get("amount", 0.0) for e in manual_earnings),
             manualDeductionsTotal=sum(d.get("amount", 0.0) for d in manual_deductions),
             reimbursementRecords=reimbursements,
+            manualEarningRecords=manual_earnings,
             manualDeductionRecords=manual_deductions,
+            leaveBalances=leave_balances,
             lopBreakdown=lop_result_obj.model_dump() if lop_result_obj else {},
-            empChoice=emp_choice
+            empChoice=emp_choice,
+            salaryCalculationMethod=calc_method,
+            salaryDivisor=salary_divisor,
+            roundOffMethod=round_off_method
         )

@@ -23,6 +23,9 @@ class LeavePolicyCreate(BaseModel):
     name: str
     description: Optional[str] = None
     effectiveFrom: datetime
+    permissionConversionEnabled: bool = False
+    leaveCycleStartType: str = "CALENDAR_YEAR"
+    rejectedLeaveAbsentLopDays: float = 2.0
     leaveTypes: List[LeaveTypeConfigSchema]
 
 class LeavePolicyResponse(BaseModel):
@@ -34,6 +37,9 @@ class LeavePolicyResponse(BaseModel):
     effectiveFrom: datetime
     effectiveTo: Optional[datetime]
     status: str
+    permissionConversionEnabled: bool
+    leaveCycleStartType: str
+    rejectedLeaveAbsentLopDays: float
     leaveTypes: List[LeaveTypeConfigSchema]
     createdAt: Optional[datetime]
     updatedAt: Optional[datetime]

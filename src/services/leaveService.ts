@@ -51,6 +51,8 @@ export async function createLeaveRequest(payload: {
   toDate: string;
   reason: string;
   odLocation?: string;
+  isHalfDay?: boolean;
+  half?: 'First Half' | 'Second Half';
 }) {
   return api.post<{ _id: string }>('/v2/approval/', {
     employeeId: payload.employeeId,
@@ -59,7 +61,8 @@ export async function createLeaveRequest(payload: {
       leaveType: payload.leaveType,
       fromDate: payload.fromDate,
       toDate: payload.toDate,
-      reason: payload.reason
+      reason: payload.reason,
+      ...(payload.isHalfDay && { isHalfDay: true, half: payload.half })
     }
   });
 }

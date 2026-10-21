@@ -7,8 +7,8 @@ def run_tests():
     pf_rule = PFRule(
         effectiveFrom=datetime.now(),
         pfEnabled=True,
-        mandatoryBelowGross=15000.0,
-        pfCeilingAmount=15000.0,
+        mandatoryBelowGross=25000.0,
+        pfCeilingAmount=25000.0,
         employeePfPercent=12.0,
         employerPfPercent=3.67,
         employerPensionPercent=8.33,
@@ -39,7 +39,7 @@ def run_tests():
     assert res1['employeePf'] > 0
 
     print("\n--- Scenario 2: PF Gross >= Threshold (Prompt for PF option) ---")
-    res2 = PayrollCalculationEngine.calculatePf(15000.0, pf_rule, {"wantsPf": False})
+    res2 = PayrollCalculationEngine.calculatePf(25000.0, pf_rule, {"wantsPf": False})
     print(f"PF Gross 15,000 (wantsPf=False) => Employee PF: {res2['employeePf']} (Expected: 0.0)")
     assert res2['employeePf'] == 0.0
 
@@ -64,7 +64,7 @@ def run_tests():
     assert res6['employerPf'] == 2400.0
 
     print("\n--- Scenario 7: ESI Eligible ---")
-    res7 = PayrollCalculationEngine.calculateEsi(15000.0, esi_rule)
+    res7 = PayrollCalculationEngine.calculateEsi(25000.0, esi_rule)
     print(f"ESI Gross 15,000 => Employee ESI: {res7['employeeEsi']} (Expected: 113.0)")
     assert res7['employeeEsi'] > 0
 

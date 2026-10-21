@@ -73,6 +73,15 @@ export const AdminLeaveApprovals: React.FC = () => {
                           {req.requestData.leaveType && (
                              <div className="text-xs font-semibold text-primary-600">{req.requestData.leaveType}</div>
                           )}
+                          
+                          {req.approvalType === 'Leave' && (
+                            <div className="text-xs text-neutral-600 font-medium my-0.5">
+                              {req.requestData.isHalfDay 
+                                ? (req.requestData.half === 'First Half' ? 'First Half Leave' : 'Second Half Leave') 
+                                : 'Full Day Leave'}
+                            </div>
+                          )}
+
                           {req.requestData.punchTime && (
                              <div className="text-xs">Punch Time: {new Date(req.requestData.punchTime).toLocaleString()}</div>
                           )}

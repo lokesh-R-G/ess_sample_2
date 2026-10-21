@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard, AnimatedButton, StatusBadge, Modal, Input } from '../../components/ui';
 import { reimbursementApi, ReimbursementClaimResponse } from '../../services/reimbursement.api';
 import { FileText, CheckCircle, XCircle } from 'lucide-react';
-import { api } from '../../lib/api';
+import { api, API_BASE_URL } from '../../lib/api';
 
 export default function AdminReimbursementApprovals() {
   const [activeTab, setActiveTab] = useState<'HOD' | 'ACCOUNTS'>('HOD');
@@ -49,7 +49,7 @@ export default function AdminReimbursementApprovals() {
   const handleViewAttachment = async (attachmentId: string) => {
     // Construct the authenticated URL for the file viewer
     const token = localStorage.getItem('ess_auth_token');
-    const url = `http://127.0.0.1:8000/api/reimbursement/attachments/${attachmentId}`;
+    const url = `${API_BASE_URL}/reimbursement/attachments/${attachmentId}`;
     
     try {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });

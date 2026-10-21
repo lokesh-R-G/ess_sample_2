@@ -17,6 +17,7 @@ class LopAggregator:
     @staticmethod
     def aggregate_lop(attendance_records: List[Dict[str, Any]], hours_per_day: float = 8.0) -> LopAggregationResult:
         result = LopAggregationResult()
+        processed_perm_months = set()
         
         for record in attendance_records:
             date_str = record.get("date")
@@ -32,16 +33,33 @@ class LopAggregator:
                 continue
 
             # Permission LOP
-            perm_lop_mins = record.get("permissionLopGenerated", 0.0)
-            if perm_lop_mins > 0:
-                perm_lop_days = perm_lop_mins / (hours_per_day * 60)
-                result.permissionLopDays += perm_lop_days
-                result.breakdown.append({"date": date_str, "type": "Permission", "days": perm_lop_days, "reason": "Excess Permission"})
+            # Ensure we only count the monthly LOP generated once per month for this employee
+            month_str = date_str[:7] if date_str else ""
+            if month_str and month_str not in processed_perm_months:
+                # PermissionLedger returns lopGenerated directly in DAYS (e.g. 0.5 or 1.0)
+                perm_lop_days = record.get("permissionLopGenerated", 0.0)
+                if perm_lop_days > 0:
+                    result.permissionLopDays += perm_lop_days
+                    result.breakdown.append({"date": month_str, "type": "Permission", "days": perm_lop_days, "reason": "Excess Permission"})
+                processed_perm_months.add(month_str)
+                
+            # Rejected Leave Penalty LOP
+            rejected_leave_lop = record.get("rejectedLeaveLopDays", 0.0)
+            if rejected_leave_lop > 0:
+                result.absenceLopDays += rejected_leave_lop
+                result.breakdown.append({"date": date_str, "type": "Absence", "days": rejected_leave_lop, "reason": "Rejected Leave + Absent"})
+                
+                # IMPORTANT: If rejectedLeaveLopDays > 0, we completely ignore `lopHours` to prevent double counting
+                continue
 
             # Remaining LOP Hours
             lop_hours = record.get("lopHours", 0.0)
             if lop_hours > 0:
-                lop_days = lop_hours / hours_per_day
+                day_working_hours = record.get("expectedWorkingHours")
+                if not day_working_hours or day_working_hours <= 0:
+                    day_working_hours = hours_per_day
+                    
+                lop_days = lop_hours / day_working_hours
                 
                 if not lop_reason:
                     result.otherLopDays += lop_days

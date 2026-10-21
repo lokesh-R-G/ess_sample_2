@@ -7,9 +7,12 @@ class ManualPayrollAdjustment(BaseModel):
     employeeId: str
     companyId: str
     branchId: Optional[str] = None
+    payrollRunId: Optional[str] = None
     payrollCycleId: Optional[str] = None
     payrollPeriod: str # YYYY-MM
-    deductionType: str # "Salary Advance", "TDS", "LWF", "PT", "Other"
+    componentId: Optional[str] = None
+    adjustmentType: Optional[str] = None # "EARNING" or "DEDUCTION"
+    deductionType: Optional[str] = None # Legacy: "Salary Advance", "TDS", "LWF", "PT", "Other"
     amount: float
     description: Optional[str] = None
     status: str = "Active"

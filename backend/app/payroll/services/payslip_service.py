@@ -55,8 +55,15 @@ class PayslipService:
 
     async def publish_payslips(self, cycle_id: str, company_id: Optional[str] = None) -> int:
         cycle = await self.db.payroll_cycles.find_one({"_id": ObjectId(cycle_id)})
-        if not cycle or cycle.get("processingStatus") not in ["FINALIZED", "PUBLISHED"]:
-            raise ValueError("Cycle must be finalized before publishing payslips")
+        if not cycle:
+            raise ValueError("Cycle not found")
+            
+        if not company_id:
+            raise ValueError("Company ID is required to publish payslips")
+            
+        run = await self.db.payroll_runs.find_one({"cycleId": cycle_id, "companyId": company_id})
+        if not run or run.get("status") not in ["FINALIZED", "PUBLISHED"]:
+            raise ValueError("Company payroll run must be finalized before publishing payslips")
 
         # Get all active payrolls for this cycle
         payroll_query = {"cycleId": cycle_id, "isActive": True}
@@ -102,41 +109,100 @@ class PayslipService:
             upsert=True,
         )
         
-        remaining_runs = await self.db.payroll_runs.count_documents({"cycleId": cycle_id, "status": {"$ne": "PUBLISHED"}})
-        if remaining_runs == 0:
-            await self.db.payroll_cycles.update_one(
-                {"_id": ObjectId(cycle_id)},
-                {"$set": {"processingStatus": "PUBLISHED"}}
-            )
-        
         # Integrate with the centralized personal email resolver to dispatch emails
         email_service = EmailService(self.db)
         import asyncio
+        import os
+        from app.payroll.services.payslip_data_builder import PayslipDataBuilder
+        from app.payroll.services.payslip_pdf_compiler import PayslipPDFCompiler
+        from app.email_service.schemas.email_log import EmailLogCreate
         
         async def send_emails():
+            builder = PayslipDataBuilder(self.db)
+            compiler = PayslipPDFCompiler()
+            
             for ps in payslips_to_publish:
                 emp_id = ps.get("employeeId")
-                emp = await self.db.employees.find_one({"_id": ObjectId(emp_id)})
-                if not emp:
-                    continue
-                emp_personal = await self.db.employee_personals.find_one({"employeeId": emp_id})
+                payroll_id = ps.get("payrollId")
                 
-                personal_email = None
-                if emp_personal and emp_personal.get("contactInfo"):
-                    personal_email = emp_personal["contactInfo"].get("personalEmail")
-                
-                email = personal_email or emp.get("email")
-                
-                if email:
+                try:
+                    # 1. Fetch exact finalized payroll
+                    payroll_doc = await self.db.payrolls.find_one({"_id": ObjectId(payroll_id)}) if len(str(payroll_id))==24 else await self.db.payrolls.find_one({"_id": payroll_id})
+                    if not payroll_doc:
+                        continue
+                        
+                    # 2. Build normalized data
+                    payslip_data = await builder.build(payroll_doc, cycle)
+                    
+                    # Storage Directory Path
+                    c_id = payroll_doc.get("companyId", "unknown_company")
+                    p_start = payslip_data.periodStart
+                    if p_start and "-" in p_start:
+                        parts = p_start.split("-")
+                        year = parts[0]
+                        month = parts[1] if len(parts) > 1 else "unknown_month"
+                    else:
+                        year = "unknown_year"
+                        month = "unknown_month"
+                        
+                    storage_dir = os.path.join(os.getcwd(), "storage", "payslips", year, month, str(c_id))
+                    os.makedirs(storage_dir, exist_ok=True)
+                    
+                    payslip_version = ps.get("version", 1)
+                    filename = f"{payslip_data.employeeCode}_{cycle_id}_v{payslip_version}_Payslip.pdf"
+                    file_path = os.path.join(storage_dir, filename)
+                    
+                    if not os.path.exists(file_path):
+                        # 3. Compile PDF
+                        pdf_bytes = compiler.compile(payslip_data)
+                        
+                        with open(file_path, "wb") as f:
+                            f.write(pdf_bytes)
+                        
+                    # 5. Retrieve email
+                    from app.employee.services.email_resolver import get_employee_personal_email
+                    try:
+                        email = await get_employee_personal_email(self.db, emp_id)
+                    except ValueError as ve:
+                        # Log failure for missing email but keep PDF
+                        log_entry = EmailLogCreate(
+                            recipient=f"employeeId:{emp_id}",
+                            subject=f"Salary Payslip - {cycle.get('name')}",
+                            template="payslip_email.html",
+                            status="Failed",
+                            failure_reason=f"Missing email: {ve}",
+                            attachment=filename
+                        )
+                        await email_service._log_email(log_entry)
+                        print(f"Skipping payslip email for {emp_id}: {ve}")
+                        continue
+                    
+                    # 6. Send Email with Attachment
                     context = {
                         "payrollMonth": cycle.get("name", "Current Month"),
-                        "employeeName": f"{emp.get('firstName', '')} {emp.get('lastName', '')}".strip(),
-                        "netPay": ps.get("payloadSnapshot", {}).get("netPay", 0)
+                        "employeeName": payslip_data.employeeName,
+                        "netPay": payslip_data.netPay
                     }
-                    try:
-                        await email_service.send_payslip_email(email, context, [])
-                    except Exception as e:
-                        print(f"Error dispatching payslip to {email}: {e}")
+                    attachments = [{
+                        "file": file_path,
+                        "headers": {"Content-Disposition": f'attachment; filename="{filename}"'},
+                        "mime_type": "application/pdf"
+                    }]
+                    
+                    await email_service.send_payslip_email(email, context, attachments)
+                    
+                except Exception as e:
+                    # Catch and log entire PDF/Email pipeline failures per employee
+                    log_entry = EmailLogCreate(
+                        recipient=f"employeeId:{emp_id}",
+                        subject=f"Salary Payslip - {cycle.get('name', '')}",
+                        template="payslip_email.html",
+                        status="Failed",
+                        failure_reason=f"Pipeline error: {str(e)}",
+                        attachment=None
+                    )
+                    await email_service._log_email(log_entry)
+                    print(f"Error dispatching payslip for employeeId {emp_id} (Payslip ID: {ps.get('_id')}): {e}")
         
         # Run email dispatch in background to prevent HTTP timeout
         asyncio.create_task(send_emails())

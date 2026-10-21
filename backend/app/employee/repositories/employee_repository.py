@@ -3,10 +3,156 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from app.employee.repositories.base_repository import BaseRepository
 from app.employee.models.employee import EmployeeModel
+import math
 
 class EmployeeRepository(BaseRepository[EmployeeModel]):
     def __init__(self, db: AsyncIOMotorDatabase):
         super().__init__(db, "employees", EmployeeModel)
+
+    async def get_all(self, query: dict = None, skip: int = 0, limit: int = 100, sort_by: str = "createdAt", sort_order: int = -1, search: str = None, search_fields: List[str] = None) -> dict:
+        if query is None:
+            query = {}
+            
+        if "deletedAt" not in query:
+            query["deletedAt"] = None
+            
+        if "isCurrent" not in query:
+            query["isCurrent"] = True
+            
+        match_stage = query.copy()
+
+        if search and search_fields:
+            search_query = [{"$regex": search, "$options": "i"}]
+            match_stage["$or"] = [{field: search_query[0]} for field in search_fields]
+
+        pipeline = [
+            {"$match": match_stage},
+            {"$lookup": {
+                "from": "employee_personals",
+                "let": {"empId": "$employeeId"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$and": [{"$eq": ["$employeeId", "$$empId"]}, {"$eq": ["$isCurrent", True]}]}}}
+                ],
+                "as": "personal"
+            }},
+            {"$lookup": {
+                "from": "employee_contacts",
+                "let": {"empId": "$employeeId"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$and": [{"$eq": ["$employeeId", "$$empId"]}, {"$eq": ["$isCurrent", True]}]}}}
+                ],
+                "as": "contact"
+            }},
+            {"$lookup": {
+                "from": "employee_employment_histories",
+                "let": {"empId": "$employeeId"},
+                "pipeline": [
+                    {"$match": {"$expr": {"$and": [{"$eq": ["$employeeId", "$$empId"]}, {"$eq": ["$isCurrent", True]}]}}}
+                ],
+                "as": "employment"
+            }},
+            {"$unwind": {"path": "$personal", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$contact", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$employment", "preserveNullAndEmptyArrays": True}},
+            {"$addFields": {
+                "compObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.companyId", None]}, {"$ne": ["$employment.companyId", ""]}]},
+                        "then": {"$toObjectId": "$employment.companyId"},
+                        "else": None
+                    }
+                },
+                "brObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.branchId", None]}, {"$ne": ["$employment.branchId", ""]}]},
+                        "then": {"$toObjectId": "$employment.branchId"},
+                        "else": None
+                    }
+                },
+                "deptObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.departmentId", None]}, {"$ne": ["$employment.departmentId", ""]}]},
+                        "then": {"$toObjectId": "$employment.departmentId"},
+                        "else": None
+                    }
+                },
+                "desgObjId": {
+                    "$cond": {
+                        "if": {"$and": [{"$ne": ["$employment.designationId", None]}, {"$ne": ["$employment.designationId", ""]}]},
+                        "then": {"$toObjectId": "$employment.designationId"},
+                        "else": None
+                    }
+                }
+            }},
+            {"$lookup": {
+                "from": "companies",
+                "localField": "compObjId",
+                "foreignField": "_id",
+                "as": "companyDoc"
+            }},
+            {"$lookup": {
+                "from": "branchs",
+                "localField": "brObjId",
+                "foreignField": "_id",
+                "as": "branchDoc"
+            }},
+            {"$lookup": {
+                "from": "departments",
+                "localField": "deptObjId",
+                "foreignField": "_id",
+                "as": "deptDoc"
+            }},
+            {"$lookup": {
+                "from": "designations",
+                "localField": "desgObjId",
+                "foreignField": "_id",
+                "as": "desgDoc"
+            }},
+            {"$unwind": {"path": "$companyDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$branchDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$deptDoc", "preserveNullAndEmptyArrays": True}},
+            {"$unwind": {"path": "$desgDoc", "preserveNullAndEmptyArrays": True}},
+            {"$project": {
+                "_id": 0,
+                "id": {"$toString": "$_id"},
+                "employeeId": {"$toString": "$employeeId"},
+                "employeeCode": 1,
+                "systemAccessEnabled": 1,
+                "essStatus": 1,
+                "authUserId": 1,
+                "status": 1,
+                "firstName": "$personal.firstName",
+                "lastName": "$personal.lastName",
+                "email": "$contact.personalEmail",
+                "companyId": "$employment.companyId",
+                "companyName": "$companyDoc.name",
+                "branchId": "$employment.branchId",
+                "branchName": "$branchDoc.name",
+                "departmentId": "$employment.departmentId",
+                "departmentName": "$deptDoc.name",
+                "designationId": "$employment.designationId",
+                "designationName": "$desgDoc.name"
+            }}
+        ]
+        
+        if sort_by:
+            pipeline.append({"$sort": {sort_by: sort_order}})
+            
+        pipeline.append({"$skip": skip})
+        pipeline.append({"$limit": limit})
+        
+        total = await self.collection.count_documents(match_stage)
+        
+        cursor = self.collection.aggregate(pipeline)
+        docs = await cursor.to_list(length=None)
+
+        return {
+            "data": docs,
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "pageSize": limit,
+            "totalPages": math.ceil(total / limit) if limit > 0 else 1
+        }
 
     async def get_directory(self, skip: int = 0, limit: int = 100) -> dict:
         pipeline = [

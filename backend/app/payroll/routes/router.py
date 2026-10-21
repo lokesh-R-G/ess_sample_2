@@ -17,6 +17,8 @@ from app.payroll.services.payroll_cycle_service import PayrollCycleService
 from app.payroll.services.payslip_service import PayslipService
 from app.payroll.services.payroll_run_service import PayrollRunService
 
+from app.payroll.routes.company_salary_bank_routes import router as salary_bank_router
+
 router = APIRouter(tags=["Payroll Engine"])
 router.include_router(rules_router)
 router.include_router(preview_router)
@@ -24,6 +26,7 @@ router.include_router(gross_router)
 router.include_router(assignment_router)
 router.include_router(admin_router, prefix="/admin", tags=["Admin Payroll"])
 router.include_router(run_router, tags=["Payroll Run"])
+router.include_router(salary_bank_router, prefix="/company-salary-banks", tags=["Company Salary Banks"])
 
 class ProcessCycleReq(BaseModel):
     companyId: Optional[str] = None

@@ -48,8 +48,8 @@ export default function AdminEmployeeSalaryConfig() {
   };
 
   const handleSave = async () => {
-    if (!formData.salaryStructureId || !formData.basicSalary) {
-      toast.error("Please configure basic salary and structure.");
+    if (!formData.salaryStructureId) {
+      toast.error("Please configure a salary structure.");
       return;
     }
     
@@ -80,6 +80,13 @@ export default function AdminEmployeeSalaryConfig() {
   if (loading) {
     return <div className="text-center py-10 text-neutral-500">Loading configuration...</div>;
   }
+
+  const canSave = 
+    Boolean(formData.salaryStructureId) && 
+    Boolean(formData.effectiveFrom) &&
+    Boolean(formData.isSalaryPreviewCalculated) &&
+    formData.finalSalaryPreview != null &&
+    !saving;
 
   return (
     <div className="space-y-6">
@@ -134,7 +141,7 @@ export default function AdminEmployeeSalaryConfig() {
           <AnimatedButton 
             variant="primary" 
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !canSave}
             isLoading={saving}
           >
             <Save className="w-4 h-4 mr-2" /> Save & Finalize

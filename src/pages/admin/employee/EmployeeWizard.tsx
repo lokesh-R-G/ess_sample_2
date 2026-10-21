@@ -150,6 +150,8 @@ export default function EmployeeWizard() {
           const empRes = await employeeApi.createEmployee({ employeeCode: formData.employeeCode || undefined });
           empId = empRes._id || empRes.employeeId || empRes.id;
           setFormData((prev: any) => ({ ...prev, employeeId: empId }));
+        } else {
+          await employeeApi.updateEmployee(empId, { employeeCode: formData.employeeCode || undefined });
         }
         const personalPayload = cleanPayload({ ...formData, employeeId: empId });
         await employeeApi.createPersonal(personalPayload);

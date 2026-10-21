@@ -15,6 +15,8 @@ import {
   LogOut,
   Shield,
   RefreshCw,
+  Mail,
+  Smartphone,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,10 +36,12 @@ interface NavItem {
 const employeeNavItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/attendance', label: 'Attendance', icon: Calendar },
+  { path: '/attendance/mobile-punch', label: 'Mobile Punch', icon: Smartphone },
   { path: '/leave', label: 'Leave Management', icon: FileText },
   { path: '/payslip', label: 'Payslip', icon: Receipt },
   { path: '/reimbursements', label: 'Reimbursements & Claims', icon: Receipt },
   { path: '/profile', label: 'Profile', icon: User },
+  { path: '/mail', label: 'Mailbox', icon: Mail },
 ];
 
 const adminNavItems: NavItem[] = [
@@ -46,7 +50,8 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/employee-salary', label: 'Salary Configuration', icon: Receipt, adminOnly: true, requiredPermission: 'payroll.salary.manage' },
   { path: '/admin/payroll/control', label: 'Payroll Control', icon: Receipt, adminOnly: true, requiredPermission: 'payroll.read' },
   { path: '/admin/payroll/cycles', label: 'Payroll Cycles', icon: RefreshCw, adminOnly: true, requiredPermission: 'payroll.cycle.read' },
-  { path: '/admin/settings/payroll', label: 'Payroll Settings', icon: Settings, adminOnly: true, requiredPermission: 'organization.manage' },
+  { path: '/admin/payroll/rules', label: 'Payroll Settings', icon: Settings, adminOnly: true, requiredPermission: 'organization.manage' },
+  { path: '/admin/payroll/company-banks', label: 'Company Banks', icon: Building2, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/organization', label: 'Organization', icon: Building2, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true, requiredPermission: 'attendance.read' },
@@ -91,8 +96,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           initial={false}
           animate={{ opacity: 1 }}
         >
-          <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-sm">IDS</span>
+          <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center shadow-md overflow-hidden">
+            <img src="/favicon.svg" alt="IDS Logo" className="w-full h-full object-contain p-1" />
           </div>
           <AnimatePresence>
             {!isCollapsed && (

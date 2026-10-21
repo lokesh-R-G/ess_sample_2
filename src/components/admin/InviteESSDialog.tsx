@@ -29,7 +29,7 @@ interface InviteESSDialogProps {
 interface FormState {
   employeeCode: string;
   email: string;
-  role: 'Employee' | 'Manager' | 'Admin';
+  roleId: string;
 }
 
 interface FormErrors {
@@ -37,11 +37,11 @@ interface FormErrors {
   email?: string;
 }
 
-const ROLE_OPTIONS = [
-  { value: 'Employee', label: 'Employee' },
-  { value: 'Manager', label: 'Manager' },
-  { value: 'Admin', label: 'Administrator' },
-];
+export interface RoleOption {
+  _id: string;
+  roleId: string;
+  name: string;
+}
 
 export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
   employee,
@@ -52,10 +52,14 @@ export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
   const [form, setForm] = useState<FormState>({
     employeeCode: '',
     email: '',
-    role: 'Employee',
+    roleId: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
 
   // Pre-populate fields from the employee record when the dialog opens
   useEffect(() => {
@@ -63,11 +67,37 @@ export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
       setForm({
         employeeCode: employee.employeeCode || '',
         email: employee.personalEmail || '',
-        role: 'Employee',
+        roleId: '',
       });
       setErrors({});
     }
   }, [employee, isOpen]);
+
+  // Fetch RBAC roles when dialog opens
+  useEffect(() => {
+    const fetchRoles = async () => {
+      setRolesLoading(true);
+      setRolesError(null);
+      try {
+        const response = await api.get('/v2/organization/roles');
+        const rolesData = Array.isArray(response.data?.data) 
+          ? response.data.data 
+          : Array.isArray(response.data) 
+            ? response.data 
+            : [];
+        setRoles(rolesData);
+      } catch (err) {
+        console.error('Failed to fetch roles', err);
+        setRolesError('Unable to load roles');
+      } finally {
+        setRolesLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchRoles();
+    }
+  }, [isOpen]);
 
   const employeeName = employee
     ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unknown'
@@ -92,13 +122,22 @@ export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
 
   const handleSubmit = async () => {
     if (!employee || !validate()) return;
+    if (!form.roleId) {
+      toast.error('Please select a system role');
+      return;
+    }
+    
+    const selectedRole = roles.find(r => r.roleId === form.roleId);
+    const roleName = selectedRole ? selectedRole.name : form.roleId;
+
     setLoading(true);
     try {
       await api.post('/v1/admin/invite-employee/', {
         employeeId: employee.employeeId,
         employeeCode: form.employeeCode.trim(),
         email: form.email.trim().toLowerCase(),
-        role: form.role,
+        role: roleName,
+        roleId: form.roleId,
       });
       toast.success(`ESS invitation sent to ${employeeName}`);
       onSuccess();
@@ -208,13 +247,24 @@ export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
         </div>
 
         {/* Role Section */}
-        <Select
-          id="invite-role"
-          label="System Role"
-          options={ROLE_OPTIONS}
-          value={form.role}
-          onChange={(e) => setForm({ ...form, role: e.target.value as FormState['role'] })}
-        />
+        {rolesLoading ? (
+          <p className="text-sm text-neutral-500">Loading roles...</p>
+        ) : rolesError ? (
+          <p className="text-sm text-red-500">{rolesError}</p>
+        ) : roles.length === 0 ? (
+          <p className="text-sm text-red-500">No roles available</p>
+        ) : (
+          <Select
+            id="invite-role"
+            label="System Role"
+            options={[
+              { value: '', label: 'Select a role' },
+              ...roles.map(r => ({ value: r.roleId, label: r.name }))
+            ]}
+            value={form.roleId}
+            onChange={(e) => setForm({ ...form, roleId: e.target.value })}
+          />
+        )}
 
         {/* Security notice */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
@@ -230,7 +280,7 @@ export const InviteESSDialog: React.FC<InviteESSDialogProps> = ({
             id="invite-submit"
             onClick={handleSubmit}
             loading={loading}
-            disabled={!form.employeeCode || !form.email}
+            disabled={!form.employeeCode || !form.email || !form.roleId || rolesLoading || roles.length === 0}
           >
             Send Invitation
           </AnimatedButton>

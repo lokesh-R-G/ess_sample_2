@@ -12,7 +12,7 @@ router = APIRouter(prefix="/assign", tags=["Payroll Salary Assignment"])
 class SalaryAssignmentRequest(BaseModel):
     employeeId: str
     salaryStructureId: str
-    basicSalary: float
+    basicSalary: Optional[float] = 0.0
     effectiveFrom: str
     pfOption: Optional[str] = "Default"
     esiOption: Optional[str] = "Default"

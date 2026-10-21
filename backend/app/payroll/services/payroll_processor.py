@@ -53,8 +53,26 @@ class PayrollProcessor:
         total_gross = PayrollCalculationEngine.calculateGross(structure_components)
         working_days = payroll_input.workingDays
         
-        monthly_gross = PayrollCalculationEngine.calculateMonthlyGross(total_gross, working_days, lop_result.totalLopDays)
+        monthly_gross = PayrollCalculationEngine.calculateMonthlyGross(
+            total_gross, 
+            payroll_input.salaryDivisor, 
+            lop_result.totalLopDays,
+            payroll_input.roundOffMethod
+        )
         prorated_components = PayrollCalculationEngine.splitSalaryComponents(monthly_gross, structure_components)
+
+        # Merge Manual Earnings AFTER proration to bypass LOP
+        manual_earnings = getattr(payroll_input, "manualEarningRecords", [])
+        total_manual_earnings = getattr(payroll_input, "manualEarningsTotal", 0.0)
+        
+        for me in manual_earnings:
+            # Reconstruct component format for engine consumption
+            me_copy = me.copy()
+            me_copy["monthlyAmount"] = me.get("amount", 0.0)
+            me_copy["proratedAmount"] = me.get("amount", 0.0)
+            prorated_components.append(me_copy)
+            
+        monthly_gross += total_manual_earnings
 
         pf_gross = PayrollCalculationEngine.calculatePfGross(prorated_components, pf_rule)
         esi_gross = PayrollCalculationEngine.calculateEsiGross(prorated_components)
@@ -91,9 +109,13 @@ class PayrollProcessor:
             "total_reimbursements": total_reimbursements,
             "manual_deductions": manual_deductions,
             "total_manual_deductions": total_manual_deductions,
+            "leave_balances": payroll_input.leaveBalances,
             "total_deductions": total_deductions,
             "monthly_gross": monthly_gross,
-            "net_pay": net_pay
+            "net_pay": net_pay,
+            "salary_divisor": payroll_input.salaryDivisor,
+            "salary_calculation_method": payroll_input.salaryCalculationMethod,
+            "round_off_method": payroll_input.roundOffMethod
         }
 
     async def calculate_employee_preview(self, employee_id: str, start_date: datetime, end_date: datetime) -> dict:
@@ -116,10 +138,15 @@ class PayrollProcessor:
             "reimbursementsTotal": core["total_reimbursements"],
             "reimbursementIds": [str(r["_id"]) for r in core["reimbursements"]],
             "manualDeductionsTotal": core["total_manual_deductions"],
+            "manualDeductions": core["manual_deductions"],
+            "leaveBalances": core["leave_balances"],
             "calculatedAt": datetime.utcnow().isoformat(),
             "grossEarnings": core["monthly_gross"],
             "grossDeductions": core["total_deductions"],
-            "netPay": core["net_pay"]
+            "netPay": core["net_pay"],
+            "salaryDivisor": core["salary_divisor"],
+            "salaryCalculationMethod": core["salary_calculation_method"],
+            "roundOffMethod": core["round_off_method"]
         }
         return snapshot
 
@@ -187,9 +214,13 @@ class PayrollProcessor:
             "recalculatedBy": recalculated_by,
             "recalculationReason": reason,
             "reimbursementsTotal": core["total_reimbursements"],
-            "reimbursementIds": [str(r["_id"]) for r in reimbursements],
             "manualDeductionsTotal": core["total_manual_deductions"],
-            "calculatedAt": datetime.utcnow().isoformat()
+            "manualDeductions": core["manual_deductions"],
+            "leaveBalances": core["leave_balances"],
+            "calculatedAt": datetime.utcnow().isoformat(),
+            "salaryDivisor": core["salary_divisor"],
+            "salaryCalculationMethod": core["salary_calculation_method"],
+            "roundOffMethod": core["round_off_method"]
         }
 
         # 7. Persist Payroll
@@ -208,7 +239,7 @@ class PayrollProcessor:
             ptAmount=pt,
             reimbursementAmount=core["total_reimbursements"],
             lopDays=core["lop_result"].totalLopDays,
-            status="CALCULATED",
+            status="Generated",
             version=version,
             isActive=True,
             previousVersionId=previous_version_id,

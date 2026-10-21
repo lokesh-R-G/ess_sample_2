@@ -37,8 +37,8 @@ export const LoginPage: React.FC = () => {
       <motion.div className="relative w-full max-w-md" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <motion.div className="relative bg-white rounded-2xl border border-neutral-200 shadow-xl overflow-hidden" transition={{ duration: 0.2 }}>
           <div className="p-8 text-center bg-gradient-to-r from-primary-500 to-primary-600">
-            <motion.div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white mb-4 shadow-lg" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}>
-              <span className="text-primary-500 font-bold text-2xl">IDS</span>
+            <motion.div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white mb-4 shadow-lg overflow-hidden" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}>
+              <img src="/favicon.svg" alt="IDS Logo" className="w-full h-full object-contain p-2" />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <h1 className="text-2xl font-bold text-white mb-1">IDS Pvt Ltd</h1>

@@ -162,6 +162,26 @@ export const Payslip = () => {
                       Version: {payslip.payloadSnapshot?.version || 1} <br/>
                       Generated: {new Date(payslip.generatedDate).toLocaleDateString()}
                     </div>
+                    
+                    <div className="flex-1 px-4 md:px-8 grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-neutral-500 block">DOB</span>
+                        <span className="font-medium text-neutral-900">{payslip.dob || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">Father/Husband Name</span>
+                        <span className="font-medium text-neutral-900">{payslip.fatherHusbandName || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">UAN</span>
+                        <span className="font-medium text-neutral-900">{payslip.uan || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 block">PAN</span>
+                        <span className="font-medium text-neutral-900">{payslip.pan || '-'}</span>
+                      </div>
+                    </div>
+
                     <div className="text-right">
                       <span className="text-sm text-neutral-500">Net Pay</span>
                       <p className="text-2xl font-bold text-brand-600">
@@ -198,29 +218,72 @@ export const Payslip = () => {
                     <div>
                       <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700">Deductions</h3>
                       <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-neutral-600">Provident Fund (PF)</span>
-                          <span className="font-medium text-neutral-900">{payslip.payloadSnapshot?.pfCalculation?.employeePf?.toFixed(2) || '0.00'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-neutral-600">ESI</span>
-                          <span className="font-medium text-neutral-900">{payslip.payloadSnapshot?.esiCalculation?.employeeEsi?.toFixed(2) || '0.00'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-neutral-600">Professional Tax (PT)</span>
-                          <span className="font-medium text-neutral-900">{payslip.payloadSnapshot?.ptAmount?.toFixed(2) || '0.00'}</span>
-                        </div>
+                        {payslip.payloadSnapshot?.pfCalculation?.employeePf > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Employee PF</span>
+                            <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.pfCalculation.employeePf.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {payslip.payloadSnapshot?.esiCalculation?.employeeEsi > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Employee ESI</span>
+                            <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.esiCalculation.employeeEsi.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {payslip.payloadSnapshot?.ptAmount > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-neutral-600">Professional Tax (PT)</span>
+                            <span className="font-medium text-neutral-900">{payslip.payloadSnapshot.ptAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {payslip.payloadSnapshot?.manualDeductions?.map((d: any, idx: number) => (
+                          <div key={d._id || idx} className="flex justify-between">
+                            <span className="text-neutral-600">{d.deductionType || 'Manual Deduction'}</span>
+                            <span className="font-medium text-neutral-900">{d.amount?.toFixed(2)}</span>
+                          </div>
+                        ))}
                         <div className="flex justify-between border-t pt-2 mt-4 font-bold">
-                          <span>Total Deductions</span>
+                          <span>Total Deduction</span>
                           <span>{payslip.payloadSnapshot?.grossDeductions?.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-neutral-50 p-4 rounded mt-6 text-sm text-neutral-600">
-                    <strong>Attendance & LOP Summary:</strong> Working Days: {payslip.payloadSnapshot?.workingDays} | 
-                    Total LOP: {payslip.payloadSnapshot?.lopBreakdown?.totalLopDays} days
+
+                  
+                  <div className="bg-neutral-50 p-4 rounded mt-6">
+                    <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700 text-sm">Leave Details & Attendance Summary</h3>
+                    
+                    {payslip.leaveDetails && payslip.leaveDetails.length > 0 && (
+                      <div className="mb-4 overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-xs text-neutral-500 uppercase bg-neutral-100">
+                            <tr>
+                              <th className="px-4 py-2">Leave Type</th>
+                              <th className="px-4 py-2">Opening</th>
+                              <th className="px-4 py-2">Availed</th>
+                              <th className="px-4 py-2">Closing</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {payslip.leaveDetails.map((ld: any, idx: number) => (
+                              <tr key={idx} className="border-b">
+                                <td className="px-4 py-2 font-medium">{ld.leaveType}</td>
+                                <td className="px-4 py-2">{ld.openingBalance?.toFixed(1)}</td>
+                                <td className="px-4 py-2">{ld.consumed?.toFixed(1)}</td>
+                                <td className="px-4 py-2">{ld.availableBalance?.toFixed(1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-neutral-600">
+                      <strong>Attendance & LOP Summary:</strong> Working Days: {payslip.workingDays || payslip.payloadSnapshot?.workingDays} | 
+                      Total LOP: {payslip.lopDays ?? payslip.payloadSnapshot?.lopBreakdown?.totalLopDays} days
+                    </div>
                   </div>
                 </div>
               </GlassCard>
@@ -312,25 +375,39 @@ export const Payslip = () => {
                   <div>
                     <h3 className="font-bold border-b pb-2 mb-4 text-neutral-700">Estimated Deductions</h3>
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">Provident Fund (PF)</span>
-                        <span className="font-medium text-neutral-900">{previewData.pfCalculation?.employeePf?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">ESI</span>
-                        <span className="font-medium text-neutral-900">{previewData.esiCalculation?.employeeEsi?.toFixed(2) || '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-neutral-600">Professional Tax (PT)</span>
-                        <span className="font-medium text-neutral-900">{previewData.ptAmount?.toFixed(2) || '0.00'}</span>
-                      </div>
+                      {previewData.pfCalculation?.employeePf > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-600">Employee PF</span>
+                          <span className="font-medium text-neutral-900">{previewData.pfCalculation.employeePf.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {previewData.esiCalculation?.employeeEsi > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-600">Employee ESI</span>
+                          <span className="font-medium text-neutral-900">{previewData.esiCalculation.employeeEsi.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {previewData.ptAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-neutral-600">Professional Tax (PT)</span>
+                          <span className="font-medium text-neutral-900">{previewData.ptAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {previewData.manualDeductions?.map((d: any, idx: number) => (
+                        <div key={d._id || idx} className="flex justify-between">
+                          <span className="text-neutral-600">{d.deductionType || 'Manual Deduction'}</span>
+                          <span className="font-medium text-neutral-900">{d.amount?.toFixed(2)}</span>
+                        </div>
+                      ))}
                       <div className="flex justify-between border-t pt-2 mt-4 font-bold">
-                        <span>Total Deductions</span>
+                        <span>Total Deduction</span>
                         <span>{previewData.grossDeductions?.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
+
+
 
                 <div className="bg-neutral-50 p-4 border-t text-sm text-neutral-600">
                   <strong>Attendance Used:</strong> {previewData.workingDays} working days, {previewData.lopBreakdown?.totalLopDays} LOP days.

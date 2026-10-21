@@ -54,9 +54,15 @@ class AttendanceProcessor:
             # We'll fetch daily for maximum safety.
             
             while current_date <= to_date:
+                existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
+                
+                # Protect MANUAL LOP and MANUAL PRESENT from being overwritten
+                if existing and existing.get("isManualOverride") and existing.get("manualOverrideType") in ["LOP", "PRESENT"]:
+                    current_date += timedelta(days=1)
+                    continue
+
                 if not force:
                     # Check if a record already exists
-                    existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
                     if existing:
                         current_date += timedelta(days=1)
                         continue
@@ -99,6 +105,7 @@ class AttendanceProcessor:
                     "inTime": metrics.get("inTime"),
                     "outTime": metrics.get("outTime"),
                     "workHours": metrics.get("effectiveHours", 0),
+                    "expectedWorkingHours": engine.schedule.get("expectedWorkingHours", 8.0),
                     "status": metrics.get("status"),
                     "lateMinutes": metrics.get("lateMinutes", 0),
                     "lateCount": metrics.get("lateCount", 0),
@@ -111,6 +118,8 @@ class AttendanceProcessor:
                     "lateIncrementApplied": metrics.get("lateIncrementApplied", False),
                     "monthlyLateCount": ctx.get("monthlyLateCount", 0),
                     "lopReason": metrics.get("lopReason", None),
+                    
+                    "rejectedLeaveLopDays": metrics.get("rejectedLeaveLopDays", 0.0),
                     
                     # Phase 10.3 (Permission Ledger fields)
                     "permissionFreeAllowance": ctx.get("permissionLedger", {}).get("freeAllowanceMinutes", 0),
@@ -145,6 +154,14 @@ class AttendanceProcessor:
                     updated_count += 1
                 else:
                     created_count += 1
+                    
+                # Log penalty to ledger if applicable
+                rejected_approval_id = metrics.get("rejectedLeaveApprovalId")
+                rejected_lop_days = metrics.get("rejectedLeaveLopDays", 0.0)
+                if rejected_approval_id and rejected_lop_days > 0:
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger_service = LeaveLedgerService(self.db)
+                    await ledger_service.log_rejected_leave_penalty(employee_code, rejected_approval_id, rejected_lop_days)
                 
                 current_date += timedelta(days=1)
                 
