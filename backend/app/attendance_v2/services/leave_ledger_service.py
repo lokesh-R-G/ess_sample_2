@@ -1,17 +1,62 @@
+import logging
 from datetime import datetime, date, timezone
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson.objectid import ObjectId
+
+logger = logging.getLogger("leave_ledger_service")
 
 class LeaveLedgerService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
 
     async def _get_employee_doj(self, emp_id: str):
+        # 1. Check root employee doc (legacy / seeded compatibility)
         emp = await self.db.employees.find_one({"employeeId": emp_id})
-        if not emp: return None
-        doj_str = emp.get("dateOfJoining")
-        if not doj_str: return None
-        return datetime.strptime(doj_str, "%Y-%m-%d").date()
+        if emp:
+            doj_val = emp.get("dateOfJoining") or emp.get("dateOfJoin")
+            if doj_val:
+                if isinstance(doj_val, datetime):
+                    return doj_val.date()
+                if isinstance(doj_val, date):
+                    return doj_val
+                if isinstance(doj_val, str) and doj_val.strip():
+                    try:
+                        return datetime.fromisoformat(doj_val.replace("Z", "+00:00")).date()
+                    except ValueError:
+                        try:
+                            return datetime.strptime(doj_val[:10], "%Y-%m-%d").date()
+                        except Exception:
+                            pass
+
+        # 2. Check authoritative employment history
+        hist = await self.db.employee_employment_histories.find_one({
+            "employeeId": emp_id,
+            "isCurrent": True,
+            "deletedAt": None
+        })
+        if not hist:
+            # Fallback to non-deleted record sorted by effectiveFrom/createdAt descending
+            hist = await self.db.employee_employment_histories.find_one(
+                {"employeeId": emp_id, "deletedAt": None},
+                sort=[("effectiveFrom", -1), ("createdAt", -1)]
+            )
+
+        if hist:
+            doj_val = hist.get("dateOfJoining") or hist.get("effectiveFrom")
+            if doj_val:
+                if isinstance(doj_val, datetime):
+                    return doj_val.date()
+                if isinstance(doj_val, date):
+                    return doj_val
+                if isinstance(doj_val, str) and doj_val.strip():
+                    try:
+                        return datetime.fromisoformat(doj_val.replace("Z", "+00:00")).date()
+                    except ValueError:
+                        try:
+                            return datetime.strptime(doj_val[:10], "%Y-%m-%d").date()
+                        except Exception:
+                            pass
+        return None
 
     async def _get_cycle_boundaries(self, cycle_year: int, doj: date, policy: dict):
         start_type = policy.get("leaveCycleStartType", "CALENDAR_YEAR")
@@ -167,8 +212,14 @@ class LeaveLedgerService:
                         payroll_divisor = 26.0
                     elif calc_method == "Fixed 30 Days":
                         payroll_divisor = 30.0
-                    elif calc_method in ["Calendar Days", "Working Days", "Attendance Based"]:
-                        raise ValueError(f"Unresolved payroll divisor rule for annual renewal: {calc_method}")
+                    elif calc_method == "Calendar Days":
+                        # Actual calendar days in previous cycle
+                        payroll_divisor = float((prev_end.date() - prev_start.date()).days + 1)
+                        if payroll_divisor <= 0:
+                            payroll_divisor = 365.0
+                    elif calc_method in ["Working Days", "Attendance Based"]:
+                        working_dates = await self._resolve_working_days(emp_id, prev_start.date(), prev_end.date())
+                        payroll_divisor = float(len(working_dates)) if working_dates else 30.0
                     else:
                         raise ValueError(f"Unknown salary calculation method: {calc_method}")
                         
@@ -220,6 +271,120 @@ class LeaveLedgerService:
                 return ledger
                 
         return ledger_doc
+
+    async def initialize_employee_ledgers(self, emp_id: str, emp_code: str = None, target_date = None) -> dict:
+        """
+        Shared, idempotent initialization of leave ledgers for an employee.
+        Resolves the employee, authoritative DOJ, active policy, and enabled leave types.
+        Creates only missing ledgers and protects existing balances.
+        """
+        now = datetime.now(timezone.utc)
+        if target_date is None:
+            target_date = now
+
+        # 1. Resolve employeeCode if not provided
+        if not emp_code:
+            emp = await self.db.employees.find_one({"employeeId": emp_id})
+            emp_code = emp.get("employeeCode", "UNKNOWN") if emp else "UNKNOWN"
+
+        # 2. Resolve DOJ
+        doj = await self._get_employee_doj(emp_id)
+        if not doj:
+            logger.warning(f"Cannot initialize leave ledgers for employee {emp_id}: missing or ambiguous Date of Joining")
+            return {
+                "success": False,
+                "employeeId": emp_id,
+                "error": "MISSING_DOJ",
+                "created": [],
+                "existing": []
+            }
+
+        # 3. Resolve active policy
+        query = {
+            "deletedAt": None,
+            "effectiveFrom": {"$lte": target_date},
+            "$or": [
+                {"effectiveTo": None},
+                {"effectiveTo": {"$gt": target_date}}
+            ]
+        }
+        docs = await self.db.leave_policies.find(query).sort([("version", -1)]).to_list(length=1)
+        if not docs:
+            docs = await self.db.leave_policies.find({"deletedAt": None, "isCurrent": True}).sort([("version", -1)]).to_list(length=1)
+
+        if not docs:
+            logger.warning(f"Cannot initialize leave ledgers for employee {emp_id}: no active leave policy found")
+            return {
+                "success": False,
+                "employeeId": emp_id,
+                "error": "NO_ACTIVE_POLICY",
+                "created": [],
+                "existing": []
+            }
+
+        policy = docs[0]
+        enabled_types = [t.get("code") for t in policy.get("leaveTypes", []) if t.get("enabled", True)]
+        if not enabled_types:
+            logger.info(f"No enabled leave types in policy {policy.get('policyCode')} for employee {emp_id}")
+            return {
+                "success": True,
+                "employeeId": emp_id,
+                "policyCode": policy.get("policyCode"),
+                "created": [],
+                "existing": []
+            }
+
+        # 4. Determine cycle year
+        cycle_year = target_date.year
+        if policy.get("leaveCycleStartType") == "DATE_OF_JOINING" and doj:
+            try:
+                cycle_start_this_year = datetime(target_date.year, doj.month, doj.day, tzinfo=timezone.utc)
+            except ValueError:
+                cycle_start_this_year = datetime(target_date.year, doj.month, doj.day - 1, tzinfo=timezone.utc)
+            if target_date < cycle_start_this_year:
+                cycle_year = target_date.year - 1
+
+        created = []
+        existing = []
+
+        for lt in enabled_types:
+            # Check if ledger already exists
+            found = await self.db.leave_ledgers.find_one({
+                "employeeId": emp_id,
+                "calendarYear": cycle_year,
+                "leaveType": lt
+            })
+            if found:
+                existing.append({
+                    "leaveType": lt,
+                    "calendarYear": cycle_year,
+                    "availableBalance": found.get("availableBalance", 0.0),
+                    "openingBalance": found.get("openingBalance", 0.0),
+                    "consumed": found.get("consumed", 0.0)
+                })
+            else:
+                ledger = await self.get_or_create_ledger(emp_id, emp_code, target_date, lt, create_if_missing=True)
+                if ledger:
+                    created.append({
+                        "leaveType": lt,
+                        "calendarYear": cycle_year,
+                        "availableBalance": ledger.get("availableBalance", 0.0),
+                        "openingBalance": ledger.get("openingBalance", 0.0),
+                        "credited": ledger.get("credited", 0.0)
+                    })
+                    logger.info(f"Initialized leave ledger for employee {emp_id} ({emp_code}), type={lt}, cycle={cycle_year}, balance={ledger.get('availableBalance')}")
+
+        return {
+            "success": True,
+            "employeeId": emp_id,
+            "employeeCode": emp_code,
+            "policyCode": policy.get("policyCode"),
+            "policyVersion": policy.get("version"),
+            "cycleYear": cycle_year,
+            "doj": doj.isoformat(),
+            "created": created,
+            "existing": existing
+        }
 
     async def _resolve_working_days(self, emp_id: str, from_date: date, to_date: date):
         emp_hist = await self.db.employee_employment_histories.find_one({

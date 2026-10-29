@@ -29,6 +29,9 @@ async def get_leave_balances(current_user=Depends(get_current_user)):
     
     ledger_svc = LeaveLedgerService(db)
     
+    # Safe read-time recovery: ensure ledgers exist for enabled types in active policy
+    await ledger_svc.initialize_employee_ledgers(emp_id, emp_code)
+    
     now = datetime.now(timezone.utc)
     target_date = now
     query = {
@@ -51,11 +54,18 @@ async def get_leave_balances(current_user=Depends(get_current_user)):
         
     balances = {}
     for lt in leave_types:
-        ledger = await ledger_svc.get_or_create_ledger(emp_id, emp_code, year, lt, create_if_missing=False)
-        balances[lt] = {
-            "total": ledger.get("openingBalance", 0.0),
-            "used": ledger.get("consumed", 0.0),
-            "balance": ledger.get("availableBalance", 0.0)
-        }
+        ledger = await ledger_svc.get_or_create_ledger(emp_id, emp_code, year, lt, create_if_missing=True)
+        if ledger:
+            balances[lt] = {
+                "total": ledger.get("openingBalance", 0.0),
+                "used": ledger.get("consumed", 0.0),
+                "balance": ledger.get("availableBalance", 0.0)
+            }
+        else:
+            balances[lt] = {
+                "total": 0.0,
+                "used": 0.0,
+                "balance": 0.0
+            }
         
     return balances
