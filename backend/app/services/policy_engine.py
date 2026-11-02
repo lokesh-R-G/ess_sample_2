@@ -166,7 +166,7 @@ class PolicyEngine:
                 to_time_str = rd.get("toTime")
                 
                 if app_type in ["On Duty", "Leave"] and not (from_time_str and to_time_str):
-                    self.approval_snapshot.append({
+                    snapshot_item = {
                         "approvalId": str(req.get("_id", "")),
                         "approvalType": app_type,
                         "status": req.get("status"),
@@ -176,7 +176,10 @@ class PolicyEngine:
                         "requestedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
                         "appliedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
                         "excessMinutes": 0.0
-                    })
+                    }
+                    if app_type == "Leave" and rd.get("leaveType"):
+                        snapshot_item["leaveType"] = rd.get("leaveType")
+                    self.approval_snapshot.append(snapshot_item)
                 elif from_time_str and to_time_str:
                     start = self._get_shift_datetime(from_time_str)
                     end = self._get_shift_datetime(to_time_str)
@@ -197,7 +200,7 @@ class PolicyEngine:
                         if app_type in ["Permission", "On Duty", "Leave"]:
                             intervals.append({"start": start, "end": end, "type": app_type})
                         
-                        self.approval_snapshot.append({
+                        snapshot_item = {
                             "approvalId": str(req.get("_id", "")),
                             "approvalType": app_type,
                             "status": req.get("status"),
@@ -209,7 +212,10 @@ class PolicyEngine:
                             "requestedMinutes": req_mins,
                             "appliedMinutes": applied_mins,
                             "excessMinutes": excess_mins
-                        })
+                        }
+                        if app_type == "Leave" and rd.get("leaveType"):
+                            snapshot_item["leaveType"] = rd.get("leaveType")
+                        self.approval_snapshot.append(snapshot_item)
         return intervals
 
     def evaluate_attendance(self) -> dict:

@@ -31,7 +31,11 @@ class BaseRepository(Generic[T]):
         data["effectiveFrom"] = data.get("effectiveFrom") or now
         if data["effectiveFrom"].tzinfo is None:
             data["effectiveFrom"] = data["effectiveFrom"].replace(tzinfo=timezone.utc)
-        data["effectiveTo"] = None
+        if "effectiveTo" in data and data["effectiveTo"] is not None:
+            if data["effectiveTo"].tzinfo is None:
+                data["effectiveTo"] = data["effectiveTo"].replace(tzinfo=timezone.utc)
+        else:
+            data["effectiveTo"] = None
         
         result = await self.collection.insert_one(data)
         data["_id"] = str(result.inserted_id)
@@ -186,19 +190,16 @@ class BaseRepository(Generic[T]):
                 if not current_doc:
                     return None
                     
-                new_effective_from = data.get("effectiveFrom")
-                
                 current_eff = current_doc.get("effectiveFrom")
                 if current_eff and current_eff.tzinfo is None:
                     current_eff = current_eff.replace(tzinfo=timezone.utc)
                     
-                if new_effective_from:
-                    if new_effective_from.tzinfo is None:
+                if "effectiveFrom" in data:
+                    new_effective_from = data["effectiveFrom"]
+                    if new_effective_from and new_effective_from.tzinfo is None:
                         new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
-                    if current_eff and new_effective_from <= current_eff:
-                        new_effective_from = now
                 else:
-                    new_effective_from = now
+                    new_effective_from = current_eff or now
                 
                 await self.collection.update_one(
                     {"_id": obj_id}, 
@@ -211,7 +212,13 @@ class BaseRepository(Generic[T]):
                 new_doc["version"] = current_doc.get("version", 1) + 1
                 new_doc["isCurrent"] = True
                 new_doc["effectiveFrom"] = new_effective_from
-                new_doc["effectiveTo"] = None
+                if "effectiveTo" in data:
+                    new_eff_to = data["effectiveTo"]
+                    if new_eff_to and new_eff_to.tzinfo is None:
+                        new_eff_to = new_eff_to.replace(tzinfo=timezone.utc)
+                    new_doc["effectiveTo"] = new_eff_to
+                else:
+                    new_doc["effectiveTo"] = current_doc.get("effectiveTo")
                 
                 result = await self.collection.insert_one(new_doc, session=session)
                 new_doc["_id"] = str(result.inserted_id)

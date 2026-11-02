@@ -193,12 +193,16 @@ async def invite_employee(
     temp_password = secrets.token_urlsafe(12)
 
     # 6. Create V1 user document
+    from app.services.user_sync_service import get_authoritative_employee_name
+    authoritative_name, _ = await get_authoritative_employee_name(db, employee_id=payload.employeeId, employee_code=resolved_code)
+    
     user_doc = {
         "employeeId": payload.employeeId,
         "employeeCode": resolved_code,
         "empId": resolved_code,          # Legacy compatibility — login username
         "username": resolved_code,
         "email": email,
+        "name": authoritative_name,
         "role": payload.role,
         "roleId": payload.roleId,
         "passwordHash": hash_password(temp_password),

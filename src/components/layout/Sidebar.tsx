@@ -107,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 exit={{ opacity: 0, width: 0 }}
                 className="overflow-hidden whitespace-nowrap"
               >
-                <h1 className="text-lg font-bold text-neutral-900">IDS Pvt Ltd</h1>
+                <h1 className="text-lg font-bold text-neutral-900">IDS Groups</h1>
                 <p className="text-xs text-neutral-500">Enterprise HRMS</p>
               </motion.div>
             )}

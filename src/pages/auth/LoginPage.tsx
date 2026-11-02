@@ -41,7 +41,7 @@ export const LoginPage: React.FC = () => {
               <img src="/favicon.svg" alt="IDS Logo" className="w-full h-full object-contain p-2" />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <h1 className="text-2xl font-bold text-white mb-1">IDS Pvt Ltd</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">IDS Groups</h1>
               <p className="text-sm text-white/90">Employee Self Service Portal</p>
             </motion.div>
           </div>
@@ -104,7 +104,7 @@ export const LoginPage: React.FC = () => {
         </motion.div>
 
         <motion.p className="text-center text-xs text-neutral-500 mt-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
-          Powered by <span className="text-primary-500 font-medium">IDS Pvt Ltd</span> | Enterprise HRMS v2.0
+          Powered by <span className="text-primary-500 font-medium">IDS Groups</span> | Enterprise HRMS v2.0
         </motion.p>
       </motion.div>
 

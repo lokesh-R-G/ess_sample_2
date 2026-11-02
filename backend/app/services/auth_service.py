@@ -67,19 +67,34 @@ async def validate_employee_with_essl(db, emp_id: str) -> bool:
 
 async def create_provisioned_user(db, emp_id: str, role: str = "Employee") -> dict:
     now = datetime.now(timezone.utc)
+    from app.services.user_sync_service import get_authoritative_employee_name
+    auth_name, emp_doc = await get_authoritative_employee_name(db, employee_code=emp_id)
+    resolved_employee_id = emp_doc.get("employeeId") if emp_doc else None
+    
     document = {
         "empId": emp_id,
+        "employeeCode": emp_id,
         "role": role,
+        "name": auth_name,
         "passwordHash": create_default_password_hash(),
         "firstLogin": True,
         "isActive": True,
         "createdAt": now,
     }
+    if resolved_employee_id:
+        document["employeeId"] = resolved_employee_id
+
+    set_fields = {"updatedAt": now}
+    if auth_name:
+        set_fields["name"] = auth_name
+    if resolved_employee_id:
+        set_fields["employeeId"] = resolved_employee_id
+
     await db.users.update_one(
         {"empId": emp_id},
         {
             "$setOnInsert": document,
-            "$set": {"updatedAt": now},
+            "$set": set_fields,
         },
         upsert=True,
     )

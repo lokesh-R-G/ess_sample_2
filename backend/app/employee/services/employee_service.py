@@ -54,6 +54,12 @@ class EmployeeService:
             emp = await self.repo.get_by_employee_id(id)
             if emp:
                 doc = await self.repo.update(emp.id, data.model_dump(exclude_unset=True), user_id)
+        if doc and getattr(doc, "employeeId", None):
+            try:
+                from app.services.user_sync_service import sync_user_name_from_employee
+                await sync_user_name_from_employee(self.db, employee_id=doc.employeeId)
+            except Exception as e:
+                print(f"[EmployeeService] User name sync failed: {e}")
         return doc
         
     async def delete(self, id: str, user_id: str = None) -> bool:

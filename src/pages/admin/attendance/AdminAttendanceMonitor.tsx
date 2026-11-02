@@ -96,11 +96,17 @@ export const AdminAttendanceMonitor: React.FC = () => {
     }
   };
 
-  const getStatusAbbr = (status: string) => {
+  const formatLeaveTypeAbbr = (leaveType?: string) => {
+    if (!leaveType) return 'L';
+    const clean = leaveType.replace(/_TEST$/i, '').trim();
+    return clean || 'L';
+  };
+
+  const getStatusAbbr = (status: string, leaveType?: string) => {
     switch (status) {
       case 'Present': return 'P';
       case 'Absent': return 'A';
-      case 'Leave': return 'L';
+      case 'Leave': return formatLeaveTypeAbbr(leaveType);
       case 'Holiday': return 'H';
       case 'Week Off': return 'WO';
       case 'LOP': return 'LOP';
@@ -188,9 +194,9 @@ export const AdminAttendanceMonitor: React.FC = () => {
                         <button
                           onClick={() => att && setSelectedCell({ employeeId: emp.employeeId, date: dateStr, details: att, empDetails: emp })}
                           className={`w-full h-8 rounded flex items-center justify-center font-medium text-xs transition-transform hover:scale-105 ${getStatusColor(status, isLate)} ${!att ? 'cursor-default' : 'cursor-pointer'}`}
-                          title={att ? `${status} ${isLate ? '(LATE)' : ''}` : 'No Data'}
+                          title={att ? `${status === 'Leave' && att?.leaveType ? `Leave (${att.leaveType})` : status} ${isLate ? '(LATE)' : ''}` : 'No Data'}
                         >
-                          {getStatusAbbr(status)}
+                          {getStatusAbbr(status, att?.leaveType)}
                         </button>
                         {att?.sources?.includes('MOBILE') && (
                           <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-neutral-200">

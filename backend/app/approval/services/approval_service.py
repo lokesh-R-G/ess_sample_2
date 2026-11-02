@@ -276,8 +276,8 @@ class ApprovalService:
                 
         return approvals
 
-    async def get_manager_inbox(self, manager_employee_id: str, status: str = None):
-        approvals = await self.repo.get_by_manager(manager_employee_id, status)
+    async def get_manager_inbox(self, manager_employee_id: str, status: str = None, allowed_reporting_employee_ids: list = None):
+        approvals = await self.repo.get_by_manager(manager_employee_id, status, allowed_reporting_employee_ids=allowed_reporting_employee_ids)
         return await self._enrich_approvals_with_employee_info(approvals)
         
     async def get_employee_requests(self, emp_id: str, status: str = None):
