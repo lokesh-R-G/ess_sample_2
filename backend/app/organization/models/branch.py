@@ -12,6 +12,7 @@ class BranchModel(BaseModel):
     code: Optional[str] = None
     location: Optional[str] = None
     holidayCalendarId: Optional[str] = None
+    holidayCalendarCode: Optional[str] = None
     weeklyOffPolicyId: Optional[str] = None
     
     status: str = "Active"
@@ -21,4 +22,3 @@ class BranchModel(BaseModel):
     updatedBy: Optional[str] = None
     deletedAt: Optional[datetime] = None
     deletedBy: Optional[str] = None
-

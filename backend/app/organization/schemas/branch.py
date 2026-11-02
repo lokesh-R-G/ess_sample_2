@@ -23,6 +23,9 @@ class BranchCreate(BaseModel):
     attendanceEnabled: bool = True
     esslMachineId: Optional[str] = None
     timezone: str = "Asia/Kolkata"
+    holidayCalendarId: Optional[str] = None
+    holidayCalendarCode: Optional[str] = None
+    weeklyOffPolicyId: Optional[str] = None
 
 class BranchUpdate(BaseModel):
     companyId: Optional[str] = None
@@ -38,9 +41,12 @@ class BranchUpdate(BaseModel):
     attendanceEnabled: Optional[bool] = None
     esslMachineId: Optional[str] = None
     timezone: Optional[str] = None
+    holidayCalendarId: Optional[str] = None
+    holidayCalendarCode: Optional[str] = None
+    weeklyOffPolicyId: Optional[str] = None
 
 class BranchResponse(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
     id: str = Field(serialization_alias="_id")
     companyId: str
     companyName: Optional[str] = None
@@ -57,6 +63,9 @@ class BranchResponse(BaseModel):
     esslMachineId: Optional[str] = None
     timezone: Optional[str] = None
     status: Optional[str] = None
+    holidayCalendarId: Optional[str] = None
+    holidayCalendarCode: Optional[str] = None
+    weeklyOffPolicyId: Optional[str] = None
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     esslMachine: Optional[ESSLMachineSummary] = None

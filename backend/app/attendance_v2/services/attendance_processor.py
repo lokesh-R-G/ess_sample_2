@@ -205,7 +205,7 @@ class AttendanceProcessor:
                 
         return processed_count
         
-    async def process_range(self, from_date: date, to_date: date, force: bool = True) -> dict:
+    async def process_range(self, from_date: date, to_date: date, force: bool = True, employee_ids: list = None, branch_id: str = None) -> dict:
         """
         Manually recalculates attendance over a specified date range.
         Orchestrates exactly the same pipeline as the dirty queue processing.
@@ -219,6 +219,18 @@ class AttendanceProcessor:
             "employeeCode": {"$exists": True, "$ne": None, "$ne": ""}
         }
             
+        if employee_ids:
+            query["employeeId"] = {"$in": employee_ids}
+        elif branch_id:
+            hist_cursor = self.db.employee_employment_histories.find({
+                "branchId": str(branch_id),
+                "isCurrent": True,
+                "deletedAt": None
+            }, {"employeeId": 1})
+            hist_docs = await hist_cursor.to_list(length=None)
+            scoped_emp_ids = [h["employeeId"] for h in hist_docs if h.get("employeeId")]
+            query["employeeId"] = {"$in": scoped_emp_ids}
+
         cursor = self.db.employees.find(query, {"employeeId": 1, "employeeCode": 1})
         employees = await cursor.to_list(length=None)
         
