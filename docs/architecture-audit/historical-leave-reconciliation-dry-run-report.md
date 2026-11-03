@@ -1,10 +1,10 @@
 # Historical Leave Reconciliation Report
 
-**Execution Timestamp:** 2026-11-03 05:41:55 UTC  
-**Reconciliation Batch ID:** `RECON_20261103_054151_7e9dc1`  
+**Execution Timestamp:** 2026-11-03 06:46:36 UTC  
+**Reconciliation Batch ID:** `RECON_20261103_064632_b83a5d`  
 **Database Environment:** `essl_production`  
 **Mode:** `DRY-RUN (Read-Only Preview)`  
-**Input Workbook:** `29-10-2026 leave details.xlsx`  
+**Input Workbook:** `29-10-2026 leave details(1).xlsx`  
 
 ## Executive Summary
 
@@ -15,7 +15,7 @@
 - **Approved Leave Requests Reopened:** 0
 - **Reversed Leave Deductions:** 0.0 days
 - **Reversed Leave-Related LOP:** 0.0 days
-- **Leave Ledgers Proposed for Update:** 35
+- **Leave Ledgers Proposed for Update:** 42
 - **Attendance Recalculation Ranges:** 0
 - **Overlapping Payroll Periods Flagged:** 0
 
@@ -73,50 +73,50 @@
 
 ## 2. Leave Balance Report
 
-| Employee | Leave Type | Existing Available | Excel Target Available | Proposed Final Available | Difference |
-| :--- | :--- | ---: | ---: | ---: | ---: |
-| 1001 (C.Saravanakumar) | CL_TEST | 12.0 | 6.0 | 6.0 | -6.0 |
-| 1001 (C.Saravanakumar) | SL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 1001 (C.Saravanakumar) | EL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 1021 (Prasanna Prabhu N G) | CL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 1021 (Prasanna Prabhu N G) | SL_TEST | 12.0 | 13.5 | 13.5 | +1.5 |
-| 1021 (Prasanna Prabhu N G) | EL_TEST | 12.0 | 2.0 | 2.0 | -10.0 |
-| 1050 (Badri Narayanan V R) | CL_TEST | 12.0 | 9.0 | 9.0 | -3.0 |
-| 1050 (Badri Narayanan V R) | SL_TEST | 12.0 | 6.0 | 6.0 | -6.0 |
-| 1050 (Badri Narayanan V R) | EL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 1082 (Latha V) | CL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 1082 (Latha V) | SL_TEST | 12.0 | 7.0 | 7.0 | -5.0 |
-| 1082 (Latha V) | EL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 1085 (Dhanasekar) | CL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 1085 (Dhanasekar) | SL_TEST | 12.0 | 9.0 | 9.0 | -3.0 |
-| 1085 (Dhanasekar) | EL_TEST | 12.0 | 6.5 | 6.5 | -5.5 |
-| 1086 (Naveen Raj) | CL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 1086 (Naveen Raj) | SL_TEST | 12.0 | 6.5 | 6.5 | -5.5 |
-| 1086 (Naveen Raj) | EL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 1088 (Arun Kumar.T) | CL_TEST | 12.0 | 10.0 | 10.0 | -2.0 |
-| 1088 (Arun Kumar.T) | SL_TEST | 12.0 | 2.0 | 2.0 | -10.0 |
-| 1088 (Arun Kumar.T) | EL_TEST | 12.0 | 10.0 | 10.0 | -2.0 |
-| 5185 (Deepika) | CL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 5185 (Deepika) | SL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 5185 (Deepika) | EL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 1090 (Chandana Sampathkumar) | CL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 1090 (Chandana Sampathkumar) | SL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 1090 (Chandana Sampathkumar) | EL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 6 (WAHEEDA BIJOY) | CL_TEST | 12.0 | 12.0 | 12.0 | +0.0 |
-| 6 (WAHEEDA BIJOY) | SL_TEST | 12.0 | 11.5 | 11.5 | -0.5 |
-| 6 (WAHEEDA BIJOY) | EL_TEST | 12.0 | 5.5 | 5.5 | -6.5 |
-| 8 (SATHIYAPRIYA J) | CL_TEST | 12.0 | 10.0 | 10.0 | -2.0 |
-| 8 (SATHIYAPRIYA J) | SL_TEST | 12.0 | 5.0 | 5.0 | -7.0 |
-| 8 (SATHIYAPRIYA J) | EL_TEST | 12.0 | 1.5 | 1.5 | -10.5 |
-| 9 (KARTHIK C) | CL_TEST | 12.0 | 9.0 | 9.0 | -3.0 |
-| 9 (KARTHIK C) | SL_TEST | 12.0 | 9.0 | 9.0 | -3.0 |
-| 9 (KARTHIK C) | EL_TEST | 12.0 | 9.0 | 9.0 | -3.0 |
-| 10 (VAIRAMANI P) | CL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 10 (VAIRAMANI P) | SL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 10 (VAIRAMANI P) | EL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 11 (USHA NANDHINI  S) | CL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 11 (USHA NANDHINI  S) | SL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
-| 11 (USHA NANDHINI  S) | EL_TEST | 12.0 | 0.0 | 0.0 | -12.0 |
+| Employee | Leave Type | Excel Elig | Excel Avail | Proposed Credited | Proposed Consumed | Proposed Available | Validation |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: | :--- |
+| 1001 (C.Saravanakumar) | CL_TEST | 14.0 | 0.0 | 14.0 | 0.0 | 14.0 | OK |
+| 1001 (C.Saravanakumar) | SL_TEST | 50.0 | 0.0 | 50.0 | 0.0 | 50.0 | OK |
+| 1001 (C.Saravanakumar) | EL_TEST | 56.0 | 0.0 | 56.0 | 0.0 | 56.0 | OK |
+| 1021 (Prasanna Prabhu N G) | CL_TEST | 8.0 | 0.0 | 8.0 | 0.0 | 8.0 | OK |
+| 1021 (Prasanna Prabhu N G) | SL_TEST | 27.0 | 4.0 | 27.0 | 4.0 | 23.0 | OK |
+| 1021 (Prasanna Prabhu N G) | EL_TEST | 50.0 | 0.0 | 50.0 | 0.0 | 50.0 | OK |
+| 1050 (Badri Narayanan V R) | CL_TEST | 9.0 | 0.0 | 9.0 | 0.0 | 9.0 | OK |
+| 1050 (Badri Narayanan V R) | SL_TEST | 9.0 | 0.0 | 9.0 | 0.0 | 9.0 | OK |
+| 1050 (Badri Narayanan V R) | EL_TEST | 47.0 | 0.0 | 47.0 | 0.0 | 47.0 | OK |
+| 1082 (Latha V) | CL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 1082 (Latha V) | SL_TEST | 3.0 | 0.0 | 3.0 | 0.0 | 3.0 | OK |
+| 1082 (Latha V) | EL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 1085 (Dhanasekar) | CL_TEST | 3.0 | 0.0 | 3.0 | 0.0 | 3.0 | OK |
+| 1085 (Dhanasekar) | SL_TEST | 7.0 | 0.0 | 7.0 | 0.0 | 7.0 | OK |
+| 1085 (Dhanasekar) | EL_TEST | 9.0 | 0.0 | 9.0 | 0.0 | 9.0 | OK |
+| 1086 (Naveen Raj) | CL_TEST | 8.0 | 1.0 | 8.0 | 1.0 | 7.0 | OK |
+| 1086 (Naveen Raj) | SL_TEST | 17.0 | 0.0 | 17.0 | 0.0 | 17.0 | OK |
+| 1086 (Naveen Raj) | EL_TEST | 8.0 | 0.0 | 8.0 | 0.0 | 8.0 | OK |
+| 1088 (Arun Kumar.T) | CL_TEST | 7.0 | 0.0 | 7.0 | 0.0 | 7.0 | OK |
+| 1088 (Arun Kumar.T) | SL_TEST | 28.0 | 0.0 | 28.0 | 0.0 | 28.0 | OK |
+| 1088 (Arun Kumar.T) | EL_TEST | 14.0 | 0.0 | 14.0 | 0.0 | 14.0 | OK |
+| 5185 (Deepika) | CL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 5185 (Deepika) | SL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 5185 (Deepika) | EL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 1090 (Chandana Sampathkumar) | CL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 1090 (Chandana Sampathkumar) | SL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 1090 (Chandana Sampathkumar) | EL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 6 (WAHEEDA BIJOY) | CL_TEST | 9.0 | 1.0 | 9.0 | 1.0 | 8.0 | OK |
+| 6 (WAHEEDA BIJOY) | SL_TEST | 12.0 | 1.0 | 12.0 | 1.0 | 11.0 | OK |
+| 6 (WAHEEDA BIJOY) | EL_TEST | 16.0 | 0.0 | 16.0 | 0.0 | 16.0 | OK |
+| 8 (SATHIYAPRIYA J) | CL_TEST | 2.0 | 0.0 | 2.0 | 0.0 | 2.0 | OK |
+| 8 (SATHIYAPRIYA J) | SL_TEST | 9.0 | 0.0 | 9.0 | 0.0 | 9.0 | OK |
+| 8 (SATHIYAPRIYA J) | EL_TEST | 15.0 | 0.0 | 15.0 | 0.0 | 15.0 | OK |
+| 9 (KARTHIK C) | CL_TEST | 3.0 | 1.0 | 3.0 | 1.0 | 2.0 | OK |
+| 9 (KARTHIK C) | SL_TEST | 3.0 | 3.0 | 3.0 | 3.0 | 0.0 | OK |
+| 9 (KARTHIK C) | EL_TEST | 3.0 | 0.0 | 3.0 | 0.0 | 3.0 | OK |
+| 10 (VAIRAMANI P) | CL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 10 (VAIRAMANI P) | SL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 10 (VAIRAMANI P) | EL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 11 (USHA NANDHINI  S) | CL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 11 (USHA NANDHINI  S) | SL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
+| 11 (USHA NANDHINI  S) | EL_TEST | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | OK |
 
 ## 3. Approval Reconciliation Report
 

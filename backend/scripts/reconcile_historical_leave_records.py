@@ -4,8 +4,27 @@ Historical Leave Reconciliation Script
 Reconciles employee leave balances from Excel, reopens previously approved leave requests,
 reverses associated leave-ledger deductions and LOP, and routes requests to the existing manager approval workflow.
 
+Confirmed Excel Structure & Exact Database Mapping:
+--------------------------------------------------
+- Worksheet: 'Leave Details' (or active sheet)
+- CL:
+    - Excel CL Elig  -> CL ledger `credited`
+    - Excel CL Avail -> CL ledger `consumed`
+- SL:
+    - Excel SL Elig  -> SL ledger `credited`
+    - Excel SL Avail -> SL ledger `consumed`
+- EL:
+    - Excel EL Elig  -> EL ledger `credited`
+    - Excel EL Avail -> EL ledger `consumed`
+- Calculation:
+    `availableBalance = credited - consumed` (preserving valid carriedForward if present: `(credited + carriedForward) - consumed`)
+- Opening Balance:
+    Preserve existing ledger `openingBalance` according to existing ledger architecture. Do NOT overwrite with credited or consumed.
+- Rollback & Idempotency:
+    Reopening approvals reverses allocations via LeaveLedgerService.rollback_approval(), and the final Excel consumed total takes precedence without double-counting.
+
 Usage:
-    python scripts/reconcile_historical_leave_records.py --input "29-10-2026 leave details.xlsx" [--dry-run] [--apply] [--report path] [--company "Name"] [--employee-name "Name"] [--limit N]
+    python scripts/reconcile_historical_leave_records.py --input "29-10-2026 leave details(1).xlsx" [--dry-run] [--apply] [--report path] [--company "Name"] [--employee-name "Name"] [--limit N]
 """
 
 from __future__ import annotations
@@ -199,15 +218,33 @@ class HistoricalLeaveReconciler:
         logger.info(f"Initialized reconciler with {len(self.companies)} companies and {len(self.db_employees)} DB employees.")
 
     def parse_excel(self) -> List[Dict[str, Any]]:
-        """Parse Excel workbook into structured employee records."""
+        """Parse Excel workbook into structured employee records supporting both worksheet layouts."""
         if not os.path.exists(self.input_path):
             raise FileNotFoundError(f"Excel workbook not found at {self.input_path}")
 
         wb = openpyxl.load_workbook(self.input_path)
-        ws = wb.active
+        ws = wb["Leave Details"] if "Leave Details" in wb.sheetnames else wb.active
 
         current_company = ""
         records: List[Dict[str, Any]] = []
+
+        def to_float(val: Any) -> Optional[float]:
+            if val is None or val == "":
+                return None
+            try:
+                return float(val)
+            except ValueError:
+                return None
+
+        # Determine column layout by inspecting row 2 / row 3
+        is_clean_layout = False
+        for check_r in [2, 3]:
+            # If col 4 is 'CL' and col 6 is 'SL', or col 4 is 'Elig' and col 5 is 'Avail'
+            v4 = str(ws.cell(check_r, 4).value or "").strip()
+            v5 = str(ws.cell(check_r, 5).value or "").strip()
+            if v4 in ["CL", "Elig"] and v5 in ["Avail"]:
+                is_clean_layout = True
+                break
 
         for r in range(1, ws.max_row + 1):
             c1 = str(ws.cell(r, 1).value or "").strip()
@@ -223,8 +260,33 @@ class HistoricalLeaveReconciler:
             if not c2 or c2 in ["Name", "total", "None"] or c2.startswith("S.no"):
                 continue
 
-            # Read columns
-            doj_val = ws.cell(r, 22).value
+            if is_clean_layout:
+                # Layout in '29-10-2026 leave details(1).xlsx':
+                # Col 1: S.no, Col 2: Name, Col 3: DOJ
+                # Col 4: CL Elig, Col 5: CL Avail
+                # Col 6: SL Elig, Col 7: SL Avail
+                # Col 8: EL Elig, Col 9: EL Avail
+                doj_val = ws.cell(r, 3).value
+                cl_elig = to_float(ws.cell(r, 4).value)
+                cl_avail = to_float(ws.cell(r, 5).value)
+                sl_elig = to_float(ws.cell(r, 6).value)
+                sl_avail = to_float(ws.cell(r, 7).value)
+                el_elig = to_float(ws.cell(r, 8).value)
+                el_avail = to_float(ws.cell(r, 9).value)
+            else:
+                # Layout in original workbook (with Right side cols 24-29):
+                # Col 22: DOJ
+                # Col 24: CL Elig, Col 25: CL Avail
+                # Col 26: SL Elig, Col 27: SL Avail
+                # Col 28: EL Elig, Col 29: EL Avail
+                doj_val = ws.cell(r, 22).value
+                cl_elig = to_float(ws.cell(r, 24).value)
+                cl_avail = to_float(ws.cell(r, 25).value)
+                sl_elig = to_float(ws.cell(r, 26).value)
+                sl_avail = to_float(ws.cell(r, 27).value)
+                el_elig = to_float(ws.cell(r, 28).value)
+                el_avail = to_float(ws.cell(r, 29).value)
+
             if isinstance(doj_val, (date, datetime)):
                 doj_str = doj_val.strftime("%Y-%m-%d")
             elif doj_val:
@@ -233,24 +295,6 @@ class HistoricalLeaveReconciler:
             else:
                 doj_str = ""
 
-            def to_float(val: Any) -> Optional[float]:
-                if val is None or val == "":
-                    return None
-                try:
-                    return float(val)
-                except ValueError:
-                    return None
-
-            # Primary leave columns (cols 6-11)
-            cl_avail = to_float(ws.cell(r, 7).value)
-            sl_avail = to_float(ws.cell(r, 9).value)
-            el_avail = to_float(ws.cell(r, 11).value)
-
-            # Secondary / right columns (cols 24-29)
-            cl_avail_r = to_float(ws.cell(r, 25).value)
-            sl_avail_r = to_float(ws.cell(r, 27).value)
-            el_avail_r = to_float(ws.cell(r, 29).value)
-
             records.append({
                 "row": r,
                 "s_no": ws.cell(r, 1).value,
@@ -258,18 +302,15 @@ class HistoricalLeaveReconciler:
                 "name": c2,
                 "doj": doj_val,
                 "doj_str": doj_str,
+                "cl_elig": cl_elig,
                 "cl_avail": cl_avail,
+                "sl_elig": sl_elig,
                 "sl_avail": sl_avail,
-                "el_avail": el_avail,
-                "cl_avail_r": cl_avail_r,
-                "sl_avail_r": sl_avail_r,
-                "el_avail_r": el_avail_r,
-                "taken": to_float(ws.cell(r, 12).value),
-                "crlop": to_float(ws.cell(r, 13).value),
-                "total_lop": to_float(ws.cell(r, 17).value),
+                "el_elig": el_elig,
+                "el_avail": el_avail
             })
 
-        logger.info(f"Parsed {len(records)} employee records from {self.input_path}")
+        logger.info(f"Parsed {len(records)} employee records from {self.input_path} (Layout mode: {'Clean 9-column' if is_clean_layout else 'Wide 32-column'})")
         return records
 
     def match_employee(self, rec: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], str, List[Any]]:
@@ -321,7 +362,7 @@ class HistoricalLeaveReconciler:
 
     def resolve_policy_and_types(self, db_emp: Dict[str, Any], year: int) -> Tuple[Optional[Dict[str, Any]], Dict[str, str]]:
         """
-        Resolve employee's active leave policy and maps CL, SL, EL to actual codes in DB.
+        Resolve employee's active leave policy and map CL, SL, EL to actual codes in DB.
         """
         target_date = datetime(year, 10, 1, tzinfo=timezone.utc)
 
@@ -404,7 +445,6 @@ class HistoricalLeaveReconciler:
     async def find_reconciliation_approvals(self, db_emp: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Identify approved leave requests for the employee that should be reopened."""
         eid = db_emp["employeeId"]
-        # Find approved leave requests
         approvals = await self.db.approvals.find({
             "employeeId": eid,
             "approvalType": "Leave",
@@ -429,7 +469,6 @@ class HistoricalLeaveReconciler:
         reversed_lop = 0.0
 
         if self.is_apply:
-            # Call authoritative service rollback
             await self.ledger_service.rollback_approval(app_id_str)
         else:
             # In dry-run, calculate what would be rolled back
@@ -568,7 +607,6 @@ class HistoricalLeaveReconciler:
                 t_date_str = req_data.get("toDate")
                 lt_code = req_data.get("leaveType")
 
-                # Parse dates
                 if f_date_str and t_date_str:
                     try:
                         d_from = datetime.strptime(f_date_str, "%Y-%m-%d").date()
@@ -636,17 +674,30 @@ class HistoricalLeaveReconciler:
                     "impact": att_recalc_status
                 })
 
-            # 3. Leave Balance Reconcile to Excel Final Avail
-            # We map target avail from Excel:
-            leave_targets = {
-                "CL": rec["cl_avail"] if rec["cl_avail"] is not None else rec["cl_avail_r"],
-                "SL": rec["sl_avail"] if rec["sl_avail"] is not None else rec["sl_avail_r"],
-                "EL": rec["el_avail"] if rec["el_avail"] is not None else rec["el_avail_r"]
+            # 3. Exact Database Mapping:
+            # Excel CL/SL/EL Elig  -> credited
+            # Excel CL/SL/EL Avail -> consumed
+            # availableBalance     = (credited + carriedForward) - consumed
+            # Preserve openingBalance intact
+            leave_types_data = {
+                "CL": {"elig": rec["cl_elig"], "avail": rec["cl_avail"]},
+                "SL": {"elig": rec["sl_elig"], "avail": rec["sl_avail"]},
+                "EL": {"elig": rec["el_elig"], "avail": rec["el_avail"]}
             }
 
-            for lt_generic, target_avail in leave_targets.items():
-                if target_avail is None:
+            for lt_generic, lt_data in leave_types_data.items():
+                excel_elig = lt_data["elig"]
+                excel_avail = lt_data["avail"]
+
+                # If the row has no data for this leave type, skip
+                if excel_elig is None and excel_avail is None:
                     continue
+
+                # If only one of (elig, avail) is provided in Excel, default the missing one to 0.0
+                if excel_elig is None and excel_avail is not None:
+                    excel_elig = 0.0
+                elif excel_avail is None and excel_elig is not None:
+                    excel_avail = 0.0
 
                 actual_code = type_map.get(lt_generic)
                 if not actual_code:
@@ -658,47 +709,116 @@ class HistoricalLeaveReconciler:
                     continue
 
                 ledger = await self.get_or_prep_ledger(db_emp, actual_code, current_year, policy)
-                exist_avail = float(ledger.get("availableBalance", 0.0))
-                diff = target_avail - exist_avail
 
-                # Proposed Final State
-                proposed_avail = target_avail
-                # In ESS calculation: availableBalance = credited + carriedForward - consumed
-                # To set availableBalance = target_avail without altering consumed:
-                # credited = target_avail + consumed - carriedForward
-                consumed = float(ledger.get("consumed", 0.0))
-                carried_forward = float(ledger.get("carriedForward", 0.0))
-                proposed_credited = max(0.0, target_avail + consumed - carried_forward)
+                # Capture existing ledger state
+                exist_credited = float(ledger.get("credited", 0.0))
+                exist_consumed = float(ledger.get("consumed", 0.0))
+                exist_cf = float(ledger.get("carriedForward", 0.0))
+                exist_avail = float(ledger.get("availableBalance", 0.0))
+                exist_op_bal = float(ledger.get("openingBalance", 0.0))
+
+                # Exact mapping:
+                # 1. Proposed Credited = Excel Elig
+                proposed_credited = float(excel_elig) if excel_elig is not None else exist_credited
+
+                # 2. Proposed Consumed = Excel Avail
+                proposed_consumed = float(excel_avail) if excel_avail is not None else exist_consumed
+
+                # 3. Preserve Carried Forward
+                proposed_cf = exist_cf
+
+                # 4. Opening Balance is preserved according to existing ledger architecture
+                proposed_op_bal = exist_op_bal
+
+                # 5. Proposed Available Balance = (credited + carriedForward) - consumed
+                proposed_avail = (proposed_credited + proposed_cf) - proposed_consumed
+
+                # Validations:
+                # Proposed Credited = Excel Elig
+                val_cred = (excel_elig is None) or (proposed_credited == float(excel_elig))
+                # Proposed Consumed = Excel Avail
+                val_cons = (excel_avail is None) or (proposed_consumed == float(excel_avail))
+                # Proposed Available = Excel Elig - Excel Avail (when CF is 0)
+                expected_simple_avail = (float(excel_elig or 0.0) - float(excel_avail or 0.0))
+                val_avail = (proposed_cf != 0.0) or (round(proposed_avail, 2) == round(expected_simple_avail, 2))
+
+                is_valid = val_cred and val_cons and val_avail
+
+                # Flag negative balance if any
+                is_negative = proposed_avail < 0.0
+                if is_negative:
+                    self.exceptions_records.append({
+                        "type": "NEGATIVE_AVAILABLE_BALANCE",
+                        "employee": f"{db_emp['employeeId']} ({db_emp['name']})",
+                        "details": f"{actual_code}: Proposed Available is negative ({proposed_avail:.1f}). Clamping avoided."
+                    })
 
                 self.balance_records.append({
                     "employee": f"{db_emp['employeeId']} ({db_emp['name']})",
                     "leave_type": actual_code,
-                    "existing_available": exist_avail,
-                    "excel_target_available": target_avail,
-                    "proposed_final_available": proposed_avail,
-                    "difference": diff
+                    "excel_elig": excel_elig,
+                    "excel_avail": excel_avail,
+                    "exist_credited": exist_credited,
+                    "exist_consumed": exist_consumed,
+                    "exist_avail": exist_avail,
+                    "exist_op_bal": exist_op_bal,
+                    "exist_cf": exist_cf,
+                    "proposed_credited": proposed_credited,
+                    "proposed_consumed": proposed_consumed,
+                    "proposed_avail": proposed_avail,
+                    "proposed_op_bal": proposed_op_bal,
+                    "proposed_cf": proposed_cf,
+                    "is_valid": is_valid,
+                    "is_negative": is_negative
                 })
 
-                if self.is_apply and diff != 0.0:
+                if not is_valid:
+                    self.exceptions_records.append({
+                        "type": "BALANCE_RECONCILIATION_MISMATCH",
+                        "employee": f"{db_emp['employeeId']} ({db_emp['name']})",
+                        "details": f"{actual_code}: Proposed values do not match Excel Elig/Avail."
+                    })
+
+                # Check if ledger needs update
+                has_changes = (
+                    exist_credited != proposed_credited or
+                    exist_consumed != proposed_consumed or
+                    exist_avail != proposed_avail
+                )
+
+                if has_changes:
+                    ledgers_updated_total += 1
+
+                if self.is_apply and has_changes:
                     now = datetime.now(timezone.utc)
                     audit_entry = {
-                        "type": "HISTORICAL_RECONCILIATION_ADJUSTMENT",
+                        "type": "HISTORICAL_RECONCILIATION_EXCEL_MAPPING",
                         "batchId": self.batch_id,
                         "date": now.strftime("%Y-%m-%d"),
-                        "previousAvailable": exist_avail,
-                        "adjustedAvailable": proposed_avail,
+                        "previous": {
+                            "credited": exist_credited,
+                            "consumed": exist_consumed,
+                            "availableBalance": exist_avail,
+                            "openingBalance": exist_op_bal
+                        },
+                        "adjusted": {
+                            "credited": proposed_credited,
+                            "consumed": proposed_consumed,
+                            "availableBalance": proposed_avail,
+                            "openingBalance": proposed_op_bal
+                        },
                         "createdAt": now
                     }
 
                     if ledger.get("_id"):
-                        # Update existing
+                        # Update existing document without modifying openingBalance
                         await self.db.leave_ledgers.update_one(
                             {"_id": ledger["_id"]},
                             {
                                 "$set": {
-                                    "availableBalance": proposed_avail,
                                     "credited": proposed_credited,
-                                    "openingBalance": target_avail if ledger.get("openingBalance") == 0.0 else ledger.get("openingBalance"),
+                                    "consumed": proposed_consumed,
+                                    "availableBalance": proposed_avail,
                                     "updatedAt": now
                                 },
                                 "$inc": {"version": 1},
@@ -707,15 +827,12 @@ class HistoricalLeaveReconciler:
                         )
                     else:
                         # Insert newly prepared ledger
-                        ledger["availableBalance"] = proposed_avail
                         ledger["credited"] = proposed_credited
-                        ledger["openingBalance"] = target_avail
+                        ledger["consumed"] = proposed_consumed
+                        ledger["availableBalance"] = proposed_avail
+                        ledger["openingBalance"] = proposed_op_bal
                         ledger["allocations"] = [audit_entry]
                         await self.db.leave_ledgers.insert_one(ledger)
-
-                    ledgers_updated_total += 1
-                elif diff != 0.0:
-                    ledgers_updated_total += 1
 
         logger.info(f"Reconciliation run finished.")
         logger.info(f"Summary: Reopened Approvals: {reopened_approvals_total}, Reversed Leave: {reversed_leave_total}, Reversed LOP: {reversed_lop_total}, Ledgers Updated: {ledgers_updated_total}")
@@ -775,13 +892,22 @@ class HistoricalLeaveReconciler:
             lines.append(f"| {m['company']} | {m['excel_name']} | {m['excel_doj']} | {m['matched_emp_id'] or '-'} | {m['matched_emp_code'] or '-'} | {m['match_status']} |")
         lines.append("")
 
-        # 2. Leave balance report
+        # 2. Leave balance report: Employee | Leave Type | Excel Elig | Excel Avail | Proposed Credited | Proposed Consumed | Proposed Available
         lines.append("## 2. Leave Balance Report")
         lines.append("")
-        lines.append("| Employee | Leave Type | Existing Available | Excel Target Available | Proposed Final Available | Difference |")
-        lines.append("| :--- | :--- | ---: | ---: | ---: | ---: |")
+        lines.append("| Employee | Leave Type | Excel Elig | Excel Avail | Proposed Credited | Proposed Consumed | Proposed Available | Validation |")
+        lines.append("| :--- | :--- | ---: | ---: | ---: | ---: | ---: | :--- |")
         for b in self.balance_records:
-            lines.append(f"| {b['employee']} | {b['leave_type']} | {b['existing_available']:.1f} | {b['excel_target_available']:.1f} | {b['proposed_final_available']:.1f} | {b['difference']:+.1f} |")
+            e_elig = f"{b['excel_elig']:.1f}" if b['excel_elig'] is not None else "-"
+            e_avail = f"{b['excel_avail']:.1f}" if b['excel_avail'] is not None else "-"
+            valid_tag = "OK" if b['is_valid'] else "MISMATCH"
+            if b.get("is_negative"):
+                valid_tag += " (NEGATIVE)"
+            lines.append(
+                f"| {b['employee']} | {b['leave_type']} | {e_elig} | {e_avail} | "
+                f"{b['proposed_credited']:.1f} | {b['proposed_consumed']:.1f} | "
+                f"{b['proposed_avail']:.1f} | {valid_tag} |"
+            )
         lines.append("")
 
         # 3. Approval reconciliation report
@@ -842,7 +968,7 @@ class HistoricalLeaveReconciler:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Reconcile historical employee leave records from Excel workbook.")
-    parser.add_argument("--input", required=True, help="Path to input Excel workbook")
+    parser.add_argument("--input", default="29-10-2026 leave details(1).xlsx", help="Path to input Excel workbook")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Preview all proposed changes without database writes (Default)")
     parser.add_argument("--apply", action="store_true", default=False, help="Execute reconciliation and apply changes to database")
     parser.add_argument("--report", default="docs/architecture-audit/historical-leave-reconciliation-dry-run-report.md", help="Path to output markdown report")
@@ -889,8 +1015,7 @@ async def main():
     print("\n" + "="*80)
     print("RECONCILIATION SUMMARY")
     print("="*80)
-    # Output the first 40 lines of summary
-    print("\n".join(report.splitlines()[:35]))
+    print("\n".join(report.splitlines()[:45]))
     print(f"\n[Full report saved to {args.report}]")
 
 
