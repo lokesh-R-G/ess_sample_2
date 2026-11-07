@@ -13,6 +13,7 @@ from app.dependencies import require_permission, get_current_user
 from app.services.auth_service import create_provisioned_user
 from app.services.sync_service import sync_essl_logs
 from app.core.security import hash_password
+from app.core.config import get_settings
 from app.email_service.services.email_service import EmailService
 
 
@@ -116,6 +117,7 @@ class InviteEmployeeRequest(BaseModel):
     employeeCode: str        # HR assigns/confirms this value in the dialog
     email: str               # Personal email for welcome notification
     role: str = "Employee"
+    roleId: str | None = None
 
 
 
@@ -191,13 +193,18 @@ async def invite_employee(
     temp_password = secrets.token_urlsafe(12)
 
     # 6. Create V1 user document
+    from app.services.user_sync_service import get_authoritative_employee_name
+    authoritative_name, _ = await get_authoritative_employee_name(db, employee_id=payload.employeeId, employee_code=resolved_code)
+    
     user_doc = {
         "employeeId": payload.employeeId,
         "employeeCode": resolved_code,
         "empId": resolved_code,          # Legacy compatibility — login username
         "username": resolved_code,
         "email": email,
+        "name": authoritative_name,
         "role": payload.role,
+        "roleId": payload.roleId,
         "passwordHash": hash_password(temp_password),
         "firstLogin": True,
         "isActive": True,
@@ -220,11 +227,13 @@ async def invite_employee(
     email_sent = False
     try:
         email_service = EmailService(db)
+        settings = get_settings()
+        frontend_base = settings.frontend_origins[0] if settings.frontend_origins else "http://localhost:5173"
         context = {
             "name": f"{getattr(employee, 'firstName', '')} {getattr(employee, 'lastName', '')}".strip() or resolved_code,
             "username": resolved_code,
             "temporary_password": temp_password,
-            "login_url": "http://localhost:5173/login",
+            "login_url": f"{frontend_base}/login",
         }
         asyncio.create_task(email_service.send_welcome_email(delivery_email, context))
         email_sent = True

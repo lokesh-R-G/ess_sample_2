@@ -7,6 +7,7 @@ export interface Branch {
   code?: string;
   location?: string;
   holidayCalendarId?: string;
+  holidayCalendarCode?: string;
   weeklyOffPolicyId?: string;
   status?: string;
 }

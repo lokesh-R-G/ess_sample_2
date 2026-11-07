@@ -9,7 +9,8 @@ export default function SalaryComponentsTab() {
       columns={[
         { key: 'name', label: 'Component Name' },
         { key: 'componentType', label: 'Type' },
-        { key: 'calculationMethod', label: 'Method' }
+        { key: 'calculationMethod', label: 'Method' },
+        { key: 'inputMode', label: 'Input Mode' }
       ]}
       formFields={[
         { key: 'name', label: 'Component Name', type: 'text', required: true },
@@ -22,6 +23,10 @@ export default function SalaryComponentsTab() {
           { value: 'Percentage', label: 'Percentage' },
           { value: 'Formula', label: 'Formula' }
         ], required: true },
+        { key: 'inputMode', label: 'Input Method', type: 'select', options: [
+          { value: 'CALCULATED', label: 'Calculated / Derived' },
+          { value: 'MANUAL', label: 'Manual' }
+        ], required: true, defaultValue: 'CALCULATED' },
         { key: 'percentageValue', label: 'Percentage Value (%)', type: 'number' },
         { key: 'percentageDerivedFromComponentId', label: 'Derived From Component', type: 'lookup', entity: 'SalaryComponent' },
         { key: 'isBasicComponent', label: 'Is Basic Component', type: 'checkbox' },

@@ -54,9 +54,15 @@ class AttendanceProcessor:
             # We'll fetch daily for maximum safety.
             
             while current_date <= to_date:
+                existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
+                
+                # Protect MANUAL LOP and MANUAL PRESENT from being overwritten
+                if existing and existing.get("isManualOverride") and existing.get("manualOverrideType") in ["LOP", "PRESENT"]:
+                    current_date += timedelta(days=1)
+                    continue
+
                 if not force:
                     # Check if a record already exists
-                    existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
                     if existing:
                         current_date += timedelta(days=1)
                         continue
@@ -99,6 +105,7 @@ class AttendanceProcessor:
                     "inTime": metrics.get("inTime"),
                     "outTime": metrics.get("outTime"),
                     "workHours": metrics.get("effectiveHours", 0),
+                    "expectedWorkingHours": engine.schedule.get("expectedWorkingHours", 8.0),
                     "status": metrics.get("status"),
                     "lateMinutes": metrics.get("lateMinutes", 0),
                     "lateCount": metrics.get("lateCount", 0),
@@ -111,6 +118,8 @@ class AttendanceProcessor:
                     "lateIncrementApplied": metrics.get("lateIncrementApplied", False),
                     "monthlyLateCount": ctx.get("monthlyLateCount", 0),
                     "lopReason": metrics.get("lopReason", None),
+                    
+                    "rejectedLeaveLopDays": metrics.get("rejectedLeaveLopDays", 0.0),
                     
                     # Phase 10.3 (Permission Ledger fields)
                     "permissionFreeAllowance": ctx.get("permissionLedger", {}).get("freeAllowanceMinutes", 0),
@@ -145,6 +154,14 @@ class AttendanceProcessor:
                     updated_count += 1
                 else:
                     created_count += 1
+                    
+                # Log penalty to ledger if applicable
+                rejected_approval_id = metrics.get("rejectedLeaveApprovalId")
+                rejected_lop_days = metrics.get("rejectedLeaveLopDays", 0.0)
+                if rejected_approval_id and rejected_lop_days > 0:
+                    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+                    ledger_service = LeaveLedgerService(self.db)
+                    await ledger_service.log_rejected_leave_penalty(employee_code, rejected_approval_id, rejected_lop_days)
                 
                 current_date += timedelta(days=1)
                 
@@ -188,7 +205,7 @@ class AttendanceProcessor:
                 
         return processed_count
         
-    async def process_range(self, from_date: date, to_date: date, force: bool = True) -> dict:
+    async def process_range(self, from_date: date, to_date: date, force: bool = True, employee_ids: list = None, branch_id: str = None) -> dict:
         """
         Manually recalculates attendance over a specified date range.
         Orchestrates exactly the same pipeline as the dirty queue processing.
@@ -202,6 +219,18 @@ class AttendanceProcessor:
             "employeeCode": {"$exists": True, "$ne": None, "$ne": ""}
         }
             
+        if employee_ids:
+            query["employeeId"] = {"$in": employee_ids}
+        elif branch_id:
+            hist_cursor = self.db.employee_employment_histories.find({
+                "branchId": str(branch_id),
+                "isCurrent": True,
+                "deletedAt": None
+            }, {"employeeId": 1})
+            hist_docs = await hist_cursor.to_list(length=None)
+            scoped_emp_ids = [h["employeeId"] for h in hist_docs if h.get("employeeId")]
+            query["employeeId"] = {"$in": scoped_emp_ids}
+
         cursor = self.db.employees.find(query, {"employeeId": 1, "employeeCode": 1})
         employees = await cursor.to_list(length=None)
         

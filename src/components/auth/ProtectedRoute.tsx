@@ -17,7 +17,7 @@ export function ProtectedRoute({
   if (user?.firstLogin && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />;
   if (requireAnyPermission && requireAnyPermission.length > 0) {
     const hasAny = requireAnyPermission.some(p => hasPermission(p));
-    if (!hasAny) return <Navigate to="/dashboard" replace />;
+    if (!hasAny) return <Navigate to="/access-restricted" replace />;
   }
   return <>{children}</>;
 }

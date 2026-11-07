@@ -7,6 +7,7 @@ import { reimbursementApi, ReimbursementClaimResponse } from '../../services/rei
 import NewTripSheetModal from './NewTripSheetModal';
 import { format } from 'date-fns';
 import { Modal } from '../../components/ui';
+import { API_BASE_URL } from '../../lib/api';
 
 
 export default function Reimbursements() {
@@ -33,7 +34,7 @@ export default function Reimbursements() {
 
   const handleViewAttachment = async (attachmentId: string) => {
     const token = localStorage.getItem('ess_auth_token');
-    const url = `http://127.0.0.1:8000/api/reimbursement/attachments/${attachmentId}`;
+    const url = `${API_BASE_URL}/reimbursement/attachments/${attachmentId}`;
     try {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Failed to fetch attachment");

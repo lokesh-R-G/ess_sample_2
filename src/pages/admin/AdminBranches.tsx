@@ -49,7 +49,7 @@ export const AdminBranches: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure?')) return;
+    if (!window.confirm("Are you sure you want to delete this branch?")) return;
     try {
       await deleteBranch(id);
       await loadData();
@@ -58,41 +58,58 @@ export const AdminBranches: React.FC = () => {
     }
   };
 
+  const getCalendarDisplay = (b: Branch) => {
+    if (b.holidayCalendarCode) {
+      const match = calendars.find(c => c.holidayCalendarCode === b.holidayCalendarCode);
+      if (match) return `${match.name} (${match.holidayCalendarCode})`;
+      return b.holidayCalendarCode;
+    }
+    if (b.holidayCalendarId) {
+      const match = calendars.find(c => (c.id || c._id) === b.holidayCalendarId);
+      if (match) return `${match.name} (${match.holidayCalendarCode || match.year})`;
+      return 'Assigned (Legacy ID)';
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Branches</h1>
-          <p className="text-sm text-neutral-500">Manage organizational branches and assign policies.</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Branch Management</h1>
+          <p className="text-sm text-neutral-500">Configure company branches and their respective operational policies.</p>
         </div>
         {!editingBranch && (
-          <AnimatedButton icon={Plus} onClick={() => setEditingBranch({ name: '' })}>New Branch</AnimatedButton>
+          <AnimatedButton icon={Plus} onClick={() => setEditingBranch({ name: '', companyId: 'COMP123' })}>Add Branch</AnimatedButton>
         )}
       </div>
 
       {!editingBranch ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {branches.map(b => (
-            <GlassCard key={b._id} className="p-4 flex flex-col justify-between h-full">
-              <div>
-                <h3 className="font-semibold text-lg flex items-center gap-2"><Building2 className="w-5 h-5 text-blue-500"/> {b.name}</h3>
-                <p className="text-sm text-neutral-500 mb-4">{b.location || 'No location specified'}</p>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="text-sm border-l-2 pl-2 border-primary-500 bg-neutral-50 p-2 rounded">
-                    <span className="font-medium">Holiday Calendar:</span> {b.holidayCalendarId ? calendars.find(c => c._id === b.holidayCalendarId)?.name : <span className="text-red-500">Unassigned</span>}
-                  </div>
-                  <div className="text-sm border-l-2 pl-2 border-purple-500 bg-neutral-50 p-2 rounded">
-                    <span className="font-medium">Weekly Off Policy:</span> {b.weeklyOffPolicyId ? weeklyOffs.find(w => w._id === b.weeklyOffPolicyId)?.name : <span className="text-red-500">Unassigned</span>}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {branches.map(b => {
+            const calDisplay = getCalendarDisplay(b);
+            return (
+              <GlassCard key={b._id} className="p-4 flex flex-col justify-between h-full">
+                <div>
+                  <h3 className="font-semibold text-lg flex items-center gap-2"><Building2 className="w-5 h-5 text-blue-500"/> {b.name}</h3>
+                  <p className="text-sm text-neutral-500 mb-4">{b.location || 'No location specified'}</p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="text-sm border-l-2 pl-2 border-primary-500 bg-neutral-50 p-2 rounded">
+                      <span className="font-medium">Holiday Calendar:</span> {calDisplay ? <span>{calDisplay}</span> : <span className="text-red-500">Unassigned</span>}
+                    </div>
+                    <div className="text-sm border-l-2 pl-2 border-purple-500 bg-neutral-50 p-2 rounded">
+                      <span className="font-medium">Weekly Off Policy:</span> {b.weeklyOffPolicyId ? weeklyOffs.find(w => w._id === b.weeklyOffPolicyId)?.name : <span className="text-red-500">Unassigned</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-auto">
-                <AnimatedButton variant="secondary" size="sm" icon={Edit2} onClick={() => setEditingBranch(b)}>Edit</AnimatedButton>
-                {b._id && <AnimatedButton variant="danger" size="sm" icon={Trash2} onClick={() => handleDelete(b._id!)}>Delete</AnimatedButton>}
-              </div>
-            </GlassCard>
-          ))}
+                <div className="flex justify-end gap-2 mt-auto">
+                  <AnimatedButton variant="secondary" size="sm" icon={Edit2} onClick={() => setEditingBranch(b)}>Edit</AnimatedButton>
+                  {b._id && <AnimatedButton variant="danger" size="sm" icon={Trash2} onClick={() => handleDelete(b._id!)}>Delete</AnimatedButton>}
+                </div>
+              </GlassCard>
+            );
+          })}
         </div>
       ) : (
         <GlassCard className="p-6">
@@ -110,11 +127,23 @@ export const AdminBranches: React.FC = () => {
               <label className="block text-sm font-medium text-neutral-700 mb-1">Holiday Calendar</label>
               <select 
                 className="w-full px-4 py-2 bg-white border border-neutral-300 rounded-lg"
-                value={editingBranch.holidayCalendarId || ''}
-                onChange={e => setEditingBranch({...editingBranch, holidayCalendarId: e.target.value})}
+                value={editingBranch.holidayCalendarCode || editingBranch.holidayCalendarId || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  const selectedCal = calendars.find(c => c.holidayCalendarCode === val || (c.id || c._id) === val);
+                  setEditingBranch({
+                    ...editingBranch, 
+                    holidayCalendarCode: selectedCal?.holidayCalendarCode || val,
+                    holidayCalendarId: selectedCal ? (selectedCal.id || selectedCal._id) : val
+                  });
+                }}
               >
                 <option value="">-- Select Calendar --</option>
-                {calendars.map(c => <option key={c._id} value={c._id}>{c.name} ({c.year})</option>)}
+                {calendars.filter(c => c.isCurrent !== false).map(c => (
+                  <option key={c.holidayCalendarCode || c._id} value={c.holidayCalendarCode || c._id}>
+                    {c.name} ({c.holidayCalendarCode || c.year})
+                  </option>
+                ))}
               </select>
             </div>
             <div>

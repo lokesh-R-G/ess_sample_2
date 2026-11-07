@@ -134,6 +134,10 @@ export const AdminOrganization: React.FC = () => {
                 { value: 'Percentage', label: 'Percentage' },
                 { value: 'Formula', label: 'Formula' }
               ], required: true },
+              { key: 'inputMode', label: 'Input Method', type: 'select', options: [
+                { value: 'CALCULATED', label: 'Calculated / Derived' },
+                { value: 'MANUAL', label: 'Manual' }
+              ], required: true, defaultValue: 'CALCULATED' },
               { key: 'percentageValue', label: 'Percentage Value (%)', type: 'number' },
               { key: 'percentageDerivedFromComponentId', label: 'Derived From Component', type: 'lookup', entity: 'SalaryComponent' },
               { key: 'isBasicComponent', label: 'Is Basic Component', type: 'checkbox' },

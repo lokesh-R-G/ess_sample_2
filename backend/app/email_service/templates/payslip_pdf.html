@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: A4;
+        margin: 1cm;
+        @frame footer {
+            -pdf-frame-content: footerContent;
+            bottom: 1cm;
+            margin-left: 1cm;
+            margin-right: 1cm;
+            height: 1cm;
+        }
+    }
+    body {
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 9pt;
+        color: #000000;
+    }
+    .text-center {
+        text-align: center;
+    }
+    .text-right {
+        text-align: right;
+    }
+    .font-bold {
+        font-weight: bold;
+    }
+    .company-name {
+        font-size: 16pt;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    .company-address {
+        font-size: 9pt;
+        margin-top: 5px;
+    }
+    .header-divider {
+        border-bottom: 1px solid #000;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .title-table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .title-table td {
+        font-weight: bold;
+        font-size: 11pt;
+    }
+    
+    .employee-table {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    .employee-table td {
+        padding: 3px 0;
+    }
+    .label-col {
+        width: 18%;
+        font-weight: bold;
+    }
+    .value-col {
+        width: 32%;
+    }
+    
+    .financial-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #000;
+        margin-bottom: 15px;
+    }
+    .financial-table th, .financial-table td {
+        border: 1px solid #000;
+        padding: 5px;
+        vertical-align: top;
+    }
+    .financial-table th {
+        font-weight: bold;
+        background-color: #f2f2f2;
+        padding: 6px 8px;
+    }
+    
+
+    .net-pay-box {
+        width: 100%;
+        border: 1px solid #000;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    .net-pay-amount {
+        font-size: 14pt;
+        font-weight: bold;
+    }
+    
+    .leave-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #000;
+    }
+    .leave-table th, .leave-table td {
+        border: 1px solid #000;
+        padding: 5px;
+        text-align: center;
+    }
+    .leave-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    
+    .footer {
+        text-align: center;
+        font-size: 8pt;
+        color: #555;
+    }
+    .header-table {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .header-logo-col {
+        width: 15%;
+        text-align: left;
+        vertical-align: middle;
+    }
+    .header-text-col {
+        width: 85%;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .logo-box {
+        width: 50px;
+        height: 50px;
+        background-color: #0d9488;
+        color: white;
+        text-align: center;
+        line-height: 50px;
+        font-size: 16pt;
+        font-weight: bold;
+        border-radius: 8px;
+    }
+</style>
+</head>
+<body>
+
+<table class="header-table">
+    <tr>
+        <td class="header-logo-col">
+            <img src="{{ logo_path }}" width="50" height="50" alt="IDS Logo">
+        </td>
+        <td class="header-text-col">
+            <div class="company-name">{{ companyName }}</div>
+            {% if companyAddress %}<div class="company-address">{{ companyAddress }}</div>{% endif %}
+        </td>
+    </tr>
+</table>
+
+<div class="header-divider"></div>
+
+<table class="title-table">
+    <tr>
+        <td style="text-align: left;">PAY SLIP / LEAVE DETAILS FOR THE MONTH</td>
+        <td style="text-align: right;">{{ payrollMonth }}</td>
+    </tr>
+</table>
+
+<table class="employee-table">
+    <tr>
+        <td class="label-col">EMPLOYEE'S NO</td><td class="value-col">{{ employeeCode }}</td>
+        <td class="label-col">DATE OF BIRTH</td><td class="value-col">{{ dob }}</td>
+    </tr>
+    <tr>
+        <td class="label-col">EMPLOYEE'S NAME</td><td class="value-col">{{ employeeName }}</td>
+        <td class="label-col">DATE OF JOINING</td><td class="value-col">{{ dateOfJoining }}</td>
+    </tr>
+    <tr>
+        <td class="label-col">FATHER/HUSBAND</td><td class="value-col">{{ fatherHusbandName }}</td>
+        <td class="label-col">DEPARTMENT</td><td class="value-col">{{ department }}</td>
+    </tr>
+    <tr>
+        <td class="label-col">BANK ACCOUNT NO</td><td class="value-col">{{ accountNumberMasked }}</td>
+        <td class="label-col">DESIGNATION</td><td class="value-col">{{ designation }}</td>
+    </tr>
+    <tr>
+        <td class="label-col">UAN</td><td class="value-col">{{ uan }}</td>
+        <td class="label-col">PAN</td><td class="value-col">{{ pan }}</td>
+    </tr>
+</table>
+
+<table class="financial-table">
+    <tr>
+        <th width="35%" style="text-align: left;">EARNINGS</th>
+        <th width="15%" style="text-align: right;">SCALE</th>
+        <th width="15%" style="text-align: right;">EAR. AMT</th>
+        <th width="20%" style="text-align: left;">DEDUCTIONS</th>
+        <th width="15%" style="text-align: right;">AMT</th>
+    </tr>
+    {% set count = earnings|length %}
+    {% if deductions|length > count %}
+        {% set count = deductions|length %}
+    {% endif %}
+    {% for i in range(count) %}
+    <tr>
+        <!-- EARNINGS COLUMNS -->
+        {% if i < earnings|length %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;">{{ earnings[i].name }}</td>
+            <td style="text-align: right; border-top: none; border-bottom: none;">{{ earnings[i].scale }}</td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ "%.2f"|format(earnings[i].amount) }}</td>
+        {% else %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
+            <td style="text-align: right; border-top: none; border-bottom: none;"></td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
+        {% endif %}
+        
+        <!-- DEDUCTIONS COLUMNS -->
+        {% if i < deductions|length %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;">{{ deductions[i].name }}</td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ "%.2f"|format(deductions[i].amount) }}</td>
+        {% else %}
+            <td style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
+            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+    
+    {% if count == 0 %}
+    <tr>
+        <td colspan="5" style="text-align: center; border-top: none; border-bottom: none; padding: 10px;">No Earnings or Deductions</td>
+    </tr>
+    {% endif %}
+    
+    <!-- TOTALS ROW -->
+    <tr>
+        <!-- EARNINGS TOTALS -->
+        <td style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL EARNINGS</td>
+        <td style="border-top: 1px solid #000;"></td>
+        <td style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossEarnings) }}</td>
+        
+        <!-- DEDUCTIONS TOTALS -->
+        <td style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL DEDUCTION</td>
+        <td style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossDeductions) }}</td>
+    </tr>
+</table>
+
+<div class="net-pay-box">
+    <div style="float: left; width: 60%;">
+        <strong>Amount in words:</strong><br>
+        {{ netPayWords }}
+    </div>
+    <div style="float: right; width: 40%; text-align: right;" class="net-pay-amount">
+        NET PAY : ₹ {{ "%.2f"|format(netPay) }}
+    </div>
+    <div style="clear: both;"></div>
+</div>
+
+
+
+<div class="font-bold" style="margin-bottom: 5px;">LEAVE DETAILS</div>
+<table class="leave-table">
+    <tr>
+        <th width="20%">Leave Type</th>
+        <th width="20%">Opening</th>
+        <th width="20%">Availed</th>
+        <th width="20%">Closing</th>
+        <th width="20%">L.O.P. Days</th>
+    </tr>
+    {% for leave in leaveDetails %}
+    <tr>
+        <td>{{ leave.leaveType }}</td>
+        <td>{{ "%.1f"|format(leave.openingBalance) }}</td>
+        <td>{{ "%.1f"|format(leave.consumed) }}</td>
+        <td>{{ "%.1f"|format(leave.availableBalance) }}</td>
+        <td>{% if loop.first %}{{ lopDays }}{% else %}-{% endif %}</td>
+    </tr>
+    {% endfor %}
+    {% if not leaveDetails %}
+    <tr>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>{{ lopDays }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+<div id="footerContent" class="footer">
+    This is a computer generated payslip. No signature is required.
+</div>
+
+</body>
+</html>

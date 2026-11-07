@@ -33,7 +33,7 @@ router = APIRouter(prefix="/calculate-preview", tags=["Payroll Engine Preview"])
 
 class PreviewRequest(BaseModel):
     salaryStructureId: str
-    basicSalary: float
+    basicSalary: Optional[float] = 0.0
     pfOption: Optional[str] = "Default" # Legacy
     esiOption: Optional[str] = "Default" # Legacy
     ptState: Optional[str] = "None"
@@ -66,12 +66,15 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     components_docs_raw = await components_cursor.to_list(length=None)
     
     custom_comps = req.customComponents or {}
+    basic_salary = req.basicSalary or 0.0
     for doc in components_docs_raw:
         if doc.get("calculationMethod") == "Flat":
             cid = str(doc.get("_id"))
             if cid in custom_comps:
                 doc["amount"] = custom_comps[cid]
                 doc["monthlyAmount"] = custom_comps[cid]
+                if doc.get("isBasicComponent") or doc.get("name", "").upper() == "BASIC":
+                    basic_salary = float(custom_comps[cid])
                 
     components_docs = serialize_mongo(components_docs_raw)
     
@@ -88,7 +91,7 @@ async def calculate_gross_only(req: PreviewRequest, db: AsyncIOMotorDatabase = D
     )
     
     result = SalaryCalculationEngine.calculate(
-        basic_salary=req.basicSalary,
+        basic_salary=basic_salary,
         structure_components=components_docs,
         calculation_mode=CalculationMode.GROSS_ONLY,
         statutory_decisions=decisions,
@@ -130,6 +133,7 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     
     # Override flat component amounts using customComponents if provided
     custom_comps = req.customComponents or {}
+    basic_salary = req.basicSalary or 0.0
     for doc in components_docs_raw:
         if doc.get("calculationMethod") == "Flat":
             cid = str(doc.get("_id"))
@@ -137,6 +141,8 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
                 # Override the amount only for calculation, Mongo is never updated.
                 doc["amount"] = custom_comps[cid]
                 doc["monthlyAmount"] = custom_comps[cid]
+                if doc.get("isBasicComponent") or doc.get("name", "").upper() == "BASIC":
+                    basic_salary = float(custom_comps[cid])
                 
     components_docs = serialize_mongo(components_docs_raw)
     
@@ -168,7 +174,7 @@ async def calculate_preview(req: PreviewRequest, db: AsyncIOMotorDatabase = Depe
     
     # 4. Pass to Engine
     result = SalaryCalculationEngine.calculate(
-        basic_salary=req.basicSalary,
+        basic_salary=basic_salary,
         structure_components=payroll_input.components,
         calculation_mode=CalculationMode.PREVIEW,
         statutory_decisions=payroll_input.statutoryDecisions,

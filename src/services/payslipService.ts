@@ -12,7 +12,7 @@ export interface Payslip {
 
 export const payslipService = {
   getMyPayslip: async (year: number, month: number): Promise<any> => {
-    return api.get<any>(`/payslips/me/${year}/${month}`);
+    return api.get<any>(`/v2/payslip/me/${year}/${month}`);
   },
   
   getEarningsPreview: async (from: string, to: string): Promise<any> => {

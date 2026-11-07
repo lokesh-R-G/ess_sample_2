@@ -5,10 +5,10 @@ import { toast } from 'react-hot-toast';
 
 const defaultRule = {
   pfEnabled: true,
-  mandatoryBelowGross: 15000,
-  optionalAboveGross: 15000,
+  mandatoryBelowGross: 25000,
+  optionalAboveGross: 25000,
   defaultMode: 'Ask During Employee Creation',
-  pfCeilingAmount: 15000,
+  pfCeilingAmount: 25000,
   employeePfPercent: 12,
   employerPfPercent: 3.67,
   employerPensionPercent: 8.33,
@@ -150,14 +150,14 @@ export default function PFRulesTab() {
               value={rule.maxPensionAmount}
               onChange={(e) => handleChange('maxPensionAmount', Number(e.target.value))}
             />
-             <label className="flex items-center space-x-2 mt-4">
-                <input
+            <label className="flex items-center space-x-2 mt-4">
+              <input
                 type="checkbox"
                 checked={rule.allowExistingPensionMember}
                 onChange={(e) => handleChange('allowExistingPensionMember', e.target.checked)}
                 className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
-                />
-                <span className="text-sm font-medium text-neutral-700">Allow Existing Pension Member Flag</span>
+              />
+              <span className="text-sm font-medium text-neutral-700">Allow Existing Pension Member Flag</span>
             </label>
           </div>
         )}
