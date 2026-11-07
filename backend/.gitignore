@@ -18,6 +18,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+generated_payslips
 dist
 dist-ssr
 *.local
