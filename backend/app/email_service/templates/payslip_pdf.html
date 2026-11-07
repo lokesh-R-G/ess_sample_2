@@ -191,11 +191,11 @@
 
 <table class="financial-table">
     <tr>
-        <th width="35%" style="text-align: left;">EARNINGS</th>
-        <th width="15%" style="text-align: right;">SCALE</th>
-        <th width="15%" style="text-align: right;">EAR. AMT</th>
-        <th width="20%" style="text-align: left;">DEDUCTIONS</th>
-        <th width="15%" style="text-align: right;">AMT</th>
+        <th width="32%" style="text-align: left;">EARNINGS</th>
+        <th width="14%" style="text-align: right;">SCALE</th>
+        <th width="14%" style="text-align: right; border-right: 1px solid #000;">EAR. AMT</th>
+        <th width="26%" style="text-align: left;">DEDUCTIONS</th>
+        <th width="14%" style="text-align: right;">AMT</th>
     </tr>
     {% set count = earnings|length %}
     {% if deductions|length > count %}
@@ -205,22 +205,22 @@
     <tr>
         <!-- EARNINGS COLUMNS -->
         {% if i < earnings|length %}
-            <td style="padding-left: 5px; border-top: none; border-bottom: none;">{{ earnings[i].name }}</td>
-            <td style="text-align: right; border-top: none; border-bottom: none;">{{ earnings[i].scale }}</td>
-            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ "%.2f"|format(earnings[i].amount) }}</td>
+            <td width="32%" style="padding-left: 5px; border-top: none; border-bottom: none;">{{ earnings[i].name }}</td>
+            <td width="14%" style="text-align: right; border-top: none; border-bottom: none;">{{ earnings[i].scale|rupee }}</td>
+            <td width="14%" style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none; border-right: 1px solid #000;">{{ earnings[i].amount|rupee }}</td>
         {% else %}
-            <td style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
-            <td style="text-align: right; border-top: none; border-bottom: none;"></td>
-            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
+            <td width="32%" style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
+            <td width="14%" style="text-align: right; border-top: none; border-bottom: none;"></td>
+            <td width="14%" style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none; border-right: 1px solid #000;"></td>
         {% endif %}
         
         <!-- DEDUCTIONS COLUMNS -->
         {% if i < deductions|length %}
-            <td style="padding-left: 5px; border-top: none; border-bottom: none;">{{ deductions[i].name }}</td>
-            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ "%.2f"|format(deductions[i].amount) }}</td>
+            <td width="26%" style="padding-left: 5px; border-top: none; border-bottom: none;">{{ deductions[i].name }}</td>
+            <td width="14%" style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;">{{ deductions[i].amount|rupee }}</td>
         {% else %}
-            <td style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
-            <td style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
+            <td width="26%" style="padding-left: 5px; border-top: none; border-bottom: none;"></td>
+            <td width="14%" style="text-align: right; padding-right: 5px; border-top: none; border-bottom: none;"></td>
         {% endif %}
     </tr>
     {% endfor %}
@@ -234,23 +234,23 @@
     <!-- TOTALS ROW -->
     <tr>
         <!-- EARNINGS TOTALS -->
-        <td style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL EARNINGS</td>
-        <td style="border-top: 1px solid #000;"></td>
-        <td style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossEarnings) }}</td>
+        <td width="32%" style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL EARNINGS</td>
+        <td width="14%" style="border-top: 1px solid #000;"></td>
+        <td width="14%" style="border-top: 1px solid #000; border-right: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ grossEarnings|rupee }}</td>
         
         <!-- DEDUCTIONS TOTALS -->
-        <td style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL DEDUCTION</td>
-        <td style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ "%.2f"|format(grossDeductions) }}</td>
+        <td width="26%" style="border-top: 1px solid #000; font-weight: bold; padding-left: 5px;">TOTAL DEDUCTION</td>
+        <td width="14%" style="border-top: 1px solid #000; font-weight: bold; text-align: right; padding-right: 5px;">{{ grossDeductions|rupee }}</td>
     </tr>
 </table>
 
 <div class="net-pay-box">
-    <div style="float: left; width: 60%;">
+    <div style="float: left; width: 55%;">
         <strong>Amount in words:</strong><br>
         {{ netPayWords }}
     </div>
-    <div style="float: right; width: 40%; text-align: right;" class="net-pay-amount">
-        NET PAY : ₹ {{ "%.2f"|format(netPay) }}
+    <div style="float: right; width: 45%; text-align: right;" class="net-pay-amount">
+        NET PAY : ₹ {{ netPay|rupee }}
     </div>
     <div style="clear: both;"></div>
 </div>
@@ -266,22 +266,23 @@
         <th width="20%">Closing</th>
         <th width="20%">L.O.P. Days</th>
     </tr>
+    {% if leaveDetails %}
     {% for leave in leaveDetails %}
     <tr>
         <td>{{ leave.leaveType }}</td>
-        <td>{{ "%.1f"|format(leave.openingBalance) }}</td>
-        <td>{{ "%.1f"|format(leave.consumed) }}</td>
-        <td>{{ "%.1f"|format(leave.availableBalance) }}</td>
-        <td>{% if loop.first %}{{ lopDays }}{% else %}-{% endif %}</td>
+        <td>{{ leave.openingBalance|int if leave.openingBalance == leave.openingBalance|int else "%.1f"|format(leave.openingBalance) }}</td>
+        <td>{{ leave.consumed|int if leave.consumed == leave.consumed|int else "%.1f"|format(leave.consumed) }}</td>
+        <td>{{ leave.availableBalance|int if leave.availableBalance == leave.availableBalance|int else "%.1f"|format(leave.availableBalance) }}</td>
+        <td>{% if loop.first %}{{ lopDays|int if lopDays == lopDays|int else "%.1f"|format(lopDays) }}{% else %}-{% endif %}</td>
     </tr>
     {% endfor %}
-    {% if not leaveDetails %}
+    {% else %}
     <tr>
         <td>-</td>
         <td>-</td>
         <td>-</td>
         <td>-</td>
-        <td>{{ lopDays }}</td>
+        <td>{{ lopDays|int if lopDays == lopDays|int else "%.1f"|format(lopDays) }}</td>
     </tr>
     {% endif %}
 </table>

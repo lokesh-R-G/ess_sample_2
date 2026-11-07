@@ -153,14 +153,18 @@ class PayslipDataBuilder:
         present_days = payable_days - lop_breakdown.get("leaveLopDays", 0) if payable_days >= 0 else 0
 
         # Leave Details
+        # Presentation-layer calculation: Closing Balance = Opening Balance - Availed
         leave_details = []
         leave_balances = snapshot.get("leaveBalances", [])
         for lb in leave_balances:
+            opening = float(lb.get("openingBalance", 0.0) or 0.0)
+            availed = float(lb.get("consumed", 0.0) or 0.0)
+            closing = round(opening - availed, 2)
             leave_details.append({
                 "leaveType": lb.get("leaveType", "Leave"),
-                "openingBalance": lb.get("openingBalance", 0.0),
-                "consumed": lb.get("consumed", 0.0),
-                "availableBalance": lb.get("availableBalance", 0.0)
+                "openingBalance": opening,
+                "consumed": availed,
+                "availableBalance": closing
             })
 
         # 8. Earnings & Deductions
@@ -178,6 +182,7 @@ class PayslipDataBuilder:
             scale_map[str(sc.get("salaryComponentId"))] = sc.get("monthlyAmount", 0.0)
 
         # 1. Earnings (from snapshot components)
+        raw_earnings = []
         for c in components:
             if c.get("componentType") != "Earning":
                 continue
@@ -186,15 +191,32 @@ class PayslipDataBuilder:
             c_id = c.get("salaryComponentId")
             
             scale_val = scale_map.get(str(c_id), None) if c_id else None
-            scale = "{:.2f}".format(scale_val) if scale_val is not None else "-"
+            scale = scale_val if scale_val is not None else "-"
             
-            earnings.append({"name": name, "scale": scale, "amount": earned})
+            raw_earnings.append({"name": name, "scale": scale, "amount": earned})
                 
         # Reimbursements (Transaction only - append only if applicable)
         reimb_amt = payroll_doc.get("reimbursementAmount", 0)
         reimbursements_total = snapshot.get("reimbursementsTotal", 0)
         if reimb_amt > 0 or reimbursements_total > 0:
-            earnings.append({"name": "REIMBURSEMENT", "scale": "-", "amount": round(max(reimb_amt, reimbursements_total), 2)})
+            raw_earnings.append({"name": "REIMBURSEMENT", "scale": "-", "amount": round(max(reimb_amt, reimbursements_total), 2)})
+
+        # Presentation-layer ordering:
+        # 1. BASIC
+        # 2. HRA
+        # 3. All remaining earning components in their existing relative order
+        def _earnings_sort_key(item_idx_tuple):
+            idx, item = item_idx_tuple
+            comp_name = item.get("name", "").strip().upper()
+            if comp_name == "BASIC":
+                return (0, idx)
+            elif comp_name == "HRA":
+                return (1, idx)
+            else:
+                return (2, idx)
+
+        sorted_items = sorted(enumerate(raw_earnings), key=_earnings_sort_key)
+        earnings = [item for _, item in sorted_items]
                 
         # 2. Statutory Deductions
         statutory_choice = snapshot.get("statutoryChoice", {})
