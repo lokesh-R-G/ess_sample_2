@@ -3,10 +3,29 @@ import hashlib
 class PayslipPDFGenerator:
     @staticmethod
     def generate_pdf(payslip_data: dict) -> str:
-        # In a real system, this uses reportlab or wkhtmltopdf.
-        # For the engine logic, we simulate the PDF generation.
-        pdf_path = f"/storage/payslips/{payslip_data['employeeId']}_{payslip_data['month']}_{payslip_data['year']}_v{payslip_data['version']}.pdf"
-        return pdf_path
+        import os
+        from app.payroll.models.payslip_data import PayslipData
+        from app.payroll.services.payslip_pdf_compiler import PayslipPDFCompiler
+        
+        # Hydrate PayslipData
+        p_data = PayslipData(**payslip_data)
+        
+        # Storage Path
+        c_id = p_data.companyName.replace(" ", "_") # Actually, companyId is better, but it's not in PayslipData except via URL path. Wait, payslip_service already passes the right dir?
+        # Let's just generate it and save it to the path specified
+        pdf_path = f"storage/payslips/{p_data.periodStart[:4]}/{p_data.periodStart[5:7]}/{p_data.companyName}/{p_data.employeeCode}_{p_data.payrollMonth}_Payslip.pdf"
+        
+        pdf_abs_path = os.path.join(os.getcwd(), pdf_path)
+        os.makedirs(os.path.dirname(pdf_abs_path), exist_ok=True)
+        
+        # Compile PDF
+        compiler = PayslipPDFCompiler()
+        pdf_bytes = compiler.compile(p_data)
+        
+        with open(pdf_abs_path, "wb") as f:
+            f.write(pdf_bytes)
+            
+        return pdf_abs_path
 
 class ChecksumGenerator:
     @staticmethod

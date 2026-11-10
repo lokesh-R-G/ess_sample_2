@@ -119,27 +119,27 @@ async def run_daily_leave_eligibility_check():
     logger.info("Running DAILY_LEAVE_ELIGIBILITY")
     db = get_database()
     
-    # Run daily to check 1 year DOJ
     today = datetime.now(timezone.utc).date()
-    cursor = db.employees.find({"dateOfJoining": {"$exists": True}})
+    from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+    ledger_svc = LeaveLedgerService(db)
+
+    # Scan active employees
+    cursor = db.employees.find({"status": "Active", "deletedAt": None})
     
     async for emp in cursor:
-        doj_str = emp.get("dateOfJoining")
-        if not doj_str: continue
-        try:
-            doj = datetime.strptime(doj_str, "%Y-%m-%d").date()
-        except Exception:
+        emp_id = emp.get("employeeId")
+        if not emp_id:
+            continue
+        emp_code = emp.get("employeeCode", "UNKNOWN")
+        
+        # Authoritative DOJ resolution via LeaveLedgerService helper
+        doj = await ledger_svc._get_employee_doj(emp_id)
+        if not doj:
             continue
             
         # Check if today is exactly their 1st anniversary
         if today.year - doj.year == 1 and today.month == doj.month and today.day == doj.day:
             # Fetch dynamic leave types
-            from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
-            ledger_svc = LeaveLedgerService(db)
-            emp_id = emp.get("employeeId")
-            emp_code = emp.get("employeeCode", "UNKNOWN")
-            
-            # Find active leave policy
             now = datetime.now(timezone.utc)
             policy_query = {
                 "deletedAt": None,

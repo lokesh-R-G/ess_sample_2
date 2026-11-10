@@ -18,10 +18,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+generated_payslips
 dist
 dist-ssr
 *.local
-
+storage
 .vscode/*
 !.vscode/extensions.json
 .idea

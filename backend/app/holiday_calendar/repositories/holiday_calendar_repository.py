@@ -26,7 +26,7 @@ class HolidayCalendarRepository(BaseRepository[HolidayCalendarModel]):
             },
             {
                 "$lookup": {
-                    "from": "branches",
+                    "from": "branchs",
                     "localField": "branchObjId",
                     "foreignField": "_id",
                     "as": "branchInfo"

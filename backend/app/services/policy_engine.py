@@ -156,6 +156,9 @@ class PolicyEngine:
         self.approval_snapshot = []
         
         for req in self.approved_requests:
+            if req.get("status") != "APPROVED":
+                continue
+                
             app_type = req.get("approvalType")
             if app_type in ["Permission", "On Duty", "Leave", "Miss Punch", "Mobile Punch"]:
                 rd = req.get("requestData", {})
@@ -163,7 +166,7 @@ class PolicyEngine:
                 to_time_str = rd.get("toTime")
                 
                 if app_type in ["On Duty", "Leave"] and not (from_time_str and to_time_str):
-                    self.approval_snapshot.append({
+                    snapshot_item = {
                         "approvalId": str(req.get("_id", "")),
                         "approvalType": app_type,
                         "status": req.get("status"),
@@ -173,7 +176,10 @@ class PolicyEngine:
                         "requestedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
                         "appliedMinutes": self.schedule["expectedWorkingHours"] * 60.0,
                         "excessMinutes": 0.0
-                    })
+                    }
+                    if app_type == "Leave" and rd.get("leaveType"):
+                        snapshot_item["leaveType"] = rd.get("leaveType")
+                    self.approval_snapshot.append(snapshot_item)
                 elif from_time_str and to_time_str:
                     start = self._get_shift_datetime(from_time_str)
                     end = self._get_shift_datetime(to_time_str)
@@ -191,10 +197,10 @@ class PolicyEngine:
                                 # Limit the interval used for Late In forgiveness
                                 end = start + timedelta(minutes=applied_mins)
                                 
-                        if app_type in ["Permission", "On Duty"]:
+                        if app_type in ["Permission", "On Duty", "Leave"]:
                             intervals.append({"start": start, "end": end, "type": app_type})
                         
-                        self.approval_snapshot.append({
+                        snapshot_item = {
                             "approvalId": str(req.get("_id", "")),
                             "approvalType": app_type,
                             "status": req.get("status"),
@@ -206,7 +212,10 @@ class PolicyEngine:
                             "requestedMinutes": req_mins,
                             "appliedMinutes": applied_mins,
                             "excessMinutes": excess_mins
-                        })
+                        }
+                        if app_type == "Leave" and rd.get("leaveType"):
+                            snapshot_item["leaveType"] = rd.get("leaveType")
+                        self.approval_snapshot.append(snapshot_item)
         return intervals
 
     def evaluate_attendance(self) -> dict:
@@ -245,6 +254,9 @@ class PolicyEngine:
         leave_allocation = None
         
         for req in self.approved_requests:
+            if req.get("status") != "APPROVED":
+                continue
+                
             if req.get("approvalType") in ["Leave", "On Duty"]:
                 rd = req.get("requestData", {})
                 # If it has specific times, it's a partial-day approval (interval), so do not override the whole day.
@@ -269,10 +281,33 @@ class PolicyEngine:
 
         # 4. Absent Check
         if not self.raw_punches and not is_full_day_override:
-            metrics["status"] = "Absent"
-            metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
-            metrics["lopReason"] = "Missing Punches"
-            return metrics
+            # Check for REJECTED leave
+            rejected_leave = None
+            for req in self.approved_requests:
+                if req.get("approvalType") == "Leave" and req.get("status") == "REJECTED":
+                    rejected_leave = req
+                    break
+                    
+            if rejected_leave:
+                metrics["status"] = "Absent"
+                leave_policy = self.ctx.get("leavePolicy")
+                rejected_lop = 2.0
+                if leave_policy:
+                    if isinstance(leave_policy, dict):
+                        rejected_lop = float(leave_policy.get("rejectedLeaveAbsentLopDays", 2.0))
+                    else:
+                        rejected_lop = float(getattr(leave_policy, "rejectedLeaveAbsentLopDays", 2.0))
+                
+                # Assign LOP exactly as configured for both full and half day rejected leaves
+                metrics["rejectedLeaveLopDays"] = rejected_lop
+                metrics["lopReason"] = "Rejected Leave + Absent"
+                metrics["rejectedLeaveApprovalId"] = str(rejected_leave.get("_id", ""))
+                return metrics
+            else:
+                metrics["status"] = "Absent"
+                metrics["lopHours"] += getattr(self.policy, "lopFullDayHours", 8.0)
+                metrics["lopReason"] = "Missing Punches"
+                return metrics
 
         working_intervals = self._normalize_working_intervals()
         
@@ -413,6 +448,12 @@ class PolicyEngine:
                 for p in approval_intervals:
                     if adjusted_expected_out and p["start"] <= adjusted_expected_out <= p["end"]:
                         adjusted_expected_out = p["start"]
+
+                break_start = self.schedule.get("breakStartDt")
+                break_end = self.schedule.get("breakEndDt")
+                if break_start and break_end and adjusted_expected_out:
+                    if break_start <= adjusted_expected_out <= break_end:
+                        adjusted_expected_out = break_start
 
                 raw_early_mins = 0.0
                 if original_expected_out and out_time < original_expected_out:

@@ -16,7 +16,7 @@ async def test_preview():
     
     req = PreviewRequest(
         salaryStructureId="60d5ec49f123456789012345", # mock valid format
-        basicSalary=15000,
+        basicSalary=25000,
         wantsPf=False,
         wantsPension=False,
         esiEnabled=False

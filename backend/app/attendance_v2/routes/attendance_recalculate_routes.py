@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from bson import ObjectId
 
@@ -14,6 +14,8 @@ class RecalculateRequest(BaseModel):
     fromDate: str
     toDate: str
     force: bool = True
+    employeeIds: Optional[List[str]] = None
+    branchId: Optional[str] = None
 
 from app.dependencies import get_current_user, require_permission
 
@@ -27,14 +29,11 @@ async def recalculate_attendance(
     """
     Manual Attendance Recalculation API (V2)
 
-    This endpoint is intended for:
+    This endpoint supports:
     - Historical recalculation
-    - Shift changes
-    - Attendance Policy changes
-    - Weekly Off changes
-    - Holiday changes
+    - Shift / Attendance Policy / Weekly Off / Holiday changes
     - Approval corrections
-    - eSSL reprocessing
+    - Scoped recalculation by employeeIds or branchId
     """
     try:
         from_date = date.fromisoformat(request.fromDate)
@@ -52,7 +51,9 @@ async def recalculate_attendance(
     results = await processor.process_range(
         from_date=from_date,
         to_date=to_date,
-        force=request.force
+        force=request.force,
+        employee_ids=request.employeeIds,
+        branch_id=request.branchId
     )
     
     return results

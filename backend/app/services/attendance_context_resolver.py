@@ -1,12 +1,12 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
+from bson import ObjectId
 from app.holiday_calendar.repositories.holiday_calendar_repository import HolidayCalendarRepository, HolidayDateRepository
 from app.employee.repositories.employee_repository import EmployeeRepository
 from app.attendance_policy.repositories.attendance_policy_repository import AttendancePolicyRepository
 from app.attendance_policy.repositories.weekly_off_policy_repository import WeeklyOffPolicyRepository
 from app.organization.repositories.shift_repository import ShiftRepository
 from app.attendance_policy.models.weekly_off_policy import DayType
-from datetime import timezone
 
 class AttendanceContextResolver:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -54,7 +54,7 @@ class AttendanceContextResolver:
         Resolves all necessary master data required for the PolicyEngine.
         1. Resolve Employee -> Employment -> Branch
         2. Resolve Employment -> Shift -> Attendance Policy
-        3. Resolve Holiday Calendar and Dates for Branch
+        3. Resolve Holiday Calendar and Dates for Branch / Global
         4. Resolve Weekly Off (Temporary Sunday Resolver)
         """
         print(f"\nEmployee Code : {emp_id}")
@@ -142,12 +142,27 @@ class AttendanceContextResolver:
 
         # 3. Resolve Holiday Calendar
         holiday_dates = []
+        calendar_doc = None
         calendar_id = None
         calendar_name = "None"
+
+        # Check branch configuration
+        assigned_cal_code = None
+        assigned_cal_id = None
         if branch_id:
-            # Get active calendar for branch matching the target year and effective date
+            try:
+                b_query = {"$or": [{"_id": ObjectId(branch_id)}, {"_id": branch_id}]}
+            except Exception:
+                b_query = {"_id": branch_id}
+            branch_doc = await self.db.branchs.find_one(b_query)
+            if branch_doc:
+                assigned_cal_code = branch_doc.get("holidayCalendarCode")
+                assigned_cal_id = branch_doc.get("holidayCalendarId")
+
+        # Priority 1: Match by assigned holidayCalendarCode from branch
+        if assigned_cal_code:
             calendar_cursor = await self.db.holiday_calendars.find({
-                "branchId": branch_id,
+                "holidayCalendarCode": assigned_cal_code,
                 "deletedAt": None,
                 "year": target_date.year,
                 "effectiveFrom": {"$lte": target_dt_utc},
@@ -158,40 +173,117 @@ class AttendanceContextResolver:
             }).sort([("version", -1)]).to_list(length=1)
             
             if not calendar_cursor:
-                # Fallback to the old logic just in case migration hasn't stamped effectiveFrom
                 calendar_cursor = await self.db.holiday_calendars.find({
-                    "branchId": branch_id,
+                    "holidayCalendarCode": assigned_cal_code,
                     "status": "Active",
                     "deletedAt": None,
                     "year": target_date.year
-                }).to_list(length=1)
-            
-            if calendar_cursor:
-                calendar = calendar_cursor[0]
-                calendar_id = str(calendar["_id"])
-                calendar_name = calendar.get("name", calendar_id)
+                }).sort([("version", -1)]).to_list(length=1)
                 
-                # Resolve Holiday Dates
-                dates_cursor = await self.db.holiday_dates.find({
-                    "calendarId": calendar_id,
+            if calendar_cursor:
+                calendar_doc = calendar_cursor[0]
+
+        # Priority 2: Match by direct branchId on holiday_calendars
+        if not calendar_doc and branch_id:
+            calendar_cursor = await self.db.holiday_calendars.find({
+                "branchId": str(branch_id),
+                "deletedAt": None,
+                "year": target_date.year,
+                "effectiveFrom": {"$lte": target_dt_utc},
+                "$or": [
+                    {"effectiveTo": None},
+                    {"effectiveTo": {"$gt": target_dt_utc}}
+                ]
+            }).sort([("version", -1)]).to_list(length=1)
+            
+            if not calendar_cursor:
+                calendar_cursor = await self.db.holiday_calendars.find({
+                    "branchId": str(branch_id),
+                    "status": "Active",
                     "deletedAt": None,
+                    "year": target_date.year
+                }).sort([("version", -1)]).to_list(length=1)
+                
+            if calendar_cursor:
+                calendar_doc = calendar_cursor[0]
+
+        # Priority 3: Match by assigned holidayCalendarId on branch (legacy ObjectId)
+        if not calendar_doc and assigned_cal_id:
+            try:
+                c_oid = ObjectId(assigned_cal_id)
+            except Exception:
+                c_oid = None
+            cal_by_id = await self.db.holiday_calendars.find_one({"$or": [{"_id": c_oid}, {"_id": assigned_cal_id}]})
+            if cal_by_id and cal_by_id.get("holidayCalendarCode"):
+                code = cal_by_id["holidayCalendarCode"]
+                c_cur = await self.db.holiday_calendars.find({
+                    "holidayCalendarCode": code,
+                    "deletedAt": None,
+                    "year": target_date.year,
                     "effectiveFrom": {"$lte": target_dt_utc},
                     "$or": [
                         {"effectiveTo": None},
                         {"effectiveTo": {"$gt": target_dt_utc}}
                     ]
-                }).sort([("version", -1)]).to_list(length=None)
+                }).sort([("version", -1)]).to_list(length=1)
+                if c_cur:
+                    calendar_doc = c_cur[0]
+                else:
+                    calendar_doc = cal_by_id
+            elif cal_by_id:
+                calendar_doc = cal_by_id
+
+        # Priority 4: Global Holiday Calendar fallback (branchId is None or "")
+        if not calendar_doc:
+            global_cursor = await self.db.holiday_calendars.find({
+                "$or": [{"branchId": None}, {"branchId": ""}],
+                "deletedAt": None,
+                "year": target_date.year,
+                "effectiveFrom": {"$lte": target_dt_utc},
+                "$or": [
+                    {"effectiveTo": None},
+                    {"effectiveTo": {"$gt": target_dt_utc}}
+                ]
+            }).sort([("version", -1)]).to_list(length=1)
+            
+            if not global_cursor:
+                global_cursor = await self.db.holiday_calendars.find({
+                    "$or": [{"branchId": None}, {"branchId": ""}],
+                    "status": "Active",
+                    "deletedAt": None,
+                    "year": target_date.year
+                }).sort([("version", -1)]).to_list(length=1)
                 
-                if not dates_cursor:
+            if global_cursor:
+                calendar_doc = global_cursor[0]
+
+        # If a calendar is resolved, query its holiday dates
+        if calendar_doc:
+            calendar_id = str(calendar_doc["_id"])
+            calendar_name = calendar_doc.get("name", calendar_id)
+            
+            # Query dates linked to this calendar version
+            dates_cursor = await self.db.holiday_dates.find({
+                "calendarId": calendar_id,
+                "deletedAt": None,
+                "status": "Active"
+            }).sort([("holidayDate", 1)]).to_list(length=None)
+            
+            # Backward-compatibility fallback: if current version has no dates, also check earlier versions of same calendarCode
+            if not dates_cursor and calendar_doc.get("holidayCalendarCode"):
+                c_code = calendar_doc["holidayCalendarCode"]
+                sibling_cals = await self.db.holiday_calendars.find({"holidayCalendarCode": c_code}).to_list(None)
+                sibling_ids = [str(sc["_id"]) for sc in sibling_cals]
+                if sibling_ids:
                     dates_cursor = await self.db.holiday_dates.find({
-                        "calendarId": calendar_id,
-                        "status": "Active",
-                        "deletedAt": None
-                    }).to_list(length=None)
-                    
-                holiday_dates = dates_cursor
-                
-        print(f"Holiday Calendar : {calendar_name}")
+                        "calendarId": {"$in": sibling_ids},
+                        "deletedAt": None,
+                        "status": "Active"
+                    }).sort([("holidayDate", 1)]).to_list(length=None)
+            
+            holiday_dates = dates_cursor or []
+
+        print(f"Holiday Calendar : {calendar_name} ({len(holiday_dates)} dates)")
 
         # 4. Resolve Weekly Off
         today_schedule = self.resolve_today_schedule(weekly_off_policy, target_date)
@@ -199,11 +291,9 @@ class AttendanceContextResolver:
         
         # 5. Resolve Approvals for Phase 7
         target_iso = target_date.isoformat()
-        # In a real implementation we might check range overlap. Here we check exact match on date string or isoformat
-        # for simplicity since requestData structure can vary by approvalType.
         approvals_cursor = self.db.approvals.find({
             "employeeId": employee.employeeId,
-            "status": "APPROVED"
+            "status": {"$in": ["APPROVED", "REJECTED"]}
         })
         approvals = await approvals_cursor.to_list(length=None)
         
@@ -216,14 +306,11 @@ class AttendanceContextResolver:
             d3_from = rd.get("fromDate", "")
             d3_to = rd.get("toDate", "")
             
-            # Helper to parse any date string to a date object
             def parse_date(d_str):
                 if not d_str: return None
                 try:
-                    # Handles YYYY-MM-DD and ISO formats up to the 'T'
                     return datetime.fromisoformat(d_str.replace("Z", "+00:00")).date()
                 except:
-                    # Fallback for simple date strings
                     if len(d_str) >= 10:
                         try:
                             return datetime.strptime(d_str[:10], "%Y-%m-%d").date()
@@ -243,7 +330,6 @@ class AttendanceContextResolver:
                     match = True
             
             if match:
-                # If Leave, fetch allocation
                 if app.get("approvalType") == "Leave":
                     from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
                     ledger_service = LeaveLedgerService(self.db)
@@ -266,7 +352,6 @@ class AttendanceContextResolver:
         })
         monthly_records = await monthly_cursor.to_list(length=None)
         
-        # Calculate monthlyLateCount
         monthly_late_count = sum(
             1 for r in monthly_records 
             if r.get("lateMinutes", 0) > 0 and r.get("status") not in ["Holiday", "Week Off", "Leave", "On Duty", "Permission"]
@@ -284,6 +369,10 @@ class AttendanceContextResolver:
         raw_punches = await logs_cursor.to_list(length=None)
 
         print("Policy Engine Executed")
+        
+        # 8. Resolve Leave Policy globally
+        leave_policy_docs = await self.db.leave_policies.find({"deletedAt": None, "isCurrent": True}).sort([("version", -1)]).to_list(length=1)
+        leave_policy = leave_policy_docs[0] if leave_policy_docs else None
 
         return {
             "employee": employee,
@@ -292,7 +381,8 @@ class AttendanceContextResolver:
             "policy": policy,
             "weeklyOffPolicy": weekly_off_policy,
             "branch": branch_id,
-            "holidayCalendar": calendar_id,
+            "holidayCalendar": calendar_doc,
+            "holidayCalendarId": calendar_id,
             "holidayDates": holiday_dates,
             "todaySchedule": today_schedule,
             "approvedRequests": today_approvals,
@@ -300,5 +390,6 @@ class AttendanceContextResolver:
             "monthlyLateCount": monthly_late_count,
             "rawPunches": raw_punches,
             "permissionLedger": permission_ledger,
-            "targetDate": target_date
+            "targetDate": target_date,
+            "leavePolicy": leave_policy
         }

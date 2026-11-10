@@ -28,8 +28,9 @@ class AttendancePolicyModel(BaseModel):
     
     # Permission Rules
     permissionMinutes: int = 60
-    permissionPerMonth: int = 2
+    permissionPerMonth: Optional[int] = None
     monthlyPermissionHours: float = 1.0
+    maxPermissionHoursPerMonth: Optional[float] = None
     permissionExcessCarryForward: bool = True
     permissionLopThresholdMinutes: int = 240
     permissionLopValue: float = 0.5

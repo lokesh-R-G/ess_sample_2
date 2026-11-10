@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from fastapi import HTTPException
@@ -7,6 +8,8 @@ from app.employee.schemas.employment_history import EmploymentHistoryCreate, Emp
 from app.employee.models.employment_history import EmploymentHistoryModel
 from bson import ObjectId
 
+logger = logging.getLogger("employment_history_service")
+
 class EmploymentHistoryService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -15,7 +18,27 @@ class EmploymentHistoryService:
         
     async def create(self, data: EmploymentHistoryCreate, user_id: str = None) -> EmploymentHistoryModel:
         await self.validator.validate_create(data)
-        return await self.repo.upsert_by_field("employeeId", data.employeeId, data.model_dump(exclude_unset=True), user_id)
+        record = await self.repo.upsert_by_field("employeeId", data.employeeId, data.model_dump(exclude_unset=True), user_id)
+        
+        # Trigger Leave Ledger initialization for the employee
+        try:
+            from app.attendance_v2.services.leave_ledger_service import LeaveLedgerService
+            ledger_svc = LeaveLedgerService(self.db)
+            init_res = await ledger_svc.initialize_employee_ledgers(data.employeeId)
+            if not init_res.get("success"):
+                logger.warning(
+                    f"Leave ledger initialization skipped or incomplete for employee {data.employeeId}: {init_res.get('error')}"
+                )
+            else:
+                logger.info(
+                    f"Leave ledger initialization completed for employee {data.employeeId}: "
+                    f"created={len(init_res.get('created', []))}, existing={len(init_res.get('existing', []))}"
+                )
+        except Exception as e:
+            # Observably log but do not fail the employment history creation workflow
+            logger.error(f"Error initializing leave ledger for employee {data.employeeId}: {str(e)}", exc_info=True)
+            
+        return record
         
     async def _enrich_organizations(self, docs: List[dict]) -> List[dict]:
         if not docs:
@@ -33,23 +56,28 @@ class EmploymentHistoryService:
 
         for doc in docs:
             if doc.get("companyId") in companies:
-                doc["company"] = companies[doc["companyId"]]
+                doc["company"] = companies[doc["companyId"]].copy()
+                doc["company"]["_id"] = str(doc["company"]["_id"])
                 doc["company"]["id"] = doc["companyId"]
             if doc.get("branchId") in branches:
-                doc["branch"] = branches[doc["branchId"]]
+                doc["branch"] = branches[doc["branchId"]].copy()
+                doc["branch"]["_id"] = str(doc["branch"]["_id"])
                 doc["branch"]["id"] = doc["branchId"]
             if doc.get("departmentId") in departments:
-                doc["department"] = departments[doc["departmentId"]]
+                doc["department"] = departments[doc["departmentId"]].copy()
+                doc["department"]["_id"] = str(doc["department"]["_id"])
                 doc["department"]["id"] = doc["departmentId"]
             if doc.get("designationId") in designations:
-                doc["designation"] = designations[doc["designationId"]]
+                doc["designation"] = designations[doc["designationId"]].copy()
+                doc["designation"]["_id"] = str(doc["designation"]["_id"])
                 doc["designation"]["id"] = doc["designationId"]
         return docs
 
     async def get_all(self, query: dict = None, skip: int = 0, limit: int = 100, search: str = None) -> dict:
         result = await self.repo.get_all(query=query, skip=skip, limit=limit, search=search, search_fields=["employeeId"])
         if result and result.get("data"):
-            result["data"] = await self._enrich_organizations(result["data"])
+            docs = [d.model_dump(by_alias=True) for d in result["data"]]
+            result["data"] = await self._enrich_organizations(docs)
         return result
         
     async def get_by_id(self, id: str) -> Optional[dict]:

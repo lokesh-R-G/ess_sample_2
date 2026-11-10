@@ -181,6 +181,7 @@ class SalaryComponent(BaseModel):
     name: str
     code: Optional[str] = None
     componentType: Optional[Literal["Earning", "Deduction"]] = None
+    inputMode: Literal["CALCULATED", "MANUAL"] = "CALCULATED"
     calculationMethod: Optional[Literal["Flat", "Percentage", "Formula"]] = "Flat"
     percentageValue: Optional[float] = None
     percentageDerivedFromComponentId: Optional[str] = None
@@ -338,10 +339,10 @@ class PFRule(RuleBase):
     policyCode: str = "DEFAULT_PF"
     isCurrent: bool = True
     pfEnabled: bool = True
-    mandatoryBelowGross: float = 15000.0
-    optionalAboveGross: float = 15000.0
+    mandatoryBelowGross: float = 25000.0
+    optionalAboveGross: float = 25000.0
     defaultMode: Literal["Ask During Employee Creation", "Always Ceiling", "Always Actual Gross"] = "Ask During Employee Creation"
-    pfCeilingAmount: float = 15000.0
+    pfCeilingAmount: float = 25000.0
     employeePfPercent: float = 12.0
     employerPfPercent: float = 3.67
     employerPensionPercent: float = 8.33
@@ -428,13 +429,12 @@ class PayrollCycle(BaseModel):
     name: str
     startDate: datetime
     endDate: datetime
-    processingStatus: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
 
 class PayrollRun(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     cycleId: str
     companyId: str
-    status: Literal["DRAFT", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "CLOSED"] = "DRAFT"
+    status: Literal["DRAFT", "OPEN", "APPROVAL_PENDING", "APPROVAL_LOCKED", "ATTENDANCE_FINALIZED", "PROCESSING", "CALCULATED", "ADMIN_REVIEW", "FINALIZED", "PUBLISHED", "EXPORTED", "CLOSED"] = "DRAFT"
     attendanceSummary: dict = Field(default_factory=dict)
     calculationSummary: dict = Field(default_factory=dict)
     createdAt: datetime = Field(default_factory=datetime.utcnow)

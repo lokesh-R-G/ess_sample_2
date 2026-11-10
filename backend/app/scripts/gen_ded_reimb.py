@@ -26,7 +26,7 @@ def write_deduction(base_path):
     
     pf_gross = gross - hra - incentive
     if profile.get("pfCeilingEnabled", False):
-        pf_gross = min(pf_gross, policy.get("pfCeilingAmount", 15000))
+        pf_gross = min(pf_gross, policy.get("pfCeilingAmount", 25000))
         
     emp_pf = pf_gross * (policy.get("employeePfPct", 12) / 100)
     

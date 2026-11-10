@@ -61,6 +61,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    from app.core.redis import RedisManager
+    await RedisManager.init()
     await init_indexes()
     # Idempotently add canonical permissions and mappings before protected
     # routes are served (including scheduler.configure).
@@ -72,6 +74,8 @@ async def lifespan(_: FastAPI):
     try:
         yield
     finally:
+        from app.core.redis import RedisManager
+        await RedisManager.close()
         close_mongo_connection()
 
 
@@ -141,6 +145,11 @@ app.include_router(v2_emp_router, prefix="/api/v2/employee")
 app.include_router(v2_salary_router, prefix="/api/v2/salary")
 app.include_router(v2_policy_router, prefix="/api/v2/attendance-policy")
 app.include_router(v2_permission_router, prefix="/api/v2/permission")
+from app.mail.routes.mail_rest_routes import router as mail_router
+from app.mail.routes.mail_ws_routes import router as mail_ws_router
+
+app.include_router(mail_router, prefix="/api")
+app.include_router(mail_ws_router, prefix="/api")
 app.include_router(v2_attendance_router, prefix="/api/v2/attendance")
 app.include_router(profile_v2_router, prefix="/api/v2/employees")
 app.include_router(dashboard_v2_router, prefix="/api/v2")
@@ -152,6 +161,42 @@ app.include_router(v2_payroll_policy_router, prefix="/api/v2/payroll-policy")
 app.include_router(v2_deduction_policy_router, prefix="/api/v2/deduction-policy")
 app.include_router(v2_reimbursement_policy_router, prefix="/api/v2/reimbursement-policy")
 app.include_router(v2_payroll_router, prefix="/api/v2/payroll")
+
+@app.get("/api/v2/test_db_audit")
+async def test_db_audit():
+    from app.db.mongo import get_database
+    db = get_database()
+    # 1. find a payroll run
+    pr = await db.payroll_runs.find_one({})
+    if not pr: return {"error": "no payroll runs"}
+    
+    # 2. find a payroll inside it
+    pay = await db.payrolls.find_one({"cycleId": pr.get("cycleId")})
+    if not pay: return {"error": "no payrolls found"}
+    
+    emp_id = pay.get("employeeId") # this is what bank export uses!
+    
+    # Let's find the true employee
+    emp1 = await db.employees.find_one({"employeeCode": emp_id})
+    emp2 = await db.employees.find_one({"employeeId": emp_id})
+    emp3 = await db.employees.find_one({"empId": emp_id})
+    
+    true_emp = emp1 or emp2 or emp3 or {}
+    emp_uuid = true_emp.get("employeeId")
+    
+    bank = await db.employee_bank_accounts.find_one({"employeeId": emp_uuid}) if emp_uuid else None
+    
+    def clean(d):
+        if not d: return d
+        d["_id"] = str(d["_id"])
+        return d
+        
+    return {
+        "payroll_emp_id_used": emp_id,
+        "true_employee": clean(true_emp),
+        "bank_employee_bank_accounts": clean(bank)
+    }
+
 app.include_router(v2_deduction_router, prefix="/api/v2/deduction")
 app.include_router(v2_reimbursement_router, prefix="/api/v2/reimbursement")
 app.include_router(v2_payslip_router, prefix="/api/v2/payslip")

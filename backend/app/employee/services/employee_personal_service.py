@@ -17,7 +17,13 @@ class EmployeePersonalService:
         payload = data.model_dump(exclude_unset=True)
         print("========== Service Payload ==========")
         print(payload)
-        return await self.repo.upsert_by_field("employeeId", data.employeeId, payload, user_id)
+        result = await self.repo.upsert_by_field("employeeId", data.employeeId, payload, user_id)
+        try:
+            from app.services.user_sync_service import sync_user_name_from_employee
+            await sync_user_name_from_employee(self.db, employee_id=data.employeeId)
+        except Exception as e:
+            print(f"[EmployeePersonalService] User name sync failed: {e}")
+        return result
         
     async def get_all(self, query: dict = None, skip: int = 0, limit: int = 100, search: str = None) -> dict:
         return await self.repo.get_all(query=query, skip=skip, limit=limit, search=search, search_fields=["employeeId"])
@@ -27,7 +33,14 @@ class EmployeePersonalService:
         
     async def update(self, id: str, data: EmployeePersonalUpdate, user_id: str = None) -> Optional[EmployeePersonalModel]:
         await self.validator.validate_update(id, data)
-        return await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        result = await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        if result and getattr(result, "employeeId", None):
+            try:
+                from app.services.user_sync_service import sync_user_name_from_employee
+                await sync_user_name_from_employee(self.db, employee_id=result.employeeId)
+            except Exception as e:
+                print(f"[EmployeePersonalService] User name sync failed: {e}")
+        return result
         
     async def delete(self, id: str, user_id: str = None) -> bool:
         return await self.repo.soft_delete(id, user_id)
