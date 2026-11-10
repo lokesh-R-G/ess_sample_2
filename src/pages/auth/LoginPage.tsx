@@ -93,13 +93,13 @@ export const LoginPage: React.FC = () => {
               </AnimatedButton>
             </motion.div>
 
-            <motion.div className="text-center pt-4 border-t border-neutral-200" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+            {/* <motion.div className="text-center pt-4 border-t border-neutral-200" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
               <p className="text-xs text-neutral-500 mb-2">Demo Credentials</p>
               <div className="text-xs text-neutral-600 space-y-0.5">
                 <p>Employee ID: <span className="text-primary-500 font-medium">EMP-001</span></p>
                 <p>Password: <span className="text-primary-500 font-medium">demo@123</span></p>
               </div>
-            </motion.div>
+            </motion.div> */}
           </form>
         </motion.div>
 
