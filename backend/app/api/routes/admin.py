@@ -351,3 +351,91 @@ async def get_attendance_summary(_admin=Depends(require_permission("attendance.r
         "absent": absent_count,
         "od": od_count
     }
+
+
+@router.post("/employees/{employee_id}/reset-password", status_code=200)
+async def admin_reset_employee_password(
+    employee_id: str,
+    admin=Depends(require_permission("employee.manage")),
+):
+    """
+    Admin-initiated password reset using the existing OTP infrastructure.
+    Generates a secure 6-digit OTP, stores its bcrypt hash, dispatches an email,
+    and sets firstLogin=True on the user account.
+    """
+    db = get_database()
+    now_utc = datetime.now(timezone.utc)
+    
+    # 1. Verify employee exists and is active
+    from app.employee.repositories.employee_repository import EmployeeRepository
+    emp_repo = EmployeeRepository(db)
+    employee = await emp_repo.get_by_employee_id(employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    if employee.status != "Active":
+        raise HTTPException(status_code=400, detail="Cannot reset password for an inactive employee")
+
+    # 2. Verify associated ESS user account exists
+    user = await db.users.find_one({"$or": [{"employeeId": employee_id}, {"empId": employee.employeeCode}]})
+    if not user:
+        raise HTTPException(status_code=404, detail="No ESS user account found for this employee. Invite to ESS first.")
+
+    # 3. Resolve personal email for delivery
+    from app.employee.services.email_resolver import get_employee_personal_email
+    try:
+        delivery_email = await get_employee_personal_email(db, employee_id)
+    except ValueError:
+        delivery_email = user.get("email")
+
+    if not delivery_email:
+        raise HTTPException(status_code=400, detail="Employee does not have a registered personal email address")
+
+    # 4. Generate 6-digit cryptographically secure OTP
+    otp = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+    otp_hash = hash_password(otp)
+    expires_at = now_utc + timedelta(minutes=15)
+
+    # 5. Invalidate previous unexpired OTPs and persist new OTP
+    from app.auth.forgot_password.repositories.otp_repository import OtpRepository
+    from app.auth.forgot_password.models.otp import PasswordResetOtpModel
+    otp_repo = OtpRepository(db)
+    await otp_repo.invalidate_previous_otps(employee_id)
+
+    otp_doc = PasswordResetOtpModel(
+        employeeId=employee_id,
+        email=delivery_email,
+        otpHash=otp_hash,
+        createdAt=now_utc,
+        expiresAt=expires_at
+    )
+    await otp_repo.create(otp_doc.model_dump(by_alias=True, exclude_none=True))
+
+    # 6. Set firstLogin=True to force password change upon login
+    await db.users.update_one(
+        {"$or": [{"employeeId": employee_id}, {"empId": employee.employeeCode}]},
+        {"$set": {"firstLogin": True, "updatedAt": now_utc}}
+    )
+
+    # 7. Dispatch Email
+    email_service = EmailService(db)
+    context = {
+        "employee_name": f"{getattr(employee, 'firstName', '')} {getattr(employee, 'lastName', '')}".strip() or employee.employeeCode,
+        "otp": otp,
+        "expiry_minutes": 15
+    }
+    asyncio.create_task(email_service.send_password_reset_otp(recipient=delivery_email, context=context))
+
+    # 8. Record audit log
+    await db.audit_logs.insert_one({
+        "action": "ADMIN_PASSWORD_RESET_INITIATED",
+        "employeeId": employee_id,
+        "performedBy": admin.get("empId"),
+        "timestamp": now_utc,
+        "recipientEmail": delivery_email
+    })
+
+    return {
+        "success": True,
+        "message": f"Password reset OTP sent to {delivery_email}. Employee will be prompted to set a new password on login."
+    }
+

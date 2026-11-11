@@ -117,10 +117,13 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
                 "id": {"$toString": "$_id"},
                 "employeeId": {"$toString": "$employeeId"},
                 "employeeCode": 1,
+                "machineId": 1,
                 "systemAccessEnabled": 1,
                 "essStatus": 1,
                 "authUserId": 1,
                 "status": 1,
+                "deactivatedAt": 1,
+                "effectiveDeactivationDate": 1,
                 "firstName": "$personal.firstName",
                 "lastName": "$personal.lastName",
                 "email": "$contact.personalEmail",
@@ -230,12 +233,16 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
             {"$unwind": {"path": "$desgDoc", "preserveNullAndEmptyArrays": True}},
             {"$project": {
                 "_id": 0,
+                "id": {"$toString": "$_id"},
                 "employeeId": {"$toString": "$employeeId"},
                 "employeeCode": 1,
+                "machineId": 1,
                 "systemAccessEnabled": 1,
                 "essStatus": 1,
                 "authUserId": 1,
                 "status": 1,
+                "deactivatedAt": 1,
+                "effectiveDeactivationDate": 1,
                 "firstName": "$personal.firstName",
                 "lastName": "$personal.lastName",
                 "personalEmail": "$contact.personalEmail",
@@ -265,6 +272,24 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
         if branch_id:
             match_stage["employment.branchId"] = branch_id
 
+        # Lifecycle deactivation rule:
+        # An inactive employee remains eligible through the end of the calendar month of deactivation.
+        # From the first day of the following calendar month, they are excluded.
+        # If cycle_start is provided, exclude if effectiveDeactivationDate <= cycle_start.
+        status_match: dict = {"deletedAt": None}
+        if cycle_start:
+            status_match["$or"] = [
+                {"status": "Active"},
+                {"effectiveDeactivationDate": None},
+                {"effectiveDeactivationDate": {"$gt": cycle_start}}
+            ]
+        else:
+            status_match["$or"] = [
+                {"status": "Active"},
+                {"effectiveDeactivationDate": None},
+                {"effectiveDeactivationDate": {"$gt": datetime.utcnow()}}
+            ]
+
         if cycle_end:
             emp_pipeline = [
                 {"$match": {
@@ -289,7 +314,7 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
             ]
 
         pipeline = [
-            {"$match": {"deletedAt": None}},
+            {"$match": status_match},
             {"$lookup": {
                 "from": "employee_employment_histories",
                 "let": {"empId": "$employeeId"},
@@ -374,3 +399,40 @@ class EmployeeRepository(BaseRepository[EmployeeModel]):
                 "updatedAt": now,
             }}
         )
+
+    async def get_by_machine_id(self, machine_id: str) -> Optional[EmployeeModel]:
+        doc = await self.collection.find_one({
+            "machineId": machine_id,
+            "deletedAt": None
+        })
+        if doc:
+            return self.model_class(**self._prepare_doc(doc))
+        return None
+
+    async def update_employee_lifecycle_status(
+        self,
+        employee_id: str,
+        status: str,
+        deactivated_by: Optional[str] = None,
+        effective_deactivation_date: Optional[datetime] = None
+    ) -> Optional[EmployeeModel]:
+        now = datetime.now(timezone.utc)
+        update_doc: dict = {
+            "status": status,
+            "updatedAt": now
+        }
+        if status.lower() == "inactive":
+            update_doc["deactivatedAt"] = now
+            update_doc["deactivatedBy"] = deactivated_by
+            update_doc["effectiveDeactivationDate"] = effective_deactivation_date
+            update_doc["systemAccessEnabled"] = False
+        elif status.lower() == "active":
+            update_doc["deactivatedAt"] = None
+            update_doc["deactivatedBy"] = None
+            update_doc["effectiveDeactivationDate"] = None
+
+        await self.collection.update_one(
+            {"employeeId": employee_id, "deletedAt": None},
+            {"$set": update_doc}
+        )
+        return await self.get_by_employee_id(employee_id)

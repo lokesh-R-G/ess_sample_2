@@ -100,25 +100,52 @@ async def sync_essl_machine(db, machine: dict, fallback_from_date: datetime | No
         sync_batch_id = str(uuid4())
         raw_result = await upsert_raw_logs(db, raw_records, sync_batch_id)
         
-        # Extract unique empIds and push to Dirty Queue
-        emp_ids = list(set([r.get("empId") for r in raw_records if r.get("empId")]))
+        # Extract unique biometric PINs and resolve via employees.machineId (exact string matching)
+        emp_ids = list(set([str(r.get("empId")).strip() for r in raw_records if r.get("empId") is not None]))
         dirty_queue = DirtyQueueService(db)
         
         fd_iso = from_date.isoformat()
         td_iso = to_date.isoformat()
+        now_dt = datetime.now(timezone.utc)
         
-        for emp_code in emp_ids:
-            emp = await db.employees.find_one({"employeeCode": emp_code})
-            if not emp:
+        for pin in emp_ids:
+            if not pin:
                 continue
+            # Match pin against machineId
+            emp = await db.employees.find_one({"machineId": pin, "deletedAt": None})
+            if not emp:
+                logger.warning(f"[ESSL Sync] Unmapped biometric PIN '{pin}' on machine {serial_number}. Logged in attendance_logs but skipped from attendance calculation.")
+                try:
+                    await db.unmapped_attendance_logs.insert_one({
+                        "pin": pin,
+                        "serialNumber": serial_number,
+                        "syncBatchId": sync_batch_id,
+                        "reason": "UNMAPPED_MACHINE_ID",
+                        "createdAt": now_dt
+                    })
+                except Exception as unmapped_err:
+                    logger.debug(f"Failed to record unmapped log: {unmapped_err}")
+                continue
+
+            # Lifecycle deactivation boundary:
+            # Employee remains eligible for attendance through the end of the calendar month of deactivation.
+            # If effectiveDeactivationDate <= from_date, exclude from new attendance processing.
+            eff_deact = emp.get("effectiveDeactivationDate")
+            if eff_deact:
+                if eff_deact.tzinfo is None:
+                    eff_deact = eff_deact.replace(tzinfo=timezone.utc)
+                if eff_deact <= from_date:
+                    logger.info(f"[ESSL Sync] Employee {emp.get('employeeId')} is past effective deactivation date ({eff_deact}). Skipping attendance queuing.")
+                    continue
                 
             await dirty_queue.push(
                 employee_id=emp["employeeId"],
-                employee_code=emp_code,
+                employee_code=emp.get("employeeCode", ""),
                 from_date=fd_iso,
                 to_date=td_iso,
                 reason="eSSL Multi-Machine Sync received",
-                trigger="ESSL_SYNC"
+                trigger="ESSL_SYNC",
+                machine_id=pin
             )
 
         # Advance cursor only on success

@@ -21,6 +21,10 @@ class EmployeeService:
         
         # Override payload with system defaults for Employee Creation
         payload = data.model_dump(exclude_unset=True)
+        # Normalize machineId if present
+        if "machineId" in payload and payload["machineId"] is not None:
+            payload["machineId"] = payload["machineId"].strip()
+            
         # Phase 8: Atomic generation of 6-digit Employee ID
         counter = await self.db.identity_counters.find_one_and_update(
             {"_id": "employeeId"},
@@ -49,11 +53,15 @@ class EmployeeService:
         
     async def update(self, id: str, data: EmployeeUpdate, user_id: str = None) -> Optional[EmployeeModel]:
         await self.validator.validate_update(id, data)
-        doc = await self.repo.update(id, data.model_dump(exclude_unset=True), user_id)
+        update_dict = data.model_dump(exclude_unset=True)
+        if "machineId" in update_dict and update_dict["machineId"] is not None:
+            update_dict["machineId"] = update_dict["machineId"].strip()
+            
+        doc = await self.repo.update(id, update_dict, user_id)
         if not doc:
             emp = await self.repo.get_by_employee_id(id)
             if emp:
-                doc = await self.repo.update(emp.id, data.model_dump(exclude_unset=True), user_id)
+                doc = await self.repo.update(emp.id, update_dict, user_id)
         if doc and getattr(doc, "employeeId", None):
             try:
                 from app.services.user_sync_service import sync_user_name_from_employee

@@ -49,9 +49,20 @@ export default function EmployeeWizard() {
 
   const loadEmployeeData = async (employeeId: string) => {
     try {
-      // Base
+      // Helper to safely extract single object from various response wrapper shapes
+      const unwrap = (res: any) => {
+        if (!res) return {};
+        if (Array.isArray(res)) return res[0] || {};
+        if (res.data) {
+          if (Array.isArray(res.data)) return res.data[0] || {};
+          return res.data;
+        }
+        return res;
+      };
+
+      // Base Employee Record
       const empRes = await employeeApi.getEmployee(employeeId);
-      const baseData = empRes?.data || empRes || {};
+      const baseData = unwrap(empRes);
       
       const [pers, cont, addr, emp, bank, gov, pay] = await Promise.all([
         employeeApi.getPersonal(employeeId),
@@ -66,13 +77,13 @@ export default function EmployeeWizard() {
       setFormData({
         employeeId,
         ...baseData,
-        ...(pers?.data?.[0] || pers?.[0] || {}),
-        ...(cont?.[0] || {}), // Contact is already mapped in api
-        ...(addr?.data?.[0] || addr?.[0] || {}),
-        ...(emp?.[0] || {}), // Employment is already mapped in api
-        ...(bank?.data?.[0] || bank?.[0] || {}),
-        ...(gov?.data?.[0] || gov?.[0] || {}),
-        ...(pay?.[0] || {}) // Payroll is already mapped in api
+        ...unwrap(pers),
+        ...unwrap(cont),
+        ...unwrap(addr),
+        ...unwrap(emp),
+        ...unwrap(bank),
+        ...unwrap(gov),
+        ...unwrap(pay)
       });
       
       // In edit mode, all steps are accessible
@@ -146,12 +157,16 @@ export default function EmployeeWizard() {
     try {
       if (stepIndex === 0) {
         let empId = formData.employeeId;
+        const employeePayload = {
+          employeeCode: formData.employeeCode ? String(formData.employeeCode).trim() : undefined,
+          machineId: formData.machineId ? String(formData.machineId).trim() : undefined
+        };
         if (!empId) {
-          const empRes = await employeeApi.createEmployee({ employeeCode: formData.employeeCode || undefined });
+          const empRes = await employeeApi.createEmployee(employeePayload);
           empId = empRes._id || empRes.employeeId || empRes.id;
           setFormData((prev: any) => ({ ...prev, employeeId: empId }));
         } else {
-          await employeeApi.updateEmployee(empId, { employeeCode: formData.employeeCode || undefined });
+          await employeeApi.updateEmployee(empId, employeePayload);
         }
         const personalPayload = cleanPayload({ ...formData, employeeId: empId });
         await employeeApi.createPersonal(personalPayload);
@@ -241,7 +256,14 @@ export default function EmployeeWizard() {
       
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{editEmployeeId ? 'Edit Employee' : 'Create New Employee'}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-neutral-900">{editEmployeeId ? 'Edit Employee' : 'Create New Employee'}</h1>
+            {editEmployeeId && formData.employeeId && (
+              <span className="px-2.5 py-1 text-xs font-mono font-semibold bg-neutral-100 text-neutral-700 border border-neutral-300 rounded-md">
+                Employee ID: {formData.employeeId} (System Generated)
+              </span>
+            )}
+          </div>
           <p className="text-neutral-500 mt-1">Step {currentStep + 1} of {STEPS.length} - {STEPS[currentStep].title}</p>
         </div>
       </div>

@@ -18,11 +18,19 @@ export default function PersonalInfoStep({ data, onChange, errors = {} }: Person
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Input
-          label="Employee Code (ESSL ID)"
+          label="Employee Code"
           value={data.employeeCode || ''}
           onChange={(e) => handleChange('employeeCode', e.target.value)}
           error={errors.employeeCode}
           required
+        />
+        <Input
+          label="Biometric Machine ID (Punch PIN)"
+          value={data.machineId || ''}
+          onChange={(e) => handleChange('machineId', e.target.value)}
+          error={errors.machineId}
+          placeholder="e.g. 00025, 102"
+          helperText="The exact PIN registered on eSSL biometric devices (leading zeros preserved)."
         />
         <Input
           label="First Name"

@@ -37,7 +37,7 @@ class AttendanceProcessor:
             upsert=True
         )
 
-    async def _process_employee_range(self, employee_id: str, employee_code: str, from_date: date, to_date: date, force: bool = True) -> tuple[int, int]:
+    async def _process_employee_range(self, employee_id: str, employee_code: str, from_date: date, to_date: date, force: bool = True, machine_id: str = None) -> tuple[int, int]:
         # 1. Update status to RUNNING
         await self._update_status(employee_id, from_date, to_date, "RUNNING")
         
@@ -45,15 +45,25 @@ class AttendanceProcessor:
         updated_count = 0
         
         try:
+            # Resolve employee to check machineId and effective deactivation date
+            emp_doc = await self.db.employees.find_one({"employeeId": employee_id, "deletedAt": None})
+            resolved_mid = machine_id or (emp_doc.get("machineId") if emp_doc else None)
+            eff_deact_date = emp_doc.get("effectiveDeactivationDate") if emp_doc else None
+            if eff_deact_date and isinstance(eff_deact_date, datetime):
+                eff_deact_date = eff_deact_date.date()
+
             # Generate the dates to process chronologically
             current_date = from_date
             
-            # Fetch context once? Or daily?
-            # Shift / Policy / Weekly Off could change over the period, but usually context resolver
-            # can handle a target date.
-            # We'll fetch daily for maximum safety.
-            
             while current_date <= to_date:
+                # Lifecycle deactivation rule:
+                # Employee remains eligible through the end of the calendar month of deactivation.
+                # Starting from the first day of the following calendar month (effectiveDeactivationDate),
+                # prevent new attendance calculations.
+                if eff_deact_date and current_date >= eff_deact_date:
+                    current_date += timedelta(days=1)
+                    continue
+
                 existing = await self.db.attendance.find_one({"empId": employee_code, "date": current_date.isoformat()})
                 
                 # Protect MANUAL LOP and MANUAL PRESENT from being overwritten
@@ -67,7 +77,12 @@ class AttendanceProcessor:
                         current_date += timedelta(days=1)
                         continue
                         
-                ctx = await self.context_resolver.resolve_context(employee_code, current_date)
+                ctx = await self.context_resolver.resolve_context(
+                    employee_code, 
+                    current_date, 
+                    machine_id=resolved_mid, 
+                    employee_id=employee_id
+                )
                 if not ctx:
                     # Missing setup (e.g. no Shift assigned on this date)
                     current_date += timedelta(days=1)
@@ -84,6 +99,7 @@ class AttendanceProcessor:
                     "employeeId": employee_id,
                     "employeeCode": employee_code,
                     "empId": employee_code, # For backward compatibility with existing APIs
+                    "machineId": resolved_mid, # Exact biometric hardware PIN
                     "date": current_date.isoformat(),
                     # Exact Identity Snapshot
                     "shiftCode": getattr(ctx.get("shift"), "shiftCode", None) if ctx.get("shift") else None,
@@ -184,11 +200,14 @@ class AttendanceProcessor:
         for item in pending_items:
             emp_id = item.employeeId
             emp_code = getattr(item, 'employeeCode', None)
+            machine_id = getattr(item, 'machineId', None)
             
             # Fallback for old queued items
             if not emp_code:
                 emp = await self.db.employees.find_one({"employeeId": emp_id})
                 emp_code = emp.get("employeeCode") if emp else emp_id
+                if not machine_id and emp:
+                    machine_id = emp.get("machineId")
             
             # Parse strings to date if needed
             from_date = datetime.fromisoformat(item.fromDate).date() if isinstance(item.fromDate, str) else item.fromDate.date()
@@ -197,7 +216,7 @@ class AttendanceProcessor:
             await self.dirty_queue.mark_processing(item.dirtyId)
             
             try:
-                await self._process_employee_range(emp_id, emp_code, from_date, to_date, force=True)
+                await self._process_employee_range(emp_id, emp_code, from_date, to_date, force=True, machine_id=machine_id)
                 await self.dirty_queue.mark_completed(item.dirtyId)
                 processed_count += 1
             except Exception:
@@ -212,11 +231,16 @@ class AttendanceProcessor:
         """
         start_time = datetime.now()
         
-        # Only process active, not deleted employees who have an employeeCode
+        # Process eligible employees (Active OR Inactive with effectiveDeactivationDate > from_date)
+        from_dt_utc = datetime.combine(from_date, datetime.min.time(), tzinfo=timezone.utc)
         query = {
-            "status": "Active",
             "deletedAt": None,
-            "employeeCode": {"$exists": True, "$ne": None, "$ne": ""}
+            "employeeCode": {"$exists": True, "$ne": None, "$ne": ""},
+            "$or": [
+                {"status": "Active"},
+                {"effectiveDeactivationDate": None},
+                {"effectiveDeactivationDate": {"$gt": from_dt_utc}}
+            ]
         }
             
         if employee_ids:

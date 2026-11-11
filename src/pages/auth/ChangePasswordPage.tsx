@@ -48,9 +48,9 @@ export default function ChangePasswordPage() {
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <Input label="Current Password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-          <Input label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-          <Input label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+          <Input label="Current Password" isPassword value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+          <Input label="New Password" isPassword value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <Input label="Confirm Password" isPassword value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <AnimatedButton type="submit" variant="primary" size="lg" fullWidth loading={isLoading} icon={ArrowRight} iconPosition="right">
             Update Password

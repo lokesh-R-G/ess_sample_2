@@ -10,8 +10,12 @@ import pytest_asyncio
 # Pytest fixture to mock the database and initial collections
 @pytest_asyncio.fixture
 async def mock_db():
-    client = AsyncIOMotorClient("mongodb://localhost:27017")
-    db = client.test_leave_compliance
+    from app.db.test_guard import assert_test_database_safe
+    uri = "mongodb://localhost:27017"
+    db_name = "test_leave_compliance"
+    assert_test_database_safe(uri, db_name)
+    client = AsyncIOMotorClient(uri)
+    db = client[db_name]
     
     # Cleanup previous data
     await db.leave_policies.delete_many({})

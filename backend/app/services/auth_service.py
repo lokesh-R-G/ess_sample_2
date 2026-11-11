@@ -108,8 +108,9 @@ async def authenticate_or_provision_user(db, emp_id: str, password: str) -> dict
         if not await validate_employee_with_essl(db, emp_id):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         user = await create_provisioned_user(db, emp_id)
-        # Do not perform a full sync here to avoid blocking login; scheduling of per-user sync
-        # is handled by the login route or admin operations.
+
+    if not user.get("isActive", True) or user.get("status") == "inactive":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive. Access denied.")
 
     password_hash = user.get("passwordHash") or ""
     if not verify_password(password, password_hash):

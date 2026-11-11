@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 export interface DirectoryEmployee {
   employeeId: string;
   employeeCode?: string | null;
+  machineId?: string | null;
   firstName?: string;
   lastName?: string;
   personalEmail?: string | null;
@@ -15,8 +16,10 @@ export interface DirectoryEmployee {
   departmentName?: string;
   designationId?: string;
   designationName?: string;
+  status?: string;
   essStatus?: string;
   authUserId?: string | null;
+  effectiveDeactivationDate?: string | null;
 }
 
 interface InviteESSDialogProps {

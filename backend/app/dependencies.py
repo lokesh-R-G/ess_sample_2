@@ -29,6 +29,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
     user = await db.users.find_one({"empId": emp_id})
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if not user.get("isActive", True) or user.get("status") == "inactive":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive. Access denied.")
     # remove internal _id and convert ObjectId fields to strings for JSON serialization
     user.pop("_id", None)
     for k, v in list(user.items()):

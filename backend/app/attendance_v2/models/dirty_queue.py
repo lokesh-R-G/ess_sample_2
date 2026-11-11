@@ -6,6 +6,7 @@ class AttendanceDirtyQueueModel(BaseModel):
     dirtyId: str = Field(..., description="Unique identifier for this dirty queue record")
     employeeId: str
     employeeCode: str
+    machineId: Optional[str] = None
     fromDate: str # ISO format date string e.g., "2026-08-01"
     toDate: str
     reason: str

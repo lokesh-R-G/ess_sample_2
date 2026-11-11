@@ -49,7 +49,7 @@ class AttendanceContextResolver:
             "endTime": day_schedule.endTime
         }
 
-    async def resolve_context(self, emp_id: str, target_date: date):
+    async def resolve_context(self, emp_id: str, target_date: date, machine_id: str = None, employee_id: str = None):
         """
         Resolves all necessary master data required for the PolicyEngine.
         1. Resolve Employee -> Employment -> Branch
@@ -57,14 +57,22 @@ class AttendanceContextResolver:
         3. Resolve Holiday Calendar and Dates for Branch / Global
         4. Resolve Weekly Off (Temporary Sunday Resolver)
         """
-        print(f"\nEmployee Code : {emp_id}")
+        # Resolve Employee: Try by employee_id first, then by employeeCode (emp_id), then by employeeId string
+        employee = None
+        if employee_id:
+            employee = await self.employee_repo.get_by_employee_id(employee_id)
+        if not employee:
+            employee = await self.employee_repo.get_by_employee_code(emp_id)
+        if not employee:
+            employee = await self.employee_repo.get_by_employee_id(emp_id)
 
-        # 1. Resolve Employment using Employee Code
-        employee = await self.employee_repo.get_by_employee_code(emp_id)
         if not employee:
             print("Employee Missing")
             print("Attendance Skipped")
             return None
+
+        # Resolve machineId for raw punches
+        resolved_machine_id = machine_id or getattr(employee, "machineId", None) or employee.employeeCode or emp_id
 
         # Resolve ledger
         from app.attendance_v2.services.permission_ledger_service import PermissionLedgerService
@@ -357,13 +365,18 @@ class AttendanceContextResolver:
             if r.get("lateMinutes", 0) > 0 and r.get("status") not in ["Holiday", "Week Off", "Leave", "On Duty", "Permission"]
         )
 
-        # 7. Resolve Raw Punches for Target Date
+        # 7. Resolve Raw Punches for Target Date using exact normalized machineId
         next_date = target_date + timedelta(days=1)
         start_dt = datetime.combine(target_date, datetime.min.time())
         end_dt = datetime.combine(next_date, datetime.min.time())
         
+        # Support punch resolution by machine_id (or fallback to employeeCode for legacy records)
+        punch_emp_ids = [resolved_machine_id]
+        if employee.employeeCode and employee.employeeCode != resolved_machine_id:
+            punch_emp_ids.append(employee.employeeCode)
+
         logs_cursor = self.db.attendance_logs.find({
-            "empId": emp_id,
+            "empId": {"$in": punch_emp_ids} if len(punch_emp_ids) > 1 else resolved_machine_id,
             "timestamp": {"$gte": start_dt, "$lt": end_dt}
         }).sort([("timestamp", 1)])
         raw_punches = await logs_cursor.to_list(length=None)
