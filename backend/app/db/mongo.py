@@ -149,7 +149,7 @@ async def init_indexes() -> None:
 
     # Employee Engine Indexes
         ("employees", [("companyId", 1), ("employeeCode", 1)], {"unique": True, "partialFilterExpression": {"employeeCode": {"$type": "string"}}}),
-        ("employees", [("machineId", 1)], {"unique": True, "partialFilterExpression": {"machineId": {"$type": "string"}}}),
+        ("employee_identifier_registry", [("identifier", 1)], {"unique": True}),
         ("employees", [("email", 1)], {"unique": True, "sparse": True}),
         ("employee_shift_assignments", [("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
         ("employee_role_assignments", [("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),

@@ -1,4 +1,5 @@
 import os
+from bson import ObjectId
 
 class SimpleCursor:
     def __init__(self, data):
@@ -48,8 +49,8 @@ def match_query(doc, filter_dict):
             if not all(match_query(doc, sub_q) for sub_q in v):
                 return False
         else:
+            doc_v = doc.get(k)
             if isinstance(v, dict):
-                doc_v = doc.get(k)
                 for op, op_v in v.items():
                     if op == "$lte":
                         if doc_v is None or not (doc_v <= op_v): return False
@@ -60,64 +61,129 @@ def match_query(doc, filter_dict):
                     elif op == "$gt":
                         if doc_v is None or not (doc_v > op_v): return False
                     elif op == "$ne":
-                        if doc_v == op_v: return False
+                        # Compare str versions if ObjectIds are involved
+                        if str(doc_v) == str(op_v): return False
             else:
-                if doc.get(k) != v:
+                if str(doc_v) != str(v):
                     return False
     return True
 
+class _MockSession:
+    async def __aenter__(self):
+        return self
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+    def start_transaction(self):
+        return self
+    async def abort_transaction(self):
+        pass
+    async def commit_transaction(self):
+        pass
+
 class _InMemoryCollection:
-    def __init__(self):
+    def __init__(self, name=""):
+        self.name = name
         self.store = {}
         self._id_counter = 0
 
-    async def insert_one(self, doc):
+    async def insert_one(self, doc, session=None):
         self._id_counter += 1
-        _id = str(self._id_counter)
+        _id = doc.get("_id") or str(self._id_counter)
         doc_copy = doc.copy()
         doc_copy["_id"] = _id
-        self.store[_id] = doc_copy
+        self.store[str(_id)] = doc_copy
         return type("Result", (), {"inserted_id": _id})
 
-    async def delete_many(self, _):
-        self.store.clear()
+    async def delete_many(self, filter, session=None):
+        if not filter:
+            self.store.clear()
+            return
+        to_del = [k for k, v in self.store.items() if match_query(v, filter)]
+        for k in to_del:
+            del self.store[k]
 
-    async def find_one(self, filter):
+    async def delete_one(self, filter, session=None):
+        for k, v in list(self.store.items()):
+            if match_query(v, filter):
+                del self.store[k]
+                break
+
+    async def find_one(self, filter, session=None):
         for doc in self.store.values():
             if match_query(doc, filter):
-                return doc
+                return doc.copy()
         return None
 
-    def find(self, filter=None, projection=None):
+    def find(self, filter=None, projection=None, session=None):
         if not filter:
-            return SimpleCursor(list(self.store.values()))
-        results = [doc for doc in self.store.values() if match_query(doc, filter)]
-        # Ignore projection for simple mock
+            return SimpleCursor([d.copy() for d in self.store.values()])
+        results = [d.copy() for d in self.store.values() if match_query(d, filter)]
         return SimpleCursor(results)
 
-    async def count_documents(self, filter):
+    async def count_documents(self, filter, session=None):
         results = [doc for doc in self.store.values() if match_query(doc, filter)]
         return len(results)
 
-    async def update_one(self, filter, update):
+    async def update_one(self, filter, update, session=None):
         for doc in self.store.values():
             if match_query(doc, filter):
                 for op, changes in update.items():
                     if op == "$set":
                         doc.update(changes)
-                return None
+                return type("UpdateResult", (), {"modified_count": 1})
+        return type("UpdateResult", (), {"modified_count": 0})
+
+    async def update_many(self, filter, update, session=None):
+        count = 0
+        for doc in self.store.values():
+            if match_query(doc, filter):
+                for op, changes in update.items():
+                    if op == "$set":
+                        doc.update(changes)
+                count += 1
+        return type("UpdateResult", (), {"modified_count": count})
+
+    async def find_one_and_update(self, filter, update, upsert=False, return_document=True, session=None):
+        for doc in self.store.values():
+            if match_query(doc, filter):
+                for op, changes in update.items():
+                    if op == "$inc":
+                        for k, v in changes.items():
+                            doc[k] = doc.get(k, 0) + v
+                    elif op == "$set":
+                        doc.update(changes)
+                return doc.copy()
+        if upsert:
+            new_doc = filter.copy()
+            for op, changes in update.items():
+                if op == "$inc":
+                    for k, v in changes.items():
+                        new_doc[k] = v
+                elif op == "$set":
+                    new_doc.update(changes)
+            await self.insert_one(new_doc)
+            return new_doc.copy()
         return None
 
 class _MockDatabase:
-    def __init__(self):
+    def __init__(self, client):
+        self.client = client
         self._collections = {}
 
     def __getitem__(self, name):
         if name not in self._collections:
-            self._collections[name] = _InMemoryCollection()
+            self._collections[name] = _InMemoryCollection(name)
         return self._collections[name]
     __getattr__ = __getitem__
 
 class _MockClient:
+    def __init__(self):
+        self._dbs = {}
+
     def __getitem__(self, name):
-        return _MockDatabase()
+        if name not in self._dbs:
+            self._dbs[name] = _MockDatabase(self)
+        return self._dbs[name]
+
+    async def start_session(self):
+        return _MockSession()
