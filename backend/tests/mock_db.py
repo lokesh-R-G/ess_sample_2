@@ -87,8 +87,7 @@ class _InMemoryCollection:
         self._id_counter = 0
 
     async def insert_one(self, doc, session=None):
-        self._id_counter += 1
-        _id = doc.get("_id") or str(self._id_counter)
+        _id = doc.get("_id") or ObjectId()
         doc_copy = doc.copy()
         doc_copy["_id"] = _id
         self.store[str(_id)] = doc_copy

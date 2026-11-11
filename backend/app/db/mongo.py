@@ -148,9 +148,9 @@ async def init_indexes() -> None:
         ("holiday_dates", [("calendarId", 1), ("holidayDate", 1)], {"unique": True, "sparse": True}),
 
     # Employee Engine Indexes
-        ("employees", [("companyId", 1), ("employeeCode", 1)], {"unique": True, "partialFilterExpression": {"employeeCode": {"$type": "string"}}}),
+        ("employees", [("companyId", 1), ("employeeCode", 1)], {"unique": True, "partialFilterExpression": {"employeeCode": {"$type": "string"}, "isCurrent": True}}),
         ("employee_identifier_registry", [("identifier", 1)], {"unique": True}),
-        ("employees", [("email", 1)], {"unique": True, "sparse": True}),
+        ("employees", [("email", 1)], {"unique": True, "partialFilterExpression": {"email": {"$type": "string"}, "isCurrent": True}}),
         ("employee_shift_assignments", [("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
         ("employee_role_assignments", [("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
         ("employee_reportings", [("employeeId", 1), ("managerId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
