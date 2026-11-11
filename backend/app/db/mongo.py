@@ -75,7 +75,16 @@ async def _create_index_with_retry(
                 description,
             )
             raise
-        except Exception as error:
+        except OperationFailure as error:
+            if getattr(error, "code", None) == 86:
+                # Code 86 is IndexKeySpecsConflict (e.g. index exists with differing options/partialFilterExpression)
+                logger.error(
+                    "MongoDB IndexKeySpecsConflict (code 86) on '%s': Index already exists with different options. "
+                    "Existing options in database take precedence over requested options: %s",
+                    description,
+                    options,
+                )
+                raise
             if not _is_retryable_index_error(error) or attempt == attempts:
                 logger.exception("MongoDB index failed permanently: %s", description)
                 raise
@@ -148,9 +157,9 @@ async def init_indexes() -> None:
         ("holiday_dates", [("calendarId", 1), ("holidayDate", 1)], {"unique": True, "sparse": True}),
 
     # Employee Engine Indexes
-        ("employees", [("companyId", 1), ("employeeCode", 1)], {"unique": True, "partialFilterExpression": {"employeeCode": {"$type": "string"}, "isCurrent": True}}),
-        ("employee_identifier_registry", [("identifier", 1)], {"unique": True}),
-        ("employees", [("email", 1)], {"unique": True, "partialFilterExpression": {"email": {"$type": "string"}, "isCurrent": True}}),
+        ("employees", [("companyId", 1), ("employeeCode", 1)], {"unique": True, "partialFilterExpression": {"isCurrent": True}}),
+        ("employee_identifier_registry", [("identifier", 1)], {"unique": True, "name": "uniq_registry_identifier"}),
+        ("employees", [("email", 1)], {"unique": True, "sparse": True}),
         ("employee_shift_assignments", [("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
         ("employee_role_assignments", [("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
         ("employee_reportings", [("employeeId", 1), ("managerId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
