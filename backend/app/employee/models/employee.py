@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 class EmployeeModel(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
+    masterEmployeeId: Optional[str] = None
     employeeId: str
     employeeCode: Optional[str] = None
     machineId: Optional[str] = None

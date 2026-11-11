@@ -19,7 +19,7 @@ class BaseRepository(Generic[T]):
         doc["_id"] = str(doc["_id"])
         return doc
 
-    async def create(self, data: dict, created_by: str = None) -> T:
+    async def create(self, data: dict, created_by: str = None, session=None) -> T:
         now = datetime.now(timezone.utc)
         data["createdAt"] = now
         data["updatedAt"] = now
@@ -37,7 +37,17 @@ class BaseRepository(Generic[T]):
         else:
             data["effectiveTo"] = None
         
-        result = await self.collection.insert_one(data)
+        # If this is the employees collection and masterEmployeeId not explicitly set,
+        # generate an ObjectId upfront to anchor masterEmployeeId
+        if self.collection.name == "employees" and not data.get("masterEmployeeId"):
+            gen_id = ObjectId()
+            data["_id"] = gen_id
+            data["masterEmployeeId"] = str(gen_id)
+
+        if session:
+            result = await self.collection.insert_one(data, session=session)
+        else:
+            result = await self.collection.insert_one(data)
         data["_id"] = str(result.inserted_id)
         return self.model_class(**data)
 
@@ -168,7 +178,7 @@ class BaseRepository(Generic[T]):
             "totalPages": math.ceil(total / limit) if limit > 0 else 1
         }
 
-    async def update(self, id: str, data: dict, updated_by: str = None) -> Optional[T]:
+    async def update(self, id: str, data: dict, updated_by: str = None, session=None) -> Optional[T]:
         data["updatedAt"] = datetime.now(timezone.utc)
         data["updatedBy"] = updated_by
         data.pop("createdAt", None)
@@ -180,49 +190,58 @@ class BaseRepository(Generic[T]):
             return None
             
         now = datetime.now(timezone.utc)
+        
+        async def _do_update(active_session):
+            current_doc = await self.collection.find_one(
+                {"_id": obj_id, "deletedAt": None},
+                session=active_session
+            )
+            if not current_doc:
+                return None
+                
+            current_eff = current_doc.get("effectiveFrom")
+            if current_eff and current_eff.tzinfo is None:
+                current_eff = current_eff.replace(tzinfo=timezone.utc)
+                
+            if "effectiveFrom" in data:
+                new_effective_from = data["effectiveFrom"]
+                if new_effective_from and new_effective_from.tzinfo is None:
+                    new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
+            else:
+                new_effective_from = current_eff or now
             
-        async with await self.db.client.start_session() as session:
-            async with session.start_transaction():
-                current_doc = await self.collection.find_one(
-                    {"_id": obj_id, "deletedAt": None},
-                    session=session
-                )
-                if not current_doc:
-                    return None
-                    
-                current_eff = current_doc.get("effectiveFrom")
-                if current_eff and current_eff.tzinfo is None:
-                    current_eff = current_eff.replace(tzinfo=timezone.utc)
-                    
-                if "effectiveFrom" in data:
-                    new_effective_from = data["effectiveFrom"]
-                    if new_effective_from and new_effective_from.tzinfo is None:
-                        new_effective_from = new_effective_from.replace(tzinfo=timezone.utc)
-                else:
-                    new_effective_from = current_eff or now
-                
-                await self.collection.update_one(
-                    {"_id": obj_id}, 
-                    {"$set": {"isCurrent": False, "effectiveTo": new_effective_from}},
-                    session=session
-                )
-                
-                new_doc = {**current_doc, **data}
-                new_doc.pop("_id", None)
-                new_doc["version"] = current_doc.get("version", 1) + 1
-                new_doc["isCurrent"] = True
-                new_doc["effectiveFrom"] = new_effective_from
-                if "effectiveTo" in data:
-                    new_eff_to = data["effectiveTo"]
-                    if new_eff_to and new_eff_to.tzinfo is None:
-                        new_eff_to = new_eff_to.replace(tzinfo=timezone.utc)
-                    new_doc["effectiveTo"] = new_eff_to
-                else:
-                    new_doc["effectiveTo"] = current_doc.get("effectiveTo")
-                
-                result = await self.collection.insert_one(new_doc, session=session)
-                new_doc["_id"] = str(result.inserted_id)
-                return self.model_class(**self._prepare_doc(new_doc))
+            await self.collection.update_one(
+                {"_id": obj_id}, 
+                {"$set": {"isCurrent": False, "effectiveTo": new_effective_from}},
+                session=active_session
+            )
+            
+            new_doc = {**current_doc, **data}
+            new_doc.pop("_id", None)
+            new_doc["version"] = current_doc.get("version", 1) + 1
+            new_doc["isCurrent"] = True
+            new_doc["effectiveFrom"] = new_effective_from
+            # Preserve masterEmployeeId if in employees collection
+            if self.collection.name == "employees":
+                new_doc["masterEmployeeId"] = current_doc.get("masterEmployeeId") or str(current_doc["_id"])
+            if "effectiveTo" in data:
+                new_eff_to = data["effectiveTo"]
+                if new_eff_to and new_eff_to.tzinfo is None:
+                    new_eff_to = new_eff_to.replace(tzinfo=timezone.utc)
+                new_doc["effectiveTo"] = new_eff_to
+            else:
+                new_doc["effectiveTo"] = current_doc.get("effectiveTo")
+            
+            result = await self.collection.insert_one(new_doc, session=active_session)
+            new_doc["_id"] = str(result.inserted_id)
+            return self.model_class(**self._prepare_doc(new_doc))
+
+        if session:
+            return await _do_update(session)
+        else:
+            async with await self.db.client.start_session() as sess:
+                async with sess.start_transaction():
+                    return await _do_update(sess)
 
     async def soft_delete(self, id: str, deleted_by: str = None) -> bool:
         try:

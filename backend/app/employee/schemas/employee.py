@@ -16,6 +16,7 @@ class EmployeeUpdate(BaseModel):
 
 class EmployeeResponse(BaseModel):
     id: str
+    masterEmployeeId: Optional[str] = None
     employeeId: str
     employeeCode: Optional[str] = None
     machineId: Optional[str] = None
