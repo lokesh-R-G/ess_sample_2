@@ -54,6 +54,21 @@ def _is_retryable_index_error(error: BaseException) -> bool:
     return isinstance(error, (AutoReconnect, ConnectionFailure, ServerSelectionTimeoutError)) or _is_replica_state_change(error)
 
 
+def _index_matches_requested_spec(
+    existing_index: dict[str, object],
+    requested_keys: Sequence[tuple[str, int]],
+    requested_options: dict[str, object],
+) -> bool:
+    if list(existing_index.get("key", [])) != list(requested_keys):
+        return False
+
+    for option_name in ("unique", "sparse", "partialFilterExpression"):
+        if option_name in requested_options and existing_index.get(option_name) != requested_options[option_name]:
+            return False
+
+    return True
+
+
 async def _create_index_with_retry(
     collection_name: str,
     keys: Sequence[tuple[str, int]],
@@ -157,13 +172,11 @@ async def init_indexes() -> None:
         ("holiday_dates", [("calendarId", 1), ("holidayDate", 1)], {"unique": True, "sparse": True}),
 
     # Employee Engine Indexes
-        ("employees", [("companyId", 1), ("employeeCode", 1)], {
-            "unique": True,
-            "partialFilterExpression": {
-                "employeeCode": {"$type": "string"}
-            }
-        }),
-        ("employee_identifier_registry", [("identifier", 1)], {"unique": True, "name": "uniq_registry_identifier"}),
+    # NOTE: root employee documents intentionally allow companyId=None because company assignment
+    # lives in employee_employment_histories. The legacy companyId+employeeCode unique index on
+    # the root employees collection is obsolete and is not re-declared here. A controlled
+    # production migration is required before dropping any existing database index.
+        ("employee_identifier_registry", [("identifier", 1)], {"unique": True}),
         ("employees", [("email", 1)], {"unique": True, "sparse": True}),
         ("employee_shift_assignments", [("employeeId", 1), ("shiftId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
         ("employee_role_assignments", [("employeeId", 1), ("roleId", 1), ("effectiveFrom", 1)], {"unique": True, "sparse": True}),
@@ -210,7 +223,34 @@ async def init_indexes() -> None:
     ])
 
     for collection_name, keys, options in indexes:
-        await _create_index_with_retry(collection_name, keys, **options)
+        existing_indexes = await db[collection_name].index_information()
+        for index_details in existing_indexes.values():
+            if _index_matches_requested_spec(index_details, keys, options):
+                logger.info(
+                    "MongoDB index already present; skipping create: %s %s options=%s",
+                    collection_name,
+                    list(keys),
+                    options,
+                )
+                break
+        else:
+            matching_key_conflict = None
+            for index_name, index_details in existing_indexes.items():
+                if list(index_details.get("key", [])) == list(keys):
+                    matching_key_conflict = (index_name, index_details)
+                    break
+            if matching_key_conflict:
+                index_name, index_details = matching_key_conflict
+                logger.error(
+                    "MongoDB index key matches but options differ for %s: requested %s, existing %s (%s). "
+                    "Database index will be retained; no destructive change performed.",
+                    collection_name,
+                    options,
+                    index_details,
+                    index_name,
+                )
+                continue
+            await _create_index_with_retry(collection_name, keys, **options)
 
 
 def close_mongo_connection() -> None:

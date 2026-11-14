@@ -46,14 +46,20 @@ async def migrate_indexes(dry_run: bool = False):
     # Ensure employee_identifier_registry unique index
     print("\n[ACTION] Ensuring unique index on employee_identifier_registry...")
     if not dry_run:
-        await db.employee_identifier_registry.create_index(
-            [("identifier", 1)],
-            unique=True,
-            name="uniq_registry_identifier"
-        )
-        print("[SUCCESS] Unique index uniq_registry_identifier ensured.")
+        existing = await db.employee_identifier_registry.index_information()
+        if not any(
+            list(details.get("key", [])) == [("identifier", 1)] and details.get("unique") is True
+            for details in existing.values()
+        ):
+            await db.employee_identifier_registry.create_index(
+                [("identifier", 1)],
+                unique=True,
+            )
+            print("[SUCCESS] Unique identifier index ensured.")
+        else:
+            print("[SUCCESS] Unique identifier index already present.")
     else:
-        print("[DRY-RUN] Would create uniq_registry_identifier.")
+        print("[DRY-RUN] Would ensure the unique identifier index.")
 
     # Final inspection
     indexes_after = await db.employees.index_information()

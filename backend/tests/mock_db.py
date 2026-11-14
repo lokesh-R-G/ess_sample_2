@@ -107,10 +107,14 @@ class _InMemoryCollection:
                 del self.store[k]
                 break
 
-    async def find_one(self, filter, session=None):
-        for doc in self.store.values():
-            if match_query(doc, filter):
-                return doc.copy()
+    async def find_one(self, filter, session=None, sort=None):
+        docs = [doc.copy() for doc in self.store.values() if match_query(doc, filter)]
+        if sort:
+            for key, direction in sort:
+                reverse = direction == -1
+                docs.sort(key=lambda x: (x.get(key) is None, x.get(key)), reverse=reverse)
+        if docs:
+            return docs[0]
         return None
 
     def find(self, filter=None, projection=None, session=None):

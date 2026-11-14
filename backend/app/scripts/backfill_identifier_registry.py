@@ -24,14 +24,18 @@ async def backfill_registry(dry_run: bool = False):
 
     # 1. Ensure unique index on employee_identifier_registry
     try:
-        await db.employee_identifier_registry.create_index(
-            [("identifier", 1)],
-            unique=True,
-            name="uniq_registry_identifier"
-        )
-        print("[OK] Index uniq_registry_identifier on employee_identifier_registry is present.")
+        existing = await db.employee_identifier_registry.index_information()
+        if not any(
+            list(details.get("key", [])) == [("identifier", 1)] and details.get("unique") is True
+            for details in existing.values()
+        ):
+            await db.employee_identifier_registry.create_index(
+                [("identifier", 1)],
+                unique=True,
+            )
+        print("[OK] Unique identifier index on employee_identifier_registry is present.")
     except Exception as e:
-        print(f"[WARN] Error creating index on employee_identifier_registry: {e}")
+        print(f"[WARN] Error ensuring index on employee_identifier_registry: {e}")
 
     # 2. Find all current non-deleted employees
     current_employees = await db.employees.find({
