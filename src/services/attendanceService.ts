@@ -138,3 +138,47 @@ export async function getAdminPunchesForDate(empCode: string, date: string, comp
   const query = searchParams.toString();
   return api.get<AdminPunchesResponse>(`/v2/attendance/monitor/${empCode}/punches?${query}`);
 }
+
+export async function downloadMasterAttendancePdf(fromDate: string, toDate: string, companyId?: string, branchId?: string): Promise<{ blob: Blob; filename: string }> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('from', fromDate);
+  searchParams.set('to', toDate);
+  if (companyId) searchParams.set('companyId', companyId);
+  if (branchId) searchParams.set('branchId', branchId);
+  const query = searchParams.toString();
+
+  const response = await api.get<Response>(`/v2/attendance/monitor/export-pdf?${query}`, {
+    responseType: 'raw'
+  });
+
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  let filename = `Master_Attendance_${fromDate.substring(0, 7)}.pdf`;
+  const match = contentDisposition.match(/filename=["']?([^"';]+)["']?/i);
+  if (match && match[1]) {
+    filename = match[1].trim();
+  }
+
+  const blob = await response.blob();
+  return { blob, filename };
+}
+
+export async function downloadEmployeeAttendancePdf(employeeId: string, fromDate: string, toDate: string): Promise<{ blob: Blob; filename: string }> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('from', fromDate);
+  searchParams.set('to', toDate);
+  const query = searchParams.toString();
+
+  const response = await api.get<Response>(`/v2/attendance/monitor/${encodeURIComponent(employeeId)}/export-pdf?${query}`, {
+    responseType: 'raw'
+  });
+
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  let filename = `Attendance_${employeeId}_${fromDate.substring(0, 7)}.pdf`;
+  const match = contentDisposition.match(/filename=["']?([^"';]+)["']?/i);
+  if (match && match[1]) {
+    filename = match[1].trim();
+  }
+
+  const blob = await response.blob();
+  return { blob, filename };
+}

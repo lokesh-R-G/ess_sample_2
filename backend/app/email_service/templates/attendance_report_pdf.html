@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Attendance Report</title>
+<style>
+    @page {
+        size: A4 landscape;
+        margin-top: 1.2cm;
+        margin-bottom: 1.2cm;
+        margin-left: 1cm;
+        margin-right: 1cm;
+        @frame footer {
+            -pdf-frame-content: footerContent;
+            bottom: 0.5cm;
+            margin-left: 1cm;
+            margin-right: 1cm;
+            height: 0.8cm;
+        }
+    }
+    body {
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        color: #1f2937;
+    }
+    .header-table {
+        width: 100%;
+        margin-bottom: 8px;
+        border-bottom: 2px solid #2563eb;
+        padding-bottom: 4px;
+    }
+    .company-title {
+        font-size: 14pt;
+        font-weight: bold;
+        color: #1e3a8a;
+        text-transform: uppercase;
+    }
+    .report-title {
+        font-size: 11pt;
+        font-weight: bold;
+        color: #374151;
+    }
+    .report-meta {
+        font-size: 8pt;
+        color: #6b7280;
+    }
+    .employee-card {
+        width: 100%;
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        margin-bottom: 8px;
+        padding: 4px 6px;
+    }
+    .emp-info-table {
+        width: 100%;
+    }
+    .emp-info-table td {
+        padding: 2px 4px;
+        vertical-align: top;
+    }
+    .emp-label {
+        font-weight: bold;
+        color: #475569;
+        font-size: 7.5pt;
+        text-transform: uppercase;
+    }
+    .emp-value {
+        font-weight: bold;
+        color: #0f172a;
+        font-size: 8.5pt;
+    }
+    .summary-badge-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4px;
+    }
+    .summary-badge-table td {
+        padding: 3px 6px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        font-size: 7.5pt;
+    }
+    .badge-present { background-color: #dcfce7; color: #166534; font-weight: bold; }
+    .badge-absent { background-color: #fee2e2; color: #991b1b; font-weight: bold; }
+    .badge-leave { background-color: #f3e8ff; color: #6b21a8; font-weight: bold; }
+    .badge-lop { background-color: #ffe4e6; color: #be123c; font-weight: bold; }
+    .badge-wo { background-color: #f1f5f9; color: #475569; font-weight: bold; }
+    .badge-holiday { background-color: #e0f2fe; color: #0369a1; font-weight: bold; }
+    .badge-late { background-color: #ffedd5; color: #c2410c; font-weight: bold; }
+
+    .attendance-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4px;
+        margin-bottom: 12px;
+    }
+    .attendance-table th {
+        background-color: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        padding: 4px 2px;
+        font-size: 7pt;
+        font-weight: bold;
+        color: #334155;
+        text-align: center;
+        text-transform: uppercase;
+    }
+    .attendance-table td {
+        border: 1px solid #e2e8f0;
+        padding: 3px 2px;
+        font-size: 7pt;
+        text-align: center;
+        color: #1e293b;
+    }
+    .text-left { text-align: left !important; padding-left: 4px !important; }
+    .row-even { background-color: #ffffff; }
+    .row-odd { background-color: #f8fafc; }
+    .row-weekend { background-color: #f1f5f9; color: #64748b; }
+    .row-holiday { background-color: #f0f9ff; color: #0284c7; }
+    .row-leave { background-color: #faf5ff; }
+    .row-absent { background-color: #fef2f2; }
+    .row-lop { background-color: #fff1f2; }
+
+    .tag-yes { color: #15803d; font-weight: bold; }
+    .tag-no { color: #64748b; }
+    .tag-lop { color: #b91c1c; font-weight: bold; }
+    
+    .employee-block {
+        page-break-after: always;
+    }
+    .employee-block:last-child {
+        page-break-after: avoid;
+    }
+
+    .footer {
+        font-size: 7pt;
+        color: #94a3b8;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 4px;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+{% for emp in employees %}
+<div class="employee-block">
+    <!-- Header -->
+    <table class="header-table">
+        <tr>
+            <td width="60%">
+                <div class="company-title">{{ companyName or "HRMS ENTERPRISE" }}</div>
+                <div class="report-title">Monthly Attendance & Leave Audit Report - {{ periodLabel }}</div>
+            </td>
+            <td width="40%" align="right">
+                <div class="report-meta"><b>Export Type:</b> {{ exportType }}</div>
+                <div class="report-meta"><b>Generated On:</b> {{ generatedAt }}</div>
+                <div class="report-meta"><b>Scope:</b> {{ scopeRole }} ({{ generatedBy }})</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Employee Information Card -->
+    <div class="employee-card">
+        <table class="emp-info-table">
+            <tr>
+                <td width="25%">
+                    <div class="emp-label">Employee Name</div>
+                    <div class="emp-value">{{ emp.name }}</div>
+                </td>
+                <td width="15%">
+                    <div class="emp-label">Employee Code</div>
+                    <div class="emp-value">{{ emp.employeeCode }}</div>
+                </td>
+                <td width="15%">
+                    <div class="emp-label">Employee ID</div>
+                    <div class="emp-value">{{ emp.employeeId }}</div>
+                </td>
+                <td width="15%">
+                    <div class="emp-label">Branch</div>
+                    <div class="emp-value">{{ emp.branchName or "-" }}</div>
+                </td>
+                <td width="15%">
+                    <div class="emp-label">Department</div>
+                    <div class="emp-value">{{ emp.departmentName or "-" }}</div>
+                </td>
+                <td width="15%">
+                    <div class="emp-label">Designation</div>
+                    <div class="emp-value">{{ emp.designationName or "-" }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Monthly Metrics Summary -->
+        <table class="summary-badge-table">
+            <tr>
+                <td width="12%" class="badge-present">PRESENT: {{ emp.summary.present }}</td>
+                <td width="12%" class="badge-absent">ABSENT: {{ emp.summary.absent }}</td>
+                <td width="12%" class="badge-leave">LEAVE: {{ emp.summary.leave }}</td>
+                <td width="12%" class="badge-wo">WEEK OFF: {{ emp.summary.weekOff }}</td>
+                <td width="12%" class="badge-holiday">HOLIDAY: {{ emp.summary.holiday }}</td>
+                <td width="14%" class="badge-lop">LOP DAYS: {{ "%.1f"|format(emp.summary.lopDays) if emp.summary.lopDays else "0.0" }}</td>
+                <td width="13%" class="badge-lop">LOP HOURS: {{ "%.1f"|format(emp.summary.lopHours) if emp.summary.lopHours else "0.0" }}</td>
+                <td width="13%" class="badge-late">LATE COUNT: {{ emp.summary.lateCount }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Attendance Table -->
+    <table class="attendance-table">
+        <thead>
+            <tr>
+                <th width="7%">Date</th>
+                <th width="4%">Day</th>
+                <th width="5%">Shift</th>
+                <th width="6%">IN</th>
+                <th width="6%">OUT</th>
+                <th width="5%">Work</th>
+                <th width="10%">Status</th>
+                <th width="5%">Leave</th>
+                <th width="7%">Duration</th>
+                <th width="7%">Approval</th>
+                <th width="12%">Approved By</th>
+                <th width="7%">Ledger</th>
+                <th width="6%">LOP Days</th>
+                <th width="13%">LOP Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in emp.rows %}
+            <tr class="{% if row.status == 'Holiday' %}row-holiday{% elif row.status in ['Week Off', 'Week Off Worked'] %}row-weekend{% elif row.status == 'Leave' %}row-leave{% elif row.status in ['Absent', 'ABSENT'] %}row-absent{% elif row.status == 'LOP' or row.lopDays > 0 %}row-lop{% elif loop.index % 2 == 0 %}row-even{% else %}row-odd{% endif %}">
+                <td>{{ row.date }}</td>
+                <td>{{ row.day }}</td>
+                <td>{{ row.shiftCode or "-" }}</td>
+                <td style="font-family: monospace;">{{ row.inTime or "-" }}</td>
+                <td style="font-family: monospace;">{{ row.outTime or "-" }}</td>
+                <td>{{ "%.1f"|format(row.workHours) if row.workHours else "-" }}</td>
+                <td>
+                    <b>{{ row.statusDisplay }}</b>
+                    {% if row.isLate %}<br><span style="color: #c2410c; font-size: 6pt;">(Late {{ row.lateMinutes }}m)</span>{% endif %}
+                </td>
+                <td>{{ row.leaveType or "-" }}</td>
+                <td>{{ row.leaveDuration or "-" }}</td>
+                <td>
+                    {% if row.approvalStatus == 'APPROVED' %}
+                    <span style="color: #15803d; font-weight: bold;">APPROVED</span>
+                    {% elif row.approvalStatus == 'REJECTED' %}
+                    <span style="color: #b91c1c; font-weight: bold;">REJECTED</span>
+                    {% elif row.approvalStatus == 'PENDING' %}
+                    <span style="color: #d97706; font-weight: bold;">PENDING</span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-left">{{ row.approvedBy or "-" }}</td>
+                <td>
+                    {% if row.ledgerDeducted == 'YES' %}
+                    <span class="tag-yes">YES ({{ row.ledgerAllocated }})</span>
+                    {% elif row.ledgerDeducted == 'NO' %}
+                    <span class="tag-no">NO</span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.lopDays and row.lopDays > 0 %}
+                    <span class="tag-lop">{{ "%.1f"|format(row.lopDays) }}</span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-left">{{ row.lopReason or "-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+<div id="footerContent" class="footer">
+    HRMS Attendance Monitor Report | Confidential | Page <pdf:pagenumber> of <pdf:pagecount>
+</div>
+
+</body>
+</html>

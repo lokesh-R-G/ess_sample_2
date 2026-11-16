@@ -5,7 +5,9 @@ class ManualAttendanceRequest(BaseModel):
 
 from typing import Optional, List
 from datetime import datetime, timezone
+from io import BytesIO
 from fastapi import APIRouter, Depends, Query, HTTPException, Body
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.db.mongo import get_database
 from app.dependencies import get_current_user
@@ -174,6 +176,165 @@ async def get_attendance_monitor(
         }
 
     return {"monthSummary": emp_map}
+
+
+@router.get("/export-pdf")
+async def export_master_attendance_pdf(
+    from_date: str = Query(..., alias="from"),
+    to_date: str = Query(..., alias="to"),
+    company_id: Optional[str] = Query(None, alias="companyId"),
+    branch_id: Optional[str] = Query(None, alias="branchId"),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Master Attendance Export Endpoint.
+    Consolidates monthly attendance and leave details for all employees
+    within the authenticated user's authorized scope.
+    Strictly read-only; does not recalculate or modify records.
+    """
+    try:
+        dt_from = datetime.fromisoformat(from_date)
+        dt_to = datetime.fromisoformat(to_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO YYYY-MM-DD")
+
+    # Enforce RBAC / Employee Scope
+    role = (user.get("role") or "").lower()
+    role_id = (user.get("roleId") or "").lower()
+    user_empid = (user.get("empId") or "").lower()
+    is_admin = role in ["super admin", "admin"] or role_id in ["super_admin", "admin"] or user_empid == "admin"
+
+    # Support historical employees: Include Active or any who have attendance in range
+    emp_query: dict = {}
+    if company_id:
+        emp_query["companyId"] = company_id
+    if branch_id:
+        emp_query["branchId"] = branch_id
+
+    if not is_admin:
+        manager_emp_id = user.get("employeeId")
+        if not manager_emp_id:
+            emp_code_user = user.get("empId")
+            if emp_code_user:
+                m_doc = await db.employees.find_one({"employeeCode": emp_code_user})
+                if m_doc:
+                    manager_emp_id = m_doc.get("employeeId")
+
+        from app.services.reporting_hierarchy_service import get_reporting_employee_ids
+        allowed_emp_ids = await get_reporting_employee_ids(db, manager_emp_id or "", include_self=True)
+        emp_query["employeeId"] = {"$in": allowed_emp_ids}
+
+    # Fetch employees matching scope (including historical if they have attendance or status active)
+    employees = await db.employees.find(emp_query, {
+        "employeeId": 1, "employeeCode": 1, "firstName": 1, "lastName": 1, "companyId": 1, "branchId": 1, "status": 1
+    }).to_list(None)
+
+    # If an employee is inactive but has attendance records in this period, ensure they are included if authorized
+    # By default, emp_query does not restrict to status: "Active", so all scoped employees are included.
+    if not employees:
+        raise HTTPException(status_code=404, detail="No authorized employees found for the specified period")
+
+    from app.attendance_v2.services.attendance_report_builder import AttendanceReportBuilder
+    from app.attendance_v2.services.attendance_pdf_compiler import AttendancePDFCompiler
+
+    report_builder = AttendanceReportBuilder(db)
+    report_data = await report_builder.build_report_data(
+        employees=employees,
+        dt_from=dt_from,
+        dt_to=dt_to,
+        export_type="Master Export",
+        user_info=user
+    )
+
+    pdf_compiler = AttendancePDFCompiler()
+    pdf_bytes = pdf_compiler.compile(report_data)
+
+    filename = f"Master_Attendance_{dt_from.strftime('%Y_%m')}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
+
+
+@router.get("/{employee_id}/export-pdf")
+async def export_individual_attendance_pdf(
+    employee_id: str,
+    from_date: str = Query(..., alias="from"),
+    to_date: str = Query(..., alias="to"),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    user: dict = Depends(get_current_user)
+):
+    """
+    Individual Employee Attendance Export Endpoint.
+    Exports monthly attendance and leave details for a single authorized employee.
+    Strictly read-only; independently enforces authorization scope.
+    """
+    try:
+        dt_from = datetime.fromisoformat(from_date)
+        dt_to = datetime.fromisoformat(to_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO YYYY-MM-DD")
+
+    # Resolve target employee
+    employee = await db.employees.find_one({
+        "$or": [{"employeeId": employee_id}, {"employeeCode": employee_id}]
+    }, {
+        "employeeId": 1, "employeeCode": 1, "firstName": 1, "lastName": 1, "companyId": 1, "branchId": 1, "status": 1
+    })
+
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
+    target_emp_id = str(employee.get("employeeId"))
+
+    # Enforce RBAC / Employee Scope
+    role = (user.get("role") or "").lower()
+    role_id = (user.get("roleId") or "").lower()
+    user_empid = (user.get("empId") or "").lower()
+    is_admin = role in ["super admin", "admin"] or role_id in ["super_admin", "admin"] or user_empid == "admin"
+
+    if not is_admin:
+        manager_emp_id = user.get("employeeId")
+        if not manager_emp_id:
+            emp_code_user = user.get("empId")
+            if emp_code_user:
+                m_doc = await db.employees.find_one({"employeeCode": emp_code_user})
+                if m_doc:
+                    manager_emp_id = m_doc.get("employeeId")
+
+        from app.services.reporting_hierarchy_service import get_reporting_employee_ids
+        allowed_emp_ids = await get_reporting_employee_ids(db, manager_emp_id or "", include_self=True)
+        if target_emp_id not in allowed_emp_ids:
+            raise HTTPException(status_code=403, detail="Unauthorized to export attendance for this employee")
+
+    from app.attendance_v2.services.attendance_report_builder import AttendanceReportBuilder
+    from app.attendance_v2.services.attendance_pdf_compiler import AttendancePDFCompiler
+
+    report_builder = AttendanceReportBuilder(db)
+    report_data = await report_builder.build_report_data(
+        employees=[employee],
+        dt_from=dt_from,
+        dt_to=dt_to,
+        export_type="Individual Export",
+        user_info=user
+    )
+
+    pdf_compiler = AttendancePDFCompiler()
+    pdf_bytes = pdf_compiler.compile(report_data)
+
+    emp_code = employee.get("employeeCode") or target_emp_id
+    filename = f"Attendance_{emp_code}_{dt_from.strftime('%Y_%m')}.pdf"
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
 
 
 @router.get("/{emp_code}/punches")

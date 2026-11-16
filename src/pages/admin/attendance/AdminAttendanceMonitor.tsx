@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../../../components/ui';
 import { api } from '../../../lib/api';
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, AlertCircle, Clock, Smartphone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, Clock, Smartphone, Download, FileText, Loader2 } from 'lucide-react';
 import { AdminPunchDetailMap } from '../../../components/attendance/AdminPunchDetailMap';
+import { downloadMasterAttendancePdf, downloadEmployeeAttendancePdf } from '../../../services/attendanceService';
 
 export const AdminAttendanceMonitor: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -11,6 +12,10 @@ export const AdminAttendanceMonitor: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  const [exportingMaster, setExportingMaster] = useState(false);
+  const [exportingEmpId, setExportingEmpId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
   const [selectedCell, setSelectedCell] = useState<{employeeId: string, date: string, details: any, empDetails: any} | null>(null);
   const [manualStatus, setManualStatus] = useState('PRESENT');
   const [manualLopHours, setManualLopHours] = useState('');
@@ -43,6 +48,53 @@ export const AdminAttendanceMonitor: React.FC = () => {
       alert(err.message || 'Failed to save manual attendance');
     } finally {
       setSavingManual(false);
+    }
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const handleExportMaster = async () => {
+    if (exportingMaster) return;
+    setExportingMaster(true);
+    setExportError(null);
+    try {
+      const from = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+      const to = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+      const { blob, filename } = await downloadMasterAttendancePdf(from, to);
+      triggerDownload(blob, filename);
+    } catch (err: any) {
+      console.error('Master export failed:', err);
+      setExportError(err.message || 'Failed to generate Master Attendance PDF');
+    } finally {
+      setExportingMaster(false);
+    }
+  };
+
+  const handleExportEmployee = async (e: React.MouseEvent, emp: any) => {
+    e.stopPropagation();
+    const empId = emp.employeeId || emp.employeeCode;
+    if (exportingEmpId) return;
+    setExportingEmpId(empId);
+    setExportError(null);
+    try {
+      const from = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+      const to = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+      const { blob, filename } = await downloadEmployeeAttendancePdf(empId, from, to);
+      triggerDownload(blob, filename);
+    } catch (err: any) {
+      console.error(`Export failed for employee ${empId}:`, err);
+      setExportError(err.message || `Failed to generate PDF for ${emp.name || empId}`);
+    } finally {
+      setExportingEmpId(null);
     }
   };
 
@@ -125,23 +177,65 @@ export const AdminAttendanceMonitor: React.FC = () => {
           <p className="text-neutral-500 mt-1">Review finalized attendance and leave balances</p>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+          <div className="flex items-center bg-white border border-neutral-200 rounded-xl p-1 shadow-sm">
+            <button 
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+              title="Previous Month"
+            >
+              <ChevronLeft className="w-5 h-5 text-neutral-600" />
+            </button>
+            <span className="text-base font-semibold text-neutral-800 w-36 text-center select-none">
+              {format(currentMonth, 'MMMM yyyy')}
+            </span>
+            <button 
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+              title="Next Month"
+            >
+              <ChevronRight className="w-5 h-5 text-neutral-600" />
+            </button>
+          </div>
+
+          <button
+            onClick={handleExportMaster}
+            disabled={exportingMaster || loading}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm ${
+              exportingMaster || loading
+                ? 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-blue-500/10'
+            }`}
+            title="Export consolidated monthly attendance report for all authorized employees"
           >
-            <ChevronLeft className="w-5 h-5 text-neutral-600" />
-          </button>
-          <span className="text-lg font-semibold text-neutral-800 w-32 text-center">
-            {format(currentMonth, 'MMMM yyyy')}
-          </span>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
-          >
-            <ChevronRight className="w-5 h-5 text-neutral-600" />
+            {exportingMaster ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                <span>Exporting...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                <span>Master Export</span>
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {exportError && (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <p className="text-sm font-medium">{exportError}</p>
+          </div>
+          <button 
+            onClick={() => setExportError(null)}
+            className="text-xs text-rose-600 hover:text-rose-800 font-semibold px-2 py-1 rounded hover:bg-rose-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-3">
@@ -174,8 +268,24 @@ export const AdminAttendanceMonitor: React.FC = () => {
               {Object.values(data).map((emp: any) => (
                 <tr key={emp.employeeId} className="border-b border-neutral-100 hover:bg-neutral-50/50 transition-colors">
                   <td className="px-4 py-3 sticky left-0 bg-white shadow-[1px_0_0_0_#e5e7eb] z-10 group-hover:bg-neutral-50">
-                    <div className="font-medium text-neutral-900">{emp.name}</div>
-                    <div className="text-xs text-neutral-500">{emp.employeeCode || emp.employeeId}</div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="font-medium text-neutral-900">{emp.name}</div>
+                        <div className="text-xs text-neutral-500">{emp.employeeCode || emp.employeeId}</div>
+                      </div>
+                      <button
+                        onClick={(e) => handleExportEmployee(e, emp)}
+                        disabled={exportingEmpId === (emp.employeeId || emp.employeeCode)}
+                        className="p-1.5 rounded-lg text-neutral-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
+                        title={`Export monthly attendance report for ${emp.name}`}
+                      >
+                        {exportingEmpId === (emp.employeeId || emp.employeeCode) ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        ) : (
+                          <FileText className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-4 py-3 border-l border-neutral-100 text-neutral-600">
                     <span className="text-green-600 font-medium">{emp.summary.present}</span> / 
