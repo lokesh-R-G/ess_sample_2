@@ -539,18 +539,18 @@ const AdminPayrollControl: React.FC = () => {
 
     setExportingCSV(true);
     try {
-      const csvContent = await payrollCycleApi.exportCsv(selectedCycleId, selectedCompanyId);
+      const { blob, filename } = await payrollCycleApi.exportCsv(selectedCycleId, selectedCompanyId);
       
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `bank_export_${selectedCycleId}_${selectedCompanyId}.csv`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      toast.success('Bank export downloaded successfully');
+      toast.success(`Bank export downloaded successfully (${filename})`);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to export bank file');
     } finally {

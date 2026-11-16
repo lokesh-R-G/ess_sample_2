@@ -46,7 +46,7 @@ class PayrollExportService:
             
         # Prefetch Branches for Names
         branch_cache = {}
-        async for br in self.db.branches.find({"companyId": company_id}):
+        async for br in self.db.branchs.find({"companyId": company_id}):
             branch_cache[str(br.get("_id"))] = br.get("name", "Unknown Branch")
             
         # 3. Fetch Payroll Records

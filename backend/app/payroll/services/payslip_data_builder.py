@@ -107,7 +107,7 @@ class PayslipDataBuilder:
                 
             b_id = employment.get("branchId")
             if b_id:
-                branch = await self.db.branches.find_one({"_id": ObjectId(b_id)}) if len(str(b_id))==24 else await self.db.branches.find_one({"_id": b_id})
+                branch = await self.db.branchs.find_one({"_id": ObjectId(b_id)}) if len(str(b_id))==24 else await self.db.branchs.find_one({"_id": b_id})
                 if branch: branch_name = branch.get("name", branch_name)
                 
             d_id = employment.get("departmentId")

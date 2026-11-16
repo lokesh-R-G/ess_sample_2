@@ -24,7 +24,30 @@ class CompanySalaryBankService:
             {"$set": {"isPrimary": False, "updatedAt": datetime.utcnow()}}
         )
 
+    async def _validate_branch_mappings(self, company_code: str, branch_ids: List[str], exclude_id: Optional[str] = None):
+        """Ensures that no branch is mapped to more than one active salary bank account for this company."""
+        if not branch_ids:
+            return
+        query = {
+            "companyCode": company_code,
+            "status": "Active",
+            "branchIds": {"$in": branch_ids}
+        }
+        if exclude_id:
+            query["_id"] = {"$ne": ObjectId(exclude_id)}
+        
+        conflicting = await self.collection.find_one(query)
+        if conflicting:
+            conflicting_branches = set(branch_ids).intersection(set(conflicting.get("branchIds", [])))
+            raise ValueError(
+                f"Branch(es) {list(conflicting_branches)} are already mapped to another active salary bank account "
+                f"({conflicting.get('bankName')} - {conflicting.get('accountNumber')}). Each branch can only be mapped to one bank account."
+            )
+
     async def create(self, data: CompanySalaryBankAccountCreate, created_by: str) -> CompanySalaryBankAccountModel:
+        if data.branchIds:
+            await self._validate_branch_mappings(data.companyCode, data.branchIds)
+
         if data.isPrimary:
             await self._enforce_single_primary(data.companyCode)
             
@@ -80,6 +103,15 @@ class CompanySalaryBankService:
             raise ValueError("Bank account not found")
 
         company_code = doc["companyCode"]
+
+        if "branchIds" in update_data and update_data["branchIds"] is not None:
+            # If changing branch mappings or ensuring active status
+            target_status = update_data.get("status", doc.get("status", "Active"))
+            if target_status == "Active":
+                await self._validate_branch_mappings(company_code, update_data["branchIds"], exclude_id=id)
+        elif update_data.get("status") == "Active" and doc.get("status") != "Active":
+            # Account being reactivated, check existing branches
+            await self._validate_branch_mappings(company_code, doc.get("branchIds", []), exclude_id=id)
 
         if update_data.get("isPrimary") is True:
             await self._enforce_single_primary(company_code, exclude_id=id)

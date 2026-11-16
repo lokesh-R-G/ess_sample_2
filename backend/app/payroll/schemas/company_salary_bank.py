@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -13,6 +13,7 @@ class CompanySalaryBankAccountModel(BaseModel):
     accountType: Optional[str] = None
     status: str = "Active"
     isPrimary: bool = False
+    branchIds: List[str] = Field(default_factory=list)
     createdAt: datetime
     updatedAt: datetime
     createdBy: str
@@ -28,6 +29,7 @@ class CompanySalaryBankAccountCreate(BaseModel):
     accountType: Optional[str] = None
     status: str = "Active"
     isPrimary: bool = False
+    branchIds: List[str] = Field(default_factory=list)
 
 class CompanySalaryBankAccountUpdate(BaseModel):
     accountHolderName: Optional[str] = None
@@ -38,6 +40,7 @@ class CompanySalaryBankAccountUpdate(BaseModel):
     accountType: Optional[str] = None
     status: Optional[str] = None
     isPrimary: Optional[bool] = None
+    branchIds: Optional[List[str]] = None
 
 class CompanySalaryBankAccountResponse(CompanySalaryBankAccountModel):
     pass

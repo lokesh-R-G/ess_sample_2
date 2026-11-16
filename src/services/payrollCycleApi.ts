@@ -61,8 +61,25 @@ export const payrollCycleApi = {
     return api.get<AttendanceLedgerRow[]>(`/v2/payroll/cycles/${cycleId}/attendance-ledger?${params.toString()}`);
   },
 
-  exportCsv: async (cycleId: string, companyId: string): Promise<any> => {
-    const res = await api.get<{csv: string}>(`/v2/payroll/cycles/${cycleId}/export/csv?companyId=${encodeURIComponent(companyId)}`);
-    return res.csv;
+  getExportPreview: async (cycleId: string, companyId: string): Promise<any> => {
+    return api.get<any>(`/v2/payroll/cycles/${cycleId}/export/preview?companyId=${encodeURIComponent(companyId)}`);
+  },
+
+  exportCsv: async (cycleId: string, companyId: string): Promise<{ blob: Blob; filename: string }> => {
+    const rawRes = await api.get<Response>(`/v2/payroll/cycles/${cycleId}/export/csv?companyId=${encodeURIComponent(companyId)}`, {
+      responseType: 'raw'
+    });
+
+    const contentDisposition = rawRes.headers.get('content-disposition') || '';
+    let filename = `bank_export_${cycleId}.csv`;
+    const match = contentDisposition.match(/filename=["']?([^"';]+)["']?/i);
+    if (match && match[1]) {
+      filename = match[1].trim();
+    } else if (rawRes.headers.get('content-type')?.includes('application/zip')) {
+      filename = `bank_export_${cycleId}.zip`;
+    }
+
+    const blob = await rawRes.blob();
+    return { blob, filename };
   }
 };

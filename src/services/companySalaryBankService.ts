@@ -11,6 +11,7 @@ export interface CompanySalaryBank {
   accountType?: string;
   status: 'Active' | 'Inactive';
   isPrimary: boolean;
+  branchIds?: string[];
   updatedAt?: string;
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { companySalaryBankService, CompanySalaryBank } from '../../../services/companySalaryBankService';
-import { Check, Edit, Plus, Trash2, Shield, AlertCircle, Building2 } from 'lucide-react';
+import { Check, Edit, Plus, Trash2, Shield, AlertCircle, Building2, GitBranch } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { organizationApi } from '../../../services/organization.api';
@@ -10,6 +10,7 @@ export default function CompanyBankAccounts() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [filterCompanyCode, setFilterCompanyCode] = useState<string>('all');
   const [banks, setBanks] = useState<CompanySalaryBank[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -24,10 +25,12 @@ export default function CompanyBankAccounts() {
     accountType: 'Current',
     status: 'Active',
     isPrimary: false,
+    branchIds: [],
   });
 
   useEffect(() => {
     loadCompanies();
+    loadAllBranches();
   }, []);
 
   const loadCompanies = async () => {
@@ -38,6 +41,16 @@ export default function CompanyBankAccounts() {
     } catch (error) {
       console.error(error);
       toast.error('Failed to load companies');
+    }
+  };
+
+  const loadAllBranches = async () => {
+    try {
+      const resp: any = await organizationApi.getBranches();
+      const brs = resp.items || resp.data || resp;
+      setBranches(brs || []);
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -64,6 +77,22 @@ export default function CompanyBankAccounts() {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
   };
+
+  const toggleBranchSelection = (branchId: string) => {
+    setFormData(prev => {
+      const current = prev.branchIds || [];
+      const updated = current.includes(branchId)
+        ? current.filter(id => id !== branchId)
+        : [...current, branchId];
+      return { ...prev, branchIds: updated };
+    });
+  };
+
+  const selectedCompany = companies.find(c => c.code === formData.companyCode);
+  const availableBranchesForCompany = branches.filter(b => {
+    if (!selectedCompany) return false;
+    return b.companyId === selectedCompany._id || b.companyId === selectedCompany.id;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +126,10 @@ export default function CompanyBankAccounts() {
   };
 
   const handleEdit = (bank: CompanySalaryBank) => {
-    setFormData(bank);
+    setFormData({
+      ...bank,
+      branchIds: bank.branchIds || []
+    });
     setEditingId(bank._id!);
     setIsModalOpen(true);
   };
@@ -117,7 +149,7 @@ export default function CompanyBankAccounts() {
             Company Salary Bank Accounts
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage the bank accounts used to fund employee salary transfers via Bank Export.
+            Manage corporate sender bank accounts and branch mappings for salary bank exports.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -146,6 +178,7 @@ export default function CompanyBankAccounts() {
                 accountType: 'Current',
                 status: 'Active',
                 isPrimary: false,
+                branchIds: [],
               });
               setIsModalOpen(true);
             }}
@@ -183,6 +216,7 @@ export default function CompanyBankAccounts() {
                   accountType: 'Current',
                   status: 'Active',
                   isPrimary: true,
+                  branchIds: [],
                 });
                 setIsModalOpen(true);
             }}
@@ -199,6 +233,7 @@ export default function CompanyBankAccounts() {
                 <th className="px-6 py-4 font-medium">Company</th>
                 <th className="px-6 py-4 font-medium">Bank Details</th>
                 <th className="px-6 py-4 font-medium">Account Details</th>
+                <th className="px-6 py-4 font-medium">Mapped Branches</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
@@ -206,6 +241,10 @@ export default function CompanyBankAccounts() {
             <tbody className="divide-y divide-gray-200">
               {banks.map((bank) => {
                 const comp = companies.find(c => c.code === bank.companyCode);
+                const mappedBranchDocs = (bank.branchIds || []).map(bId => {
+                  return branches.find(b => (b._id === bId || b.id === bId || b.code === bId))?.name || bId;
+                });
+
                 return (
                 <tr key={bank._id || bank.accountNumber || Math.random().toString()} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
@@ -220,6 +259,21 @@ export default function CompanyBankAccounts() {
                     <div className="font-medium text-gray-900">{maskAccount(bank.accountNumber)}</div>
                     <div className="text-gray-500 font-mono text-xs mt-0.5">IFSC: {bank.ifscCode}</div>
                     <div className="text-gray-500 text-xs mt-0.5">{bank.accountHolderName}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {mappedBranchDocs.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {mappedBranchDocs.map((name, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        No Branches Mapped
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-2 items-start">
@@ -263,7 +317,7 @@ export default function CompanyBankAccounts() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <h2 className="text-lg font-bold text-gray-900">
                 {editingId ? 'Edit Bank Account' : 'Add Bank Account'}
@@ -276,7 +330,7 @@ export default function CompanyBankAccounts() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
@@ -322,7 +376,7 @@ export default function CompanyBankAccounts() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Branch Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Branch</label>
                   <input
                     type="text"
                     name="branchName"
@@ -384,6 +438,42 @@ export default function CompanyBankAccounts() {
                     <option value="Inactive">Inactive</option>
                   </select>
                 </div>
+
+                {/* Branch Selection Section */}
+                <div className="col-span-2 border-t border-gray-100 pt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                    <GitBranch className="w-4 h-4 text-blue-600" />
+                    Mapped Branches (Many-to-One Supported)
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select which company branch(es) will disburse salaries from this account. Multiple branches can share one bank account.
+                  </p>
+                  
+                  {availableBranchesForCompany.length === 0 ? (
+                    <div className="text-xs text-gray-400 italic bg-gray-50 p-2.5 rounded border border-gray-200">
+                      {formData.companyCode ? 'No branches found for this company.' : 'Select a company above to view branches.'}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50/50">
+                      {availableBranchesForCompany.map(branch => {
+                        const bId = branch._id || branch.id;
+                        const isChecked = (formData.branchIds || []).includes(bId);
+                        return (
+                          <label key={bId} className="flex items-center gap-2 text-xs text-gray-700 hover:bg-white p-1.5 rounded cursor-pointer transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleBranchSelection(bId)}
+                              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                            />
+                            <span className="font-medium truncate">{branch.name}</span>
+                            <span className="text-gray-400 text-[10px]">({branch.code || bId.slice(-4)})</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {!editingId && (
@@ -397,7 +487,7 @@ export default function CompanyBankAccounts() {
                     className="rounded text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="isPrimary" className="text-sm text-gray-700">
-                    Set as primary salary-sending account
+                    Set as default primary salary-sending account
                   </label>
                 </div>
               )}

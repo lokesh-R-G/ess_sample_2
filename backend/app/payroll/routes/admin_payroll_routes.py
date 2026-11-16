@@ -538,11 +538,40 @@ async def get_branch_summary(
                 "netPay": {"$sum": "$netPay"}
             }
         },
+        # Convert string _id to ObjectId if possible for lookup against branchs._id
+        {
+            "$addFields": {
+                "branchObjId": {
+                    "$cond": {
+                        "if": {
+                            "$and": [
+                                {"$ne": ["$_id", None]},
+                                {"$eq": [{"$strLenCP": {"$ifNull": ["$_id", ""]}}, 24]}
+                            ]
+                        },
+                        "then": {"$toObjectId": "$_id"},
+                        "else": None
+                    }
+                }
+            }
+        },
         {
             "$lookup": {
-                "from": "branches",
-                "localField": "_id",
-                "foreignField": "branchId",
+                "from": "branchs",
+                "let": {"bIdStr": "$_id", "bObjId": "$branchObjId"},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$or": [
+                                    {"$eq": ["$_id", "$$bObjId"]},
+                                    {"$eq": ["$_id", "$$bIdStr"]},
+                                    {"$eq": ["$code", "$$bIdStr"]}
+                                ]
+                            }
+                        }
+                    }
+                ],
                 "as": "branchInfo"
             }
         }

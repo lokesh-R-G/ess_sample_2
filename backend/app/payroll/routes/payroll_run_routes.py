@@ -265,14 +265,53 @@ async def recalculate_payroll(cycle_id: str, employee_id: str, reason: str, db: 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/cycles/{cycle_id}/export/csv")
-async def export_bank_csv(cycle_id: str, companyId: Optional[str] = None, db: AsyncIOMotorDatabase = Depends(get_database), current_user: dict = Depends(get_current_user), _admin = Depends(require_permission("payroll.publish", resource_context_provider=query_company_context))):
+@router.get("/cycles/{cycle_id}/export/preview")
+async def preview_bank_export(
+    cycle_id: str,
+    companyId: Optional[str] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.publish", resource_context_provider=query_company_context))
+):
     if not ObjectId.is_valid(cycle_id):
         raise HTTPException(status_code=400, detail="Invalid cycle ID")
     service = BankExportService(db)
     try:
-        csv_content = await service.generate_csv_export(cycle_id, generated_by=current_user.get("employeeId"), company_id=companyId or current_user.get("companyId"))
-        return {"csv": csv_content} # Return normally, frontend handles blob download
+        preview_data = await service.get_export_preview(
+            cycle_id=cycle_id,
+            company_id=companyId or current_user.get("companyId")
+        )
+        return preview_data
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/cycles/{cycle_id}/export/csv")
+async def export_bank_csv(
+    cycle_id: str,
+    companyId: Optional[str] = None,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: dict = Depends(get_current_user),
+    _admin = Depends(require_permission("payroll.publish", resource_context_provider=query_company_context))
+):
+    if not ObjectId.is_valid(cycle_id):
+        raise HTTPException(status_code=400, detail="Invalid cycle ID")
+    service = BankExportService(db)
+    try:
+        file_bytes, filename, content_type = await service.generate_csv_export(
+            cycle_id,
+            generated_by=current_user.get("employeeId"),
+            company_id=companyId or current_user.get("companyId")
+        )
+
+        from fastapi.responses import Response
+        return Response(
+            content=file_bytes,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

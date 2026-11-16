@@ -165,8 +165,37 @@ class PayrollProcessor:
             raise ValueError(f"Employee {employee_id} not found")
             
         emp_company_id = emp_doc.get("companyId", company_id)
-        branch_id = emp_doc.get("branchId")
         emp_code = emp_doc.get("employeeCode")
+
+        # Resolve Branch from employee_employment_histories applicable to cycle dates
+        branch_id = emp_doc.get("branchId")
+        if not branch_id:
+            # Query temporal employment history for the cycle period
+            hist = await self.db.employee_employment_histories.find_one(
+                {
+                    "employeeId": employee_id,
+                    "deletedAt": None,
+                    "effectiveFrom": {"$lte": cycle.endDate},
+                    "$or": [
+                        {"effectiveTo": None},
+                        {"effectiveTo": {"$gte": cycle.startDate}}
+                    ]
+                },
+                sort=[("effectiveFrom", -1), ("version", -1)]
+            )
+            if not hist:
+                # Fallback to current employment history
+                hist = await self.db.employee_employment_histories.find_one(
+                    {
+                        "employeeId": employee_id,
+                        "isCurrent": True,
+                        "deletedAt": None
+                    }
+                )
+            if hist:
+                branch_id = hist.get("branchId")
+                if hist.get("companyId"):
+                    emp_company_id = hist.get("companyId")
         
         # Unpack core
         prorated_components = core["prorated_components"]
