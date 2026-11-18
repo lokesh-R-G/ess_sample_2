@@ -1,12 +1,14 @@
 import {
   calculateCTCRevision,
-  DEFAULT_EXCEL_COMPONENTS,
+  DEFAULT_EXAMPLE_COMPONENTS,
+  DEFAULT_EMPLOYEE_DEDUCTIONS,
   formatIndianCurrency,
+  formatPercentage,
 } from './ctcCalculatorEngine.ts';
 import type { CTCCalculatorState } from './ctcCalculatorEngine.ts';
 
 function runTests() {
-  console.log('--- Starting CTC Revision Calculator Engine Unit Tests ---');
+  console.log('--- Starting Proportional CTC Revision Calculator Engine Unit Tests ---');
   let passed = 0;
   let total = 0;
 
@@ -21,143 +23,155 @@ function runTests() {
     }
   }
 
-  function approxEqual(a: number, b: number, eps = 0.0001): boolean {
+  function approxEqual(a: number, b: number, eps = 0.001): boolean {
     return Math.abs(a - b) <= eps;
   }
 
-  // Test 1: Excel Baseline Reference Test
+  // Test Case 1: Core Business Example (Old CTC = 6,00,000, Target New CTC = 8,00,000)
   {
     const state: CTCCalculatorState = {
-      oldCTC: 1400004,
+      oldCTC: 600000,
       revisionMethod: 'TARGET_CTC',
       incrementPercentage: 0,
-      targetCTC: 2400000,
-      components: DEFAULT_EXCEL_COMPONENTS,
+      targetCTC: 800000,
+      components: DEFAULT_EXAMPLE_COMPONENTS,
+      employeeDeductions: DEFAULT_EMPLOYEE_DEDUCTIONS,
     };
 
     const res = calculateCTCRevision(state);
 
-    assert(approxEqual(res.oldEnteredCTC, 1400004), 'Excel Old CTC is 1,400,004');
-    assert(approxEqual(res.totalOldComponents, 1450404), 'Excel Total Old Components is 1,450,404');
-    assert(res.isOldSumMismatch === true, 'Excel Old Sum Mismatch detected (1,450,404 != 1,400,004)');
-    assert(approxEqual(res.oldSumDifference, 50400), 'Old Sum difference is exactly 50,400');
+    // 1. All old component percentages sum to 100% when old component total equals old CTC
+    assert(approxEqual(res.oldEnteredCTC, 600000), 'Old CTC is 6,00,000');
+    assert(approxEqual(res.totalOldComponents, 600000), 'Sum of old components is exactly 6,00,000');
+    assert(approxEqual(res.oldComponentsPercentageSum, 100), 'Sum of old component percentages is 100%');
+    assert(res.isOldSumMismatch === false, 'No old sum mismatch');
 
-    assert(approxEqual(res.calculatedNewCTC, 2400000), 'Calculated New CTC is 2,400,000');
-    assert(approxEqual(res.totalNewComponents, 2433685.8288976), 'Total New Components matches Excel ~2433685.83');
-    assert(res.isNewSumMismatch === true, 'New Sum Mismatch detected due to fixed PF');
-    assert(approxEqual(res.newSumDifference, 33685.8288976), 'New Sum difference is ~33685.83');
+    // 2. Proportion derived for every component
+    const basic = res.results.find((c) => c.id === 'basic')!;
+    assert(approxEqual(basic.oldPercentageOfCTC, 40), 'Basic is exactly 40% of CTC');
+    assert(approxEqual(basic.newAmount, 320000), 'Basic new amount is 40% of 8,00,000 = 3,20,000');
+    assert(approxEqual(basic.monthlyEquivalent, 320000 / 12), 'Basic monthly equivalent is 320,000 / 12');
 
-    // Check specific components
-    const basic = res.results.find((c) => c.name === 'Basic')!;
-    assert(approxEqual(basic.oldPercentageOfCTC, 630000 / 1400004), 'Basic % of Old CTC is ~0.4499987');
-    assert(approxEqual(basic.newAmount, 1079996.91429), 'Basic New Amount is 1,079,996.91');
+    const hra = res.results.find((c) => c.id === 'hra')!;
+    assert(approxEqual(hra.oldPercentageOfCTC, 20), 'HRA is 20% of CTC');
+    assert(approxEqual(hra.newAmount, 160000), 'HRA new amount is 20% of 8,00,000 = 1,60,000');
 
-    const hra = res.results.find((c) => c.name === 'HRA')!;
-    assert(approxEqual(hra.newAmount, 539998.45714), 'HRA New Amount is 539,998.46');
+    const conv = res.results.find((c) => c.id === 'conveyance')!;
+    assert(approxEqual(conv.oldPercentageOfCTC, 5), 'Conveyance is 5% of CTC');
+    assert(approxEqual(conv.newAmount, 40000), 'Conveyance new amount is 5% of 8,00,000 = 40,000');
 
-    // Static PF checks
-    const pfEmp = res.results.find((c) => c.name === 'PF Employee (PFEMP)')!;
-    assert(pfEmp.isStatic === true, 'PF Employee is marked static');
-    assert(approxEqual(pfEmp.newAmount, 36000), 'PF Employee newAmount is fixed at 36,000');
-    assert(approxEqual(pfEmp.difference, 0), 'PF Employee difference is 0');
+    const otherEarn = res.results.find((c) => c.id === 'other_earnings')!;
+    assert(approxEqual(otherEarn.oldPercentageOfCTC, 20), 'Other Earnings is 20% of CTC');
+    assert(approxEqual(otherEarn.newAmount, 160000), 'Other Earnings new amount is 1,60,000');
 
-    const pfEmpr = res.results.find((c) => c.name === 'PF Employer (EPEMPR)')!;
-    assert(approxEqual(pfEmpr.newAmount, 37800), 'PF Employer newAmount is fixed at 37,800');
+    // 3. Employer PF is PROPORTIONALLY recalculated (NO STATIC VALUE)
+    const empPf = res.results.find((c) => c.id === 'employer_pf')!;
+    assert(approxEqual(empPf.oldPercentageOfCTC, 4.8), 'Employer PF is 4.8% of CTC (28,800 / 600,000)');
+    assert(approxEqual(empPf.newAmount, 38400), 'Employer PF is proportionally recalculated to 4.8% of 800,000 = 38,400');
+    assert(empPf.newAmount !== empPf.oldAmount, 'Employer PF is NOT static (increased from 28,800 to 38,400)');
 
-    const epsEmpr = res.results.find((c) => c.name === 'EPS Employer (EPSEMPR)')!;
-    assert(approxEqual(epsEmpr.newAmount, 0), 'EPS Employer newAmount is fixed at 0');
+    // 4. Employer Pension is PROPORTIONALLY recalculated (NO STATIC VALUE)
+    const empPension = res.results.find((c) => c.id === 'employer_pension')!;
+    assert(approxEqual(empPension.oldPercentageOfCTC, 1.2), 'Employer Pension is 1.2% of CTC (7,200 / 600,000)');
+    assert(approxEqual(empPension.newAmount, 9600), 'Employer Pension is proportionally recalculated to 1.2% of 800,000 = 9,600');
+    assert(empPension.newAmount !== empPension.oldAmount, 'Employer Pension is NOT static (increased from 7,200 to 9,600)');
+
+    // 5. LTA is PROPORTIONALLY recalculated and marked as annual benefit
+    const lta = res.results.find((c) => c.id === 'lta')!;
+    assert(approxEqual(lta.oldPercentageOfCTC, 4), 'LTA is 4% of CTC (24,000 / 600,000)');
+    assert(approxEqual(lta.newAmount, 32000), 'LTA is proportionally recalculated to 4% of 800,000 = 32,000');
+    assert(lta.isAnnualPayout === true, 'LTA is flagged as annual payout benefit');
+
+    // 6. Gratuity is PROPORTIONALLY recalculated and marked as annual benefit
+    const gratuity = res.results.find((c) => c.id === 'gratuity')!;
+    assert(approxEqual(gratuity.oldPercentageOfCTC, 5), 'Gratuity is 5% of CTC (30,000 / 600,000)');
+    assert(approxEqual(gratuity.newAmount, 40000), 'Gratuity is proportionally recalculated to 5% of 800,000 = 40,000');
+    assert(gratuity.isAnnualPayout === true, 'Gratuity is flagged as annual benefit');
+
+    // 7. New component amounts reconcile with the new CTC
+    assert(approxEqual(res.totalNewComponents, 800000), 'Total New Components exactly matches target New CTC (8,00,000)');
+    assert(res.isNewSumMismatch === false, 'No new sum mismatch when components reconcile');
+    assert(approxEqual(res.newSumDifference, 0), 'New sum difference is 0');
+
+    // 8. Employee PF deduction remains distinct from employer CTC
+    const empDeduction = res.employeeDeductionResults?.find((d) => d.id === 'employee_pf')!;
+    assert(empDeduction !== undefined, 'Employee deduction is tracked distinctly');
+    assert(empDeduction.category === 'Employee Deduction', 'Category is Employee Deduction');
   }
 
-  // Test 2: Mode A Percentage Increment Calculation
+  // Test Case 2: Percentage Increment Mode (Old CTC = 6,00,000 with 15% increment = 6,90,000)
   {
     const state: CTCCalculatorState = {
       oldCTC: 600000,
       revisionMethod: 'PERCENTAGE',
       incrementPercentage: 15,
       targetCTC: 0,
-      components: [
-        { id: 'basic', name: 'Basic', oldAmount: 300000, isStatic: false },
-        { id: 'pf_emp', name: 'PF Employee (PFEMP)', oldAmount: 21600, isStatic: true },
-      ],
+      components: DEFAULT_EXAMPLE_COMPONENTS,
     };
 
     const res = calculateCTCRevision(state);
     assert(approxEqual(res.calculatedNewCTC, 690000), 'Percentage mode: 600,000 * 1.15 = 690,000');
+    assert(approxEqual(res.totalNewComponents, 690000), 'Total new components equals 690,000');
 
-    const basic = res.results.find((c) => c.id === 'basic')!;
-    assert(approxEqual(basic.oldPercentageOfCTC, 0.5), 'Basic percentage is 50%');
-    assert(approxEqual(basic.newAmount, 345000), 'Basic new amount is 345,000');
+    const empPf = res.results.find((c) => c.id === 'employer_pf')!;
+    assert(approxEqual(empPf.newAmount, 28800 * 1.15), 'Employer PF increased by exactly 15%');
 
-    const pfEmp = res.results.find((c) => c.id === 'pf_emp')!;
-    assert(approxEqual(pfEmp.newAmount, 21600), 'Static PF remains 21,600');
+    const lta = res.results.find((c) => c.id === 'lta')!;
+    assert(approxEqual(lta.newAmount, 24000 * 1.15), 'LTA increased by exactly 15%');
+
+    const grat = res.results.find((c) => c.id === 'gratuity')!;
+    assert(approxEqual(grat.newAmount, 30000 * 1.15), 'Gratuity increased by exactly 15%');
   }
 
-  // Test 3: Zero-value components and zero Old CTC safety
+  // Test Case 3: Old Component Total Mismatch produces warning and doesn't silently normalize
   {
-    const stateZeroCTC: CTCCalculatorState = {
-      oldCTC: 0,
+    const stateMismatch: CTCCalculatorState = {
+      oldCTC: 500000,
       revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 600000,
+      components: [
+        { id: 'basic', name: 'Basic', category: 'Earning', oldAmount: 200000 },
+        { id: 'hra', name: 'HRA', category: 'Earning', oldAmount: 100000 },
+      ], // Sum = 300,000 != 500,000
+    };
+
+    const res = calculateCTCRevision(stateMismatch);
+    assert(res.isOldSumMismatch === true, 'Old sum mismatch is flagged');
+    assert(approxEqual(res.oldSumDifference, -200000), 'Old sum difference is -200,000');
+    // Basic was 200,000 / 500,000 = 40% of entered CTC
+    const basic = res.results.find((c) => c.id === 'basic')!;
+    assert(approxEqual(basic.oldPercentageOfCTC, 40), 'Basic percentage is calculated against entered Old CTC (40%), not normalized');
+    assert(approxEqual(basic.newAmount, 240000), 'Basic new amount is 40% of 600,000 = 240,000');
+  }
+
+  // Test Case 4: Zero-value component handling & safe division by zero
+  {
+    const stateZero: CTCCalculatorState = {
+      oldCTC: 0,
+      revisionMethod: 'PERCENTAGE',
       incrementPercentage: 10,
       targetCTC: 500000,
       components: [
-        { id: 'basic', name: 'Basic', oldAmount: 0, isStatic: false },
-        { id: 'pf_emp', name: 'PF Employee (PFEMP)', oldAmount: 10000, isStatic: true },
+        { id: 'basic', name: 'Basic', category: 'Earning', oldAmount: 0 },
+        { id: 'conv', name: 'Conveyance', category: 'Earning', oldAmount: 0 },
       ],
     };
 
-    const res = calculateCTCRevision(stateZeroCTC);
-    assert(res.calculatedNewCTC === 500000, 'Calculated CTC handled');
+    const res = calculateCTCRevision(stateZero);
+    assert(res.calculatedNewCTC === 0, 'Zero Old CTC in percentage mode produces 0');
     const basic = res.results.find((c) => c.id === 'basic')!;
-    assert(basic.oldPercentageOfCTC === 0, 'No division by zero: pct is 0');
+    assert(basic.oldPercentageOfCTC === 0, 'Safe division by zero: percentage is 0');
     assert(basic.newAmount === 0, 'New amount is 0');
-    const pf = res.results.find((c) => c.id === 'pf_emp')!;
-    assert(pf.newAmount === 10000, 'Static PF remains unchanged even with 0 old CTC');
   }
 
-  // Test 4: Switching between revision methods
+  // Test Case 5: Currency and percentage formatting
   {
-    const baseState: CTCCalculatorState = {
-      oldCTC: 1000000,
-      revisionMethod: 'PERCENTAGE',
-      incrementPercentage: 20,
-      targetCTC: 1500000,
-      components: [{ id: 'basic', name: 'Basic', oldAmount: 500000, isStatic: false }],
-    };
-
-    const resPct = calculateCTCRevision(baseState);
-    assert(approxEqual(resPct.calculatedNewCTC, 1200000), 'Method PERCENTAGE yields 1,200,000');
-
-    const resTarget = calculateCTCRevision({ ...baseState, revisionMethod: 'TARGET_CTC' });
-    assert(approxEqual(resTarget.calculatedNewCTC, 1500000), 'Method TARGET_CTC yields 1,500,000');
+    assert(formatIndianCurrency(240000) === '₹2,40,000.00', 'Indian currency formatting works');
+    assert(formatPercentage(40) === '40.00%', 'Percentage formatting works');
   }
 
-  // Test 5: Editing an old component updates result immediately
-  {
-    const state1: CTCCalculatorState = {
-      oldCTC: 1000000,
-      revisionMethod: 'TARGET_CTC',
-      incrementPercentage: 0,
-      targetCTC: 1200000,
-      components: [{ id: 'basic', name: 'Basic', oldAmount: 500000, isStatic: false }],
-    };
-    const res1 = calculateCTCRevision(state1);
-    assert(approxEqual(res1.results[0].newAmount, 600000), 'Initial basic new is 600,000');
-
-    const state2: CTCCalculatorState = {
-      ...state1,
-      components: [{ id: 'basic', name: 'Basic', oldAmount: 600000, isStatic: false }],
-    };
-    const res2 = calculateCTCRevision(state2);
-    assert(approxEqual(res2.results[0].newAmount, 720000), 'Updated basic old 600k yields new 720k');
-  }
-
-  // Test 6: Currency formatting
-  {
-    assert(formatIndianCurrency(1079996.91) === '₹10,79,996.91', 'Indian currency formatting works');
-    assert(formatIndianCurrency(0) === '₹0.00', 'Indian currency zero formatting works');
-  }
-
-  console.log(`\nALL ${passed}/${total} TESTS PASSED SUCCESSFULLY!`);
+  console.log(`\nALL ${passed}/${total} PROPORTIONAL ENGINE TESTS PASSED SUCCESSFULLY!`);
 }
 
 runTests();
