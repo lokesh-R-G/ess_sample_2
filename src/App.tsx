@@ -22,6 +22,7 @@ import AdminHolidays from './pages/admin/AdminHolidays';
 import AdminSync from './pages/admin/AdminSync';
 import AdminPayrollRules from './pages/admin/payroll/AdminPayrollRules';
 import SalaryPreviewPage from './pages/admin/payroll/SalaryPreviewPage';
+import CTCRevisionCalculator from './pages/admin/payroll/CTCRevisionCalculator';
 import AdminPayrollCycles from './pages/admin/payroll/AdminPayrollCycles';
 import AdminPayrollReview from './pages/admin/payroll/AdminPayrollReview';
 import AdminBankExport from './pages/admin/payroll/AdminBankExport';
@@ -157,6 +158,7 @@ function AppRoutes() {
           <Route path="payroll/rules" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><AdminPayrollRules /></ProtectedRoute>} />
           <Route path="payroll/company-banks" element={<ProtectedRoute requireAnyPermission={['organization.manage']}><CompanyBankAccounts /></ProtectedRoute>} />
           <Route path="payroll/preview" element={<ProtectedRoute requireAnyPermission={['payroll.manage', 'payroll.read']}><SalaryPreviewPage /></ProtectedRoute>} />
+          <Route path="payroll/ctc-calculator" element={<ProtectedRoute requireAnyPermission={['payroll.manage', 'payroll.read', 'payroll.salary.manage', 'organization.manage']}><CTCRevisionCalculator /></ProtectedRoute>} />
           <Route path="payroll/cycles" element={<ProtectedRoute requireAnyPermission={['payroll.cycle.manage', 'payroll.cycle.read']}><AdminPayrollCycles /></ProtectedRoute>} />
           <Route path="payroll/control" element={<ProtectedRoute requireAnyPermission={['payroll.read', 'payroll.calculate']}><AdminPayrollControl /></ProtectedRoute>} />
           <Route path="payroll/review/:cycleId" element={<ProtectedRoute requireAnyPermission={['payroll.publish']}><AdminPayrollReview /></ProtectedRoute>} />
