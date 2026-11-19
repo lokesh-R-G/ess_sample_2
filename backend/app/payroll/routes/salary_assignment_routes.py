@@ -102,5 +102,66 @@ async def get_salary_config(
             "esiEnabled": statutory_profile.get("esiEnabled", True),
             "ptState": statutory_profile.get("ptState", result.get("ptState", "None"))
         })
-        
+
+    # Run SalaryCalculationEngine in PREVIEW mode to compute employer contributions and annual CTC
+    try:
+        from app.payroll.services.salary_calculation_engine import SalaryCalculationEngine, CalculationMode, StatutoryDecisions
+        from app.payroll.repositories.pf_rule_repository import PFRuleRepository
+        from app.payroll.repositories.esi_rule_repository import ESIRuleRepository
+        import datetime
+
+        components_docs = []
+        for c in active_components:
+            doc = {
+                "id": str(c.get("salaryComponentId") or c.get("_id")),
+                "_id": str(c.get("salaryComponentId") or c.get("_id")),
+                "name": c.get("componentName"),
+                "componentType": c.get("componentType", "Earning"),
+                "calculationMethod": c.get("calculationMethod", "Flat"),
+                "percentageValue": c.get("percentage"),
+                "percentageDerivedFromComponentId": str(c.get("percentageDerivedFromComponentId")) if c.get("percentageDerivedFromComponentId") else None,
+                "defaultFormula": c.get("formulaUsed"),
+                "monthlyAmount": c.get("monthlyAmount", 0.0),
+                "amount": c.get("monthlyAmount", 0.0),
+                "includeInGross": c.get("includeInGross", True),
+                "attendanceDependent": c.get("attendanceDependent", True),
+                "pfApplicable": c.get("pfApplicable", False),
+                "esiApplicable": c.get("esiApplicable", False),
+                "ptApplicable": c.get("ptApplicable", False),
+                "isBasicComponent": c.get("isBasicComponent", False)
+            }
+            components_docs.append(doc)
+
+        pf_repo = PFRuleRepository(db)
+        esi_repo = ESIRuleRepository(db)
+        now_dt = datetime.datetime.now(datetime.timezone.utc)
+        pf_rule = await pf_repo.resolve_policy_by_date(now_dt)
+        esi_rule = await esi_repo.resolve_policy_by_date(now_dt)
+
+        decisions = StatutoryDecisions(
+            isFresher=result.get("isFresher", True),
+            isExistingPensionMember=result.get("isExistingPensionMember", False),
+            wantsPf=result.get("wantsPf", True),
+            wantsPension=result.get("wantsPension", True),
+            pfCalculationMode=result.get("pfCalculationMode", "Actual"),
+            esiEnabled=result.get("esiEnabled", True),
+            ptState=result.get("ptState", "None")
+        )
+
+        calc_result = SalaryCalculationEngine.calculate(
+            basic_salary=basic_salary,
+            structure_components=components_docs,
+            calculation_mode=CalculationMode.PREVIEW,
+            statutory_decisions=decisions,
+            pf_rule=pf_rule,
+            esi_rule=esi_rule,
+            pt_slabs=[]
+        )
+
+        result["employerContributions"] = calc_result.get("employerContributions", [])
+        result["summary"] = calc_result.get("summary", {})
+    except Exception as e:
+        result["employerContributions"] = []
+        result["summary"] = {}
+
     return result
