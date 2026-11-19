@@ -55,9 +55,25 @@ async def get_salary_config(
             if cid:
                 custom_components[cid] = comp.get("monthlyAmount", 0.0)
     
+    serialized_active_components = []
+    for comp in active_components:
+        c_copy = comp.copy()
+        if "_id" in c_copy:
+            c_copy["_id"] = str(c_copy["_id"])
+        if "effectiveFrom" in c_copy and c_copy["effectiveFrom"]:
+            c_copy["effectiveFrom"] = str(c_copy["effectiveFrom"])
+        if "effectiveTo" in c_copy and c_copy["effectiveTo"]:
+            c_copy["effectiveTo"] = str(c_copy["effectiveTo"])
+        if "updatedAt" in c_copy and c_copy["updatedAt"]:
+            c_copy["updatedAt"] = str(c_copy["updatedAt"])
+        if "createdAt" in c_copy and c_copy["createdAt"]:
+            c_copy["createdAt"] = str(c_copy["createdAt"])
+        serialized_active_components.append(c_copy)
+
     result = {
         "basicSalary": basic_salary,
-        "customComponents": custom_components
+        "customComponents": custom_components,
+        "activeComponents": serialized_active_components
     }
 
     # Merge canonical config

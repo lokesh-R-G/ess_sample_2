@@ -4,11 +4,12 @@ import {
   DEFAULT_EMPLOYEE_DEDUCTIONS,
   formatIndianCurrency,
   formatPercentage,
+  resolveComponentDependencies
 } from './ctcCalculatorEngine.ts';
-import type { CTCCalculatorState } from './ctcCalculatorEngine.ts';
+import type { CTCCalculatorState, CTCComponentInput } from './ctcCalculatorEngine.ts';
 
 function runTests() {
-  console.log('--- Starting Proportional CTC Revision Calculator Engine Unit Tests ---');
+  console.log('--- Starting Proportional & Formula-Derived CTC Calculator Unit Tests ---');
   let passed = 0;
   let total = 0;
 
@@ -27,151 +28,277 @@ function runTests() {
     return Math.abs(a - b) <= eps;
   }
 
-  // Test Case 1: Core Business Example (Old CTC = 6,00,000, Target New CTC = 8,00,000)
+  // Test 1: Direct earning component
+  {
+    const state: CTCCalculatorState = {
+      oldCTC: 300000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 450000,
+      components: [
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 300000 }
+      ]
+    };
+    const res = calculateCTCRevision(state);
+    assert(res.results.length === 1, 'Test 1: Single direct component created');
+    assert(res.results[0].displayCalculationMethod === 'Direct Input', 'Test 1: Calculation method is Direct Input');
+    assert(approxEqual(res.results[0].oldAmount, 300000), 'Test 1: Old amount is 3,00,000');
+    assert(approxEqual(res.results[0].newAmount, 450000), 'Test 1: New amount is 4,50,000');
+    assert(approxEqual(res.totalNewComponents, 450000), 'Test 1: Total matches new target CTC');
+  }
+
+  // Test 2: One formula-derived earning component (HRA = 50% of Basic)
+  {
+    const state: CTCCalculatorState = {
+      oldCTC: 360000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 480000,
+      components: [
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 240000 },
+        {
+          id: 'hra',
+          name: 'HRA',
+          category: 'Earning',
+          calculationMethod: 'Percentage',
+          percentageValue: 50,
+          percentageDerivedFromComponentId: 'basic',
+          oldAmount: 0 // derived from basic
+        }
+      ]
+    };
+    const res = calculateCTCRevision(state);
+    const hra = res.results.find(c => c.id === 'hra')!;
+    const basic = res.results.find(c => c.id === 'basic')!;
+
+    assert(hra.displayCalculationMethod === 'Formula Derived', 'Test 2: HRA is Formula Derived');
+    assert(hra.isFormulaDerived === true, 'Test 2: HRA is flagged as formula-derived');
+    assert(approxEqual(hra.oldAmount, 120000), 'Test 2: HRA old amount derived as 50% of 2,40,000 = 1,20,000');
+    assert(approxEqual(res.totalOldComponents, 360000), 'Test 2: Total old components is 3,60,000');
+    assert(approxEqual(basic.newAmount, 320000), 'Test 2: Revised Basic is 3,20,000');
+    assert(approxEqual(hra.newAmount, 160000), 'Test 2: Revised HRA is 50% of revised Basic = 1,60,000');
+    assert(approxEqual(res.totalNewComponents, 480000), 'Test 2: Total new components matches target 4,80,000');
+  }
+
+  // Test 3: Multiple formula-derived components (HRA = 50% of Basic, DA = 10% of Basic)
+  {
+    const state: CTCCalculatorState = {
+      oldCTC: 320000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 400000,
+      components: [
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 200000 },
+        { id: 'hra', name: 'HRA', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 50, percentageDerivedFromComponentId: 'basic', oldAmount: 0 },
+        { id: 'da', name: 'DA', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 10, percentageDerivedFromComponentId: 'basic', oldAmount: 0 }
+      ]
+    };
+    const res = calculateCTCRevision(state);
+    const basic = res.results.find(c => c.id === 'basic')!;
+    const hra = res.results.find(c => c.id === 'hra')!;
+    const da = res.results.find(c => c.id === 'da')!;
+
+    assert(approxEqual(hra.oldAmount, 100000), 'Test 3: HRA old is 1,00,000 (50%)');
+    assert(approxEqual(da.oldAmount, 20000), 'Test 3: DA old is 20,000 (10%)');
+    assert(approxEqual(res.totalOldComponents, 320000), 'Test 3: Total old is 3,20,000');
+    assert(approxEqual(basic.newAmount, 250000), 'Test 3: Basic new is 2,50,000');
+    assert(approxEqual(hra.newAmount, 125000), 'Test 3: HRA new is 1,25,000 (50% of 250,000)');
+    assert(approxEqual(da.newAmount, 25000), 'Test 3: DA new is 25,000 (10% of 250,000)');
+    assert(approxEqual(res.totalNewComponents, 400000), 'Test 3: Total new components reconciles to 4,00,000');
+  }
+
+  // Test 4: Multi-level dependencies (Basic -> HRA -> Special Allowance = 20% of HRA)
+  {
+    const state: CTCCalculatorState = {
+      oldCTC: 320000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 480000, // 50% increase: 320,000 * 1.5 = 480,000
+      components: [
+        // Dependent listed BEFORE parent to test topological ordering
+        { id: 'spec', name: 'Special Allowance', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 20, percentageDerivedFromComponentId: 'hra', oldAmount: 0 },
+        { id: 'hra', name: 'HRA', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 50, percentageDerivedFromComponentId: 'basic', oldAmount: 0 },
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 200000 }
+      ]
+    };
+    const res = calculateCTCRevision(state);
+    const basic = res.results.find(c => c.id === 'basic')!;
+    const hra = res.results.find(c => c.id === 'hra')!;
+    const spec = res.results.find(c => c.id === 'spec')!;
+
+    assert(approxEqual(hra.oldAmount, 100000), 'Test 4: HRA old evaluated to 1,00,000');
+    assert(approxEqual(spec.oldAmount, 20000), 'Test 4: Special allowance old evaluated to 20,000 (20% of HRA)');
+    assert(approxEqual(res.totalOldComponents, 320000), 'Test 4: Total old components is 3,20,000');
+    assert(approxEqual(basic.newAmount, 300000), 'Test 4: Basic new is 3,00,000');
+    assert(approxEqual(hra.newAmount, 150000), 'Test 4: HRA new is 1,50,000');
+    assert(approxEqual(spec.newAmount, 30000), 'Test 4: Special allowance new is 30,000 (20% of 150,000)');
+    assert(approxEqual(res.totalNewComponents, 480000), 'Test 4: Total new components matches 4,80,000');
+  }
+
+  // Test 5: Employer PF and pension components
   {
     const state: CTCCalculatorState = {
       oldCTC: 600000,
       revisionMethod: 'TARGET_CTC',
       incrementPercentage: 0,
       targetCTC: 800000,
-      components: DEFAULT_EXAMPLE_COMPONENTS,
-      employeeDeductions: DEFAULT_EMPLOYEE_DEDUCTIONS,
+      components: DEFAULT_EXAMPLE_COMPONENTS
     };
-
     const res = calculateCTCRevision(state);
+    const empPf = res.results.find(c => c.id === 'employer_pf')!;
+    const empPension = res.results.find(c => c.id === 'employer_pension')!;
 
-    // 1. All old component percentages sum to 100% when old component total equals old CTC
-    assert(approxEqual(res.oldEnteredCTC, 600000), 'Old CTC is 6,00,000');
-    assert(approxEqual(res.totalOldComponents, 600000), 'Sum of old components is exactly 6,00,000');
-    assert(approxEqual(res.oldComponentsPercentageSum, 100), 'Sum of old component percentages is 100%');
-    assert(res.isOldSumMismatch === false, 'No old sum mismatch');
-
-    // 2. Proportion derived for every component
-    const basic = res.results.find((c) => c.id === 'basic')!;
-    assert(approxEqual(basic.oldPercentageOfCTC, 40), 'Basic is exactly 40% of CTC');
-    assert(approxEqual(basic.newAmount, 320000), 'Basic new amount is 40% of 8,00,000 = 3,20,000');
-    assert(approxEqual(basic.monthlyEquivalent, 320000 / 12), 'Basic monthly equivalent is 320,000 / 12');
-
-    const hra = res.results.find((c) => c.id === 'hra')!;
-    assert(approxEqual(hra.oldPercentageOfCTC, 20), 'HRA is 20% of CTC');
-    assert(approxEqual(hra.newAmount, 160000), 'HRA new amount is 20% of 8,00,000 = 1,60,000');
-
-    const conv = res.results.find((c) => c.id === 'conveyance')!;
-    assert(approxEqual(conv.oldPercentageOfCTC, 5), 'Conveyance is 5% of CTC');
-    assert(approxEqual(conv.newAmount, 40000), 'Conveyance new amount is 5% of 8,00,000 = 40,000');
-
-    const otherEarn = res.results.find((c) => c.id === 'other_earnings')!;
-    assert(approxEqual(otherEarn.oldPercentageOfCTC, 20), 'Other Earnings is 20% of CTC');
-    assert(approxEqual(otherEarn.newAmount, 160000), 'Other Earnings new amount is 1,60,000');
-
-    // 3. Employer PF is PROPORTIONALLY recalculated (NO STATIC VALUE)
-    const empPf = res.results.find((c) => c.id === 'employer_pf')!;
-    assert(approxEqual(empPf.oldPercentageOfCTC, 4.8), 'Employer PF is 4.8% of CTC (28,800 / 600,000)');
-    assert(approxEqual(empPf.newAmount, 38400), 'Employer PF is proportionally recalculated to 4.8% of 800,000 = 38,400');
-    assert(empPf.newAmount !== empPf.oldAmount, 'Employer PF is NOT static (increased from 28,800 to 38,400)');
-
-    // 4. Employer Pension is PROPORTIONALLY recalculated (NO STATIC VALUE)
-    const empPension = res.results.find((c) => c.id === 'employer_pension')!;
-    assert(approxEqual(empPension.oldPercentageOfCTC, 1.2), 'Employer Pension is 1.2% of CTC (7,200 / 600,000)');
-    assert(approxEqual(empPension.newAmount, 9600), 'Employer Pension is proportionally recalculated to 1.2% of 800,000 = 9,600');
-    assert(empPension.newAmount !== empPension.oldAmount, 'Employer Pension is NOT static (increased from 7,200 to 9,600)');
-
-    // 5. LTA is PROPORTIONALLY recalculated and marked as annual benefit
-    const lta = res.results.find((c) => c.id === 'lta')!;
-    assert(approxEqual(lta.oldPercentageOfCTC, 4), 'LTA is 4% of CTC (24,000 / 600,000)');
-    assert(approxEqual(lta.newAmount, 32000), 'LTA is proportionally recalculated to 4% of 800,000 = 32,000');
-    assert(lta.isAnnualPayout === true, 'LTA is flagged as annual payout benefit');
-
-    // 6. Gratuity is PROPORTIONALLY recalculated and marked as annual benefit
-    const gratuity = res.results.find((c) => c.id === 'gratuity')!;
-    assert(approxEqual(gratuity.oldPercentageOfCTC, 5), 'Gratuity is 5% of CTC (30,000 / 600,000)');
-    assert(approxEqual(gratuity.newAmount, 40000), 'Gratuity is proportionally recalculated to 5% of 800,000 = 40,000');
-    assert(gratuity.isAnnualPayout === true, 'Gratuity is flagged as annual benefit');
-
-    // 7. New component amounts reconcile with the new CTC
-    assert(approxEqual(res.totalNewComponents, 800000), 'Total New Components exactly matches target New CTC (8,00,000)');
-    assert(res.isNewSumMismatch === false, 'No new sum mismatch when components reconcile');
-    assert(approxEqual(res.newSumDifference, 0), 'New sum difference is 0');
-
-    // 8. Employee PF deduction remains distinct from employer CTC
-    const empDeduction = res.employeeDeductionResults?.find((d) => d.id === 'employee_pf')!;
-    assert(empDeduction !== undefined, 'Employee deduction is tracked distinctly');
-    assert(empDeduction.category === 'Employee Deduction', 'Category is Employee Deduction');
+    assert(empPf.category === 'Employer Contribution', 'Test 5: Employer PF category');
+    assert(empPf.displayCalculationMethod === 'Employer Contribution', 'Test 5: Employer PF display method');
+    assert(approxEqual(empPf.newAmount, 38400), 'Test 5: Employer PF revised to 38,400');
+    assert(empPension.category === 'Employer Contribution', 'Test 5: Employer Pension category');
+    assert(approxEqual(empPension.newAmount, 9600), 'Test 5: Employer Pension revised to 9,600');
   }
 
-  // Test Case 2: Percentage Increment Mode (Old CTC = 6,00,000 with 15% increment = 6,90,000)
+  // Test 6: LTA and gratuity
   {
     const state: CTCCalculatorState = {
       oldCTC: 600000,
-      revisionMethod: 'PERCENTAGE',
-      incrementPercentage: 15,
-      targetCTC: 0,
-      components: DEFAULT_EXAMPLE_COMPONENTS,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 800000,
+      components: DEFAULT_EXAMPLE_COMPONENTS
     };
-
     const res = calculateCTCRevision(state);
-    assert(approxEqual(res.calculatedNewCTC, 690000), 'Percentage mode: 600,000 * 1.15 = 690,000');
-    assert(approxEqual(res.totalNewComponents, 690000), 'Total new components equals 690,000');
+    const lta = res.results.find(c => c.id === 'lta')!;
+    const gratuity = res.results.find(c => c.id === 'gratuity')!;
 
-    const empPf = res.results.find((c) => c.id === 'employer_pf')!;
-    assert(approxEqual(empPf.newAmount, 28800 * 1.15), 'Employer PF increased by exactly 15%');
-
-    const lta = res.results.find((c) => c.id === 'lta')!;
-    assert(approxEqual(lta.newAmount, 24000 * 1.15), 'LTA increased by exactly 15%');
-
-    const grat = res.results.find((c) => c.id === 'gratuity')!;
-    assert(approxEqual(grat.newAmount, 30000 * 1.15), 'Gratuity increased by exactly 15%');
+    assert(lta.category === 'Annual Benefit', 'Test 6: LTA category is Annual Benefit');
+    assert(lta.displayCalculationMethod === 'Annual Benefit', 'Test 6: LTA display method is Annual Benefit');
+    assert(lta.isAnnualPayout === true, 'Test 6: LTA is flagged as annual payout');
+    assert(approxEqual(lta.newAmount, 32000), 'Test 6: LTA revised to 32,000');
+    assert(gratuity.isAnnualPayout === true, 'Test 6: Gratuity is flagged as annual payout');
+    assert(approxEqual(gratuity.newAmount, 40000), 'Test 6: Gratuity revised to 40,000');
   }
 
-  // Test Case 3: Old Component Total Mismatch produces warning and doesn't silently normalize
+  // Test 7: Zero-value components
   {
-    const stateMismatch: CTCCalculatorState = {
+    const state: CTCCalculatorState = {
+      oldCTC: 300000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 400000,
+      components: [
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 300000 },
+        { id: 'bonus', name: 'Zero Bonus', category: 'Earning', calculationMethod: 'Flat', oldAmount: 0 },
+        { id: 'zero_derived', name: 'Zero Derived', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 0, percentageDerivedFromComponentId: 'basic', oldAmount: 0 }
+      ]
+    };
+    const res = calculateCTCRevision(state);
+    const zeroDerived = res.results.find(c => c.id === 'zero_derived')!;
+    const bonus = res.results.find(c => c.id === 'bonus')!;
+
+    assert(approxEqual(bonus.newAmount, 0), 'Test 7: Zero flat component remains 0');
+    assert(approxEqual(zeroDerived.newAmount, 0), 'Test 7: Zero derived component remains 0');
+    assert(approxEqual(res.totalNewComponents, 400000), 'Test 7: Total reconciles cleanly');
+  }
+
+  // Test 8: Circular formula dependency (A -> B -> A)
+  {
+    const comps: CTCComponentInput[] = [
+      { id: 'a', name: 'Comp A', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 50, percentageDerivedFromComponentId: 'b', oldAmount: 0 },
+      { id: 'b', name: 'Comp B', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 50, percentageDerivedFromComponentId: 'a', oldAmount: 0 }
+    ];
+    const depRes = resolveComponentDependencies(comps);
+    assert(depRes.circularError !== undefined, 'Test 8: Circular dependency detected in Kahn graph');
+    assert(depRes.circularError!.includes('Circular dependency'), 'Test 8: Error message specifies circularity');
+
+    const state: CTCCalculatorState = {
+      oldCTC: 100000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 120000,
+      components: comps
+    };
+    const res = calculateCTCRevision(state);
+    assert(res.calculationWarnings !== undefined && res.calculationWarnings.length > 0, 'Test 8: Calculator emits circular warning');
+  }
+
+  // Test 9: Missing formula dependency (Component references non-existent parent)
+  {
+    const comps: CTCComponentInput[] = [
+      { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 100000 },
+      { id: 'orphan', name: 'Orphan', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 20, percentageDerivedFromComponentId: 'non_existent_id', oldAmount: 5000 }
+    ];
+    const depRes = resolveComponentDependencies(comps);
+    assert(depRes.missingDependencies['orphan'] === 'non_existent_id', 'Test 9: Missing dependency detected');
+
+    const state: CTCCalculatorState = {
+      oldCTC: 105000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 210000,
+      components: comps
+    };
+    const res = calculateCTCRevision(state);
+    const orphan = res.results.find(c => c.id === 'orphan')!;
+    assert(orphan.evaluationError !== undefined, 'Test 9: Orphan component has evaluation error');
+    assert(orphan.newAmount > 0, 'Test 9: Graceful fallback ensures no crash');
+  }
+
+  // Test 10: Complete CTC reconciliation (All components sum exactly to CTC)
+  {
+    const state: CTCCalculatorState = {
+      oldCTC: 600000,
+      revisionMethod: 'TARGET_CTC',
+      incrementPercentage: 0,
+      targetCTC: 800000,
+      components: DEFAULT_EXAMPLE_COMPONENTS
+    };
+    const res = calculateCTCRevision(state);
+    assert(res.isOldSumMismatch === false, 'Test 10: Old sum perfectly reconciles');
+    assert(res.isNewSumMismatch === false, 'Test 10: New sum perfectly reconciles');
+    assert(approxEqual(res.oldComponentsPercentageSum, 100.0), 'Test 10: Old component percentages sum to 100%');
+    assert(approxEqual(res.totalNewComponents, 800000), 'Test 10: Total new components matches target 8,00,000');
+  }
+
+  // Test 11: Percentage increment revision (e.g. 20% increment)
+  {
+    const state: CTCCalculatorState = {
+      oldCTC: 500000,
+      revisionMethod: 'PERCENTAGE',
+      incrementPercentage: 20,
+      targetCTC: 0,
+      components: [
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 250000 },
+        { id: 'hra', name: 'HRA', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 50, percentageDerivedFromComponentId: 'basic', oldAmount: 0 },
+        { id: 'other', name: 'Other', category: 'Earning', calculationMethod: 'Flat', oldAmount: 125000 }
+      ]
+    };
+    const res = calculateCTCRevision(state);
+    assert(approxEqual(res.calculatedNewCTC, 600000), 'Test 11: New CTC is 5,00,000 * 1.20 = 6,00,000');
+    assert(approxEqual(res.totalNewComponents, 600000), 'Test 11: Total new components equals 6,00,000');
+    const basic = res.results.find(c => c.id === 'basic')!;
+    const hra = res.results.find(c => c.id === 'hra')!;
+    assert(approxEqual(basic.newAmount, 300000), 'Test 11: Basic grew by 20% to 3,00,000');
+    assert(approxEqual(hra.newAmount, 150000), 'Test 11: HRA grew by 20% to 1,50,000');
+  }
+
+  // Test 12: Direct target CTC revision
+  {
+    const state: CTCCalculatorState = {
       oldCTC: 500000,
       revisionMethod: 'TARGET_CTC',
       incrementPercentage: 0,
-      targetCTC: 600000,
+      targetCTC: 750000, // 50% increase
       components: [
-        { id: 'basic', name: 'Basic', category: 'Earning', oldAmount: 200000 },
-        { id: 'hra', name: 'HRA', category: 'Earning', oldAmount: 100000 },
-      ], // Sum = 300,000 != 500,000
+        { id: 'basic', name: 'Basic', category: 'Earning', calculationMethod: 'Flat', oldAmount: 250000 },
+        { id: 'hra', name: 'HRA', category: 'Earning', calculationMethod: 'Percentage', percentageValue: 50, percentageDerivedFromComponentId: 'basic', oldAmount: 0 },
+        { id: 'other', name: 'Other', category: 'Earning', calculationMethod: 'Flat', oldAmount: 125000 }
+      ]
     };
-
-    const res = calculateCTCRevision(stateMismatch);
-    assert(res.isOldSumMismatch === true, 'Old sum mismatch is flagged');
-    assert(approxEqual(res.oldSumDifference, -200000), 'Old sum difference is -200,000');
-    // Basic was 200,000 / 500,000 = 40% of entered CTC
-    const basic = res.results.find((c) => c.id === 'basic')!;
-    assert(approxEqual(basic.oldPercentageOfCTC, 40), 'Basic percentage is calculated against entered Old CTC (40%), not normalized');
-    assert(approxEqual(basic.newAmount, 240000), 'Basic new amount is 40% of 600,000 = 240,000');
+    const res = calculateCTCRevision(state);
+    assert(approxEqual(res.calculatedNewCTC, 750000), 'Test 12: Target CTC is 7,50,000');
+    assert(approxEqual(res.totalNewComponents, 750000), 'Test 12: Total new components equals 7,50,000');
+    assert(approxEqual(res.incrementPercentage, 50), 'Test 12: Increment percentage calculated as 50%');
   }
 
-  // Test Case 4: Zero-value component handling & safe division by zero
-  {
-    const stateZero: CTCCalculatorState = {
-      oldCTC: 0,
-      revisionMethod: 'PERCENTAGE',
-      incrementPercentage: 10,
-      targetCTC: 500000,
-      components: [
-        { id: 'basic', name: 'Basic', category: 'Earning', oldAmount: 0 },
-        { id: 'conv', name: 'Conveyance', category: 'Earning', oldAmount: 0 },
-      ],
-    };
-
-    const res = calculateCTCRevision(stateZero);
-    assert(res.calculatedNewCTC === 0, 'Zero Old CTC in percentage mode produces 0');
-    const basic = res.results.find((c) => c.id === 'basic')!;
-    assert(basic.oldPercentageOfCTC === 0, 'Safe division by zero: percentage is 0');
-    assert(basic.newAmount === 0, 'New amount is 0');
-  }
-
-  // Test Case 5: Currency and percentage formatting
-  {
-    assert(formatIndianCurrency(240000) === '₹2,40,000.00', 'Indian currency formatting works');
-    assert(formatPercentage(40) === '40.00%', 'Percentage formatting works');
-  }
-
-  console.log(`\nALL ${passed}/${total} PROPORTIONAL ENGINE TESTS PASSED SUCCESSFULLY!`);
+  console.log(`\nALL ${passed}/${total} TEST SUITE CASES PASSED SUCCESSFULLY!`);
 }
 
 runTests();

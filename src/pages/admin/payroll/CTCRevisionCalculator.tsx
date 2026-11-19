@@ -18,11 +18,13 @@ import {
   Layers,
   ArrowRight,
   ShieldCheck,
-  Briefcase
+  Briefcase,
+  GitBranch
 } from 'lucide-react';
 import {
   CTCComponentInput,
   ComponentCategory,
+  CalculationMethod,
   RevisionMethod,
   DEFAULT_EXAMPLE_COMPONENTS,
   DEFAULT_EMPLOYEE_DEDUCTIONS,
@@ -47,7 +49,10 @@ export default function CTCRevisionCalculatorPage() {
   // New Custom Component Inline Adder
   const [newCompName, setNewCompName] = useState('');
   const [newCompCategory, setNewCompCategory] = useState<ComponentCategory>('Earning');
+  const [newCompMethod, setNewCompMethod] = useState<CalculationMethod>('Flat');
   const [newCompAmount, setNewCompAmount] = useState<number | ''>('');
+  const [newCompPercentage, setNewCompPercentage] = useState<number | ''>('');
+  const [newCompParentId, setNewCompParentId] = useState<string>('');
 
   // 2. Employee Prefill Integration State
   const [employees, setEmployees] = useState<any[]>([]);
@@ -89,55 +94,81 @@ export default function CTCRevisionCalculatorPage() {
       const config = configRes?.data || configRes || {};
 
       let fetchedComponents: CTCComponentInput[] = [];
-      let totalFetchedOld = 0;
 
-      // 1. Basic Component
-      if (config.basicSalary) {
-        const annualBasic = config.basicSalary * 12;
-        fetchedComponents.push({
-          id: 'basic',
-          name: 'Basic',
-          category: 'Earning',
-          oldAmount: annualBasic,
-          notes: 'Prefilled from active employee salary structure (Annualized)'
+      // Check if backend returned activeComponents (full snapshot with all components)
+      if (Array.isArray(config.activeComponents) && config.activeComponents.length > 0) {
+        fetchedComponents = config.activeComponents.map((c: any) => {
+          const compName = c.componentName || c.name || 'Component';
+          const { category } = classifyComponent(compName);
+          const method = (c.calculationMethod || 'Flat') as CalculationMethod;
+          const annualAmt = Number(c.annualAmount) || (Number(c.monthlyAmount || 0) * 12);
+
+          return {
+            id: String(c.salaryComponentId || c._id || c.id),
+            name: compName,
+            category: (c.componentType === 'Deduction' ? 'Employee Deduction' : category) as ComponentCategory,
+            calculationMethod: method,
+            percentageValue: c.percentage !== null && c.percentage !== undefined ? Number(c.percentage) : undefined,
+            percentageDerivedFromComponentId: c.percentageDerivedFromComponentId ? String(c.percentageDerivedFromComponentId) : undefined,
+            defaultFormula: c.formulaUsed || undefined,
+            oldAmount: annualAmt,
+            notes: c.formulaUsed ? `Formula: ${c.formulaUsed}` : 'Prefilled from active employee salary structure'
+          };
         });
-        totalFetchedOld += annualBasic;
-      }
-
-      // 2. Custom & other components
-      if (config.customComponents && typeof config.customComponents === 'object') {
-        let compNamesMap: Record<string, string> = {};
-        try {
-          const allCompsRes = await organizationApi.getSalaryComponents();
-          const allComps = allCompsRes?.data || allCompsRes || [];
-          allComps.forEach((c: any) => {
-            compNamesMap[c._id || c.id] = c.name;
+      } else {
+        // Fallback: build from basicSalary and customComponents if activeComponents is not present
+        if (config.basicSalary) {
+          const annualBasic = config.basicSalary * 12;
+          fetchedComponents.push({
+            id: 'basic',
+            name: 'Basic',
+            category: 'Earning',
+            calculationMethod: 'Flat',
+            oldAmount: annualBasic,
+            notes: 'Prefilled from active employee salary structure (Annualized)'
           });
-        } catch {
-          // fallback
         }
 
-        Object.entries(config.customComponents).forEach(([cid, monthlyAmt]) => {
-          const compName = compNamesMap[cid] || `Component ${cid.substring(0, 6)}`;
-          const annualAmt = Number(monthlyAmt) * 12;
-          const { category } = classifyComponent(compName);
+        if (config.customComponents && typeof config.customComponents === 'object') {
+          let compMasterMap: Record<string, any> = {};
+          try {
+            const allCompsRes = await organizationApi.getSalaryComponents();
+            const allComps = allCompsRes?.data || allCompsRes || [];
+            allComps.forEach((c: any) => {
+              compMasterMap[c._id || c.id] = c;
+            });
+          } catch {
+            // fallback
+          }
 
-          fetchedComponents.push({
-            id: cid,
-            name: compName,
-            category,
-            oldAmount: annualAmt,
-            notes: 'Prefilled from employee configuration'
+          Object.entries(config.customComponents).forEach(([cid, monthlyAmt]) => {
+            const master = compMasterMap[cid];
+            const compName = master?.name || `Component ${cid.substring(0, 6)}`;
+            const annualAmt = Number(monthlyAmt) * 12;
+            const { category } = classifyComponent(compName);
+
+            fetchedComponents.push({
+              id: cid,
+              name: compName,
+              category,
+              calculationMethod: master?.calculationMethod || 'Flat',
+              percentageValue: master?.percentageValue,
+              percentageDerivedFromComponentId: master?.percentageDerivedFromComponentId,
+              defaultFormula: master?.defaultFormula,
+              oldAmount: annualAmt,
+              notes: 'Prefilled from employee configuration'
+            });
           });
-          totalFetchedOld += annualAmt;
-        });
+        }
       }
 
       if (fetchedComponents.length > 0) {
+        // Calculate the initial Old CTC sum
+        const totalFetchedOld = fetchedComponents.reduce((acc, c) => acc + (c.oldAmount || 0), 0);
         setComponents(fetchedComponents);
         setOldCTC(totalFetchedOld);
         setPrefillNotice(
-          `Successfully prefilled ${fetchedComponents.length} salary components for ${emp?.firstName || ''} ${emp?.lastName || ''} (${codeOrId}). Read-only mode: no records will be saved or modified.`
+          `Successfully prefilled ${fetchedComponents.length} salary components (direct and formula-derived) for ${emp?.firstName || ''} ${emp?.lastName || ''} (${codeOrId}). Read-only preview: no records will be saved or modified.`
         );
       } else {
         setPrefillNotice(
@@ -171,32 +202,36 @@ export default function CTCRevisionCalculatorPage() {
     );
   };
 
-  // Component Category Change Handler
-  const handleComponentCategoryChange = (id: string, category: ComponentCategory) => {
-    setComponents((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, category } : c))
-    );
-  };
-
   // Add custom component
   const handleAddComponent = () => {
     if (!newCompName.trim()) return;
+    const isFormula = newCompMethod === 'Percentage' || newCompMethod === 'Formula';
     const amount = Number(newCompAmount) || 0;
+    const percVal = Number(newCompPercentage) || 0;
     const newId = `custom_${Date.now()}`;
+
     setComponents((prev) => [
       ...prev,
       {
         id: newId,
         name: newCompName.trim(),
         category: newCompCategory,
+        calculationMethod: newCompMethod,
+        percentageValue: isFormula ? percVal : undefined,
+        percentageDerivedFromComponentId: isFormula ? (newCompParentId || undefined) : undefined,
+        defaultFormula: isFormula ? `${percVal}% of parent` : undefined,
         oldAmount: amount,
         isCustom: true,
-        notes: `Configured ${newCompCategory}`
+        notes: isFormula ? `Formula-derived (${percVal}%)` : `Configured ${newCompCategory}`
       }
     ]);
+
     setNewCompName('');
     setNewCompAmount('');
+    setNewCompPercentage('');
+    setNewCompParentId('');
     setNewCompCategory('Earning');
+    setNewCompMethod('Flat');
   };
 
   // Remove component
@@ -220,9 +255,6 @@ export default function CTCRevisionCalculatorPage() {
   const earningsComponents = summary.results.filter((c) => c.category === 'Earning');
   const employerContributions = summary.results.filter((c) => c.category === 'Employer Contribution');
   const annualBenefits = summary.results.filter((c) => c.category === 'Annual Benefit');
-  const otherComponents = summary.results.filter(
-    (c) => c.category !== 'Earning' && c.category !== 'Employer Contribution' && c.category !== 'Annual Benefit'
-  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -236,7 +268,7 @@ export default function CTCRevisionCalculatorPage() {
             <div>
               <h1 className="text-2xl font-bold text-neutral-900">CTC Revision Calculator</h1>
               <p className="text-sm text-neutral-500">
-                Derive proportional component breakdown from complete CTC for Earnings, Employer PF/Pension, LTA & Gratuity.
+                Full CTC architecture supporting direct input, formula-derived earnings, employer contributions, and annual benefits.
               </p>
             </div>
           </div>
@@ -249,74 +281,85 @@ export default function CTCRevisionCalculatorPage() {
             className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition shadow-sm"
           >
             <RefreshCw className="w-4 h-4 text-neutral-500" />
-            Reset to Standard Example
+            Reset to Defaults
           </button>
         </div>
       </div>
 
-      {/* Read-Only Boundary Notice */}
-      <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-neutral-700">
-            <span className="font-semibold text-primary-900">Pure Proportional CTC Engine: </span>
-            Every component included in CTC (Earnings, Employer PF, Employer Pension/EPS, LTA, and Gratuity) is proportionally derived using its share against the complete CTC. No component is kept static. This is an analytical tool with read-only database isolation.
+      {/* Architecture Explanatory Notice */}
+      <div className="p-4 rounded-xl bg-gradient-to-r from-primary-50 via-blue-50 to-indigo-50 border border-primary-200 text-xs text-primary-950 flex items-start gap-3 shadow-sm">
+        <Info className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <div>
+            <span className="font-semibold text-primary-900">Dependency-Aware Salary Component Engine: </span>
+            The calculator accounts for every component that forms employer CTC. Formula-derived earnings (e.g., HRA as a % of Basic) are evaluated from their dependency relationships, while preserving strict CTC reconciliation. Employee-side deductions are tracked distinctly and do not inflate employer CTC.
           </div>
         </div>
       </div>
 
-      {/* Grid: Inputs & Revision Controls */}
+      {/* Prefill Employee Salary Structure Card */}
+      <GlassCard className="p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-primary-600" />
+              Prefill from Active Employee Structure (Read-Only)
+            </h3>
+            <p className="text-xs text-neutral-500">
+              Select an employee to populate their active salary structure (including formula-derived components) into the calculator.
+            </p>
+          </div>
+
+          <div className="w-full sm:w-72">
+            <select
+              value={selectedEmployeeId}
+              onChange={(e) => handleEmployeeSelect(e.target.value)}
+              disabled={loadingEmployees || loadingPrefill}
+              className="w-full text-xs rounded-lg border border-neutral-300 bg-white px-3 py-2 text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-neutral-100"
+            >
+              <option value="">-- Select Employee to Prefill --</option>
+              {employees.map((emp) => {
+                const idVal = emp.id || emp._id || emp.employeeId;
+                const code = emp.employeeId || emp.employeeCode || idVal;
+                const name = `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.name || code;
+                return (
+                  <option key={idVal} value={idVal}>
+                    {name} ({code})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        {loadingPrefill && (
+          <div className="text-xs text-primary-600 flex items-center gap-2 py-1">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            Loading employee salary components and formula definitions...
+          </div>
+        )}
+
+        {prefillNotice && (
+          <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2">
+            <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span>{prefillNotice}</span>
+          </div>
+        )}
+      </GlassCard>
+
+      {/* Main Grid: Left Controls (1 Col) & Right Breakdown Table (2 Cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Revision Settings & Old CTC Input */}
         <div className="space-y-6">
-          {/* Employee Prefill Card */}
           <GlassCard className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-neutral-900 flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-primary-600" />
-                Employee Prefill (Optional)
-              </h2>
-              {loadingPrefill && <span className="text-xs text-primary-600 animate-pulse font-medium">Loading...</span>}
-            </div>
-            <p className="text-xs text-neutral-500">
-              Select an employee to prefill existing salary component values, or enter amounts manually.
-            </p>
-            <div>
-              <select
-                value={selectedEmployeeId}
-                onChange={(e) => handleEmployeeSelect(e.target.value)}
-                disabled={loadingEmployees}
-                className="w-full text-sm rounded-lg border border-neutral-300 px-3 py-2 bg-white text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
-              >
-                <option value="">-- Manual Input / Select Employee --</option>
-                {employees.map((emp) => {
-                  const empId = emp.id || emp._id || emp.employeeId;
-                  const name = `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeCode || empId;
-                  return (
-                    <option key={empId} value={empId}>
-                      {name} ({emp.employeeCode || emp.employeeId || 'ID: ' + empId.substring(0, 6)})
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-            {prefillNotice && (
-              <div className="p-2.5 rounded-lg bg-neutral-50 border border-neutral-200 text-xs text-neutral-600">
-                {prefillNotice}
-              </div>
-            )}
-          </GlassCard>
-
-          {/* Revision Parameters Card */}
-          <GlassCard className="p-5 space-y-5">
-            <h2 className="text-base font-semibold text-neutral-900 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2 border-b border-neutral-100 pb-2">
               <TrendingUp className="w-4 h-4 text-primary-600" />
               Revision Method & CTC Targets
-            </h2>
+            </h3>
 
             {/* Old Annual CTC Input */}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Old Annual CTC (₹) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -333,20 +376,20 @@ export default function CTCRevisionCalculatorPage() {
                   className="w-full pl-8 pr-3 py-2 text-sm font-semibold rounded-lg border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                Complete employer cost including Earnings, Employer PF/Pension, LTA & Gratuity.
-              </p>
+              <div className="text-[11px] text-neutral-500 mt-1">
+                Monthly Equivalent: {formatIndianCurrency(oldCTC / 12, 2)}
+              </div>
               {oldCTC <= 0 && (
-                <p className="text-xs text-red-600 mt-1 font-medium">
-                  Old CTC must be greater than zero for proportional distribution.
-                </p>
+                <div className="text-[11px] text-amber-600 mt-1">
+                  Old CTC must be greater than zero for proportional calculation.
+                </div>
               )}
             </div>
 
-            {/* Revision Mode Selector */}
+            {/* Revision Method Selector */}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-                Choose Revision Method
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                Revision Calculation Method
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -420,7 +463,7 @@ export default function CTCRevisionCalculatorPage() {
                   />
                 </div>
                 <div className="text-xs text-neutral-500">
-                  Direct Target CTC applied proportionally across all components.
+                  Direct Target CTC applied across all components.
                 </div>
               </div>
             )}
@@ -448,8 +491,47 @@ export default function CTCRevisionCalculatorPage() {
           <GlassCard className="p-5 space-y-3">
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              Reconciliation & Integrity
+              CTC Reconciliation & Integrity
             </h3>
+
+            {/* Calculation warnings / dependency errors */}
+            {summary.calculationWarnings && summary.calculationWarnings.length > 0 && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-800 space-y-1">
+                <div className="font-semibold flex items-center gap-1.5 text-red-900">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                  Dependency Warnings
+                </div>
+                {summary.calculationWarnings.map((w, idx) => (
+                  <div key={idx} className="text-[11px] text-red-700">{w}</div>
+                ))}
+              </div>
+            )}
+
+            {/* Reconciliation Comparison Card */}
+            <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-200 text-xs space-y-2">
+              <div className="flex justify-between items-center text-neutral-600">
+                <span>Old Annual CTC:</span>
+                <span className="font-semibold text-neutral-900">{formatIndianCurrency(summary.oldEnteredCTC, 2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-neutral-600">
+                <span>Old Total CTC Components:</span>
+                <span className="font-semibold text-neutral-900">{formatIndianCurrency(summary.totalOldComponents, 2)}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-neutral-200 pt-1.5 text-neutral-600">
+                <span>New Annual CTC:</span>
+                <span className="font-semibold text-primary-800">{formatIndianCurrency(summary.calculatedNewCTC, 2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-neutral-600">
+                <span>New Total CTC Components:</span>
+                <span className="font-semibold text-primary-800">{formatIndianCurrency(summary.totalNewComponents, 2)}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-neutral-200 pt-1.5 text-neutral-600">
+                <span>CTC Difference:</span>
+                <span className={`font-semibold ${Math.abs(summary.newSumDifference) > 0.01 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                  {formatIndianCurrency(summary.newSumDifference, 2)}
+                </span>
+              </div>
+            </div>
 
             {/* Mismatch Warning 1: Old components sum != Old CTC */}
             {summary.isOldSumMismatch ? (
@@ -463,9 +545,6 @@ export default function CTCRevisionCalculatorPage() {
                 </div>
                 <div className="text-amber-700">
                   Difference: {formatIndianCurrency(Math.abs(summary.oldSumDifference), 2)} ({summary.oldSumDifference > 0 ? 'Surplus' : 'Deficit'}).
-                </div>
-                <div className="text-[11px] text-amber-700 italic">
-                  Note: Percentages are derived against the entered Old CTC without silent normalization.
                 </div>
               </div>
             ) : (
@@ -505,7 +584,7 @@ export default function CTCRevisionCalculatorPage() {
                   Salary Breakdown & Proportional Comparison
                 </h2>
                 <p className="text-xs text-neutral-500">
-                  Every included component is derived proportionally: New Amount = New CTC × (Old Component % / 100).
+                  Comparison of all CTC components, including direct input and formula-derived earnings.
                 </p>
               </div>
 
@@ -526,23 +605,24 @@ export default function CTCRevisionCalculatorPage() {
                 <thead>
                   <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 font-semibold uppercase tracking-wider">
                     <th className="py-2.5 px-3">Component</th>
-                    <th className="py-2.5 px-2">Category</th>
-                    <th className="py-2.5 px-3 text-right">Old Annual Amount (₹)</th>
+                    <th className="py-2.5 px-2">Component Type</th>
+                    <th className="py-2.5 px-2">Calculation Method</th>
+                    <th className="py-2.5 px-3 text-right">Old Annual Amount</th>
                     <th className="py-2.5 px-3 text-right">Old CTC %</th>
-                    <th className="py-2.5 px-3 text-right font-bold text-neutral-900">New Annual Amount (₹)</th>
+                    <th className="py-2.5 px-3 text-right font-bold text-neutral-900">New Annual Amount</th>
                     <th className="py-2.5 px-3 text-right">New CTC %</th>
-                    <th className="py-2.5 px-3 text-right">New Monthly Equivalent (₹)</th>
                     <th className="py-2.5 px-2 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 font-medium">
                   {summary.results.map((comp) => {
                     const isAnnual = comp.isAnnualPayout;
+                    const isFormula = comp.isFormulaDerived;
                     return (
                       <tr
                         key={comp.id}
                         className={`hover:bg-neutral-50/80 transition ${
-                          isAnnual ? 'bg-blue-50/30' : comp.category === 'Employer Contribution' ? 'bg-emerald-50/30' : ''
+                          isAnnual ? 'bg-blue-50/30' : comp.category === 'Employer Contribution' ? 'bg-emerald-50/30' : isFormula ? 'bg-purple-50/20' : ''
                         }`}
                       >
                         {/* Component Name */}
@@ -550,7 +630,7 @@ export default function CTCRevisionCalculatorPage() {
                           <div className="font-semibold text-neutral-900 flex items-center gap-1.5">
                             {comp.name}
                             {isAnnual && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800" title="Paid/processed annually, not an ordinary monthly cash payout">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800" title="Paid/processed annually">
                                 <Calendar className="w-2.5 h-2.5" /> Annual Benefit
                               </span>
                             )}
@@ -560,9 +640,14 @@ export default function CTCRevisionCalculatorPage() {
                               {comp.notes}
                             </div>
                           )}
+                          {comp.evaluationError && (
+                            <div className="text-[10px] text-red-500 font-normal">
+                              {comp.evaluationError}
+                            </div>
+                          )}
                         </td>
 
-                        {/* Category */}
+                        {/* Component Type */}
                         <td className="py-2.5 px-2">
                           <span
                             className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${
@@ -579,20 +664,50 @@ export default function CTCRevisionCalculatorPage() {
                           </span>
                         </td>
 
-                        {/* Editable Old Amount */}
+                        {/* Calculation Method */}
+                        <td className="py-2.5 px-2">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${
+                              comp.displayCalculationMethod === 'Direct Input'
+                                ? 'bg-gray-100 text-gray-700'
+                                : comp.displayCalculationMethod === 'Formula Derived'
+                                ? 'bg-purple-100 text-purple-800 font-semibold'
+                                : comp.displayCalculationMethod === 'Employer Contribution'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {comp.displayCalculationMethod}
+                          </span>
+                          {isFormula && comp.formulaDescription && (
+                            <div className="text-[10px] text-purple-700 mt-0.5 flex items-center gap-1 font-normal">
+                              <GitBranch className="w-2.5 h-2.5 flex-shrink-0" />
+                              <span>{comp.formulaDescription}</span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Editable Old Amount (or calculated formula amount) */}
                         <td className="py-2.5 px-3 text-right">
-                          <div className="relative inline-block w-28">
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={comp.oldAmount === 0 ? '' : comp.oldAmount}
-                              onChange={(e) =>
-                                handleComponentAmountChange(comp.id, Number(e.target.value))
-                              }
-                              className="w-full text-right px-2 py-1 text-xs rounded border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                            />
-                          </div>
+                          {isFormula ? (
+                            <div>
+                              <span className="font-semibold text-neutral-900">{formatIndianCurrency(comp.oldAmount, 2)}</span>
+                              <div className="text-[10px] text-purple-600">Calculated from formula</div>
+                            </div>
+                          ) : (
+                            <div className="relative inline-block w-28">
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={comp.oldAmount === 0 ? '' : comp.oldAmount}
+                                onChange={(e) =>
+                                  handleComponentAmountChange(comp.id, Number(e.target.value))
+                                }
+                                className="w-full text-right px-2 py-1 text-xs rounded border border-neutral-300 bg-white text-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </div>
+                          )}
                           <div className="text-[10px] text-neutral-400">
                             {isAnnual ? 'Annual amount' : `Monthly: ${formatIndianCurrency(comp.oldAmount / 12, 0)}`}
                           </div>
@@ -615,18 +730,6 @@ export default function CTCRevisionCalculatorPage() {
                         {/* New % of CTC */}
                         <td className="py-2.5 px-3 text-right text-neutral-600">
                           {formatPercentage(comp.newPercentageOfCTC, 2)}
-                        </td>
-
-                        {/* New Monthly Equivalent */}
-                        <td className="py-2.5 px-3 text-right">
-                          <div className="font-medium text-neutral-800">
-                            {formatIndianCurrency(comp.monthlyEquivalent, 2)}
-                          </div>
-                          {isAnnual && (
-                            <div className="text-[10px] text-blue-600 font-normal">
-                              (Allocation equivalent)
-                            </div>
-                          )}
                         </td>
 
                         {/* Delete custom component */}
@@ -652,35 +755,32 @@ export default function CTCRevisionCalculatorPage() {
                 {/* Total Row */}
                 <tfoot>
                   <tr className="border-t-2 border-neutral-300 bg-neutral-100/90 font-bold text-neutral-900 text-xs">
-                    <td className="py-3 px-3 uppercase tracking-wider" colSpan={2}>
+                    <td className="py-3 px-3 uppercase tracking-wider" colSpan={3}>
                       Total Complete CTC Components
                     </td>
                     <td className="py-3 px-3 text-right">
                       <div>{formatIndianCurrency(summary.totalOldComponents, 2)}</div>
                       <div className="text-[10px] text-neutral-500 font-normal">
-                        Monthly: {formatIndianCurrency(summary.totalOldComponents / 12, 2)}
+                        Monthly: {formatIndianCurrency(summary.totalOldComponents / 12, 0)}
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-right text-neutral-800">
+                    <td className="py-3 px-3 text-right text-primary-900">
                       {formatPercentage(summary.oldComponentsPercentageSum, 2)}
                     </td>
-                    <td className="py-3 px-3 text-right text-primary-900">
+                    <td className="py-3 px-3 text-right text-primary-900 font-extrabold text-sm">
                       <div>{formatIndianCurrency(summary.totalNewComponents, 2)}</div>
                       <div className="text-[10px] text-emerald-700 font-normal">
                         {summary.totalIncrement >= 0 ? '+' : ''}
                         {formatIndianCurrency(summary.totalIncrement, 2)}
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-right text-neutral-800">
+                    <td className="py-3 px-3 text-right text-neutral-700">
                       {formatPercentage(
                         summary.calculatedNewCTC > 0
                           ? (summary.totalNewComponents / summary.calculatedNewCTC) * 100
                           : 0,
                         2
                       )}
-                    </td>
-                    <td className="py-3 px-3 text-right text-neutral-900">
-                      {formatIndianCurrency(summary.totalNewComponents / 12, 2)}
                     </td>
                     <td></td>
                   </tr>
@@ -690,43 +790,40 @@ export default function CTCRevisionCalculatorPage() {
 
             {/* Separate Employee Deductions Section (Distinct from Employer CTC Cost) */}
             {showEmployeeDeductions && (
-              <div className="mt-6 pt-4 border-t-2 border-dashed border-neutral-300 space-y-3">
+              <div className="mt-4 p-4 rounded-xl bg-neutral-50 border border-neutral-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-purple-600" />
-                      Employee Salary Deductions (Reference Only)
-                    </h3>
-                    <p className="text-xs text-neutral-500">
-                      Employee PF and statutory deductions are deducted from the employee's gross earnings. They are NOT employer CTC costs.
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-neutral-600" />
+                    <span className="text-xs font-semibold text-neutral-900 uppercase tracking-wider">
+                      Employee-Side Deductions (Reference Only - Deducted from Gross, Not Employer CTC Cost)
+                    </span>
                   </div>
+                  <span className="text-[11px] text-neutral-500">
+                    Employee PF and statutory deductions are deducted from the employee's gross earnings. They are NOT employer CTC costs.
+                  </span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="border-b border-neutral-200 bg-purple-50/50 text-purple-900 font-semibold uppercase tracking-wider">
-                        <th className="py-2 px-3">Deduction Name</th>
-                        <th className="py-2 px-3">Category</th>
-                        <th className="py-2 px-3 text-right">Old Annual Deduction (₹)</th>
-                        <th className="py-2 px-3 text-right">New Annual Deduction (₹)</th>
+                      <tr className="border-b border-neutral-200 bg-neutral-100 text-neutral-600 font-semibold uppercase">
+                        <th className="py-2 px-3">Deduction Component</th>
+                        <th className="py-2 px-3 text-right">Old Deduction (₹)</th>
+                        <th className="py-2 px-3 text-right">Revised Deduction (₹)</th>
                         <th className="py-2 px-3 text-right">Monthly Deduction (₹)</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100 font-medium">
+                    <tbody className="divide-y divide-neutral-200 font-medium">
                       {summary.employeeDeductionResults?.map((ded) => (
-                        <tr key={ded.id} className="hover:bg-neutral-50 transition">
-                          <td className="py-2.5 px-3 font-semibold text-neutral-800">{ded.name}</td>
+                        <tr key={ded.id} className="hover:bg-neutral-100/50">
                           <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800">
-                              {ded.category}
-                            </span>
+                            <span className="font-semibold text-neutral-800">{ded.name}</span>
+                            <span className="ml-2 text-[10px] text-neutral-400">({ded.category})</span>
                           </td>
                           <td className="py-2.5 px-3 text-right text-neutral-700">
                             {formatIndianCurrency(ded.oldAmount, 2)}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-bold text-neutral-900">
+                          <td className="py-2.5 px-3 text-right font-semibold text-neutral-900">
                             {formatIndianCurrency(ded.newAmount, 2)}
                           </td>
                           <td className="py-2.5 px-3 text-right text-neutral-700">
@@ -763,16 +860,51 @@ export default function CTCRevisionCalculatorPage() {
                   <option value="Annual Benefit">Annual Benefit</option>
                   <option value="Other CTC Component">Other CTC Component</option>
                 </select>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Old Annual Amount"
-                  value={newCompAmount}
-                  onChange={(e) =>
-                    setNewCompAmount(e.target.value === '' ? '' : Number(e.target.value))
-                  }
-                  className="w-36 px-2.5 py-1.5 text-xs rounded-lg border border-neutral-300 bg-white text-neutral-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
+                <select
+                  value={newCompMethod}
+                  onChange={(e) => setNewCompMethod(e.target.value as CalculationMethod)}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-neutral-300 bg-white text-neutral-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="Flat">Direct Input (Flat)</option>
+                  <option value="Percentage">Formula (% of Parent)</option>
+                </select>
+
+                {newCompMethod === 'Percentage' ? (
+                  <>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Percentage (%)"
+                      value={newCompPercentage}
+                      onChange={(e) => setNewCompPercentage(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-24 px-2.5 py-1.5 text-xs rounded-lg border border-neutral-300 bg-white text-neutral-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <select
+                      value={newCompParentId}
+                      onChange={(e) => setNewCompParentId(e.target.value)}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-neutral-300 bg-white text-neutral-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="">-- Select Parent Component --</option>
+                      {components.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                ) : (
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Old Annual Amount"
+                    value={newCompAmount}
+                    onChange={(e) =>
+                      setNewCompAmount(e.target.value === '' ? '' : Number(e.target.value))
+                    }
+                    className="w-36 px-2.5 py-1.5 text-xs rounded-lg border border-neutral-300 bg-white text-neutral-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                )}
+
                 <button
                   type="button"
                   onClick={handleAddComponent}
