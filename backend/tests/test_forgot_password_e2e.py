@@ -16,10 +16,11 @@ async def test_forgot_password_flow():
     
     # Store OTP manually in memory to simulate DB
     memory_db = {}
+    valid_oid_str = "507f1f77bcf86cd799439011"
     
     async def mock_create(data):
         doc = data.copy()
-        doc["_id"] = "mock_otp_id"
+        doc["_id"] = valid_oid_str
         memory_db["active_otp"] = doc
         return PasswordResetOtpModel(**doc)
         
@@ -30,7 +31,7 @@ async def test_forgot_password_flow():
         # Check expiry
         if doc["expiresAt"] > datetime.now(timezone.utc):
             # Normalize for Pydantic like repo does
-            doc["_id"] = str(doc.get("_id", "mock_otp_id"))
+            doc["_id"] = str(doc.get("_id", valid_oid_str))
             return PasswordResetOtpModel(**doc)
         return None
 
@@ -41,9 +42,9 @@ async def test_forgot_password_flow():
     service.otp_repo.invalidate_previous_otps = AsyncMock()
     service.otp_repo.create = mock_create
     service.otp_repo.find_active_otp = mock_find_active
-    service.otp_repo.mark_used = AsyncMock()
-    service.otp_repo.increment_attempts = AsyncMock()
-    service.otp_repo.mark_verified = AsyncMock()
+    service.otp_repo.mark_used = AsyncMock(return_value=True)
+    service.otp_repo.increment_attempts = AsyncMock(return_value=True)
+    service.otp_repo.mark_verified = AsyncMock(return_value=True)
     
     with patch("app.employee.services.email_resolver.get_employee_personal_email", new_callable=AsyncMock) as mock_resolve:
         mock_resolve.return_value = "ramesh@gmail.com"
@@ -68,6 +69,13 @@ async def test_forgot_password_flow():
         assert reset_token is not None
         
         # 3. Reset Password
-        mock_db.password_reset_otps.find_one.return_value = {"_id": "mock_otp_id", "used": False, "verified": True}
+        from bson import ObjectId
+        mock_db.password_reset_otps.find_one.return_value = {
+            "_id": ObjectId(valid_oid_str),
+            "employeeId": "E1",
+            "used": False,
+            "verified": True,
+            "expiresAt": datetime.now(timezone.utc) + timedelta(minutes=10)
+        }
         res3 = await service.reset_password("202102", reset_token, "NewPass123!", "NewPass123!")
         assert res3["message"] == "Password reset successfully"

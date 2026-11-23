@@ -113,16 +113,25 @@ async def test_verify_otp_incorrect_otp(service, mock_db):
 
 @pytest.mark.asyncio
 async def test_reset_password_success(service, mock_db):
+    from bson import ObjectId
+    oid_str = "507f1f77bcf86cd799439011"
     # Setup token
     token = create_access_token(
-        {"empId": "E1", "purpose": "password_reset", "otpId": "otp_123"},
+        {"empId": "E1", "purpose": "password_reset", "otpId": oid_str},
         expires_delta=timedelta(minutes=15)
     )
     
     mock_db.users.find_one.return_value = {"employeeId": "E1", "empId": "202102"}
     mock_db.employees.find_one.return_value = {"employeeId": "E1"}
     
-    mock_db.password_reset_otps.find_one.return_value = {"_id": "otp_123", "used": False, "verified": True}
+    mock_db.password_reset_otps.find_one.return_value = {
+        "_id": ObjectId(oid_str),
+        "employeeId": "E1",
+        "used": False,
+        "verified": True,
+        "expiresAt": datetime.now(timezone.utc) + timedelta(minutes=10)
+    }
+    mock_db.users.update_one.return_value = AsyncMock(matched_count=1, modified_count=1)
     
     res = await service.reset_password("202102", token, "NewPass123!", "NewPass123!")
     

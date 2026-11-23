@@ -155,16 +155,33 @@ class ForgotPasswordService:
             
         emp_id = token_emp_id
 
-        # Check if OTP was already used
-        otp_doc = await self.db.password_reset_otps.find_one({"_id": otp_id, "used": False, "verified": True})
+        # Convert otp_id safely to BSON ObjectId
+        from bson import ObjectId
+        try:
+            oid = ObjectId(otp_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Reset token has already been used or is invalid")
+
+        # Check if OTP was already used, verified, and not expired
+        now = datetime.now(timezone.utc)
+        otp_doc = await self.db.password_reset_otps.find_one({
+            "_id": oid,
+            "used": False,
+            "verified": True,
+            "expiresAt": {"$gt": now}
+        })
         if not otp_doc:
+            raise HTTPException(status_code=400, detail="Reset token has already been used or is invalid")
+
+        # Verify employee ownership on the stored OTP document
+        if otp_doc.get("employeeId") != emp_id:
             raise HTTPException(status_code=400, detail="Reset token has already been used or is invalid")
 
         # Hash new password
         new_hash = hash_password(new_password)
 
-        # Update User
-        await self.db.users.update_one(
+        # Update User password
+        user_update_result = await self.db.users.update_one(
             {"employeeId": emp_id},
             {
                 "$set": {
@@ -174,9 +191,15 @@ class ForgotPasswordService:
                 }
             }
         )
+        if user_update_result.matched_count == 0:
+            raise HTTPException(status_code=400, detail="User account not found or update failed")
 
-        # Invalidate OTP
-        await self.otp_repo.mark_used(otp_id)
+        # Invalidate OTP: Mark as used
+        invalidation_success = await self.otp_repo.mark_used(oid)
+        if not invalidation_success:
+            print(f"[ForgotPasswordService] Warning: Failed to mark OTP {oid} as used after password update")
+            # We still ensure safety by attempting direct update
+            await self.db.password_reset_otps.update_one({"_id": oid}, {"$set": {"used": True, "updatedAt": datetime.now(timezone.utc)}})
 
         # Audit Log
         await self.db.audit_logs.insert_one({
