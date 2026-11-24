@@ -56,6 +56,7 @@ const adminNavItems: NavItem[] = [
   { path: '/admin/payroll/company-banks', label: 'Company Banks', icon: Building2, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/organization', label: 'Organization', icon: Building2, adminOnly: true, requiredPermission: 'organization.manage' },
   { path: '/admin/holidays', label: 'Holidays', icon: Calendar, adminOnly: true, requiredPermission: 'organization.manage' },
+  { path: '/admin/attendance/special-days', label: 'Special Days', icon: Calendar, adminOnly: true, requiredPermission: 'attendance.manage' },
   { path: '/admin/attendance', label: 'Attendance Monitor', icon: Calendar, adminOnly: true, requiredPermission: 'attendance.read' },
   { path: '/admin/attendance/sync', label: 'Attendance Sync Settings', icon: RefreshCw, adminOnly: true, requiredPermission: 'attendance.sync' },
   { path: '/admin/attendance/historical-corrections', label: 'Historical Corrections', icon: FileText, adminOnly: true, requiredPermission: 'attendance.sync' },

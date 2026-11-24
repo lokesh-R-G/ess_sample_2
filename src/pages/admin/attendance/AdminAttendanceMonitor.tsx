@@ -379,6 +379,16 @@ export const AdminAttendanceMonitor: React.FC = () => {
                     </div>
                   )}
 
+                  {selectedCell.details.specialDayType && (
+                    <div className="flex justify-between items-center bg-indigo-50 p-2 rounded border border-indigo-200">
+                      <span className="text-indigo-800 font-medium">Special Day</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-900">
+                        {selectedCell.details.specialDayType === 'Sudden Holiday' ? 'Holiday — Sudden Holiday' : `Special Cutoff (${selectedCell.details.expectedWorkingHours ?? 4.0}h)`}
+                        {selectedCell.details.specialDayName ? ` - ${selectedCell.details.specialDayName}` : ''}
+                      </span>
+                    </div>
+                  )}
+
                   {selectedCell.details.leaveType && (
                     <div className="flex justify-between items-center">
                       <span className="text-neutral-600">Leave Type</span>

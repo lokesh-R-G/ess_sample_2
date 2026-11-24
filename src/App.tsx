@@ -38,6 +38,7 @@ import AdminAttendance from './pages/admin/AdminAttendance';
 import ManualRecalculation from './pages/admin/attendance/ManualRecalculation';
 import HistoricalCorrections from './pages/admin/attendance/HistoricalCorrections';
 import AdminAttendancePolicy from './pages/admin/AdminAttendancePolicy';
+import AdminSpecialDays from './pages/admin/attendance/AdminSpecialDays';
 import AdminOrganization from './pages/admin/AdminOrganization';
 import AdminLayout from './components/layout/AdminLayout';
 import AdminSettings from './pages/admin/AdminSettings';
@@ -169,6 +170,7 @@ function AppRoutes() {
           <Route path="attendance" element={<ProtectedRoute requireAnyPermission={['attendance.read']}><AdminAttendanceMonitor /></ProtectedRoute>} />
           <Route path="attendance/sync" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><AdminAttendance /></ProtectedRoute>} />
           <Route path="attendance/recalculate" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><ManualRecalculation /></ProtectedRoute>} />
+          <Route path="attendance/special-days" element={<ProtectedRoute requireAnyPermission={['attendance.manage', 'organization.manage']}><AdminSpecialDays /></ProtectedRoute>} />
           <Route path="attendance/historical-corrections" element={<ProtectedRoute requireAnyPermission={['attendance.sync']}><HistoricalCorrections /></ProtectedRoute>} />
           <Route path="attendance-policy" element={<ProtectedRoute requireAnyPermission={['policy.attendance.manage']}><AdminAttendancePolicy /></ProtectedRoute>} />
           <Route path="leave-policy" element={<ProtectedRoute requireAnyPermission={['policy.leave.manage']}><LeavePolicySettings /></ProtectedRoute>} />

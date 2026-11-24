@@ -293,6 +293,36 @@ class AttendanceContextResolver:
 
         print(f"Holiday Calendar : {calendar_name} ({len(holiday_dates)} dates)")
 
+        # 3.1 Resolve Active Special Day Configuration (Sudden Holiday / Sudden Cutoff)
+        special_day = None
+        target_date_str = target_date.strftime("%Y-%m-%d")
+        comp_id_str = str(company_id) if company_id else None
+
+        # Build query for active special day matching date and company
+        special_day_query = {
+            "date": target_date_str,
+            "status": "Active"
+        }
+        if comp_id_str:
+            special_day_query["companyId"] = comp_id_str
+
+        special_day_candidates = await self.db.special_days.find(special_day_query).to_list(None)
+        branch_id_str = str(branch_id) if branch_id else None
+
+        for sd in special_day_candidates:
+            app_scope = sd.get("applicability", "All Branches")
+            if app_scope == "All Branches":
+                special_day = sd
+                break
+            elif app_scope == "Selected Branches":
+                sd_branches = [str(b) for b in sd.get("selectedBranchIds", [])]
+                if branch_id_str and branch_id_str in sd_branches:
+                    special_day = sd
+                    break
+
+        if special_day:
+            print(f"Special Day Applied: {special_day.get('eventName')} ({special_day.get('dayType')})")
+
         # 4. Resolve Weekly Off
         today_schedule = self.resolve_today_schedule(weekly_off_policy, target_date)
         print(f"Today Schedule : {today_schedule['dayType']}")
@@ -408,5 +438,6 @@ class AttendanceContextResolver:
             "rawPunches": raw_punches,
             "permissionLedger": permission_ledger,
             "targetDate": target_date,
-            "leavePolicy": leave_policy
+            "leavePolicy": leave_policy,
+            "specialDay": special_day
         }

@@ -127,9 +127,14 @@ async def get_attendance_monitor(
             "lateMinutes": late_mins,
             "inTime": att.get("inTime"),
             "outTime": att.get("outTime"),
+            "workHours": att.get("workHours"),
+            "expectedWorkingHours": att.get("expectedWorkingHours"),
             "shiftCode": att.get("shiftCode"),
             "actualStartTime": att.get("actualStartTime"),
             "scheduleType": att.get("scheduleType"),
+            "scheduleSource": att.get("scheduleSource"),
+            "specialDayName": att.get("specialDayName"),
+            "specialDayType": att.get("specialDayType"),
             "sources": att.get("sources", [])
         }
         

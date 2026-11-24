@@ -189,6 +189,15 @@ export const Attendance: React.FC = () => {
                             status={status.includes('present') ? 'success' : status === 'absent' ? 'error' : (status === 'leave' || status === 'half day') ? 'warning' : status === 'od' ? 'purple' : 'info'}
                             label={attendance.status || 'ABSENT'}
                           />
+                          {attendance.specialDayType === 'Sudden Holiday' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                              Holiday — Sudden Holiday{attendance.specialDayName ? ` (${attendance.specialDayName})` : ''}
+                            </span>
+                          ) : attendance.specialDayType === 'Sudden Cutoff' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                              Special Cutoff ({attendance.expectedWorkingHours ?? 4.0}h expected)
+                            </span>
+                          ) : null}
                           {(attendance.isLate || (attendance.lateMinutes && attendance.lateMinutes > 0)) ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
                               Late ({attendance.lateMinutes}m)

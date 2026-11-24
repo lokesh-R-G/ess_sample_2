@@ -16,8 +16,11 @@ export interface AttendanceRecord {
   // V2 Specific fields
   scheduleType?: string;
   scheduleSource?: string;
+  expectedWorkingHours?: number;
   actualStartTime?: string | null;
   actualEndTime?: string | null;
+  specialDayName?: string | null;
+  specialDayType?: string | null;
   lopReason?: string | null;
   monthlyLateCount?: number;
   breakDuration?: number;

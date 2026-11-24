@@ -150,6 +150,10 @@ class AttendanceProcessor:
                     "actualStartTime": metrics.get("actualStartTime", None),
                     "actualEndTime": metrics.get("actualEndTime", None),
                     
+                    # Special Day Integration
+                    "specialDayName": metrics.get("specialDayName"),
+                    "specialDayType": metrics.get("specialDayType"),
+
                     "engineVersion": "v2",
                     "processedAt": self._utc_now().isoformat(),
                     "processedBy": "ATTENDANCE_PROCESSOR",

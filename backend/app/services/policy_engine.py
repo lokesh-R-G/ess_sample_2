@@ -14,6 +14,7 @@ class PolicyEngine:
         self.raw_punches = context.get("rawPunches", [])
         self.monthly_late_count = context.get("monthlyLateCount", 0)
         self.target_date = context.get("targetDate")
+        self.special_day = context.get("specialDay")
         
         # Determine canonical schedule
         self.schedule = self._calculate_expected_schedule()
@@ -82,6 +83,19 @@ class PolicyEngine:
         if start_dt and end_dt:
             expected_hours = (end_dt - start_dt).total_seconds() / 3600.0
             expected_hours = max(0.0, expected_hours - break_duration_hours)
+
+        # Check for active Sudden Cutoff special day override
+        special_day_name = None
+        special_day_type = None
+        if self.special_day and self.special_day.get("status") == "Active":
+            special_day_name = self.special_day.get("eventName")
+            special_day_type = self.special_day.get("dayType")
+            if special_day_type == "Sudden Cutoff" and self.special_day.get("expectedWorkingHours") is not None:
+                cutoff_hours = float(self.special_day["expectedWorkingHours"])
+                if cutoff_hours > 0:
+                    expected_hours = cutoff_hours
+                    day_type = "CUTOFF"
+                    source = "SpecialDay"
             
         return {
             "scheduleType": day_type,
@@ -93,12 +107,20 @@ class PolicyEngine:
             "breakStartDt": break_start,
             "breakEndDt": break_end,
             "breakDurationHours": break_duration_hours,
-            "expectedWorkingHours": expected_hours
+            "expectedWorkingHours": expected_hours,
+            "specialDay": self.special_day,
+            "specialDayName": special_day_name,
+            "specialDayType": special_day_type
         }
 
     def _is_holiday(self) -> bool:
         if not self.target_date:
             return False
+
+        # 1. Sudden Holiday check from Special Day configuration
+        if self.special_day and self.special_day.get("status") == "Active":
+            if self.special_day.get("dayType") == "Sudden Holiday":
+                return True
             
         target_str = self.target_date.strftime("%Y-%m-%d")
         for hd in self.holiday_dates:
@@ -241,7 +263,12 @@ class PolicyEngine:
             "actualEndTime": self.schedule["actualEndTime"],
             
             # Phase 10.3 / M2.1
-            "approvalSnapshot": []
+            "approvalSnapshot": [],
+
+            # Special Day Configuration
+            "specialDay": self.schedule.get("specialDay"),
+            "specialDayName": self.schedule.get("specialDayName"),
+            "specialDayType": self.schedule.get("specialDayType")
         }
         
         # Normalization of Approvals (must be called before early returns to populate snapshot)
@@ -272,6 +299,12 @@ class PolicyEngine:
         # 2. Holiday Check
         if not is_full_day_override and self._is_holiday():
             metrics["status"] = "Holiday"
+            # Normalize punches even on holidays so inTime/outTime are populated
+            working_intervals = self._normalize_working_intervals()
+            in_time = working_intervals[0][0] if working_intervals else None
+            out_time = working_intervals[-1][1] if working_intervals else None
+            metrics["inTime"] = in_time.isoformat() if in_time else None
+            metrics["outTime"] = out_time.isoformat() if out_time else None
             return metrics
             
         # 3. Week Off Check
@@ -357,19 +390,26 @@ class PolicyEngine:
                 metrics["status"] = "Present (No Out)"
             else:
                 expected_hours = self.schedule["expectedWorkingHours"]
-                # Determine the allowable shortages from the base shift to treat CUTOFF as a complete day
-                base_expected = 9.0
-                if self.shift and getattr(self.shift, "startTime", None) and getattr(self.shift, "endTime", None):
-                    base_start = self._get_shift_datetime(self.shift.startTime)
-                    base_end = self._get_shift_datetime(self.shift.endTime)
-                    if base_start and base_end:
-                        base_expected = (base_end - base_start).total_seconds() / 3600.0
-                        
-                allowable_full_shortage = max(0.0, base_expected - getattr(self.policy, "minHoursForFullDay", 8.0))
+                is_special_cutoff = self.schedule.get("scheduleSource") == "SpecialDay" and self.schedule.get("scheduleType") == "CUTOFF"
                 
-                req_full = max(0.0, expected_hours - allowable_full_shortage)
-                # req_half should roughly be half of the expected hours for a complete day interpretation
-                req_half = expected_hours / 2.0
+                if is_special_cutoff:
+                    # For Sudden Cutoff, the configured hours represent the full expectation for the day.
+                    req_full = expected_hours
+                    req_half = expected_hours / 2.0
+                else:
+                    # Determine the allowable shortages from the base shift to treat CUTOFF as a complete day
+                    base_expected = 9.0
+                    if self.shift and getattr(self.shift, "startTime", None) and getattr(self.shift, "endTime", None):
+                        base_start = self._get_shift_datetime(self.shift.startTime)
+                        base_end = self._get_shift_datetime(self.shift.endTime)
+                        if base_start and base_end:
+                            base_expected = (base_end - base_start).total_seconds() / 3600.0
+                            
+                    allowable_full_shortage = max(0.0, base_expected - getattr(self.policy, "minHoursForFullDay", 8.0))
+                    
+                    req_full = max(0.0, expected_hours - allowable_full_shortage)
+                    # req_half should roughly be half of the expected hours for a complete day interpretation
+                    req_half = expected_hours / 2.0
                 
                 if metrics["effectiveHours"] >= req_full:
                     metrics["status"] = "Present"
@@ -443,7 +483,10 @@ class PolicyEngine:
                         metrics["halfDayCount"] += 0.5
 
             # Early out Logic
-            if out_time:
+            # Note: For Sudden Cutoff, if effective working hours satisfy the configured expected working hours,
+            # an early departure relative to the original standard shift end is expected and must not penalize the employee.
+            is_special_cutoff = self.schedule.get("scheduleSource") == "SpecialDay" and self.schedule.get("scheduleType") == "CUTOFF"
+            if out_time and not (is_special_cutoff and metrics["effectiveHours"] >= self.schedule["expectedWorkingHours"]):
                 original_expected_out = self.schedule["actualEndDt"]
                 adjusted_expected_out = original_expected_out
                 
