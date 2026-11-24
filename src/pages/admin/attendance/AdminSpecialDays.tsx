@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Save, Trash2, Edit2, Calendar, Ban, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
-import { GlassCard, AnimatedButton, Input, StatusBadge } from '../../components/ui';
+import { GlassCard, AnimatedButton, Input, StatusBadge } from '../../../components/ui';
 import { 
   SpecialDay, 
   getSpecialDays, 
@@ -8,8 +8,8 @@ import {
   updateSpecialDay, 
   cancelSpecialDay, 
   SpecialDayPayload 
-} from '../../services/specialDayService';
-import { organizationApi } from '../../services/organization.api';
+} from '../../../services/specialDayService';
+import { organizationApi } from '../../../services/organization.api';
 
 export const AdminSpecialDays: React.FC = () => {
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
