@@ -27,33 +27,66 @@ class EmployeeSelfProfileUpdate(BaseModel):
 @router.get("/")
 async def get_my_profile(current_user=Depends(get_current_user)):
     db = get_database()
+    # Resolve canonical employee document
+    employee = None
+    # 1. Try by employeeId if present on current_user
     emp_uuid = current_user.get("employeeId")
-    if not emp_uuid:
-        # Fallback to resolving via user table if employeeId isn't natively on JWT (which it should be in V2)
-        emp_code = current_user.get("empId")
-        if emp_code:
-            emp = await db.employees.find_one({"employeeCode": emp_code})
-            if emp:
-                emp_uuid = emp.get("employeeId")
-                
-    if not emp_uuid:
-        raise HTTPException(status_code=400, detail="Could not resolve employee UUID")
-
-    # Fetch all domain models
-    employee = await db.employees.find_one({"employeeId": emp_uuid})
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-        
-    personal = await db.employee_personals.find_one({"employeeId": emp_uuid}) or {}
-    contact = await db.employee_contacts.find_one({"employeeId": emp_uuid}) or {}
-    address = await db.employee_addresses.find_one({"employeeId": emp_uuid}) or {}
-    bank = await db.employee_bank_accounts.find_one({"employeeId": emp_uuid}) or {}
+    if emp_uuid:
+        employee = await db.employees.find_one({"employeeId": emp_uuid})
     
-    # Fetch active employment history
+    # 2. Try by employeeCode / empId if not found yet
+    emp_code = current_user.get("employeeCode") or current_user.get("empId")
+    if not employee and emp_code:
+        employee = await db.employees.find_one({
+            "$or": [{"employeeCode": emp_code}, {"empId": emp_code}, {"employeeId": emp_code}]
+        })
+    
+    # 3. If employee found, ensure emp_uuid and emp_code are canonical
+    if employee:
+        emp_uuid = employee.get("employeeId") or str(employee.get("_id"))
+        emp_code = employee.get("employeeCode") or emp_code
+    else:
+        # Fallback if employee table entry does not exist
+        if not emp_uuid and emp_code:
+            emp_uuid = emp_code
+        if not emp_uuid:
+            raise HTTPException(status_code=400, detail="Could not resolve employee UUID")
+        employee = {"employeeId": emp_uuid, "employeeCode": emp_code}
+        
+    personal = await db.employee_personals.find_one({
+        "$or": [{"employeeId": emp_uuid}, {"employeeCode": emp_code}] if emp_code else {"employeeId": emp_uuid}
+    }) or {}
+    contact = await db.employee_contacts.find_one({
+        "$or": [{"employeeId": emp_uuid}, {"employeeCode": emp_code}] if emp_code else {"employeeId": emp_uuid}
+    }) or {}
+    address = await db.employee_addresses.find_one({
+        "$or": [{"employeeId": emp_uuid}, {"employeeCode": emp_code}] if emp_code else {"employeeId": emp_uuid}
+    }) or {}
+    bank = await db.employee_bank_accounts.find_one({
+        "$or": [{"employeeId": emp_uuid}, {"employeeCode": emp_code}] if emp_code else {"employeeId": emp_uuid}
+    }) or {}
+    
+    # Fetch authoritative employment history:
+    # First check current record (isCurrent: True, deletedAt: None), fallback to latest Active, then latest by effectiveFrom
+    emp_history_query = {
+        "$or": [{"employeeId": emp_uuid}, {"employeeCode": emp_code}] if emp_code else {"employeeId": emp_uuid},
+        "deletedAt": None
+    }
+    
     emp_history = await db.employee_employment_histories.find_one(
-        {"employeeId": emp_uuid, "status": "Active"},
-        sort=[("effectiveFrom", -1)]
-    ) or {}
+        {**emp_history_query, "isCurrent": True},
+        sort=[("effectiveFrom", -1), ("createdAt", -1)]
+    )
+    if not emp_history:
+        emp_history = await db.employee_employment_histories.find_one(
+            {**emp_history_query, "status": "Active"},
+            sort=[("effectiveFrom", -1), ("createdAt", -1)]
+        )
+    if not emp_history:
+        emp_history = await db.employee_employment_histories.find_one(
+            emp_history_query,
+            sort=[("effectiveFrom", -1), ("createdAt", -1)]
+        ) or {}
     
     # Resolve human-readable names for employment history
     org_name = ""
@@ -67,40 +100,91 @@ async def get_my_profile(current_user=Depends(get_current_user)):
     # Helper to parse object ID or string
     def parse_id(id_val):
         if not id_val: return None
+        if isinstance(id_val, ObjectId):
+            return id_val
         try:
-            return ObjectId(id_val)
-        except:
+            return ObjectId(str(id_val))
+        except Exception:
             return id_val
 
+    # Company / Organization lookup:
+    # Primary collection is 'companies'; fallback to 'organizations'
     if emp_history.get("companyId"):
-        org = await db.organizations.find_one({"_id": parse_id(emp_history["companyId"])})
-        if org: org_name = org.get("name", "")
+        c_id = parse_id(emp_history["companyId"])
+        company = await db.companies.find_one({"_id": c_id})
+        if not company and isinstance(c_id, ObjectId):
+            company = await db.companies.find_one({"_id": str(c_id)})
+        if not company:
+            company = await db.organizations.find_one({"_id": c_id})
+        if not company and isinstance(c_id, ObjectId):
+            company = await db.organizations.find_one({"_id": str(c_id)})
+        if company:
+            org_name = company.get("name") or company.get("companyName") or ""
         
+    # Branch lookup:
+    # Primary collection is 'branchs'; fallback to 'branches'
     if emp_history.get("branchId"):
-        branch = await db.branches.find_one({"_id": parse_id(emp_history["branchId"])})
-        if branch: branch_name = branch.get("name", "")
+        b_id = parse_id(emp_history["branchId"])
+        branch = await db.branchs.find_one({"_id": b_id})
+        if not branch and isinstance(b_id, ObjectId):
+            branch = await db.branchs.find_one({"_id": str(b_id)})
+        if not branch:
+            branch = await db.branches.find_one({"_id": b_id})
+        if not branch and isinstance(b_id, ObjectId):
+            branch = await db.branches.find_one({"_id": str(b_id)})
+        if branch:
+            branch_name = branch.get("name") or branch.get("branchName") or ""
         
+    # Department lookup
     if emp_history.get("departmentId"):
-        dept = await db.departments.find_one({"_id": parse_id(emp_history["departmentId"])})
-        if dept: dept_name = dept.get("name", "")
+        d_id = parse_id(emp_history["departmentId"])
+        dept = await db.departments.find_one({"_id": d_id})
+        if not dept and isinstance(d_id, ObjectId):
+            dept = await db.departments.find_one({"_id": str(d_id)})
+        if dept:
+            dept_name = dept.get("name") or dept.get("departmentName") or ""
         
+    # Designation lookup
     if emp_history.get("designationId"):
-        desig = await db.designations.find_one({"_id": parse_id(emp_history["designationId"])})
-        if desig: desig_name = desig.get("name", "")
+        des_id = parse_id(emp_history["designationId"])
+        desig = await db.designations.find_one({"_id": des_id})
+        if not desig and isinstance(des_id, ObjectId):
+            desig = await db.designations.find_one({"_id": str(des_id)})
+        if desig:
+            desig_name = desig.get("name") or desig.get("designationName") or ""
         
+    # Reporting Manager lookup:
+    # Can be ObjectId (string or ObjectId), employeeId, or employeeCode
     if emp_history.get("reportingManagerEmployeeId"):
-        manager_code = emp_history["reportingManagerEmployeeId"]
-        manager = await db.employees.find_one({"employeeId": manager_code})
-        if not manager:
-             manager = await db.employees.find_one({"employeeCode": manager_code})
+        manager_ref = str(emp_history["reportingManagerEmployeeId"]).strip()
+        manager_or = [{"employeeId": manager_ref}, {"employeeCode": manager_ref}]
+        if len(manager_ref) == 24:
+            try:
+                manager_or.append({"_id": ObjectId(manager_ref)})
+            except Exception:
+                pass
+        
+        manager = await db.employees.find_one({"$or": manager_or})
         if manager:
-            manager_personal = await db.employee_personals.find_one({"employeeId": manager.get("employeeId")})
+            mgr_emp_id = manager.get("employeeId")
+            mgr_emp_code = manager.get("employeeCode")
+            mgr_pers_or = []
+            if mgr_emp_id:
+                mgr_pers_or.append({"employeeId": mgr_emp_id})
+            if mgr_emp_code:
+                mgr_pers_or.append({"employeeCode": mgr_emp_code})
+            
+            manager_personal = await db.employee_personals.find_one({"$or": mgr_pers_or}) if mgr_pers_or else None
             if manager_personal:
                 first = manager_personal.get("firstName", "")
                 last = manager_personal.get("lastName", "")
                 manager_name = f"{first} {last}".strip()
-            else:
-                manager_name = manager.get("employeeCode", manager_code)
+            if not manager_name:
+                first = manager.get("firstName", "")
+                last = manager.get("lastName", "")
+                manager_name = f"{first} {last}".strip()
+            if not manager_name:
+                manager_name = manager.get("employeeCode", manager_ref)
 
     response = {
         "personal": {

@@ -20,24 +20,39 @@ from app.core.config import get_settings
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
-client = (
-    AsyncIOMotorClient(
-        settings.mongo_uri,
-        serverSelectionTimeoutMS=settings.mongo_server_selection_timeout_ms,
-        connectTimeoutMS=settings.mongo_connect_timeout_ms,
-        socketTimeoutMS=settings.mongo_socket_timeout_ms,
-        retryWrites=True,
-        tls=settings.mongo_uri.startswith("mongodb+srv://"),
-    )
-    if settings.mongo_uri
-    else None
-)
+_clients: dict[int, AsyncIOMotorClient] = {}
+
+
+def _get_client() -> AsyncIOMotorClient | None:
+    if not settings.mongo_uri:
+        return None
+    try:
+        loop = asyncio.get_running_loop()
+        loop_id = id(loop)
+    except RuntimeError:
+        loop_id = 0
+
+    if loop_id not in _clients:
+        _clients[loop_id] = AsyncIOMotorClient(
+            settings.mongo_uri,
+            serverSelectionTimeoutMS=settings.mongo_server_selection_timeout_ms,
+            connectTimeoutMS=settings.mongo_connect_timeout_ms,
+            socketTimeoutMS=settings.mongo_socket_timeout_ms,
+            retryWrites=True,
+            tls=settings.mongo_uri.startswith("mongodb+srv://"),
+        )
+    return _clients[loop_id]
+
+
+# Backwards compatibility for code importing `client` directly
+client = _get_client()
 
 
 def get_database() -> AsyncIOMotorDatabase:
-    if client is None:
+    cli = _get_client()
+    if cli is None:
         raise RuntimeError("MONGODB_URI is not configured")
-    return client[settings.mongo_db_name]
+    return cli[settings.mongo_db_name]
 
 
 def _is_replica_state_change(error: BaseException) -> bool:

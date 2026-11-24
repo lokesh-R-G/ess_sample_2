@@ -168,6 +168,7 @@ export const Profile: React.FC = () => {
                         { label: 'Branch', value: employment.branch || 'Not available' },
                         { label: 'Designation', value: employment.designation || 'Not available' },
                         { label: 'Reporting Manager', value: employment.reportingManager || 'Not available' },
+                        { label: 'Employment Type', value: employment.employmentType || 'Not available' },
                       ].map((item) => (
                         <div key={item.label} className="p-4 rounded-xl bg-primary-50 border border-primary-200">
                           <p className="text-xs text-neutral-500 mb-1">{item.label}</p>
