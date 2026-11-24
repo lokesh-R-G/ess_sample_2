@@ -184,11 +184,16 @@ export const Attendance: React.FC = () => {
                           <p className="text-2xl font-bold text-neutral-900">{format(selectedDate, 'd')}</p>
                           <p className="text-sm text-neutral-600">{format(selectedDate, 'EEEE, MMMM yyyy')}</p>
                         </div>
-                        <div className="flex justify-center">
+                        <div className="flex flex-wrap items-center justify-center gap-2">
                           <StatusBadge
                             status={status.includes('present') ? 'success' : status === 'absent' ? 'error' : (status === 'leave' || status === 'half day') ? 'warning' : status === 'od' ? 'purple' : 'info'}
                             label={attendance.status || 'ABSENT'}
                           />
+                          {(attendance.isLate || (attendance.lateMinutes && attendance.lateMinutes > 0)) ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
+                              Late ({attendance.lateMinutes}m)
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-sm text-neutral-600 space-y-2">
                           <div className="flex items-center justify-between">

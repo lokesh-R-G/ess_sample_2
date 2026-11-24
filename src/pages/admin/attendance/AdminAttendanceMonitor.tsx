@@ -132,17 +132,17 @@ export const AdminAttendanceMonitor: React.FC = () => {
   
   const days = getDaysInMonth();
 
-  const getStatusColor = (status: string, isLate: boolean) => {
-    if (isLate) return 'bg-orange-100 text-orange-800 border border-orange-300';
+  const getStatusColor = (status: string, isLate: boolean = false) => {
     switch (status) {
-      case 'Present': return 'bg-green-100 text-green-800';
+      case 'Present': return 'bg-green-100 text-green-800 border border-green-200';
+      case 'Half Day': return 'bg-yellow-100 text-yellow-800 border border-yellow-300';
       case 'On Duty': return 'bg-yellow-100 text-yellow-800';
       case 'Absent': return 'bg-red-100 text-red-800';
       case 'Leave': return 'bg-purple-100 text-purple-800';
       case 'Holiday': return 'bg-blue-100 text-blue-800';
       case 'Week Off': return 'bg-gray-100 text-gray-800';
       case 'LOP': return 'bg-rose-100 text-rose-800';
-      case 'PRESENT': return 'bg-green-100 text-green-800';
+      case 'PRESENT': return 'bg-green-100 text-green-800 border border-green-200';
       case 'ABSENT': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-50 text-gray-400';
     }
@@ -157,6 +157,7 @@ export const AdminAttendanceMonitor: React.FC = () => {
   const getStatusAbbr = (status: string, leaveType?: string) => {
     switch (status) {
       case 'Present': return 'P';
+      case 'Half Day': return 'HD';
       case 'Absent': return 'A';
       case 'Leave': return formatLeaveTypeAbbr(leaveType);
       case 'Holiday': return 'H';
@@ -303,10 +304,16 @@ export const AdminAttendanceMonitor: React.FC = () => {
                       <td key={dateStr} className="px-1 py-2 border-l border-neutral-100 text-center relative">
                         <button
                           onClick={() => att && setSelectedCell({ employeeId: emp.employeeId, date: dateStr, details: att, empDetails: emp })}
-                          className={`w-full h-8 rounded flex items-center justify-center font-medium text-xs transition-transform hover:scale-105 ${getStatusColor(status, isLate)} ${!att ? 'cursor-default' : 'cursor-pointer'}`}
-                          title={att ? `${status === 'Leave' && att?.leaveType ? `Leave (${att.leaveType})` : status} ${isLate ? '(LATE)' : ''}` : 'No Data'}
+                          className={`w-full h-8 rounded flex items-center justify-center font-medium text-xs transition-transform hover:scale-105 relative ${getStatusColor(status, isLate)} ${!att ? 'cursor-default' : 'cursor-pointer'}`}
+                          title={att ? `${status === 'Leave' && att?.leaveType ? `Leave (${att.leaveType})` : status} ${isLate ? `(LATE: ${att.lateMinutes}m)` : ''}` : 'No Data'}
                         >
                           {getStatusAbbr(status, att?.leaveType)}
+                          {isLate && (
+                            <span 
+                              className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-orange-500 ring-1 ring-white" 
+                              title={`Late by ${att?.lateMinutes || 0} mins`} 
+                            />
+                          )}
                         </button>
                         {att?.sources?.includes('MOBILE') && (
                           <div className="absolute -top-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-neutral-200">

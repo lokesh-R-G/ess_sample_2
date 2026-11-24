@@ -353,7 +353,9 @@ class AttendanceContextResolver:
 
         print(f"Approvals resolved : {len(today_approvals)}")
         # 6. Resolve Monthly Records for Late/Early Out Aggregation
+        # Exclude target_date itself to ensure deterministic counting and idempotency on re-evaluation
         month_str = target_date.strftime("%Y-%m")
+        target_date_str = target_date.strftime("%Y-%m-%d")
         monthly_cursor = self.db.attendance.find({
             "empId": emp_id,
             "date": {"$regex": f"^{month_str}"}
@@ -362,7 +364,9 @@ class AttendanceContextResolver:
         
         monthly_late_count = sum(
             1 for r in monthly_records 
-            if r.get("lateMinutes", 0) > 0 and r.get("status") not in ["Holiday", "Week Off", "Leave", "On Duty", "Permission"]
+            if r.get("date") != target_date_str
+            and r.get("lateMinutes", 0) > 0 
+            and r.get("status") not in ["Holiday", "Week Off", "Leave", "On Duty", "Permission"]
         )
 
         # 7. Resolve Raw Punches for Target Date using exact normalized machineId

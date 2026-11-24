@@ -7,6 +7,7 @@ export interface AttendanceRecord {
   outTime?: string | null;
   workHours?: number;
   status: 'present' | 'absent' | 'leave' | 'weekoff' | 'od' | 'partial' | string;
+  isLate?: boolean;
   lateMinutes?: number;
   lateCount?: number;
   lopHours?: number;

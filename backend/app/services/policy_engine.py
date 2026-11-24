@@ -419,12 +419,14 @@ class PolicyEngine:
                 inc_threshold = getattr(self.policy, "lateIncrementThreshold", None)
                 
                 # 1. Status Progression (independent of LOP)
+                # Physical status remains as evaluated by effective working hours unless
+                # extreme thresholds (such as full day absent threshold) explicitly require it.
+                # A late arrival must NOT demote an otherwise Present employee to Half Day.
                 if full_threshold and current_lates >= full_threshold:
                     metrics["status"] = "Absent"
-                elif half_threshold and current_lates >= half_threshold:
-                    metrics["status"] = "Half Day"
 
                 # 2. LOP Penalty Generation
+                # Generate configured LOP hours when threshold is reached
                 if inc_threshold:
                     if current_lates % inc_threshold == 0:
                         metrics["lopHours"] += getattr(self.policy, "lopHalfDayHours", 4.0)
@@ -482,9 +484,10 @@ class PolicyEngine:
         if is_full_day_override:
             metrics["status"] = override_status
             if override_status == "Leave" and leave_allocation:
-                metrics["lopHours"] = leave_allocation["lop"] * (self.schedule["expectedWorkingHours"] or 8.0)
-                metrics["lopReason"] = "Insufficient Leave Balance" if leave_allocation["lop"] > 0 else None
-                metrics["leaveLopDays"] = leave_allocation["lop"]
+                lop_val = leave_allocation.get("lop", 0.0) if isinstance(leave_allocation, dict) else (leave_allocation if isinstance(leave_allocation, (int, float)) else 0.0)
+                metrics["lopHours"] = lop_val * (self.schedule["expectedWorkingHours"] or 8.0)
+                metrics["lopReason"] = "Insufficient Leave Balance" if lop_val > 0 else None
+                metrics["leaveLopDays"] = lop_val
             else:
                 metrics["lopHours"] = 0.0
                 metrics["lopReason"] = None
