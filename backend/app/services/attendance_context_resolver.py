@@ -97,6 +97,7 @@ class AttendanceContextResolver:
         print("Employment : FOUND")
         
         branch_id = employment_doc.get("branchId")
+        company_id = employment_doc.get("companyId") or getattr(employee, "companyId", None)
         shift_id = employment_doc.get("shiftId")
         shift_code = employment_doc.get("shiftCode")
 
@@ -298,27 +299,30 @@ class AttendanceContextResolver:
         target_date_str = target_date.strftime("%Y-%m-%d")
         comp_id_str = str(company_id) if company_id else None
 
-        # Build query for active special day matching date and company
-        special_day_query = {
-            "date": target_date_str,
-            "status": "Active"
-        }
-        if comp_id_str:
-            special_day_query["companyId"] = comp_id_str
+        # Build query for active special day matching date and company.
+        # If company_id is missing, log a warning and avoid global matching to maintain strict tenant isolation.
+        if not comp_id_str:
+            print(f"Warning: companyId missing for employee {employee.employeeId}. Skipping Special Day lookup to enforce tenant isolation.")
+        else:
+            special_day_query = {
+                "date": target_date_str,
+                "status": "Active",
+                "companyId": comp_id_str
+            }
 
-        special_day_candidates = await self.db.special_days.find(special_day_query).to_list(None)
-        branch_id_str = str(branch_id) if branch_id else None
+            special_day_candidates = await self.db.special_days.find(special_day_query).to_list(None)
+            branch_id_str = str(branch_id) if branch_id else None
 
-        for sd in special_day_candidates:
-            app_scope = sd.get("applicability", "All Branches")
-            if app_scope == "All Branches":
-                special_day = sd
-                break
-            elif app_scope == "Selected Branches":
-                sd_branches = [str(b) for b in sd.get("selectedBranchIds", [])]
-                if branch_id_str and branch_id_str in sd_branches:
+            for sd in special_day_candidates:
+                app_scope = sd.get("applicability", "All Branches")
+                if app_scope == "All Branches":
                     special_day = sd
                     break
+                elif app_scope == "Selected Branches":
+                    sd_branches = [str(b) for b in sd.get("selectedBranchIds", [])]
+                    if branch_id_str and branch_id_str in sd_branches:
+                        special_day = sd
+                        break
 
         if special_day:
             print(f"Special Day Applied: {special_day.get('eventName')} ({special_day.get('dayType')})")
@@ -437,6 +441,7 @@ class AttendanceContextResolver:
             "policy": policy,
             "weeklyOffPolicy": weekly_off_policy,
             "branch": branch_id,
+            "companyId": comp_id_str,
             "holidayCalendar": calendar_doc,
             "holidayCalendarId": calendar_id,
             "holidayDates": holiday_dates,
