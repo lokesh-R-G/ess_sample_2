@@ -37,24 +37,66 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials | None = De
         if isinstance(v, ObjectId):
             user[k] = str(v)
     # Fetch authoritative employee mapping
-    employee = await db.employees.find_one({"$or": [{"employeeCode": emp_id}, {"empId": emp_id}]})
+    candidate_ids = set()
+    if emp_id:
+        candidate_ids.add(str(emp_id))
+    if user.get("employeeCode"):
+        candidate_ids.add(str(user["employeeCode"]))
+    if user.get("employeeId"):
+        candidate_ids.add(str(user["employeeId"]))
+    if payload.get("employeeCode"):
+        candidate_ids.add(str(payload["employeeCode"]))
+    if payload.get("employeeId"):
+        candidate_ids.add(str(payload["employeeId"]))
+
+    # Pass 1: Resolve directly linked employee documents
+    emp_clauses = []
+    for cid in candidate_ids:
+        emp_clauses.extend([{"employeeCode": cid}, {"empId": cid}, {"employeeId": cid}])
+
+    matched_emps = await db.employees.find({"$or": emp_clauses}).to_list(10) if emp_clauses else []
+    for me in matched_emps:
+        if me.get("employeeId"):
+            candidate_ids.add(str(me["employeeId"]))
+        if me.get("employeeCode"):
+            candidate_ids.add(str(me["employeeCode"]))
+
+    # Pass 2: Secondary resolution across expanded candidates (handles legacy multi-hop codes)
+    pass2_clauses = []
+    for cid in candidate_ids:
+        pass2_clauses.extend([{"employeeCode": cid}, {"empId": cid}, {"employeeId": cid}])
+    matched_emps2 = await db.employees.find({"$or": pass2_clauses}).to_list(10) if pass2_clauses else []
+    for me in matched_emps2:
+        if me.get("employeeId"):
+            candidate_ids.add(str(me["employeeId"]))
+        if me.get("employeeCode"):
+            candidate_ids.add(str(me["employeeCode"]))
+
+    employee = matched_emps[0] if matched_emps else (matched_emps2[0] if matched_emps2 else None)
     if employee:
-        user["employeeId"] = employee.get("employeeId")
-        user["employeeCode"] = employee.get("employeeCode", emp_id)
-        
-        # Fetch authoritative employment history data for branch and company
-        emp_hist = await db.employee_employment_histories.find_one({
-            "employeeId": user["employeeId"],
-            "isCurrent": True,
-            "deletedAt": None
-        })
-        if emp_hist:
-            user["branchId"] = emp_hist.get("branchId")
-            user["companyId"] = emp_hist.get("companyId")
-            user["managerId"] = emp_hist.get("managerId")
+        user["employeeId"] = employee.get("employeeId") or user.get("employeeId") or payload.get("employeeId")
+        user["employeeCode"] = employee.get("employeeCode") or user.get("employeeCode") or emp_id
     else:
         user.setdefault("employeeId", payload.get("employeeId"))
         user.setdefault("employeeCode", payload.get("employeeCode"))
+
+    # Fetch authoritative employment history data for branch and company
+    emp_hist = await db.employee_employment_histories.find_one({
+        "employeeId": {"$in": list(candidate_ids)},
+        "isCurrent": True,
+        "deletedAt": None
+    })
+    if not emp_hist:
+        # Fallback to most recent employment history if isCurrent is not explicitly set
+        emp_hist = await db.employee_employment_histories.find_one({
+            "employeeId": {"$in": list(candidate_ids)},
+            "deletedAt": None
+        })
+
+    if emp_hist:
+        user["branchId"] = str(emp_hist["branchId"]) if emp_hist.get("branchId") else None
+        user["companyId"] = str(emp_hist["companyId"]) if emp_hist.get("companyId") else None
+        user["managerId"] = str(emp_hist["managerId"]) if emp_hist.get("managerId") else None
         
     return user
 
