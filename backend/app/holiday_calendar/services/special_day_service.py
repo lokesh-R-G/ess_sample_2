@@ -86,7 +86,6 @@ class SpecialDayService:
         1. Selected branches belong to the company/tenant.
         2. No conflicting active special day exists for the same date and overlapping branch scope.
         """
-        # Validate branch ownership within company
         if applicability == "Selected Branches":
             if not selected_branch_ids:
                 raise ValueError("At least one branch must be selected.")
@@ -108,7 +107,6 @@ class SpecialDayService:
                 if b_id not in found_ids:
                     raise ValueError(f"Branch ID '{b_id}' does not exist.")
 
-        # Check existing active configurations for this company and date
         conflict_query: Dict[str, Any] = {
             "companyId": company_id,
             "date": date_str,
@@ -128,14 +126,12 @@ class SpecialDayService:
             ex_name = existing.get("eventName", "Existing Configuration")
             ex_type = existing.get("dayType")
 
-            # If either is All Branches, it is an automatic overlap
             if applicability == "All Branches" or ex_app == "All Branches":
                 raise ValueError(
                     f"Conflict detected on {date_str}: '{ex_name}' ({ex_type}) is already active with "
                     f"scope '{ex_app}'. Cannot create overlapping configuration."
                 )
 
-            # Both are Selected Branches: check intersection
             common_branches = set(selected_branch_ids).intersection(ex_branches)
             if common_branches:
                 raise ValueError(
@@ -154,6 +150,50 @@ class SpecialDayService:
         now = datetime.now(timezone.utc)
         special_day_id = f"SD-{uuid.uuid4().hex[:8].upper()}"
 
+        # Resolve shift details if shiftId was selected
+        start_time = data.startTime
+        end_time = data.endTime
+        expected_working_hours = data.expectedWorkingHours
+        is_cross_midnight = data.isCrossMidnight
+        break_start = data.breakStartTime
+        break_end = data.breakEndTime
+        shift_code = data.shiftCode
+
+        if data.dayType == "Sudden Shift Change":
+            if data.shiftId:
+                try:
+                    s_query = {"$or": [{"_id": ObjectId(data.shiftId)}, {"_id": data.shiftId}, {"shiftCode": data.shiftId}]}
+                except Exception:
+                    s_query = {"$or": [{"_id": data.shiftId}, {"shiftCode": data.shiftId}]}
+                shift_doc = await self.db.shifts.find_one(s_query)
+                if shift_doc:
+                    shift_code = shift_doc.get("shiftCode")
+                    start_time = start_time or shift_doc.get("startTime")
+                    end_time = end_time or shift_doc.get("endTime")
+                    is_cross_midnight = shift_doc.get("isCrossMidnight", False)
+                    break_start = break_start or shift_doc.get("breakStartTime")
+                    break_end = break_end or shift_doc.get("breakEndTime")
+
+            # Validate start/end times exist for Sudden Shift Change
+            if not start_time or not end_time:
+                raise ValueError("Expected IN Time (startTime) and Expected OUT Time (endTime) are required for Sudden Shift Change.")
+
+            # Calculate expected working hours if not explicitly provided
+            if expected_working_hours is None:
+                try:
+                    t_in = datetime.strptime(start_time[:5], "%H:%M")
+                    t_out = datetime.strptime(end_time[:5], "%H:%M")
+                    diff_seconds = (t_out - t_in).total_seconds()
+                    if diff_seconds < 0 or is_cross_midnight:
+                        diff_seconds += 24 * 3600
+                    expected_working_hours = round(diff_seconds / 3600.0, 2)
+                except Exception:
+                    expected_working_hours = 8.0
+
+        elif data.dayType == "Sudden Cutoff":
+            if expected_working_hours is None or expected_working_hours <= 0:
+                raise ValueError("expectedWorkingHours is required for Sudden Cutoff.")
+
         doc = {
             "specialDayId": special_day_id,
             "companyId": str(company_id),
@@ -162,7 +202,14 @@ class SpecialDayService:
             "dayType": data.dayType,
             "applicability": data.applicability,
             "selectedBranchIds": data.selectedBranchIds or [],
-            "expectedWorkingHours": data.expectedWorkingHours if data.dayType == "Sudden Cutoff" else None,
+            "shiftId": data.shiftId,
+            "shiftCode": shift_code,
+            "startTime": start_time,
+            "endTime": end_time,
+            "expectedWorkingHours": expected_working_hours if data.dayType in ["Sudden Cutoff", "Sudden Shift Change"] else None,
+            "isCrossMidnight": is_cross_midnight,
+            "breakStartTime": break_start,
+            "breakEndTime": break_end,
             "reason": (data.reason or "").strip() or None,
             "status": "Active",
             "createdBy": current_user_id,
@@ -187,7 +234,9 @@ class SpecialDayService:
                     "eventName": data.eventName,
                     "date": data.date,
                     "dayType": data.dayType,
-                    "applicability": data.applicability
+                    "applicability": data.applicability,
+                    "startTime": start_time,
+                    "endTime": end_time
                 }
             })
         except Exception:
@@ -209,9 +258,17 @@ class SpecialDayService:
             update_fields["eventName"] = data.eventName.strip()
         if data.reason is not None:
             update_fields["reason"] = data.reason.strip()
-        if data.expectedWorkingHours is not None and existing["dayType"] == "Sudden Cutoff":
-            if data.expectedWorkingHours <= 0 or data.expectedWorkingHours > 24.0:
-                raise ValueError("expectedWorkingHours must be between 0.5 and 24.0")
+        if data.startTime is not None:
+            update_fields["startTime"] = data.startTime
+        if data.endTime is not None:
+            update_fields["endTime"] = data.endTime
+        if data.isCrossMidnight is not None:
+            update_fields["isCrossMidnight"] = data.isCrossMidnight
+        if data.breakStartTime is not None:
+            update_fields["breakStartTime"] = data.breakStartTime
+        if data.breakEndTime is not None:
+            update_fields["breakEndTime"] = data.breakEndTime
+        if data.expectedWorkingHours is not None:
             update_fields["expectedWorkingHours"] = data.expectedWorkingHours
         if data.status in ["Active", "Cancelled"]:
             update_fields["status"] = data.status
@@ -228,7 +285,6 @@ class SpecialDayService:
         await self.db.special_days.update_one(q, {"$set": update_fields})
         updated = await self.get_by_id(target_id)
 
-        # Audit log
         try:
             await self.db.audit_logs.insert_one({
                 "action": "SPECIAL_DAY_UPDATED",
@@ -257,7 +313,14 @@ class SpecialDayService:
             "dayType": doc.get("dayType", ""),
             "applicability": doc.get("applicability", "All Branches"),
             "selectedBranchIds": [str(b) for b in doc.get("selectedBranchIds", [])],
+            "shiftId": doc.get("shiftId"),
+            "shiftCode": doc.get("shiftCode"),
+            "startTime": doc.get("startTime"),
+            "endTime": doc.get("endTime"),
             "expectedWorkingHours": doc.get("expectedWorkingHours"),
+            "isCrossMidnight": doc.get("isCrossMidnight", False),
+            "breakStartTime": doc.get("breakStartTime"),
+            "breakEndTime": doc.get("breakEndTime"),
             "reason": doc.get("reason"),
             "status": doc.get("status", "Active"),
             "createdBy": doc.get("createdBy"),

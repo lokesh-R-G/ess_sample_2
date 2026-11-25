@@ -7,11 +7,21 @@ export interface SpecialDay {
   companyId?: string;
   eventName: string;
   date: string; // YYYY-MM-DD
-  dayType: 'Sudden Holiday' | 'Sudden Cutoff';
+  dayType: 'Sudden Holiday' | 'Sudden Shift Change' | 'Sudden Cutoff';
   applicability: 'All Branches' | 'Selected Branches';
   selectedBranchIds: string[];
   selectedBranchNames?: string[];
+  
+  // Shift timing fields for Sudden Shift Change
+  shiftId?: string | null;
+  shiftCode?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
   expectedWorkingHours?: number | null;
+  isCrossMidnight?: boolean;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
+
   reason?: string | null;
   status: 'Active' | 'Cancelled';
   createdBy?: string;
@@ -25,10 +35,17 @@ export interface SpecialDay {
 export interface SpecialDayPayload {
   eventName: string;
   date: string;
-  dayType: 'Sudden Holiday' | 'Sudden Cutoff';
+  dayType: 'Sudden Holiday' | 'Sudden Shift Change' | 'Sudden Cutoff';
   applicability: 'All Branches' | 'Selected Branches';
   selectedBranchIds?: string[];
+  shiftId?: string | null;
+  shiftCode?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
   expectedWorkingHours?: number | null;
+  isCrossMidnight?: boolean;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
   reason?: string | null;
 }
 

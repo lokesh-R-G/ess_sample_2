@@ -193,6 +193,10 @@ export const Attendance: React.FC = () => {
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
                               Holiday — Sudden Holiday{attendance.specialDayName ? ` (${attendance.specialDayName})` : ''}
                             </span>
+                          ) : attendance.specialDayType === 'Sudden Shift Change' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                              Sudden Shift ({attendance.actualStartTime || '-'} - {attendance.actualEndTime || '-'}){attendance.specialDayName ? ` (${attendance.specialDayName})` : ''}
+                            </span>
                           ) : attendance.specialDayType === 'Sudden Cutoff' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                               Special Cutoff ({attendance.expectedWorkingHours ?? 4.0}h expected)

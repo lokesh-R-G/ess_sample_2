@@ -19,7 +19,7 @@ class PolicyEngine:
         # Determine canonical schedule
         self.schedule = self._calculate_expected_schedule()
 
-    def _get_shift_datetime(self, time_str: str) -> datetime | None:
+    def _get_shift_datetime(self, time_str: str, day_offset: int = 0) -> datetime | None:
         if not time_str or not self.target_date:
             return None
         try:
@@ -28,7 +28,8 @@ class PolicyEngine:
             else:
                 dt = datetime.strptime(time_str, "%H:%M").time()
             # Treat configured schedule times as local IST wall-clock time
-            return datetime.combine(self.target_date, dt).replace(tzinfo=IST)
+            base_date = self.target_date + timedelta(days=day_offset)
+            return datetime.combine(base_date, dt).replace(tzinfo=IST)
         except ValueError:
             return None
 
@@ -45,16 +46,38 @@ class PolicyEngine:
         source = "Shift"
         break_start = None
         break_end = None
+        is_cross_midnight = False
 
-        if day_type == "WEEKOFF":
+        special_day_name = None
+        special_day_type = None
+
+        # Check for active Special Day override (Sudden Shift Change or Sudden Cutoff)
+        if self.special_day and self.special_day.get("status") == "Active":
+            special_day_name = self.special_day.get("eventName")
+            special_day_type = self.special_day.get("dayType")
+
+        if special_day_type == "Sudden Shift Change" and self.special_day.get("startTime") and self.special_day.get("endTime"):
+            # Sudden Shift Change overrides normal shift timings completely
+            start_str = self.special_day.get("startTime")
+            end_str = self.special_day.get("endTime")
+            source = "SpecialShift"
+            day_type = "WORKING"
+            is_cross_midnight = self.special_day.get("isCrossMidnight", False)
+            if not is_cross_midnight and start_str and end_str and end_str < start_str:
+                is_cross_midnight = True
+
+            b_start_str = self.special_day.get("breakStartTime")
+            b_end_str = self.special_day.get("breakEndTime")
+            if b_start_str and b_end_str:
+                break_start = self._get_shift_datetime(b_start_str)
+                b_end_offset = 1 if (is_cross_midnight and b_end_str < b_start_str) else 0
+                break_end = self._get_shift_datetime(b_end_str, day_offset=b_end_offset)
+        elif day_type == "WEEKOFF":
             source = "WeeklyOffPolicy"
         elif day_type == "CUTOFF" and self.today_schedule.get("startTime") and self.today_schedule.get("endTime"):
             start_str = self.today_schedule.get("startTime")
             end_str = self.today_schedule.get("endTime")
             source = "WeeklyOffPolicy"
-            # CUTOFF only uses breaks if explicitly configured, but our UI currently doesn't define CUTOFF breaks.
-            # As per requirements, do not artificially inherit Shift break if it makes CUTOFF wrong.
-            # We will inherit ONLY if the shift break is strictly within the CUTOFF window.
             b_s = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
             b_e = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
             c_s = self._get_shift_datetime(start_str)
@@ -68,12 +91,20 @@ class PolicyEngine:
             start_str = getattr(self.shift, "startTime", None)
             end_str = getattr(self.shift, "endTime", None)
             source = "Shift"
+            is_cross_midnight = bool(getattr(self.shift, "isCrossMidnight", False))
+            if not is_cross_midnight and start_str and end_str and end_str < start_str:
+                is_cross_midnight = True
+
             break_start = self._get_shift_datetime(getattr(self.shift, "breakStartTime", None))
-            break_end = self._get_shift_datetime(getattr(self.shift, "breakEndTime", None))
+            b_end_str = getattr(self.shift, "breakEndTime", None)
+            b_start_str = getattr(self.shift, "breakStartTime", None)
+            b_end_offset = 1 if (is_cross_midnight and b_end_str and b_start_str and b_end_str < b_start_str) else 0
+            break_end = self._get_shift_datetime(b_end_str, day_offset=b_end_offset)
             day_type = "WORKING" # Ensure fallback forces WORKING
 
+        end_offset = 1 if (is_cross_midnight and start_str and end_str and end_str < start_str) else (1 if is_cross_midnight else 0)
         start_dt = self._get_shift_datetime(start_str)
-        end_dt = self._get_shift_datetime(end_str)
+        end_dt = self._get_shift_datetime(end_str, day_offset=end_offset)
         
         break_duration_hours = 0.0
         if break_start and break_end:
@@ -84,22 +115,24 @@ class PolicyEngine:
             expected_hours = (end_dt - start_dt).total_seconds() / 3600.0
             expected_hours = max(0.0, expected_hours - break_duration_hours)
 
-        # Check for active Sudden Cutoff special day override
-        special_day_name = None
-        special_day_type = None
+        # Check for explicit expectedWorkingHours override (Sudden Cutoff or Sudden Shift configured expected hours)
         if self.special_day and self.special_day.get("status") == "Active":
-            special_day_name = self.special_day.get("eventName")
-            special_day_type = self.special_day.get("dayType")
             if special_day_type == "Sudden Cutoff" and self.special_day.get("expectedWorkingHours") is not None:
                 cutoff_hours = float(self.special_day["expectedWorkingHours"])
                 if cutoff_hours > 0:
                     expected_hours = cutoff_hours
                     day_type = "CUTOFF"
                     source = "SpecialDay"
+            elif special_day_type == "Sudden Shift Change" and self.special_day.get("expectedWorkingHours") is not None:
+                spec_hours = float(self.special_day["expectedWorkingHours"])
+                if spec_hours > 0:
+                    expected_hours = spec_hours
             
         return {
             "scheduleType": day_type,
             "scheduleSource": source,
+            "startTime": start_str,
+            "endTime": end_str,
             "actualStartTime": start_str,
             "actualEndTime": end_str,
             "actualStartDt": start_dt,
@@ -108,6 +141,7 @@ class PolicyEngine:
             "breakEndDt": break_end,
             "breakDurationHours": break_duration_hours,
             "expectedWorkingHours": expected_hours,
+            "isCrossMidnight": is_cross_midnight,
             "specialDay": self.special_day,
             "specialDayName": special_day_name,
             "specialDayType": special_day_type
@@ -391,10 +425,17 @@ class PolicyEngine:
             else:
                 expected_hours = self.schedule["expectedWorkingHours"]
                 is_special_cutoff = self.schedule.get("scheduleSource") == "SpecialDay" and self.schedule.get("scheduleType") == "CUTOFF"
+                is_special_shift = self.schedule.get("scheduleSource") == "SpecialShift"
                 
                 if is_special_cutoff:
                     # For Sudden Cutoff, the configured hours represent the full expectation for the day.
                     req_full = expected_hours
+                    req_half = expected_hours / 2.0
+                elif is_special_shift:
+                    # For Sudden Shift Change, minHoursForFullDay/HalfDay apply against the revised shift duration
+                    min_policy_full = getattr(self.policy, "minHoursForFullDay", 8.0)
+                    allowable_shortage = max(0.0, 9.0 - min_policy_full)
+                    req_full = max(0.0, expected_hours - allowable_shortage)
                     req_half = expected_hours / 2.0
                 else:
                     # Determine the allowable shortages from the base shift to treat CUTOFF as a complete day

@@ -4,36 +4,33 @@ from pydantic import BaseModel, Field, field_validator
 class SpecialDayCreate(BaseModel):
     eventName: str = Field(..., min_length=1, max_length=200)
     date: str = Field(..., description="Date in YYYY-MM-DD format")
-    dayType: str = Field(..., description="'Sudden Holiday' or 'Sudden Cutoff'")
+    dayType: str = Field(..., description="'Sudden Holiday', 'Sudden Shift Change', or 'Sudden Cutoff'")
     applicability: str = Field(..., description="'All Branches' or 'Selected Branches'")
     selectedBranchIds: Optional[List[str]] = Field(default_factory=list)
-    expectedWorkingHours: Optional[float] = Field(None, description="Required for Sudden Cutoff (0.5 to 24.0)")
+
+    # Shift timing fields for Sudden Shift Change
+    shiftId: Optional[str] = None
+    shiftCode: Optional[str] = None
+    startTime: Optional[str] = Field(None, description="Expected IN time (HH:MM or HH:MM:SS)")
+    endTime: Optional[str] = Field(None, description="Expected OUT time (HH:MM or HH:MM:SS)")
+    expectedWorkingHours: Optional[float] = Field(None, description="Expected working hours")
+    isCrossMidnight: bool = False
+    breakStartTime: Optional[str] = None
+    breakEndTime: Optional[str] = None
+
     reason: Optional[str] = Field(None, max_length=1000)
 
     @field_validator("dayType")
     def validate_day_type(cls, v):
-        if v not in ["Sudden Holiday", "Sudden Cutoff"]:
-            raise ValueError("dayType must be either 'Sudden Holiday' or 'Sudden Cutoff'")
+        valid = ["Sudden Holiday", "Sudden Shift Change", "Sudden Cutoff"]
+        if v not in valid:
+            raise ValueError(f"dayType must be one of {valid}")
         return v
 
     @field_validator("applicability")
     def validate_applicability(cls, v):
         if v not in ["All Branches", "Selected Branches"]:
             raise ValueError("applicability must be either 'All Branches' or 'Selected Branches'")
-        return v
-
-    @field_validator("expectedWorkingHours")
-    def validate_working_hours(cls, v, info):
-        day_type = info.data.get("dayType")
-        if day_type == "Sudden Cutoff":
-            if v is None:
-                raise ValueError("expectedWorkingHours is required for Sudden Cutoff")
-            if v <= 0 or v > 24.0:
-                raise ValueError("expectedWorkingHours must be greater than 0 and at most 24.0")
-        elif day_type == "Sudden Holiday":
-            if v is not None:
-                # Sudden Holiday should not carry working hours
-                return None
         return v
 
     @field_validator("selectedBranchIds")
@@ -46,7 +43,12 @@ class SpecialDayCreate(BaseModel):
 class SpecialDayUpdate(BaseModel):
     eventName: Optional[str] = Field(None, min_length=1, max_length=200)
     reason: Optional[str] = Field(None, max_length=1000)
+    startTime: Optional[str] = None
+    endTime: Optional[str] = None
     expectedWorkingHours: Optional[float] = None
+    isCrossMidnight: Optional[bool] = None
+    breakStartTime: Optional[str] = None
+    breakEndTime: Optional[str] = None
     status: Optional[str] = None  # "Active" | "Cancelled"
 
 class SpecialDayResponse(BaseModel):
@@ -59,7 +61,14 @@ class SpecialDayResponse(BaseModel):
     applicability: str
     selectedBranchIds: List[str] = []
     selectedBranchNames: Optional[List[str]] = []
+    shiftId: Optional[str] = None
+    shiftCode: Optional[str] = None
+    startTime: Optional[str] = None
+    endTime: Optional[str] = None
     expectedWorkingHours: Optional[float] = None
+    isCrossMidnight: bool = False
+    breakStartTime: Optional[str] = None
+    breakEndTime: Optional[str] = None
     reason: Optional[str] = None
     status: str
     createdBy: Optional[str] = None

@@ -10,10 +10,12 @@ import {
   SpecialDayPayload 
 } from '../../../services/specialDayService';
 import { organizationApi } from '../../../services/organization.api';
+import { getShiftsV2, ShiftV2 } from '../../../services/shiftService';
 
 export const AdminSpecialDays: React.FC = () => {
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [shifts, setShifts] = useState<ShiftV2[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,10 +26,19 @@ export const AdminSpecialDays: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [eventName, setEventName] = useState('');
   const [date, setDate] = useState('');
-  const [dayType, setDayType] = useState<'Sudden Holiday' | 'Sudden Cutoff'>('Sudden Holiday');
+  const [dayType, setDayType] = useState<'Sudden Holiday' | 'Sudden Shift Change' | 'Sudden Cutoff'>('Sudden Shift Change');
   const [applicability, setApplicability] = useState<'All Branches' | 'Selected Branches'>('All Branches');
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
-  const [expectedWorkingHours, setExpectedWorkingHours] = useState<string>('4.0');
+  
+  // Shift timing fields
+  const [selectedPresetShiftId, setSelectedPresetShiftId] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>('09:00');
+  const [endTime, setEndTime] = useState<string>('18:00');
+  const [isCrossMidnight, setIsCrossMidnight] = useState<boolean>(false);
+  const [breakStartTime, setBreakStartTime] = useState<string>('');
+  const [breakEndTime, setBreakEndTime] = useState<string>('');
+  const [expectedWorkingHours, setExpectedWorkingHours] = useState<string>('8.0');
+
   const [reason, setReason] = useState('');
 
   useEffect(() => {
@@ -38,12 +49,14 @@ export const AdminSpecialDays: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [sdRes, branchRes] = await Promise.all([
+      const [sdRes, branchRes, shiftRes] = await Promise.all([
         getSpecialDays(),
-        organizationApi.getBranches()
+        organizationApi.getBranches(),
+        getShiftsV2()
       ]);
       setSpecialDays(sdRes || []);
       setBranches(branchRes?.data || branchRes || []);
+      setShifts(shiftRes || []);
     } catch (err: any) {
       setError(err?.message || 'Failed to load special day configurations');
     } finally {
@@ -55,10 +68,16 @@ export const AdminSpecialDays: React.FC = () => {
     setEditingId(null);
     setEventName('');
     setDate('');
-    setDayType('Sudden Holiday');
+    setDayType('Sudden Shift Change');
     setApplicability('All Branches');
     setSelectedBranchIds([]);
-    setExpectedWorkingHours('4.0');
+    setSelectedPresetShiftId('');
+    setStartTime('09:00');
+    setEndTime('18:00');
+    setIsCrossMidnight(false);
+    setBreakStartTime('');
+    setBreakEndTime('');
+    setExpectedWorkingHours('8.0');
     setReason('');
     setIsFormOpen(false);
     setError(null);
@@ -77,11 +96,30 @@ export const AdminSpecialDays: React.FC = () => {
     setDayType(item.dayType);
     setApplicability(item.applicability);
     setSelectedBranchIds(item.selectedBranchIds || []);
-    setExpectedWorkingHours(item.expectedWorkingHours ? item.expectedWorkingHours.toString() : '4.0');
+    setSelectedPresetShiftId(item.shiftId || '');
+    setStartTime(item.startTime || '09:00');
+    setEndTime(item.endTime || '18:00');
+    setIsCrossMidnight(Boolean(item.isCrossMidnight));
+    setBreakStartTime(item.breakStartTime || '');
+    setBreakEndTime(item.breakEndTime || '');
+    setExpectedWorkingHours(item.expectedWorkingHours ? item.expectedWorkingHours.toString() : '8.0');
     setReason(item.reason || '');
     setIsFormOpen(true);
     setError(null);
     setSuccess(null);
+  };
+
+  const handlePresetShiftChange = (shiftId: string) => {
+    setSelectedPresetShiftId(shiftId);
+    if (!shiftId) return;
+    const match = shifts.find(s => (s._id || s.shiftCode) === shiftId);
+    if (match) {
+      if (match.startTime) setStartTime(match.startTime.slice(0, 5));
+      if (match.endTime) setEndTime(match.endTime.slice(0, 5));
+      setIsCrossMidnight(Boolean(match.isCrossMidnight));
+      if (match.breakStartTime) setBreakStartTime(match.breakStartTime.slice(0, 5));
+      if (match.breakEndTime) setBreakEndTime(match.breakEndTime.slice(0, 5));
+    }
   };
 
   const handleBranchToggle = (branchId: string) => {
@@ -103,6 +141,12 @@ export const AdminSpecialDays: React.FC = () => {
       setError('Date is required.');
       return;
     }
+    if (dayType === 'Sudden Shift Change') {
+      if (!startTime || !endTime) {
+        setError('Expected IN Time and Expected OUT Time are required for Sudden Shift Change.');
+        return;
+      }
+    }
     if (dayType === 'Sudden Cutoff') {
       const hours = parseFloat(expectedWorkingHours);
       if (isNaN(hours) || hours <= 0 || hours > 24) {
@@ -121,7 +165,12 @@ export const AdminSpecialDays: React.FC = () => {
         await updateSpecialDay(editingId, {
           eventName: eventName.trim(),
           reason: reason.trim(),
-          expectedWorkingHours: dayType === 'Sudden Cutoff' ? parseFloat(expectedWorkingHours) : null
+          startTime: dayType === 'Sudden Shift Change' ? startTime : null,
+          endTime: dayType === 'Sudden Shift Change' ? endTime : null,
+          isCrossMidnight: dayType === 'Sudden Shift Change' ? isCrossMidnight : false,
+          breakStartTime: dayType === 'Sudden Shift Change' ? breakStartTime || null : null,
+          breakEndTime: dayType === 'Sudden Shift Change' ? breakEndTime || null : null,
+          expectedWorkingHours: (dayType === 'Sudden Cutoff' || dayType === 'Sudden Shift Change') ? parseFloat(expectedWorkingHours) : null
         });
         setSuccess('Configuration updated successfully.');
       } else {
@@ -131,7 +180,13 @@ export const AdminSpecialDays: React.FC = () => {
           dayType,
           applicability,
           selectedBranchIds: applicability === 'Selected Branches' ? selectedBranchIds : [],
-          expectedWorkingHours: dayType === 'Sudden Cutoff' ? parseFloat(expectedWorkingHours) : null,
+          shiftId: dayType === 'Sudden Shift Change' ? selectedPresetShiftId || null : null,
+          startTime: dayType === 'Sudden Shift Change' ? startTime : null,
+          endTime: dayType === 'Sudden Shift Change' ? endTime : null,
+          isCrossMidnight: dayType === 'Sudden Shift Change' ? isCrossMidnight : false,
+          breakStartTime: dayType === 'Sudden Shift Change' ? breakStartTime || null : null,
+          breakEndTime: dayType === 'Sudden Shift Change' ? breakEndTime || null : null,
+          expectedWorkingHours: (dayType === 'Sudden Cutoff' || dayType === 'Sudden Shift Change') ? parseFloat(expectedWorkingHours) : null,
           reason: reason.trim() || null
         };
         await createSpecialDay(payload);
@@ -163,9 +218,9 @@ export const AdminSpecialDays: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-neutral-900">Special Day Configurations</h2>
+          <h2 className="text-xl font-bold text-neutral-900">Special Day & Shift Configurations</h2>
           <p className="text-sm text-neutral-500">
-            Configure exceptional day declarations: Sudden Holidays or Sudden Cutoffs (Special Working Hours).
+            Configure exceptional day declarations: Sudden Holiday, Sudden Shift Change (Revised Timings), or Sudden Cutoff.
           </p>
         </div>
         {!isFormOpen && (
@@ -194,7 +249,7 @@ export const AdminSpecialDays: React.FC = () => {
         <GlassCard className="p-6 border border-indigo-200 shadow-md">
           <div className="flex justify-between items-center mb-6 border-b pb-3">
             <h3 className="text-lg font-bold text-neutral-800">
-              {editingId ? 'Edit Special Day Configuration' : 'Create Special Day Configuration'}
+              {editingId ? 'Edit Special Configuration' : 'Create Special Configuration'}
             </h3>
             <button
               onClick={resetForm}
@@ -211,7 +266,7 @@ export const AdminSpecialDays: React.FC = () => {
                 <Input
                   value={eventName}
                   onChange={(e) => setEventName(e.target.value)}
-                  placeholder="e.g. Cyclone Relief Holiday / Founder's Half Day"
+                  placeholder="e.g. Town Hall Shift / Emergency Weather Holiday"
                   required
                 />
               </div>
@@ -236,37 +291,12 @@ export const AdminSpecialDays: React.FC = () => {
                   disabled={Boolean(editingId)}
                   className="w-full h-10 px-3 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                 >
+                  <option value="Sudden Shift Change">Sudden Shift Change (Revised Timings)</option>
                   <option value="Sudden Holiday">Sudden Holiday</option>
-                  <option value="Sudden Cutoff">Sudden Cutoff (Special Working Hours)</option>
+                  <option value="Sudden Cutoff">Sudden Cutoff (Hours Shortfall Exception)</option>
                 </select>
                 {editingId && <p className="text-xs text-neutral-400 mt-1">Day type cannot be changed on edit.</p>}
               </div>
-
-              {dayType === 'Sudden Cutoff' && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-neutral-700">
-                      Expected Working Hours *
-                    </label>
-                    <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                      Normal Shift: 8.0 hrs
-                    </span>
-                  </div>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    max="24.0"
-                    value={expectedWorkingHours}
-                    onChange={(e) => setExpectedWorkingHours(e.target.value)}
-                    placeholder="e.g. 4.0"
-                    required
-                  />
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Employees completing this duration will be marked Present without working-hour shortfall.
-                  </p>
-                </div>
-              )}
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Applicability Scope *</label>
@@ -282,6 +312,134 @@ export const AdminSpecialDays: React.FC = () => {
                 {editingId && <p className="text-xs text-neutral-400 mt-1">Applicability scope cannot be changed on edit.</p>}
               </div>
             </div>
+
+            {/* Shift Timings for Sudden Shift Change */}
+            {dayType === 'Sudden Shift Change' && (
+              <div className="border border-indigo-200 rounded-lg p-5 bg-indigo-50/40 space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-indigo-100 pb-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-indigo-950 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-indigo-600" />
+                      Special Shift Timings for Date
+                    </h4>
+                    <p className="text-xs text-indigo-700">
+                      Attendance calculations (Late IN, Early OUT, Duration) will evaluate against these exact shift times.
+                    </p>
+                  </div>
+                  <div className="text-xs font-medium text-neutral-600 bg-white px-2.5 py-1 rounded border border-neutral-200">
+                    Normal Assigned Shift: 09:00 - 18:00 (Reference)
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      Predefined Shift (Optional Preset)
+                    </label>
+                    <select
+                      value={selectedPresetShiftId}
+                      onChange={(e) => handlePresetShiftChange(e.target.value)}
+                      className="w-full h-10 px-3 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-sm"
+                    >
+                      <option value="">-- Custom Timings --</option>
+                      {shifts.map(s => (
+                        <option key={s._id || s.shiftCode} value={s._id || s.shiftCode}>
+                          {s.name} ({s.startTime} - {s.endTime})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      Expected IN Time *
+                    </label>
+                    <Input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      Expected OUT Time *
+                    </label>
+                    <Input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      Break Start (Optional)
+                    </label>
+                    <Input
+                      type="time"
+                      value={breakStartTime}
+                      onChange={(e) => setBreakStartTime(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      Break End (Optional)
+                    </label>
+                    <Input
+                      type="time"
+                      value={breakEndTime}
+                      onChange={(e) => setBreakEndTime(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-6">
+                    <input
+                      type="checkbox"
+                      id="isCrossMidnight"
+                      checked={isCrossMidnight}
+                      onChange={(e) => setIsCrossMidnight(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                    <label htmlFor="isCrossMidnight" className="text-xs font-medium text-neutral-700 cursor-pointer">
+                      Overnight Shift (Ends Next Day)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sudden Cutoff hours */}
+            {dayType === 'Sudden Cutoff' && (
+              <div className="border border-amber-200 rounded-lg p-4 bg-amber-50/40">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-neutral-700">
+                    Expected Working Hours *
+                  </label>
+                  <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium">
+                    Normal Shift: 8.0 hrs
+                  </span>
+                </div>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  max="24.0"
+                  value={expectedWorkingHours}
+                  onChange={(e) => setExpectedWorkingHours(e.target.value)}
+                  placeholder="e.g. 4.0"
+                  required
+                />
+                <p className="text-xs text-neutral-500 mt-1">
+                  Employees completing this duration will be marked Present without working-hour shortfall.
+                </p>
+              </div>
+            )}
 
             {applicability === 'Selected Branches' && (
               <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50">
@@ -354,14 +512,14 @@ export const AdminSpecialDays: React.FC = () => {
 
       {/* Listing Card */}
       <GlassCard className="p-6">
-        <h3 className="text-lg font-bold text-neutral-900 mb-4">Configured Special Days</h3>
+        <h3 className="text-lg font-bold text-neutral-900 mb-4">Configured Special Days & Shifts</h3>
         {isLoading ? (
           <p className="text-sm text-neutral-500 py-6 text-center">Loading configurations...</p>
         ) : specialDays.length === 0 ? (
           <div className="py-12 text-center text-neutral-500 space-y-2">
             <Calendar className="w-10 h-10 mx-auto text-neutral-400" />
             <p className="text-sm font-medium">No special day configurations declared yet.</p>
-            <p className="text-xs text-neutral-400">Click 'New Configuration' above to declare a Sudden Holiday or Cutoff.</p>
+            <p className="text-xs text-neutral-400">Click 'New Configuration' above to declare a Sudden Shift Change or Sudden Holiday.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -370,9 +528,9 @@ export const AdminSpecialDays: React.FC = () => {
                 <tr className="border-b border-neutral-200 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                   <th className="py-3 px-3">Date</th>
                   <th className="py-3 px-3">Event Name</th>
-                  <th className="py-3 px-3">Day Type</th>
+                  <th className="py-3 px-3">Type</th>
+                  <th className="py-3 px-3">Shift / Timings</th>
                   <th className="py-3 px-3">Applicability</th>
-                  <th className="py-3 px-3">Expected Hours</th>
                   <th className="py-3 px-3">Status</th>
                   <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
@@ -395,11 +553,39 @@ export const AdminSpecialDays: React.FC = () => {
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
                             Sudden Holiday
                           </span>
+                        ) : item.dayType === 'Sudden Shift Change' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            <Clock className="w-3 h-3" />
+                            Special Shift
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                             <Clock className="w-3 h-3" />
                             Sudden Cutoff
                           </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        {item.dayType === 'Sudden Shift Change' && item.startTime && item.endTime ? (
+                          <div className="text-xs space-y-0.5">
+                            <span className="font-mono font-medium text-neutral-800">
+                              {item.startTime} - {item.endTime}
+                            </span>
+                            {item.isCrossMidnight && (
+                              <span className="ml-1 text-[10px] text-purple-700 bg-purple-50 px-1 py-0.2 rounded border border-purple-200">
+                                Overnight
+                              </span>
+                            )}
+                            <div className="text-neutral-500 text-[11px]">
+                              {item.expectedWorkingHours ? `${item.expectedWorkingHours}h expected` : ''}
+                            </div>
+                          </div>
+                        ) : item.dayType === 'Sudden Cutoff' && item.expectedWorkingHours != null ? (
+                          <span className="font-mono font-medium text-neutral-800 text-xs">
+                            {item.expectedWorkingHours} hrs cutoff
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400 text-xs">Full Holiday</span>
                         )}
                       </td>
                       <td className="py-3 px-3">
@@ -414,15 +600,6 @@ export const AdminSpecialDays: React.FC = () => {
                                 : `${item.selectedBranchIds?.length || 0} branches`}
                             </div>
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        {item.dayType === 'Sudden Cutoff' && item.expectedWorkingHours != null ? (
-                          <span className="font-mono font-medium text-neutral-800">
-                            {item.expectedWorkingHours} hrs
-                          </span>
-                        ) : (
-                          <span className="text-neutral-400">-</span>
                         )}
                       </td>
                       <td className="py-3 px-3">

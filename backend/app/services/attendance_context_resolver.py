@@ -400,7 +400,16 @@ class AttendanceContextResolver:
         )
 
         # 7. Resolve Raw Punches for Target Date using exact normalized machineId
-        next_date = target_date + timedelta(days=1)
+        # Account for overnight / cross-midnight shifts (standard shift or sudden shift change)
+        is_overnight = False
+        if special_day and special_day.get("dayType") == "Sudden Shift Change":
+            is_overnight = special_day.get("isCrossMidnight", False)
+            if not is_overnight and special_day.get("startTime") and special_day.get("endTime"):
+                is_overnight = special_day["endTime"] < special_day["startTime"]
+        elif shift:
+            is_overnight = getattr(shift, "isCrossMidnight", False)
+
+        next_date = target_date + timedelta(days=2 if is_overnight else 1)
         start_dt = datetime.combine(target_date, datetime.min.time())
         end_dt = datetime.combine(next_date, datetime.min.time())
         

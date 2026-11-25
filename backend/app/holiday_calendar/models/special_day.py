@@ -10,10 +10,20 @@ class SpecialDayModel(BaseModel):
     companyId: str
     eventName: str
     date: str  # YYYY-MM-DD
-    dayType: str  # "Sudden Holiday" | "Sudden Cutoff"
+    dayType: str  # "Sudden Holiday" | "Sudden Shift Change" | "Sudden Cutoff"
     applicability: str  # "All Branches" | "Selected Branches"
     selectedBranchIds: List[str] = Field(default_factory=list)
+
+    # Shift timing parameters for Sudden Shift Change
+    shiftId: Optional[str] = None
+    shiftCode: Optional[str] = None
+    startTime: Optional[str] = None
+    endTime: Optional[str] = None
     expectedWorkingHours: Optional[float] = None
+    isCrossMidnight: bool = False
+    breakStartTime: Optional[str] = None
+    breakEndTime: Optional[str] = None
+
     reason: Optional[str] = None
     status: str = "Active"  # "Active" | "Cancelled"
 

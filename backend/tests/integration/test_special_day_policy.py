@@ -226,3 +226,113 @@ def test_payroll_lop_aggregator_sudden_cutoff_shortfall():
     result = LopAggregator.aggregate_lop(records)
     assert result.absenceLopDays == 1.0
     assert result.totalLopDays == 1.0
+
+# 9. Sudden Shift Change: Shift changed from 09:00-18:00 to 12:00-21:00. Employee punches 11:55-21:05 -> Present, late=0, earlyOut=0
+def test_sudden_shift_change_ontime():
+    target_date = date(2026, 8, 12)
+    punches = [
+        {"timestamp": datetime(2026, 8, 12, 11, 55, tzinfo=IST)},
+        {"timestamp": datetime(2026, 8, 12, 21, 5, tzinfo=IST)}
+    ]
+    special_day = {
+        "specialDayId": "SD-003",
+        "eventName": "Evening Maintenance Shift",
+        "date": "2026-08-12",
+        "dayType": "Sudden Shift Change",
+        "applicability": "All Branches",
+        "startTime": "12:00:00",
+        "endTime": "21:00:00",
+        "expectedWorkingHours": 9.0,
+        "status": "Active"
+    }
+    ctx = build_context(target_date, punches, special_day=special_day)
+    engine = PolicyEngine(ctx)
+    res = engine.evaluate_attendance()
+
+    assert res["status"] == "Present"
+    assert res["lateMinutes"] == 0
+    assert res["earlyOutMinutes"] == 0
+    assert engine.schedule["scheduleSource"] == "SpecialShift"
+    assert engine.schedule["startTime"] == "12:00:00"
+    assert engine.schedule["endTime"] == "21:00:00"
+
+# 10. Sudden Shift Change: Late arrival evaluated against revised 12:00 start (Punch at 12:45, grace 15 min -> 45 min late)
+def test_sudden_shift_change_late():
+    target_date = date(2026, 8, 12)
+    punches = [
+        {"timestamp": datetime(2026, 8, 12, 12, 45, tzinfo=IST)},
+        {"timestamp": datetime(2026, 8, 12, 21, 0, tzinfo=IST)}
+    ]
+    special_day = {
+        "specialDayId": "SD-003",
+        "eventName": "Evening Maintenance Shift",
+        "date": "2026-08-12",
+        "dayType": "Sudden Shift Change",
+        "applicability": "All Branches",
+        "startTime": "12:00:00",
+        "endTime": "21:00:00",
+        "expectedWorkingHours": 9.0,
+        "status": "Active"
+    }
+    ctx = build_context(target_date, punches, special_day=special_day)
+    engine = PolicyEngine(ctx)
+    res = engine.evaluate_attendance()
+
+    # 12:45 is 45 min late relative to 12:00:00. Under normal 09:00 shift, it would have been 225 min late.
+    assert res["lateMinutes"] == 45
+
+# 11. Sudden Shift Change: Early departure evaluated against revised 21:00 end (Punch out at 20:00 -> 60 min early out)
+def test_sudden_shift_change_early_out():
+    target_date = date(2026, 8, 12)
+    punches = [
+        {"timestamp": datetime(2026, 8, 12, 12, 0, tzinfo=IST)},
+        {"timestamp": datetime(2026, 8, 12, 20, 0, tzinfo=IST)}
+    ]
+    special_day = {
+        "specialDayId": "SD-003",
+        "eventName": "Evening Maintenance Shift",
+        "date": "2026-08-12",
+        "dayType": "Sudden Shift Change",
+        "applicability": "All Branches",
+        "startTime": "12:00:00",
+        "endTime": "21:00:00",
+        "expectedWorkingHours": 9.0,
+        "status": "Active"
+    }
+    ctx = build_context(target_date, punches, special_day=special_day)
+    engine = PolicyEngine(ctx)
+    res = engine.evaluate_attendance()
+
+    # Out at 20:00, revised end at 21:00 -> 60 min early
+    assert res["earlyOutMinutes"] == 60
+
+# 12. Sudden Shift Change: Overnight shift (22:00 to 06:00 next day)
+def test_sudden_shift_change_cross_midnight():
+    target_date = date(2026, 8, 12)
+    # IN at 22:00 on Aug 12, OUT at 06:00 on Aug 13
+    punches = [
+        {"timestamp": datetime(2026, 8, 12, 22, 0, tzinfo=IST)},
+        {"timestamp": datetime(2026, 8, 13, 6, 0, tzinfo=IST)}
+    ]
+    special_day = {
+        "specialDayId": "SD-004",
+        "eventName": "Night Upgrade Shift",
+        "date": "2026-08-12",
+        "dayType": "Sudden Shift Change",
+        "applicability": "All Branches",
+        "startTime": "22:00:00",
+        "endTime": "06:00:00",
+        "isCrossMidnight": True,
+        "expectedWorkingHours": 8.0,
+        "status": "Active"
+    }
+    ctx = build_context(target_date, punches, special_day=special_day)
+    engine = PolicyEngine(ctx)
+    res = engine.evaluate_attendance()
+
+    assert res["status"] == "Present"
+    assert res["effectiveHours"] == 8.0
+    assert res["lateMinutes"] == 0
+    assert res["earlyOutMinutes"] == 0
+    assert engine.schedule["isCrossMidnight"] is True
+
