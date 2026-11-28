@@ -4,7 +4,10 @@ export interface SpecialDay {
   id?: string;
   _id?: string;
   specialDayId?: string;
-  companyId?: string;
+  scopeType?: 'GLOBAL' | 'SELECTED_COMPANIES' | 'SINGLE_COMPANY';
+  companyId?: string | null;
+  companyIds?: string[];
+  companyNames?: string[];
   eventName: string;
   date: string; // YYYY-MM-DD
   dayType: 'Sudden Holiday' | 'Sudden Shift Change' | 'Sudden Cutoff';
@@ -36,6 +39,9 @@ export interface SpecialDayPayload {
   eventName: string;
   date: string;
   dayType: 'Sudden Holiday' | 'Sudden Shift Change' | 'Sudden Cutoff';
+  scopeType?: 'GLOBAL' | 'SELECTED_COMPANIES' | 'SINGLE_COMPANY';
+  companyId?: string | null;
+  companyIds?: string[];
   applicability: 'All Branches' | 'Selected Branches';
   selectedBranchIds?: string[];
   shiftId?: string | null;
@@ -49,12 +55,13 @@ export interface SpecialDayPayload {
   reason?: string | null;
 }
 
-export async function getSpecialDays(filters?: { date?: string; branchId?: string; status?: string; companyId?: string }) {
+export async function getSpecialDays(filters?: { date?: string; branchId?: string; status?: string; companyId?: string; scopeType?: string }) {
   const params = new URLSearchParams();
   if (filters?.date) params.append('date', filters.date);
   if (filters?.branchId) params.append('branchId', filters.branchId);
   if (filters?.status) params.append('status', filters.status);
   if (filters?.companyId) params.append('companyId', filters.companyId);
+  if (filters?.scopeType) params.append('scopeType', filters.scopeType);
 
   const queryStr = params.toString() ? `?${params.toString()}` : '';
   const res = await api.get<any>(`/v2/holiday/special-days/${queryStr}`);

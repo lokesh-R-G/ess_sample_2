@@ -117,19 +117,29 @@ async def list_special_days(
     date: Optional[str] = Query(None, description="Filter by date YYYY-MM-DD"),
     branchId: Optional[str] = Query(None, description="Filter by branch ID"),
     companyId: Optional[str] = Query(None, description="Company ID"),
+    scopeType: Optional[str] = Query(None, description="Scope Type (GLOBAL, SELECTED_COMPANIES, SINGLE_COMPANY)"),
     status: Optional[str] = Query(None, description="Filter by status (Active/Cancelled)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncIOMotorDatabase = Depends(get_database),
     user: dict = Depends(get_current_user)
 ):
-    resolved_company = await _resolve_admin_company_id(user, companyId, db)
+    role = (user.get("role") or "").lower()
+    role_id = (user.get("roleId") or "").lower()
+    is_super_admin = "super" in role or "super" in role_id or "admin" in role or "admin" in role_id or user.get("empId") == "admin"
+
+    # If Super Admin doesn't pass companyId, don't restrict query to a single company, show all
+    resolved_company = None
+    if not is_super_admin or companyId:
+        resolved_company = await _resolve_admin_company_id(user, companyId, db)
+
     service = SpecialDayService(db)
     result = await service.list_configurations(
         company_id=resolved_company,
         date_val=date,
         branch_id=branchId,
         status=status,
+        scope_type=scopeType,
         skip=skip,
         limit=limit
     )
@@ -155,10 +165,30 @@ async def create_special_day(
     user: dict = Depends(get_current_user),
     _perm: dict = Depends(require_permission("attendance.manage"))
 ):
-    resolved_company = await _resolve_admin_company_id(user, companyId, db)
+    role = (user.get("role") or "").lower()
+    role_id = (user.get("roleId") or "").lower()
+    is_privileged = "super" in role or "super" in role_id or "admin" in role or "admin" in role_id or user.get("empId") == "admin"
+
+    if data.scopeType in ["GLOBAL", "SELECTED_COMPANIES"] and not is_privileged:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Role '{user.get('role')}' is not authorized to create {data.scopeType} special day events."
+        )
+
+    resolved_company = None
+    if data.scopeType == "SINGLE_COMPANY":
+        # Resolve company authoritatively
+        target_company = data.companyId or companyId
+        resolved_company = await _resolve_admin_company_id(user, target_company, db)
+
     service = SpecialDayService(db)
     try:
-        return await service.create(data, company_id=resolved_company, current_user_id=user.get("empId") or user.get("employeeCode", "SYSTEM"))
+        return await service.create(
+            data=data,
+            current_user_id=user.get("empId") or user.get("employeeCode", "SYSTEM"),
+            user_role=user.get("role"),
+            resolved_company_id=resolved_company
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -172,7 +202,12 @@ async def update_special_day(
 ):
     service = SpecialDayService(db)
     try:
-        updated = await service.update(config_id, data, current_user_id=user.get("empId") or user.get("employeeCode", "SYSTEM"))
+        updated = await service.update(
+            config_id,
+            data,
+            current_user_id=user.get("empId") or user.get("employeeCode", "SYSTEM"),
+            user_role=user.get("role")
+        )
         if not updated:
             raise HTTPException(status_code=404, detail="Special day configuration not found.")
         return updated
@@ -187,7 +222,11 @@ async def cancel_special_day(
     _perm: dict = Depends(require_permission("attendance.manage"))
 ):
     service = SpecialDayService(db)
-    cancelled = await service.cancel(config_id, current_user_id=user.get("empId") or user.get("employeeCode", "SYSTEM"))
+    cancelled = await service.cancel(
+        config_id,
+        current_user_id=user.get("empId") or user.get("employeeCode", "SYSTEM"),
+        user_role=user.get("role")
+    )
     if not cancelled:
         raise HTTPException(status_code=404, detail="Special day configuration not found.")
     return cancelled

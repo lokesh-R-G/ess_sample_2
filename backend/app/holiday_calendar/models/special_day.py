@@ -7,7 +7,12 @@ class SpecialDayModel(BaseModel):
 
     id: Optional[str] = Field(default=None, alias="_id")
     specialDayId: Optional[str] = None
-    companyId: str
+    
+    # Scope hierarchy
+    scopeType: str = "SINGLE_COMPANY"  # "GLOBAL" | "SELECTED_COMPANIES" | "SINGLE_COMPANY"
+    companyId: Optional[str] = None  # None for GLOBAL, single company ID for SINGLE_COMPANY, first/primary for SELECTED_COMPANIES
+    companyIds: List[str] = Field(default_factory=list)  # List of company IDs for SELECTED_COMPANIES or [companyId] for SINGLE_COMPANY
+    
     eventName: str
     date: str  # YYYY-MM-DD
     dayType: str  # "Sudden Holiday" | "Sudden Shift Change" | "Sudden Cutoff"

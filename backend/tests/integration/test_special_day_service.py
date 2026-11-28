@@ -9,6 +9,8 @@ def mock_db():
     db = MagicMock()
     db.special_days = MagicMock()
     db.branchs = MagicMock()
+    db.companies = MagicMock()
+    db.companies.find_one = AsyncMock(return_value={"_id": "MY_COMPANY", "name": "My Company"})
     db.audit_logs = MagicMock()
     return db
 
@@ -41,7 +43,9 @@ async def test_validate_all_branches_overlap_conflict(mock_db):
             "eventName": "Existing Holiday",
             "dayType": "Sudden Holiday",
             "applicability": "All Branches",
-            "date": "2026-08-15"
+            "date": "2026-08-15",
+            "companyId": "MY_COMPANY",
+            "status": "Active"
         }
     ])
 
@@ -68,7 +72,9 @@ async def test_validate_overlapping_selected_branches_conflict(mock_db):
             "dayType": "Sudden Cutoff",
             "applicability": "Selected Branches",
             "selectedBranchIds": ["b1"],
-            "date": "2026-08-15"
+            "date": "2026-08-15",
+            "companyId": "MY_COMPANY",
+            "status": "Active"
         }
     ])
 
@@ -95,7 +101,9 @@ async def test_validate_disjoint_selected_branches_allowed(mock_db):
             "dayType": "Sudden Cutoff",
             "applicability": "Selected Branches",
             "selectedBranchIds": ["b1"],
-            "date": "2026-08-15"
+            "date": "2026-08-15",
+            "companyId": "MY_COMPANY",
+            "status": "Active"
         }
     ])
 

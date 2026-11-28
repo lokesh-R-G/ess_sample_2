@@ -15,6 +15,7 @@ import { getShiftsV2, ShiftV2 } from '../../../services/shiftService';
 export const AdminSpecialDays: React.FC = () => {
   const [specialDays, setSpecialDays] = useState<SpecialDay[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [shifts, setShifts] = useState<ShiftV2[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,6 +28,12 @@ export const AdminSpecialDays: React.FC = () => {
   const [eventName, setEventName] = useState('');
   const [date, setDate] = useState('');
   const [dayType, setDayType] = useState<'Sudden Holiday' | 'Sudden Shift Change' | 'Sudden Cutoff'>('Sudden Shift Change');
+  
+  // Scope State: Global - All Companies | Selected Companies | Single Company
+  const [scopeType, setScopeType] = useState<'GLOBAL' | 'SELECTED_COMPANIES' | 'SINGLE_COMPANY'>('SINGLE_COMPANY');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+
   const [applicability, setApplicability] = useState<'All Branches' | 'Selected Branches'>('All Branches');
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   
@@ -49,14 +56,20 @@ export const AdminSpecialDays: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [sdRes, branchRes, shiftRes] = await Promise.all([
+      const [sdRes, branchRes, shiftRes, compRes] = await Promise.all([
         getSpecialDays(),
         organizationApi.getBranches(),
-        getShiftsV2()
+        getShiftsV2(),
+        organizationApi.getCompanies()
       ]);
       setSpecialDays(sdRes || []);
       setBranches(branchRes?.data || branchRes || []);
       setShifts(shiftRes || []);
+      const comps = compRes?.data || compRes || [];
+      setCompanies(comps);
+      if (comps.length > 0 && !selectedCompanyId) {
+        setSelectedCompanyId(comps[0].id || comps[0]._id || '');
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to load special day configurations');
     } finally {
@@ -69,6 +82,11 @@ export const AdminSpecialDays: React.FC = () => {
     setEventName('');
     setDate('');
     setDayType('Sudden Shift Change');
+    setScopeType('SINGLE_COMPANY');
+    if (companies.length > 0) {
+      setSelectedCompanyId(companies[0].id || companies[0]._id || '');
+    }
+    setSelectedCompanyIds([]);
     setApplicability('All Branches');
     setSelectedBranchIds([]);
     setSelectedPresetShiftId('');
@@ -94,6 +112,9 @@ export const AdminSpecialDays: React.FC = () => {
     setEventName(item.eventName);
     setDate(item.date);
     setDayType(item.dayType);
+    setScopeType(item.scopeType || (item.companyId ? 'SINGLE_COMPANY' : 'GLOBAL'));
+    setSelectedCompanyId(item.companyId || (item.companyIds && item.companyIds[0]) || '');
+    setSelectedCompanyIds(item.companyIds || (item.companyId ? [item.companyId] : []));
     setApplicability(item.applicability);
     setSelectedBranchIds(item.selectedBranchIds || []);
     setSelectedPresetShiftId(item.shiftId || '');
@@ -107,6 +128,12 @@ export const AdminSpecialDays: React.FC = () => {
     setIsFormOpen(true);
     setError(null);
     setSuccess(null);
+  };
+
+  const handleCompanyMultiToggle = (cid: string) => {
+    setSelectedCompanyIds(prev => 
+      prev.includes(cid) ? prev.filter(id => id !== cid) : [...prev, cid]
+    );
   };
 
   const handlePresetShiftChange = (shiftId: string) => {
@@ -128,6 +155,14 @@ export const AdminSpecialDays: React.FC = () => {
     );
   };
 
+  // Filter available branches based on scope
+  const availableBranches = branches.filter(b => {
+    if (scopeType === 'GLOBAL') return true;
+    if (scopeType === 'SINGLE_COMPANY') return !selectedCompanyId || String(b.companyId) === String(selectedCompanyId);
+    if (scopeType === 'SELECTED_COMPANIES') return selectedCompanyIds.length === 0 || selectedCompanyIds.includes(String(b.companyId));
+    return true;
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -141,6 +176,15 @@ export const AdminSpecialDays: React.FC = () => {
       setError('Date is required.');
       return;
     }
+    if (scopeType === 'SINGLE_COMPANY' && !selectedCompanyId) {
+      setError('Please select a company for Single Company scope.');
+      return;
+    }
+    if (scopeType === 'SELECTED_COMPANIES' && selectedCompanyIds.length === 0) {
+      setError('Please select at least one company for Selected Companies scope.');
+      return;
+    }
+
     if (dayType === 'Sudden Shift Change') {
       if (!startTime || !endTime) {
         setError('Expected IN Time and Expected OUT Time are required for Sudden Shift Change.');
@@ -178,6 +222,9 @@ export const AdminSpecialDays: React.FC = () => {
           eventName: eventName.trim(),
           date,
           dayType,
+          scopeType,
+          companyId: scopeType === 'SINGLE_COMPANY' ? selectedCompanyId : undefined,
+          companyIds: scopeType === 'SELECTED_COMPANIES' ? selectedCompanyIds : undefined,
           applicability,
           selectedBranchIds: applicability === 'Selected Branches' ? selectedBranchIds : [],
           shiftId: dayType === 'Sudden Shift Change' ? selectedPresetShiftId || null : null,
@@ -301,6 +348,59 @@ export const AdminSpecialDays: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Applicability Scope *</label>
                 <select
+                  value={scopeType}
+                  onChange={(e) => {
+                    const newScope = e.target.value as 'GLOBAL' | 'SELECTED_COMPANIES' | 'SINGLE_COMPANY';
+                    setScopeType(newScope);
+                    setSelectedBranchIds([]);
+                  }}
+                  disabled={Boolean(editingId)}
+                  className="w-full h-10 px-3 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="SINGLE_COMPANY">Single Company</option>
+                  <option value="SELECTED_COMPANIES">Selected Companies</option>
+                  <option value="GLOBAL">Global – All Companies</option>
+                </select>
+                {editingId && <p className="text-xs text-neutral-400 mt-1">Scope cannot be changed on edit.</p>}
+              </div>
+
+              {scopeType === 'SINGLE_COMPANY' && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">Company *</label>
+                  <select
+                    value={selectedCompanyId}
+                    onChange={(e) => {
+                      setSelectedCompanyId(e.target.value);
+                      setSelectedBranchIds([]);
+                    }}
+                    disabled={Boolean(editingId)}
+                    className="w-full h-10 px-3 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  >
+                    <option value="">-- Select Company --</option>
+                    {companies.map((c) => {
+                      const cId = c.id || c._id;
+                      return (
+                        <option key={cId} value={cId}>
+                          {c.name || c.companyName || cId}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
+              {scopeType === 'GLOBAL' && (
+                <div className="flex items-center">
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-800">
+                    <span className="font-semibold block">Global Scope Event</span>
+                    Applies across all current and future companies in the system.
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Branch Applicability *</label>
+                <select
                   value={applicability}
                   onChange={(e) => setApplicability(e.target.value as any)}
                   disabled={Boolean(editingId)}
@@ -309,9 +409,52 @@ export const AdminSpecialDays: React.FC = () => {
                   <option value="All Branches">All Branches</option>
                   <option value="Selected Branches">Selected Branches</option>
                 </select>
-                {editingId && <p className="text-xs text-neutral-400 mt-1">Applicability scope cannot be changed on edit.</p>}
+                {editingId && <p className="text-xs text-neutral-400 mt-1">Branch applicability cannot be changed on edit.</p>}
               </div>
             </div>
+
+            {/* Selected Companies multi-select */}
+            {scopeType === 'SELECTED_COMPANIES' && (
+              <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50/30">
+                <label className="block text-sm font-medium text-neutral-800 mb-2">
+                  Select Applicable Companies *
+                </label>
+                {companies.length === 0 ? (
+                  <p className="text-sm text-neutral-500">No companies found.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1">
+                    {companies.map((c) => {
+                      const cId = c.id || c._id;
+                      const isChecked = selectedCompanyIds.includes(cId);
+                      return (
+                        <label
+                          key={cId}
+                          className={`flex items-center gap-2 p-2 rounded border cursor-pointer text-sm transition-colors ${
+                            isChecked
+                              ? 'bg-indigo-50 border-indigo-300 text-indigo-900 font-medium'
+                              : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => handleCompanyMultiToggle(cId)}
+                            disabled={Boolean(editingId)}
+                            className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                          />
+                          <span>{c.name || c.companyName || cId}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedCompanyIds.length > 0 && (
+                  <p className="text-xs text-indigo-700 mt-2 font-medium">
+                    {selectedCompanyIds.length} company(s) selected
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Shift Timings for Sudden Shift Change */}
             {dayType === 'Sudden Shift Change' && (
@@ -446,11 +589,11 @@ export const AdminSpecialDays: React.FC = () => {
                 <label className="block text-sm font-medium text-neutral-800 mb-2">
                   Select Applicable Branches *
                 </label>
-                {branches.length === 0 ? (
-                  <p className="text-sm text-neutral-500">No branches found in your company.</p>
+                {availableBranches.length === 0 ? (
+                  <p className="text-sm text-neutral-500">No branches found for the selected scope.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1">
-                    {branches.map((b) => {
+                    {availableBranches.map((b) => {
                       const bId = b._id || b.id;
                       const isChecked = selectedBranchIds.includes(bId);
                       return (
@@ -527,6 +670,7 @@ export const AdminSpecialDays: React.FC = () => {
               <thead>
                 <tr className="border-b border-neutral-200 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
                   <th className="py-3 px-3">Date</th>
+                  <th className="py-3 px-3">Scope / Company</th>
                   <th className="py-3 px-3">Event Name</th>
                   <th className="py-3 px-3">Type</th>
                   <th className="py-3 px-3">Shift / Timings</th>
@@ -543,6 +687,30 @@ export const AdminSpecialDays: React.FC = () => {
                     <tr key={itemId} className={`hover:bg-neutral-50/50 ${!isActive ? 'opacity-60 bg-neutral-50/30' : ''}`}>
                       <td className="py-3 px-3 font-semibold text-neutral-900 whitespace-nowrap">
                         {item.date}
+                      </td>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        {item.scopeType === 'GLOBAL' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                            Global (All)
+                          </span>
+                        ) : item.scopeType === 'SELECTED_COMPANIES' ? (
+                          <div>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                              Selected ({item.companyIds?.length || 0})
+                            </span>
+                            {item.companyNames && item.companyNames.length > 0 && (
+                              <div className="text-[11px] text-neutral-500 truncate max-w-[140px]" title={item.companyNames.join(', ')}>
+                                {item.companyNames.join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-xs font-medium text-neutral-800">
+                              {item.companyNames && item.companyNames[0] ? item.companyNames[0] : (item.companyId || 'Single Company')}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-3">
                         <div className="font-medium text-neutral-800">{item.eventName}</div>

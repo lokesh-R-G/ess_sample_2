@@ -294,12 +294,17 @@ class AttendanceContextResolver:
 
         print(f"Holiday Calendar : {calendar_name} ({len(holiday_dates)} dates)")
 
-        # 3.1 Resolve Active Special Day Configuration (Sudden Holiday / Sudden Cutoff)
+        # 3.1 Resolve Active Special Day Configuration (Sudden Holiday / Sudden Cutoff / Sudden Shift Change)
+        # Evaluates:
+        # 1. Global configurations (scopeType == "GLOBAL")
+        # 2. Selected Companies configurations where employee companyId in companyIds
+        # 3. Single Company configurations where employee companyId matches companyId
+        # 4. Branch applicability (All Branches or Selected Branches)
         special_day = None
         target_date_str = target_date.strftime("%Y-%m-%d")
         comp_id_str = str(company_id) if company_id else None
 
-        # Build query for active special day matching date and company.
+        # Build query for active special day matching date and company/global scope.
         # If company_id is missing, log a warning and avoid global matching to maintain strict tenant isolation.
         if not comp_id_str:
             print(f"Warning: companyId missing for employee {employee.employeeId}. Skipping Special Day lookup to enforce tenant isolation.")
@@ -307,11 +312,25 @@ class AttendanceContextResolver:
             special_day_query = {
                 "date": target_date_str,
                 "status": "Active",
-                "companyId": comp_id_str
+                "$or": [
+                    {"scopeType": "GLOBAL"},
+                    {"companyId": comp_id_str},
+                    {"companyIds": comp_id_str}
+                ]
             }
 
             special_day_candidates = await self.db.special_days.find(special_day_query).to_list(None)
             branch_id_str = str(branch_id) if branch_id else None
+
+            # Sort candidates so that more specific scope takes precedence if both somehow exist:
+            # SINGLE_COMPANY (3) > SELECTED_COMPANIES (2) > GLOBAL (1)
+            def _scope_priority(sd_doc):
+                st = sd_doc.get("scopeType", "SINGLE_COMPANY")
+                if st == "SINGLE_COMPANY": return 3
+                if st == "SELECTED_COMPANIES": return 2
+                return 1
+
+            special_day_candidates.sort(key=_scope_priority, reverse=True)
 
             for sd in special_day_candidates:
                 app_scope = sd.get("applicability", "All Branches")

@@ -5,6 +5,12 @@ class SpecialDayCreate(BaseModel):
     eventName: str = Field(..., min_length=1, max_length=200)
     date: str = Field(..., description="Date in YYYY-MM-DD format")
     dayType: str = Field(..., description="'Sudden Holiday', 'Sudden Shift Change', or 'Sudden Cutoff'")
+    
+    # Scope hierarchy: "GLOBAL" | "SELECTED_COMPANIES" | "SINGLE_COMPANY"
+    scopeType: str = Field(default="SINGLE_COMPANY", description="'GLOBAL', 'SELECTED_COMPANIES', or 'SINGLE_COMPANY'")
+    companyId: Optional[str] = Field(None, description="Company ID for SINGLE_COMPANY")
+    companyIds: Optional[List[str]] = Field(default_factory=list, description="Company IDs for SELECTED_COMPANIES")
+    
     applicability: str = Field(..., description="'All Branches' or 'Selected Branches'")
     selectedBranchIds: Optional[List[str]] = Field(default_factory=list)
 
@@ -25,6 +31,13 @@ class SpecialDayCreate(BaseModel):
         valid = ["Sudden Holiday", "Sudden Shift Change", "Sudden Cutoff"]
         if v not in valid:
             raise ValueError(f"dayType must be one of {valid}")
+        return v
+
+    @field_validator("scopeType")
+    def validate_scope_type(cls, v):
+        valid = ["GLOBAL", "SELECTED_COMPANIES", "SINGLE_COMPANY"]
+        if v not in valid:
+            raise ValueError(f"scopeType must be one of {valid}")
         return v
 
     @field_validator("applicability")
@@ -54,7 +67,10 @@ class SpecialDayUpdate(BaseModel):
 class SpecialDayResponse(BaseModel):
     id: str
     specialDayId: Optional[str] = None
-    companyId: str
+    scopeType: str = "SINGLE_COMPANY"
+    companyId: Optional[str] = None
+    companyIds: List[str] = []
+    companyNames: Optional[List[str]] = []
     eventName: str
     date: str
     dayType: str
